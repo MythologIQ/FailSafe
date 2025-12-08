@@ -1,0 +1,84 @@
+{
+  "name": "failsafe-genesis",
+  "displayName": "FailSafe (Genesis Edition)",
+  "description": "The Passive Safety Net for AI Development. Zero Hallucination.",
+  "version": "2.0.1",
+  "icon": "media/genesis-icon.svg",
+  "publisher": "MythologIQ",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "onCommand:failsafe.showDashboard"
+  ],
+  "main": "./out/extension/main.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "failsafe.showDashboard",
+        "title": "FailSafe: Show Dashboard",
+        "category": "FailSafe"
+      },
+      {
+        "command": "failsafe.focusGenesis",
+        "title": "Genesis: Open Dojo",
+        "category": "Genesis",
+        "icon": "$(shield)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "genesis-sidebar",
+          "title": "Genesis",
+          "icon": "media/genesis-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "genesis-sidebar": [
+        {
+          "id": "genesis.dojoView",
+          "name": "The Dojo",
+          "type": "webview"
+        },
+        {
+          "id": "failsafe.dashboardView",
+          "name": "Dashboard",
+          "type": "webview"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "failsafe.focusGenesis",
+        "key": "ctrl+alt+g",
+        "mac": "cmd+alt+g"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./test/runTest.js"
+  },
+  "dependencies": {
+    "fastify": "^4.24.3",
+    "@fastify/static": "^6.12.0",
+    "@sinclair/typebox": "^0.31.28",
+    "chokidar": "^3.5.3"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.74.0",
+    "@types/node": "^18.18.9",
+    "typescript": "^5.2.2",
+    "pino-pretty": "^10.2.3"
+  }
+}

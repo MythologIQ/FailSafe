@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FailSafe Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="theme-dark">
+    <div class="app-container">
+        <!-- Header Section -->
+        <header class="dashboard-header">
+            <div class="logo-section">
+                <div class="logo-icon">🛡️</div>
+                <h1>FailSafe <span class="version">v2.0</span></h1>
+            </div>
+            <div class="status-indicators">
+                <div class="indicator" id="server-status">
+                    <span class="dot"></span> Server
+                </div>
+                <div class="indicator" id="brain-status">
+                    <span class="dot"></span> Brain
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Grid -->
+        <main class="dashboard-grid">
+            <!-- Active Task Card -->
+            <section class="card active-task-card">
+                <div class="card-header">
+                    <h2>Current Focus</h2>
+                    <span class="badge" id="task-status-badge">Idle</span>
+                </div>
+                <div class="card-body">
+                    <h3 id="current-task-name">No Active Task</h3>
+                    <div class="timer-display" id="task-timer">00:00:00</div>
+                    <div class="progress-container">
+                        <div class="progress-bar" id="task-progress" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button class="btn btn-primary" id="btn-complete">Complete</button>
+                    <button class="btn btn-secondary" id="btn-block">Block</button>
+                </div>
+            </section>
+
+            <!-- Metrics / Health -->
+            <section class="card metrics-card">
+                <div class="card-header">
+                    <h2>System Health</h2>
+                </div>
+                <div class="card-body">
+                    <div class="metric-row">
+                        <span>Tasks Completed</span>
+                        <span id="metric-completed">0</span>
+                    </div>
+                    <div class="metric-row">
+                        <span>Efficiency Score</span>
+                        <span id="metric-efficiency">100%</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Notifications / Nudges -->
+            <section class="card notifications-card">
+                <div class="card-header">
+                    <h2>Cortex Stream</h2>
+                </div>
+                <div class="card-body" id="notification-stream">
+                    <!-- Dynamic Content -->
+                    <div class="notification-item">
+                        <span class="time">Now</span>
+                        <span class="msg">Dashboard Initialized. Waiting for data...</span>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+{
+  "project_name": "MythologIQ Genesis",
+  "version": "1.0.0",
+  "last_updated": "2025-12-07",
+  "high_signal_nodes": [
+    {
+      "path": "g:/MythologIQ/Genesis/Gemini-Genesis-FoundationalBlueprint.md",
+      "type": "blueprint",
+      "description": "The seed document for the entire project architecture."
+    },
+    {
+      "path": "g:/MythologIQ/Genesis/.gemini/REPO_CONSTITUTION.md",
+      "type": "constitution",
+      "description": "The source of truth for agent behavior and rules."
+    }
+  ],
+  "active_contexts": []
+}

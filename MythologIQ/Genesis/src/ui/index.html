@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Genesis Protocol</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <header class="dojo-header">
+            <div class="status-indicator" id="connection-status"></div>
+            <h1>GENESIS PROTOCOL</h1>
+        </header>
+
+        <main class="dojo-content">
+            <!-- Protocol Guard (Overlay) -->
+            <div id="protocol-guard" class="overlay">
+                <div class="guard-card">
+                    <h2>ENTRANCE PROTOCOL</h2>
+                    <p>By entering, you agree to the laws of the Dojo.</p>
+                    <ul class="rules-list">
+                        <li>1. Answer First.</li>
+                        <li>2. Read before Write.</li>
+                        <li>3. No Drift.</li>
+                    </ul>
+                    <button id="affirm-btn">I TRUST THE PROCESS</button>
+                </div>
+            </div>
+
+            <!-- Task HUD (Main View) -->
+            <div id="task-hud" class="hidden">
+                <div class="panel task-panel">
+                    <h3>CURRENT OBJECTIVE</h3>
+                    <div id="task-name" class="code-block">Loading...</div>
+                    <div class="task-meta">
+                        <span id="task-status">...</span>
+                    </div>
+                </div>
+
+                <div class="panel context-panel">
+                    <h3>CORTEX UPLINK</h3>
+                    <div id="cortex-stream">
+                        <!-- Stream items will go here -->
+                        <div class="log-item">System Initialized.</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

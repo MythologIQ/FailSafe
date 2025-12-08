@@ -1,0 +1,158 @@
+:root {
+    --bg-color: #1a1a1a;
+    --card-bg: #252525;
+    --text-primary: #e0e0e0;
+    --text-secondary: #888;
+    --accent-gold: #d4af37;
+    --accent-error: #ff4444;
+    --accent-success: #44ff44;
+    --font-mono: 'Consolas', 'Monaco', monospace;
+    --spacing-unit: 8px;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    line-height: 1.5;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+}
+
+#app {
+    width: 100%;
+    max-width: 400px; /* Sidebar width */
+    display: flex;
+    flex-direction: column;
+    padding: var(--spacing-unit);
+}
+
+/* Header */
+.dojo-header {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid var(--accent-gold);
+    padding-bottom: var(--spacing-unit);
+    margin-bottom: calc(var(--spacing-unit) * 2);
+}
+
+.status-indicator {
+    width: 8px;
+    height: 8px;
+    background-color: var(--accent-success);
+    border-radius: 50%;
+    margin-right: var(--spacing-unit);
+    box-shadow: 0 0 5px var(--accent-success);
+}
+
+h1 {
+    font-size: 14px;
+    letter-spacing: 2px;
+    color: var(--accent-gold);
+}
+
+/* Overlay */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.9);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+}
+
+.guard-card {
+    background: var(--card-bg);
+    border: 1px solid var(--accent-gold);
+    padding: calc(var(--spacing-unit) * 3);
+    text-align: center;
+    max-width: 300px;
+}
+
+.guard-card h2 {
+    font-size: 16px;
+    margin-bottom: calc(var(--spacing-unit) * 2);
+    color: var(--accent-gold);
+}
+
+.rules-list {
+    text-align: left;
+    margin: calc(var(--spacing-unit) * 2) 0;
+    list-style: none;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+button {
+    background: transparent;
+    border: 1px solid var(--accent-gold);
+    color: var(--accent-gold);
+    padding: 10px 20px;
+    font-family: var(--font-mono);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+button:hover {
+    background: var(--accent-gold);
+    color: var(--bg-color);
+}
+
+/* Panels */
+.panel {
+    background: var(--card-bg);
+    border: 1px solid #333;
+    padding: var(--spacing-unit);
+    margin-bottom: calc(var(--spacing-unit) * 2);
+}
+
+.panel h3 {
+    font-size: 10px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    margin-bottom: var(--spacing-unit);
+    border-bottom: 1px solid #333;
+    padding-bottom: 4px;
+}
+
+.code-block {
+    background: #000;
+    padding: var(--spacing-unit);
+    color: var(--accent-success);
+    font-size: 13px;
+    border-left: 2px solid var(--accent-success);
+}
+
+.task-meta {
+    margin-top: var(--spacing-unit);
+    font-size: 11px;
+    text-align: right;
+    color: var(--text-secondary);
+}
+
+.hidden {
+    display: none;
+}
+
+#cortex-stream {
+    height: 150px;
+    overflow-y: auto;
+    font-size: 11px;
+}
+
+.log-item {
+    margin-bottom: 4px;
+    color: #666;
+}

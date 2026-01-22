@@ -178,8 +178,12 @@ function registerCommands(context, genesis, qorelogic, sentinel) {
         genesis.showL3ApprovalQueue();
     }));
 }
+// Module-scope managers defined at lines 35-39
+let ledgerManager;
 function deactivate() {
     logger?.info('Deactivating MythologIQ: FailSafe...');
+    // P0 FIX: Close ledger database connection first to prevent locks
+    ledgerManager?.close();
     // Stop Sentinel daemon
     sentinelDaemon?.stop();
     // Cleanup QoreLogic

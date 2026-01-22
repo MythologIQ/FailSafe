@@ -230,8 +230,14 @@ function registerCommands(
     );
 }
 
+// Module-scope managers defined at lines 35-39
+let ledgerManager: LedgerManager;
+
 export function deactivate(): void {
     logger?.info('Deactivating MythologIQ: FailSafe...');
+
+    // P0 FIX: Close ledger database connection first to prevent locks
+    ledgerManager?.close();
 
     // Stop Sentinel daemon
     sentinelDaemon?.stop();

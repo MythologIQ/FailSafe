@@ -58,6 +58,14 @@ class LedgerManager {
         this.configManager = configManager;
     }
     async initialize() {
+        if (this.db) {
+            try {
+                this.db.close();
+            }
+            finally {
+                this.db = undefined;
+            }
+        }
         // Ensure directory structure
         await this.configManager.ensureDirectoryStructure();
         this.ledgerPath = this.configManager.getLedgerPath();
@@ -76,11 +84,21 @@ class LedgerManager {
             throw error;
         }
     }
-    initSchema() {
-        if (!this.db) {
-            return;
-        }
-        const schema = `
+}
+exports.LedgerManager = LedgerManager;
+try { }
+catch (error) {
+    console.error('Failed to initialize Ledger DB:', error);
+    throw error;
+}
+initSchema();
+void {
+    : .db
+};
+{
+    return;
+}
+const schema = `
         CREATE TABLE IF NOT EXISTS soa_ledger (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             timestamp TEXT NOT NULL DEFAULT (datetime('now')),
@@ -107,60 +125,76 @@ class LedgerManager {
         CREATE INDEX IF NOT EXISTS idx_soa_artifact ON soa_ledger(artifact_path);
         CREATE INDEX IF NOT EXISTS idx_soa_event_type ON soa_ledger(event_type);
         `;
-        this.db.exec(schema);
-        // Check if genesis block is needed
-        const count = this.db.prepare('SELECT count(*) as c FROM soa_ledger').get();
-        if (count.c === 0) {
-            this.createGenesisEntry();
-        }
-    }
-    createGenesisEntry() {
-        if (!this.db) {
-            return;
-        }
-        const genesisSql = `
+this.db.exec(schema);
+// Check if genesis block is needed
+const count = this.db.prepare('SELECT count(*) as c FROM soa_ledger').get();
+if (count.c === 0) {
+    this.createGenesisEntry();
+}
+createGenesisEntry();
+void {
+    : .db
+};
+{
+    return;
+}
+const genesisSql = `
         INSERT INTO soa_ledger (
-            event_type, agent_did, payload,
+            timestamp, event_type, agent_did, payload,
             entry_hash, prev_hash, signature
         ) VALUES (
-            ?, ?, ?, ?, ?, ?
+            ?, ?, ?, ?, ?, ?, ?
         )`;
-        const payload = JSON.stringify({ message: 'SOA Ledger initialized' });
-        const entryHash = 'GENESIS_HASH_PLACEHOLDER';
-        const prevHash = 'GENESIS_HASH_PLACEHOLDER';
-        const signature = 'GENESIS_SIGNATURE_PLACEHOLDER';
-        this.db.prepare(genesisSql).run('SYSTEM_EVENT', 'did:myth:system:genesis', payload, entryHash, prevHash, signature);
-        this.lastHash = entryHash;
-    }
-    loadLastHash() {
-        if (!this.db) {
-            return;
-        }
-        const last = this.db.prepare('SELECT entry_hash FROM soa_ledger ORDER BY id DESC LIMIT 1').get();
-        if (last) {
-            this.lastHash = last.entry_hash;
-        }
-    }
-    /**
-     * Append a new entry to the ledger
-     */
-    async appendEntry(request) {
-        if (!this.db) {
-            throw new Error('Ledger DB not initialized');
-        }
-        const timestamp = new Date().toISOString();
-        const prevHash = this.lastHash;
-        // Calculate hash
-        const hashPayload = {
-            timestamp,
-            eventType: request.eventType,
-            agentDid: request.agentDid,
-            payload: request.payload,
-            prevHash
-        };
-        const entryHash = this.calculateHash(JSON.stringify(hashPayload));
-        const signature = this.sign(entryHash);
-        const sql = `
+const timestamp = new Date().toISOString();
+const payloadObject = { message: 'SOA Ledger initialized' };
+const payload = JSON.stringify(payloadObject);
+const prevHash = this.calculateHash('GENESIS');
+const hashPayload = {
+    timestamp,
+    eventType: 'SYSTEM_EVENT',
+    agentDid: 'did:myth:system:genesis',
+    payload: payloadObject,
+    prevHash
+};
+const entryHash = this.calculateHash(JSON.stringify(hashPayload));
+const signature = this.sign(entryHash);
+this.db.prepare(genesisSql).run(timestamp, 'SYSTEM_EVENT', 'did:myth:system:genesis', payload, entryHash, prevHash, signature);
+this.lastHash = entryHash;
+loadLastHash();
+void {
+    : .db
+};
+{
+    return;
+}
+const last = this.db.prepare('SELECT entry_hash FROM soa_ledger ORDER BY id DESC LIMIT 1').get();
+if (last) {
+    this.lastHash = last.entry_hash;
+}
+/**
+ * Append a new entry to the ledger
+ */
+async;
+appendEntry(request, LedgerAppendRequest);
+Promise < types_1.LedgerEntry > {
+    : .db
+};
+{
+    throw new Error('Ledger DB not initialized');
+}
+const timestamp = new Date().toISOString();
+const prevHash = this.lastHash;
+// Calculate hash
+const hashPayload = {
+    timestamp,
+    eventType: request.eventType,
+    agentDid: request.agentDid,
+    payload: request.payload,
+    prevHash
+};
+const entryHash = this.calculateHash(JSON.stringify(hashPayload));
+const signature = this.sign(entryHash);
+const sql = `
         INSERT INTO soa_ledger (
             timestamp, event_type, agent_did, agent_trust_at_action,
             model_version, artifact_path, artifact_hash, risk_grade,
@@ -174,139 +208,190 @@ class LedgerManager {
             @overseerDid, @overseerDecision, @gdprTrigger, @payload,
             @entryHash, @prevHash, @signature
         )`;
-        const info = this.db.prepare(sql).run({
-            timestamp,
-            eventType: request.eventType,
-            agentDid: request.agentDid,
-            agentTrustAtAction: request.agentTrustAtAction || null,
-            modelVersion: request.modelVersion || null,
-            artifactPath: request.artifactPath || null,
-            artifactHash: request.artifactHash || null,
-            riskGrade: request.riskGrade || null,
-            verificationMethod: request.verificationMethod || null,
-            verificationResult: request.verificationResult || null,
-            sentinelConfidence: request.sentinelConfidence || null,
-            overseerDid: request.overseerDid || null,
-            overseerDecision: request.overseerDecision || null,
-            gdprTrigger: request.gdprTrigger ? 1 : 0,
-            payload: request.payload ? JSON.stringify(request.payload) : null,
-            entryHash,
-            prevHash,
-            signature
-        });
-        this.lastHash = entryHash;
-        return {
-            id: Number(info.lastInsertRowid),
-            timestamp,
-            eventType: request.eventType,
-            agentDid: request.agentDid,
-            agentTrustAtAction: request.agentTrustAtAction || 0,
-            entryHash,
-            prevHash,
-            signature,
-            payload: request.payload || {},
-            gdprTrigger: !!request.gdprTrigger
+const info = this.db.prepare(sql).run({
+    timestamp,
+    eventType: request.eventType,
+    agentDid: request.agentDid,
+    agentTrustAtAction: request.agentTrustAtAction || null,
+    modelVersion: request.modelVersion || null,
+    artifactPath: request.artifactPath || null,
+    artifactHash: request.artifactHash || null,
+    riskGrade: request.riskGrade || null,
+    verificationMethod: request.verificationMethod || null,
+    verificationResult: request.verificationResult || null,
+    sentinelConfidence: request.sentinelConfidence || null,
+    overseerDid: request.overseerDid || null,
+    overseerDecision: request.overseerDecision || null,
+    gdprTrigger: request.gdprTrigger ? 1 : 0,
+    payload: request.payload ? JSON.stringify(request.payload) : null,
+    entryHash,
+    prevHash,
+    signature
+});
+this.lastHash = entryHash;
+return {
+    id: Number(info.lastInsertRowid),
+    timestamp,
+    eventType: request.eventType,
+    agentDid: request.agentDid,
+    agentTrustAtAction: request.agentTrustAtAction || 0,
+    entryHash,
+    prevHash,
+    signature,
+    payload: request.payload || {},
+    gdprTrigger: !!request.gdprTrigger
+};
+/**
+ * Get recent entries
+ */
+async;
+getRecentEntries(limit, number = 50);
+Promise < types_1.LedgerEntry[] > {
+    : .db
+};
+{
+    return [];
+}
+const rows = this.db.prepare('SELECT * FROM soa_ledger ORDER BY id DESC LIMIT ?').all(limit);
+return rows.map(this.mapRowToEntry);
+/**
+ * Get entries by event type
+ */
+async;
+getEntriesByType(eventType, types_1.LedgerEventType, limit, number = 50);
+Promise < types_1.LedgerEntry[] > {
+    : .db
+};
+{
+    return [];
+}
+const rows = this.db.prepare('SELECT * FROM soa_ledger WHERE event_type = ? ORDER BY id DESC LIMIT ?').all(eventType, limit);
+return rows.map(this.mapRowToEntry);
+/**
+ * Get entries by agent
+ */
+async;
+getEntriesByAgent(agentDid, string, limit, number = 50);
+Promise < types_1.LedgerEntry[] > {
+    : .db
+};
+{
+    return [];
+}
+const rows = this.db.prepare('SELECT * FROM soa_ledger WHERE agent_did = ? ORDER BY id DESC LIMIT ?').all(agentDid, limit);
+return rows.map(this.mapRowToEntry);
+mapRowToEntry(row, any);
+types_1.LedgerEntry;
+{
+    return {
+        id: row.id,
+        timestamp: row.timestamp,
+        eventType: row.event_type,
+        agentDid: row.agent_did,
+        agentTrustAtAction: row.agent_trust_at_action,
+        modelVersion: row.model_version,
+        artifactPath: row.artifact_path,
+        artifactHash: row.artifact_hash,
+        riskGrade: row.risk_grade,
+        verificationMethod: row.verification_method,
+        verificationResult: row.verification_result,
+        sentinelConfidence: row.sentinel_confidence,
+        overseerDid: row.overseer_did,
+        overseerDecision: row.overseer_decision,
+        gdprTrigger: row.gdpr_trigger === 1,
+        payload: row.payload ? JSON.parse(row.payload) : {},
+        entryHash: row.entry_hash,
+        prevHash: row.prev_hash,
+        signature: row.signature
+    };
+}
+calculateHash(data, string);
+string;
+{
+    return crypto.createHash('sha256').update(data).digest('hex');
+}
+sign(hash, string);
+string;
+{
+    const secret = this.context.globalState.get('ledgerSecret') || this.generateSecret();
+    return crypto.createHmac('sha256', secret).update(hash).digest('hex');
+}
+generateSecret();
+string;
+{
+    const secret = crypto.randomBytes(32).toString('hex');
+    this.context.globalState.update('ledgerSecret', secret);
+    return secret;
+}
+/**
+ * Verify the integrity of the hash chain
+ */
+verifyChain();
+boolean;
+{
+    if (!this.db) {
+        return false;
+    }
+    const rows = this.db.prepare('SELECT * FROM soa_ledger ORDER BY id ASC').all();
+    if (rows.length === 0) {
+        return true;
+    }
+    const secret = this.context.globalState.get('ledgerSecret');
+    if (!secret) {
+        console.error('Ledger secret missing; cannot verify signatures');
+        return false;
+    }
+    for (let i = 0; i < rows.length; i++) {
+        const current = rows[i];
+        let payloadValue = undefined;
+        if (current.payload) {
+            try {
+                payloadValue = JSON.parse(current.payload);
+            }
+            catch (error) {
+                console.error(`Invalid payload JSON at ID ${current.id}`, error);
+                return false;
+            }
+        }
+        const hashPayload = {
+            timestamp: current.timestamp,
+            eventType: current.event_type,
+            agentDid: current.agent_did,
+            payload: payloadValue,
+            prevHash: current.prev_hash
         };
-    }
-    /**
-     * Get recent entries
-     */
-    async getRecentEntries(limit = 50) {
-        if (!this.db) {
-            return [];
-        }
-        const rows = this.db.prepare('SELECT * FROM soa_ledger ORDER BY id DESC LIMIT ?').all(limit);
-        return rows.map(this.mapRowToEntry);
-    }
-    /**
-     * Get entries by event type
-     */
-    async getEntriesByType(eventType, limit = 50) {
-        if (!this.db) {
-            return [];
-        }
-        const rows = this.db.prepare('SELECT * FROM soa_ledger WHERE event_type = ? ORDER BY id DESC LIMIT ?').all(eventType, limit);
-        return rows.map(this.mapRowToEntry);
-    }
-    /**
-     * Get entries by agent
-     */
-    async getEntriesByAgent(agentDid, limit = 50) {
-        if (!this.db) {
-            return [];
-        }
-        const rows = this.db.prepare('SELECT * FROM soa_ledger WHERE agent_did = ? ORDER BY id DESC LIMIT ?').all(agentDid, limit);
-        return rows.map(this.mapRowToEntry);
-    }
-    mapRowToEntry(row) {
-        return {
-            id: row.id,
-            timestamp: row.timestamp,
-            eventType: row.event_type,
-            agentDid: row.agent_did,
-            agentTrustAtAction: row.agent_trust_at_action,
-            modelVersion: row.model_version,
-            artifactPath: row.artifact_path,
-            artifactHash: row.artifact_hash,
-            riskGrade: row.risk_grade,
-            verificationMethod: row.verification_method,
-            verificationResult: row.verification_result,
-            sentinelConfidence: row.sentinel_confidence,
-            overseerDid: row.overseer_did,
-            overseerDecision: row.overseer_decision,
-            gdprTrigger: row.gdpr_trigger === 1,
-            payload: row.payload ? JSON.parse(row.payload) : {},
-            entryHash: row.entry_hash,
-            prevHash: row.prev_hash,
-            signature: row.signature
-        };
-    }
-    calculateHash(data) {
-        return crypto.createHash('sha256').update(data).digest('hex');
-    }
-    sign(hash) {
-        const secret = this.context.globalState.get('ledgerSecret') || this.generateSecret();
-        return crypto.createHmac('sha256', secret).update(hash).digest('hex');
-    }
-    generateSecret() {
-        const secret = crypto.randomBytes(32).toString('hex');
-        this.context.globalState.update('ledgerSecret', secret);
-        return secret;
-    }
-    /**
-     * Verify the integrity of the hash chain
-     */
-    verifyChain() {
-        if (!this.db) {
+        const expectedHash = this.calculateHash(JSON.stringify(hashPayload));
+        if (current.entry_hash !== expectedHash) {
+            console.error(`Chain broken at ID ${current.id}: entryHash mismatch`);
             return false;
         }
-        // This is expensive for large chains, should just check last X in production
-        const rows = this.db.prepare('SELECT * FROM soa_ledger ORDER BY id ASC').all();
-        if (rows.length === 0)
-            return true;
-        for (let i = 1; i < rows.length; i++) {
-            const current = rows[i];
+        const expectedSignature = crypto.createHmac('sha256', secret).update(expectedHash).digest('hex');
+        if (current.signature !== expectedSignature) {
+            console.error(`Chain broken at ID ${current.id}: signature mismatch`);
+            return false;
+        }
+        if (i > 0) {
             const previous = rows[i - 1];
             if (current.prev_hash !== previous.entry_hash) {
                 console.error(`Chain broken at ID ${current.id}: prevHash mismatch`);
                 return false;
             }
-            // Note: Recalculating hash would require exact reconstruction of payload string
-            // For now, we trust the database integrity + prevHash link
         }
-        return true;
     }
-    getEntryCount() {
-        if (!this.db) {
-            return 0;
-        }
-        const res = this.db.prepare('SELECT count(*) as c FROM soa_ledger').get();
-        return res.c;
-    }
-    close() {
-        this.db?.close();
-        this.db = undefined;
-    }
+    return true;
 }
-exports.LedgerManager = LedgerManager;
+getEntryCount();
+number;
+{
+    if (!this.db) {
+        return 0;
+    }
+    const res = this.db.prepare('SELECT count(*) as c FROM soa_ledger').get();
+    return res.c;
+}
+close();
+void {
+    this: .db?.close(),
+    this: .db = undefined
+};
 //# sourceMappingURL=LedgerManager.js.map

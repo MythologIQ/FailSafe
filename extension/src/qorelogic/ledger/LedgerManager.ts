@@ -43,6 +43,14 @@ export class LedgerManager {
     }
 
     async initialize(): Promise<void> {
+        if (this.db) {
+            try {
+                this.db.close();
+            } finally {
+                this.db = undefined;
+            }
+        }
+
         // Ensure directory structure
         await this.configManager.ensureDirectoryStructure();
 
@@ -58,6 +66,11 @@ export class LedgerManager {
             this.db.pragma('journal_mode = WAL');
             this.initSchema();
             this.loadLastHash();
+        } catch (error) {
+            console.error('Failed to initialize Ledger DB:', error);
+            throw error;
+        }
+    }
         } catch (error) {
             console.error('Failed to initialize Ledger DB:', error);
             throw error;
@@ -109,18 +122,30 @@ export class LedgerManager {
 
         const genesisSql = `
         INSERT INTO soa_ledger (
-            event_type, agent_did, payload,
+            timestamp, event_type, agent_did, payload,
             entry_hash, prev_hash, signature
         ) VALUES (
-            ?, ?, ?, ?, ?, ?
+            ?, ?, ?, ?, ?, ?, ?
         )`;
 
-        const payload = JSON.stringify({ message: 'SOA Ledger initialized' });
-        const entryHash = 'GENESIS_HASH_PLACEHOLDER';
-        const prevHash = 'GENESIS_HASH_PLACEHOLDER';
-        const signature = 'GENESIS_SIGNATURE_PLACEHOLDER';
+        const timestamp = new Date().toISOString();
+        const payloadObject = { message: 'SOA Ledger initialized' };
+        const payload = JSON.stringify(payloadObject);
+        const prevHash = this.calculateHash('GENESIS');
+
+        const hashPayload = {
+            timestamp,
+            eventType: 'SYSTEM_EVENT',
+            agentDid: 'did:myth:system:genesis',
+            payload: payloadObject,
+            prevHash
+        };
+
+        const entryHash = this.calculateHash(JSON.stringify(hashPayload));
+        const signature = this.sign(entryHash);
 
         this.db.prepare(genesisSql).run(
+            timestamp,
             'SYSTEM_EVENT',
             'did:myth:system:genesis',
             payload,
@@ -284,21 +309,56 @@ export class LedgerManager {
      */
     verifyChain(): boolean {
         if (!this.db) { return false; }
-        
-        // This is expensive for large chains, should just check last X in production
+
         const rows = this.db.prepare('SELECT * FROM soa_ledger ORDER BY id ASC').all() as any[];
-        if (rows.length === 0) return true;
+        if (rows.length === 0) { return true; }
 
-        for (let i = 1; i < rows.length; i++) {
+        const secret = this.context.globalState.get<string>('ledgerSecret');
+        if (!secret) {
+            console.error('Ledger secret missing; cannot verify signatures');
+            return false;
+        }
+
+        for (let i = 0; i < rows.length; i++) {
             const current = rows[i];
-            const previous = rows[i - 1];
 
-            if (current.prev_hash !== previous.entry_hash) {
-                console.error(`Chain broken at ID ${current.id}: prevHash mismatch`);
+            let payloadValue: any = undefined;
+            if (current.payload) {
+                try {
+                    payloadValue = JSON.parse(current.payload);
+                } catch (error) {
+                    console.error(`Invalid payload JSON at ID ${current.id}`, error);
+                    return false;
+                }
+            }
+
+            const hashPayload = {
+                timestamp: current.timestamp,
+                eventType: current.event_type,
+                agentDid: current.agent_did,
+                payload: payloadValue,
+                prevHash: current.prev_hash
+            };
+
+            const expectedHash = this.calculateHash(JSON.stringify(hashPayload));
+            if (current.entry_hash !== expectedHash) {
+                console.error(`Chain broken at ID ${current.id}: entryHash mismatch`);
                 return false;
             }
-            // Note: Recalculating hash would require exact reconstruction of payload string
-            // For now, we trust the database integrity + prevHash link
+
+            const expectedSignature = crypto.createHmac('sha256', secret).update(expectedHash).digest('hex');
+            if (current.signature !== expectedSignature) {
+                console.error(`Chain broken at ID ${current.id}: signature mismatch`);
+                return false;
+            }
+
+            if (i > 0) {
+                const previous = rows[i - 1];
+                if (current.prev_hash !== previous.entry_hash) {
+                    console.error(`Chain broken at ID ${current.id}: prevHash mismatch`);
+                    return false;
+                }
+            }
         }
 
         return true;

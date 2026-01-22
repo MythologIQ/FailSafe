@@ -1,18 +1,22 @@
-﻿# SYSTEM STATE SNAPSHOT
+﻿# SYSTEM STATE SNAPSHOT (SESSION CLOSE)
 
-**Timestamp:** 01/22/2026 11:07:44
-**Last Action:** End of Session (M1.5 Complete, M2 Designed)
+**Timestamp:** 01/22/2026 13:15:00
+**Last Task:** Phase 4 Completion: Genesis UI & Feedback Loop
 
-## CURRENT ARCHITECTURE STATUS
-- **Core:** Extension activated, DI container established.
-- **Ledger:** SQLite-backed, Merkle-chained, SecretStorage-secured.
-- **Sentinel:** Designed (M2), Shell only.
+## COMPONENT TREE
+- extension/
+  - src/
+    - extension/ (main.ts)
+    - genesis/ (Manager, Feedback, Panels, Views)
+    - qorelogic/ (Manager, Ledger, Trust, Policies, Shadow)
+    - sentinel/ (Daemon, Engines, Patterns)
+    - shared/ (Bus, Config, Logger, Types)
 
-## RECENT CRITICAL FIXES (M1.5)
-1. **Ledger Integrity:** erifyChain() now recalculates hashes and verifies signatures.
-2. **Lifecycle:** deactivate() properly closes DB connections.
-3. **Security:** Secrets migrated to context.secrets.
-4. **Reliability:** ConfigManager uses atomic writes.
+## ACTIVE FEATURE FLAGS
+- failsafe.genesis.livingGraph: true
+- failsafe.genesis.cortexOmnibar: true
+- failsafe.sentinel.enabled: true
+- failsafe.qorelogic.strictMode: false
 
 ## FILE MANIFEST
 .agent\locks
@@ -31,16 +35,34 @@
 .agent\staging\archive\prompts_20260122_110611\PROMPT_AGENT_1_ARCHITECT_CODEX.txt
 .agent\staging\archive\prompts_20260122_110611\PROMPT_AGENT_2_SECURITY_AUDITOR_CLAUDE.txt
 .agent\staging\archive\prompts_20260122_110611\PROMPT_AGENT_3_QA_GLM_4.7.txt
+.agent\staging\archive\prompts_20260122_121206
+.agent\staging\archive\prompts_20260122_121206\PROMPT_AGENT_1_CODEX.txt
+.agent\staging\archive\prompts_20260122_121206\PROMPT_AGENT_2_CLAUDE.txt
+.agent\staging\archive\prompts_20260122_131137
+.agent\staging\archive\prompts_20260122_131137\PROMPT_AGENT_1_CODEX.txt
+.agent\staging\archive\prompts_20260122_131137\PROMPT_AGENT_2_CLAUDE.txt
+.agent\staging\archive\prompts_20260122_131137\PROMPT_AGENT_3_GLM_4.7.txt
 .agent\staging\archive\responses_20260122_104409
 .agent\staging\archive\responses_20260122_104409\AGENT_1_ARCHITECT_CODEX.md
 .agent\staging\archive\responses_20260122_104409\AGENT_2_SECURITY_AUDITOR_CLAUDE.md
 .agent\staging\archive\responses_20260122_104409\AGENT_3_QA_GLM_4.7.md
 .agent\staging\archive\responses_20260122_105713
 .agent\staging\archive\responses_20260122_105713\AGENT_1_IMPLEMENTER_CODEX.md
+.agent\staging\archive\responses_20260122_114702
+.agent\staging\archive\responses_20260122_114702\AGENT_1_ARCHITECT_CODEX.md
+.agent\staging\archive\responses_20260122_114702\AGENT_2_SECURITY_AUDITOR_CLAUDE.md
+.agent\staging\archive\responses_20260122_114702\AGENT_3_QA_GLM_4.7.md
+.agent\staging\archive\responses_20260122_114702\AGENT_JUDGE_ARCH_SPEC.md
+.agent\staging\archive\responses_20260122_122458
+.agent\staging\archive\responses_20260122_122458\AGENT_1_CODEX.md
+.agent\staging\archive\responses_20260122_122458\AGENT_2_CLAUDE.md
+.agent\staging\archive\responses_20260122_122458\AGENT_JUDGE_ARCH_SPEC.md
+.agent\staging\archive\SYSTEM_STATE.md
 .agent\staging\responses
-.agent\staging\responses\AGENT_1_ARCHITECT_CODEX.md
-.agent\staging\responses\AGENT_2_SECURITY_AUDITOR_CLAUDE.md
-.agent\staging\responses\AGENT_3_QA_GLM_4.7.md
+.agent\staging\responses\AGENT_1_CODEX.md
+.agent\staging\responses\AGENT_2_CLAUDE.md
+.agent\staging\responses\AGENT_3_GLM_4.7.md
+.agent\staging\PROMPT_JUDGE_ARCH.md
 .agent\staging\SYSTEM_STATE.md
 .claude
 .claude\settings.local.json
@@ -172,7 +194,6 @@ extension\node_modules\.bin\vsce.cmd
 extension\node_modules\.bin\vsce.ps1
 extension\node_modules\@azure
 extension\node_modules\@azure\abort-controller
-extension\node_modules\@azure\abort-controller\dist
 extension\node_modules\@azure\abort-controller\dist\browser
 extension\node_modules\@azure\abort-controller\dist\browser\AbortError.d.ts
 extension\node_modules\@azure\abort-controller\dist\browser\AbortError.d.ts.map
@@ -198,21 +219,4 @@ extension\node_modules\@azure\abort-controller\dist\commonjs\AbortSignalLike.js
 extension\node_modules\@azure\abort-controller\dist\commonjs\AbortSignalLike.js.map
 extension\node_modules\@azure\abort-controller\dist\commonjs\index.d.ts
 extension\node_modules\@azure\abort-controller\dist\commonjs\index.d.ts.map
-extension\node_modules\@azure\abort-controller\dist\commonjs\index.js
-extension\node_modules\@azure\abort-controller\dist\commonjs\index.js.map
-extension\node_modules\@azure\abort-controller\dist\commonjs\package.json
-extension\node_modules\@azure\abort-controller\dist\commonjs\tsdoc-metadata.json
-extension\node_modules\@azure\abort-controller\dist\esm
-extension\node_modules\@azure\abort-controller\dist\esm\AbortError.d.ts
-extension\node_modules\@azure\abort-controller\dist\esm\AbortError.d.ts.map
-extension\node_modules\@azure\abort-controller\dist\esm\AbortError.js
-extension\node_modules\@azure\abort-controller\dist\esm\AbortError.js.map
-extension\node_modules\@azure\abort-controller\dist\esm\AbortSignalLike.d.ts
-extension\node_modules\@azure\abort-controller\dist\esm\AbortSignalLike.d.ts.map
-extension\node_modules\@azure\abort-controller\dist\esm\AbortSignalLike.js
-extension\node_modules\@azure\abort-controller\dist\esm\AbortSignalLike.js.map
-extension\node_modules\@azure\abort-controller\dist\esm\index.d.ts
-extension\node_modules\@azure\abort-controller\dist\esm\index.d.ts.map
-extension\node_modules\@azure\abort-controller\dist\esm\index.js
-extension\node_modules\@azure\abort-controller\dist\esm\index.js.map
 

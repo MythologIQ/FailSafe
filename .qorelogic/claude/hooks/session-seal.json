@@ -1,0 +1,83 @@
+{
+  "name": "Session Seal",
+  "description": "End-of-session hook that syncs modified files, updates system state, and appends cryptographic seal",
+  "version": "1.0.0",
+  "id": "QL-HOOK-003",
+
+  "hook_type": "Stop",
+  "tools": [],
+
+  "trigger": {
+    "event": "session_end",
+    "condition": "modified_files_count > 0"
+  },
+
+  "actions": [
+    {
+      "type": "local_sync",
+      "steps": [
+        {
+          "action": "list_modified_files",
+          "description": "Identify all files modified during this session"
+        },
+        {
+          "action": "clear_staging",
+          "path": ".agent/staging/",
+          "description": "Clear temporary staging files to prevent context pollution"
+        }
+      ]
+    },
+    {
+      "type": "update_system_state",
+      "output": "docs/SYSTEM_STATE.md",
+      "content": {
+        "timestamp": "{{ISO_8601_NOW}}",
+        "session_id": "{{SESSION_HASH_PREFIX}}",
+        "files_modified": "{{MODIFIED_FILES_LIST}}",
+        "tree_snapshot": "{{CURRENT_FILE_TREE}}"
+      }
+    },
+    {
+      "type": "cryptographic_seal",
+      "algorithm": "SHA-256",
+      "inputs": [
+        "docs/CONCEPT.md",
+        "docs/ARCHITECTURE_PLAN.md",
+        "docs/SYSTEM_STATE.md",
+        "{{MODIFIED_FILES}}"
+      ],
+      "output": {
+        "file": "docs/META_LEDGER.md",
+        "entry": {
+          "type": "SESSION_CLOSE",
+          "timestamp": "{{ISO_8601_NOW}}",
+          "content_hash": "{{CONTENT_HASH}}",
+          "previous_hash": "{{PREVIOUS_LEDGER_HASH}}",
+          "chain_hash": "{{CHAIN_HASH}}",
+          "summary": "Session closed. {{MODIFIED_COUNT}} files modified."
+        }
+      }
+    },
+    {
+      "type": "final_report",
+      "message": "Session sealed at {{CHAIN_HASH_PREFIX}}. {{MODIFIED_COUNT}} files synchronized."
+    }
+  ],
+
+  "skip_conditions": [
+    {
+      "condition": "no_files_modified",
+      "message": "No changes detected. Session closed without seal."
+    },
+    {
+      "condition": "ledger_not_initialized",
+      "message": "No META_LEDGER found. Run /ql-bootstrap to initialize."
+    }
+  ],
+
+  "implementation_notes": {
+    "claude_code_hook": "This is a Stop hook that runs when a Claude Code session ends.",
+    "behavior": "Calculates hash of all modified files, chains to previous hash, updates ledger",
+    "manual_alternative": "If automatic hook not available, user should run /ql-substantiate before ending session"
+  }
+}

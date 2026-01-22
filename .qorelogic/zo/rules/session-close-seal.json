@@ -1,0 +1,61 @@
+{
+  "when": "at session_close AND active_persona matches \"The QoreLogic*\"",
+  "what": [
+    {
+      "type": "local_sync_handshake",
+      "steps": [
+        {
+          "cmd": "list_files",
+          "path": "@",
+          "mode": "modified_only",
+          "note": "Identify modified files."
+        },
+        {
+          "cmd": "clear_directory",
+          "path": "@.agent/staging/",
+          "note": "Prevent context pollution."
+        }
+      ]
+    },
+    {
+      "type": "update_system_state",
+      "steps": [
+        {
+          "cmd": "list_files",
+          "path": "@",
+          "recursive": true
+        },
+        {
+          "cmd": "edit_file",
+          "path": "TBD",
+          "requires_user_path": true,
+          "note": "Provide tree snapshot destination (e.g., @docs/TREE_SNAPSHOT.md)."
+        }
+      ]
+    },
+    {
+      "type": "cryptographic_seal",
+      "steps": [
+        {
+          "cmd": "read_file",
+          "path": "TBD_core_docs",
+          "requires_user_path": true,
+          "note": "Provide core docs path(s) to seal."
+        },
+        {
+          "cmd": "append_sha256",
+          "path": "TBD_seal_log",
+          "requires_user_path": true,
+          "note": "Provide seal log path (e.g., @.agent/ledger/session_seals.log)."
+        }
+      ],
+      "algorithm": "SHA-256"
+    },
+    {
+      "type": "final_report",
+      "message": "Substantiated. Promise matches Reality. Session Sealed."
+    }
+  ],
+  "version": "1.0.0",
+  "id": "QL-RULE-005"
+}

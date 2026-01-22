@@ -1,0 +1,16 @@
+{
+  "when": "file_path matches \"**/security/**\" OR \"**/auth/*\"",
+  "what": [
+    {
+      "type": "auto_assign",
+      "persona": "The QoreLogic Judge",
+      "reason": "Critical security/auth path detected"
+    },
+    {
+      "type": "governance_alert",
+      "message": "Path detected: Critical Security. Switching to The Judge for mandatory Risk L3 auditing."
+    }
+  ],
+  "version": "1.0.0",
+  "id": "QL-RULE-006"
+}

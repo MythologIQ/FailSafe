@@ -1,0 +1,193 @@
+{
+  "name": "mythologiq-failsafe",
+  "displayName": "MythologIQ: FailSafe (feat. QoreLogic)",
+  "description": "Complete AI governance for modern development. Genesis visualization + QoreLogic framework + Sentinel monitoring.",
+  "version": "1.0.0",
+  "publisher": "MythologIQ",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MythologIQ/failsafe"
+  },
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other",
+    "Linters",
+    "Visualization"
+  ],
+  "keywords": [
+    "ai",
+    "governance",
+    "hallucination",
+    "verification",
+    "trust",
+    "qorelogic",
+    "sentinel"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "failsafe.showDashboard",
+        "title": "FailSafe: Open Dashboard"
+      },
+      {
+        "command": "failsafe.showLivingGraph",
+        "title": "FailSafe: Open Living Graph"
+      },
+      {
+        "command": "failsafe.focusCortex",
+        "title": "FailSafe: Focus Cortex Omnibar"
+      },
+      {
+        "command": "failsafe.sentinelStatus",
+        "title": "FailSafe: Sentinel Status"
+      },
+      {
+        "command": "failsafe.auditFile",
+        "title": "FailSafe: Audit Current File"
+      },
+      {
+        "command": "failsafe.viewLedger",
+        "title": "FailSafe: View SOA Ledger"
+      },
+      {
+        "command": "failsafe.approveL3",
+        "title": "FailSafe: Review L3 Queue"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "failsafe.showDashboard",
+        "key": "ctrl+alt+f",
+        "mac": "cmd+alt+f"
+      },
+      {
+        "command": "failsafe.focusCortex",
+        "key": "ctrl+alt+c",
+        "mac": "cmd+alt+c"
+      },
+      {
+        "command": "failsafe.auditFile",
+        "key": "ctrl+alt+a",
+        "mac": "cmd+alt+a"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "failsafe-sidebar",
+          "title": "FailSafe",
+          "icon": "media/failsafe-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "failsafe-sidebar": [
+        {
+          "id": "failsafe.dojo",
+          "name": "The Dojo",
+          "type": "webview"
+        },
+        {
+          "id": "failsafe.sentinel",
+          "name": "Sentinel",
+          "type": "webview"
+        },
+        {
+          "id": "failsafe.stream",
+          "name": "Cortex Stream",
+          "type": "webview"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "FailSafe",
+      "properties": {
+        "failsafe.genesis.livingGraph": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Living Graph visualization"
+        },
+        "failsafe.genesis.cortexOmnibar": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Cortex Omnibar NLP interface"
+        },
+        "failsafe.genesis.theme": {
+          "type": "string",
+          "enum": ["starry-night", "light", "high-contrast"],
+          "default": "starry-night",
+          "description": "Genesis UI theme"
+        },
+        "failsafe.sentinel.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Sentinel monitoring daemon"
+        },
+        "failsafe.sentinel.mode": {
+          "type": "string",
+          "enum": ["heuristic", "llm-assisted", "hybrid"],
+          "default": "heuristic",
+          "description": "Sentinel operating mode"
+        },
+        "failsafe.sentinel.localModel": {
+          "type": "string",
+          "default": "phi3:mini",
+          "description": "Ollama model for LLM-assisted mode"
+        },
+        "failsafe.sentinel.ollamaEndpoint": {
+          "type": "string",
+          "default": "http://localhost:11434",
+          "description": "Ollama API endpoint"
+        },
+        "failsafe.qorelogic.ledgerPath": {
+          "type": "string",
+          "default": ".failsafe/ledger/soa_ledger.db",
+          "description": "Path to SOA Ledger database"
+        },
+        "failsafe.qorelogic.strictMode": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable strict governance (block on all warnings)"
+        },
+        "failsafe.qorelogic.l3SLA": {
+          "type": "number",
+          "default": 120,
+          "description": "L3 first response SLA in seconds"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile",
+    "test": "node ./out/test/runTest.js",
+    "lint": "eslint src --ext ts",
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/vscode": "^1.74.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.50.0",
+    "typescript": "^5.2.0",
+    "@vscode/vsce": "^2.22.0"
+  },
+  "dependencies": {
+    "chokidar": "^3.5.3",
+    "better-sqlite3": "^9.2.2",
+    "d3": "^7.8.5",
+    "glob": "^10.3.10",
+    "uuid": "^9.0.0"
+  }
+}

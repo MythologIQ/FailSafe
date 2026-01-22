@@ -1,0 +1,47 @@
+{
+  "name": "Cognitive Reset Threshold",
+  "description": "Triggers context refresh after reading many files to prevent logic drift",
+  "version": "1.0.0",
+  "id": "QL-HOOK-004",
+
+  "hook_type": "PostToolUse",
+  "tools": ["Read"],
+
+  "trigger": {
+    "metric": "session_files_read_count",
+    "threshold": 20,
+    "reset_after": "cognitive_refresh_performed"
+  },
+
+  "actions": [
+    {
+      "type": "alert",
+      "severity": "info",
+      "message": "COGNITIVE RESET: 20+ files read this session. Refreshing high-level context to prevent drift."
+    },
+    {
+      "type": "context_refresh",
+      "priority_files": [
+        "docs/CONCEPT.md",
+        "docs/ARCHITECTURE_PLAN.md",
+        "docs/SYSTEM_STATE.md"
+      ],
+      "action": "Re-read strategic alignment documents before continuing"
+    },
+    {
+      "type": "recenter",
+      "description": "Abandon low-level file details from earlier turns",
+      "focus": "Return to ALIGN/ENCODE promise before continuing implementation"
+    }
+  ],
+
+  "rationale": {
+    "why": "After reading 20+ files, an agent may lose sight of the strategic goal. This hook forces a return to first principles.",
+    "behavior": "Does not stop work, but ensures strategic documents are fresh in context"
+  },
+
+  "implementation_notes": {
+    "claude_code_hook": "Track Read tool usage count. When threshold hit, prompt to re-read strategic docs.",
+    "manual_alternative": "Run /ql-status periodically to re-ground in the A.E.G.I.S. lifecycle"
+  }
+}

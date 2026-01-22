@@ -1,0 +1,271 @@
+name: kiss-razor
+version: "1.0.0"
+description: "§4 Simplicity Razor - enforce KISS at macro and micro levels"
+id: QL-POLICY-001
+
+enabled: true
+priority: 1  # Run early in policy chain
+
+triggers:
+  - event: pre_file_write
+  - event: pre_file_edit
+  - event: code_generation
+  - event: file_save
+
+conditions:
+  file_patterns:
+    include:
+      - "**/*.ts"
+      - "**/*.tsx"
+      - "**/*.js"
+      - "**/*.jsx"
+      - "**/*.py"
+      - "**/*.go"
+      - "**/*.rs"
+    exclude:
+      - "**/node_modules/**"
+      - "**/.git/**"
+      - "**/dist/**"
+      - "**/build/**"
+      - "**/*.test.*"
+      - "**/*.spec.*"
+      - "**/tests/**"
+
+# ============================================
+# MICRO KISS - Function/Block Level
+# ============================================
+micro_rules:
+  function_length:
+    description: "No function may exceed 40 lines"
+    max_lines: 40
+    count_method: "non_empty_lines"
+    exclude:
+      - comments
+      - blank_lines
+      - closing_braces_only
+    on_violation:
+      severity: block
+      message: "§4 RAZOR VIOLATION: Function '{{ function_name }}' has {{ actual }} lines (max: 40)"
+      suggestion: "Split into smaller, single-purpose functions"
+      auto_action: suggest_split_points
+
+  nesting_depth:
+    description: "No logic may exceed 3 levels of nesting"
+    max_depth: 3
+    count_method: "brace_depth"
+    on_violation:
+      severity: warn
+      message: "§4 RAZOR VIOLATION: Nesting depth {{ actual }} (max: 3) at {{ location }}"
+      suggestion: "Use early returns to flatten logic"
+      example:
+        before: |
+          if (a) {
+            if (b) {
+              if (c) {
+                if (d) { } // Violation: depth 4
+              }
+            }
+          }
+        after: |
+          if (!a) return;
+          if (!b) return;
+          if (!c) return;
+          if (d) { } // Compliant: depth 1
+
+  nested_ternary:
+    description: "Nested ternary operators are forbidden"
+    pattern: "\\?[^:]*:[^?]*\\?|\\?[^?]*\\?[^:]*:"
+    on_violation:
+      severity: block
+      message: "§4 RAZOR VIOLATION: Nested ternary detected"
+      suggestion: "Extract to a named function with explicit if/else"
+      example:
+        before: "const x = a ? b ? c : d : e;"
+        after: |
+          function getX(a, b) {
+            if (!a) return e;
+            return b ? c : d;
+          }
+          const x = getX(a, b);
+
+  variable_naming:
+    description: "Variables must be noun or verbNoun - no generics"
+    forbidden_patterns:
+      - pattern: "\\b(let|const|var)\\s+x\\s*="
+        name: "x"
+      - pattern: "\\b(let|const|var)\\s+data\\s*="
+        name: "data"
+      - pattern: "\\b(let|const|var)\\s+obj\\s*="
+        name: "obj"
+      - pattern: "\\b(let|const|var)\\s+temp\\s*="
+        name: "temp"
+      - pattern: "\\b(let|const|var)\\s+item\\s*="
+        name: "item"
+      - pattern: "\\b(let|const|var)\\s+result\\s*="
+        name: "result"
+      - pattern: "\\b(let|const|var)\\s+val\\s*="
+        name: "val"
+    on_violation:
+      severity: warn
+      message: "§4 RAZOR: Generic variable '{{ name }}' detected"
+      suggestion: "Use descriptive noun/verbNoun: userProfile, validatedInput, fetchedData"
+      replacements:
+        x: "contextual based on usage"
+        data: "responsePayload, formData, userInput"
+        obj: "configOptions, userSettings, requestParams"
+        temp: "intermediateResult, pendingValue"
+        item: "orderLineItem, menuEntry, userRecord"
+        result: "validationOutcome, processedOutput"
+
+# ============================================
+# MACRO KISS - File/Module Level
+# ============================================
+macro_rules:
+  file_length:
+    description: "No file may exceed 250 lines"
+    max_lines: 250
+    count_method: "all_lines"
+    on_violation:
+      severity: warn
+      message: "§4 RAZOR: File has {{ actual }} lines (max: 250)"
+      suggestion: "Split into focused modules"
+      auto_action: suggest_split_boundaries
+
+  god_object:
+    description: "No 'God Objects' or utility dumping grounds"
+    forbidden_file_names:
+      - "utils.ts"
+      - "helpers.ts"
+      - "common.ts"
+      - "misc.ts"
+      - "shared.ts"
+    on_violation:
+      severity: warn
+      message: "§4 RAZOR: Potential God Object detected: {{ filename }}"
+      suggestion: "Split by domain: stringUtils.ts, dateUtils.ts, validationUtils.ts"
+
+  single_responsibility:
+    description: "Each file should have one clear purpose"
+    indicators:
+      - multiple_export_types: "Exports both functions and classes"
+      - unrelated_exports: "Exports with no semantic relationship"
+    max_export_categories: 2
+    on_violation:
+      severity: info
+      message: "Consider splitting: file has multiple responsibilities"
+
+# ============================================
+# DEPENDENCY DIET
+# ============================================
+dependency_rules:
+  vanilla_first:
+    description: "Prove vanilla cannot do it in <10 lines before adding dependency"
+    check_on: "import statement for new package"
+    require_justification: true
+    on_new_dependency:
+      action: prompt
+      message: "New dependency '{{ package }}' detected. Can vanilla JS do this in <10 lines?"
+
+  no_heavy_utilities:
+    description: "Avoid heavy utility libraries when specific solution exists"
+    discouraged:
+      - package: lodash
+        reason: "Most methods replaceable with native ES6+"
+        exceptions: ["debounce", "throttle", "cloneDeep"]
+      - package: moment
+        reason: "Use date-fns or native Intl.DateTimeFormat"
+      - package: underscore
+        reason: "Superseded by native array methods"
+    on_violation:
+      severity: info
+      message: "Consider native alternative to {{ package }}"
+
+# ============================================
+# DEBUG ARTIFACTS
+# ============================================
+cleanup_rules:
+  console_statements:
+    description: "No console.log in production code"
+    patterns:
+      - "console\\.log"
+      - "console\\.debug"
+      - "console\\.info"
+    exclude_files:
+      - "**/logger.*"
+      - "**/debug.*"
+    on_violation:
+      severity: warn
+      message: "Debug artifact: {{ match }} at {{ location }}"
+      auto_action: suggest_removal
+
+  debugger_statements:
+    description: "No debugger statements"
+    pattern: "\\bdebugger\\b"
+    on_violation:
+      severity: block
+      message: "Debugger statement found"
+      auto_action: remove
+
+  type_safety_bypass:
+    description: "Avoid type safety bypasses"
+    patterns:
+      - "@ts-ignore"
+      - "@ts-nocheck"
+      - "as any"
+    on_violation:
+      severity: warn
+      message: "Type safety bypass: {{ match }}"
+      suggestion: "Fix the underlying type issue"
+
+# ============================================
+# REPORTING
+# ============================================
+reporting:
+  on_scan:
+    output_format: |
+      ## §4 Razor Compliance Report
+
+      **File**: {{ file_path }}
+      **Scan Time**: {{ timestamp }}
+
+      ### Micro KISS
+
+      | Check | Result | Details |
+      |-------|--------|---------|
+      | Function Length | {{ fn_result }} | Max: {{ max_fn_lines }}/40 |
+      | Nesting Depth | {{ nest_result }} | Max: {{ max_nesting }}/3 |
+      | Nested Ternary | {{ tern_result }} | {{ ternary_count }} found |
+      | Variable Naming | {{ var_result }} | {{ generic_vars }} generics |
+
+      ### Macro KISS
+
+      | Check | Result | Details |
+      |-------|--------|---------|
+      | File Length | {{ file_result }} | {{ file_lines }}/250 lines |
+      | God Objects | {{ god_result }} | {{ god_indicators }} |
+
+      ### Violations
+
+      {% for v in violations %}
+      - **{{ v.severity }}**: {{ v.message }}
+        - Location: {{ v.location }}
+        - Suggestion: {{ v.suggestion }}
+      {% endfor %}
+
+      ---
+      *Policy: kiss-razor v{{ version }}*
+
+# ============================================
+# TEST FILE EXCEPTIONS
+# ============================================
+test_exceptions:
+  enabled: true
+  patterns:
+    - "**/*.test.*"
+    - "**/*.spec.*"
+    - "**/tests/**"
+    - "**/__tests__/**"
+  relaxed_limits:
+    max_function_lines: 60  # Tests often have setup
+    max_file_lines: 400     # Test suites can be longer
+    allow_console: true     # Debugging tests is OK

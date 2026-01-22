@@ -1,0 +1,62 @@
+{
+  "name": "KISS Razor Gate",
+  "description": "Pre-edit validation ensuring §4 Simplicity Razor compliance before file modifications",
+  "version": "1.0.0",
+  "id": "QL-HOOK-001",
+
+  "hook_type": "PreToolUse",
+  "tools": ["Write", "Edit"],
+
+  "conditions": {
+    "file_patterns": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.py"],
+    "exclude_patterns": ["**/node_modules/**", "**/.git/**", "**/dist/**", "**/build/**"]
+  },
+
+  "checks": [
+    {
+      "name": "function_length",
+      "description": "No function may exceed 40 lines",
+      "max_lines": 40,
+      "on_violation": {
+        "action": "warn",
+        "message": "§4 RAZOR: Function exceeds 40 lines. Consider splitting into smaller functions.",
+        "suggestion": "Use /ql-refactor to automatically split long functions."
+      }
+    },
+    {
+      "name": "nesting_depth",
+      "description": "No logic may exceed 3 levels of nesting",
+      "max_depth": 3,
+      "on_violation": {
+        "action": "warn",
+        "message": "§4 RAZOR: Nesting depth exceeds 3 levels. Use early returns to flatten.",
+        "suggestion": "Replace nested if/else with guard clauses and early returns."
+      }
+    },
+    {
+      "name": "nested_ternary",
+      "description": "Nested ternary operators are forbidden",
+      "pattern": "\\?[^:]+\\?",
+      "on_violation": {
+        "action": "block",
+        "message": "§4 RAZOR: Nested ternaries detected. This is a blocking violation.",
+        "suggestion": "Extract to a named function with explicit if/else logic."
+      }
+    },
+    {
+      "name": "generic_variables",
+      "description": "Generic variable names are discouraged",
+      "forbidden_patterns": ["\\bx\\s*=", "\\bdata\\s*=", "\\bobj\\s*=", "\\btemp\\s*="],
+      "on_violation": {
+        "action": "warn",
+        "message": "§4 RAZOR: Generic variable name detected. Use explicit noun/verbNoun naming.",
+        "suggestion": "Rename to describe the actual content: userProfile, validatedInput, etc."
+      }
+    }
+  ],
+
+  "implementation_notes": {
+    "claude_code_hook": "This is a specification for a Claude Code hook. Implementation requires parsing the content being written/edited and applying the checks above.",
+    "sample_usage": "Configure in .claude/settings.json under hooks.PreToolUse"
+  }
+}

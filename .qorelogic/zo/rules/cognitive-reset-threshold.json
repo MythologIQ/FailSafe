@@ -1,0 +1,23 @@
+{
+  "when": "total_session_files_read > 20",
+  "what": [
+    {
+      "type": "cognitive_reset",
+      "intent": "prevent_logic_drift",
+      "steps": [
+        {
+          "cmd": "read_file",
+          "path": "TBD",
+          "requires_user_path": true,
+          "note": "Provide the high-level tree or project index file to refresh (e.g., @docs/TREE.md)."
+        }
+      ],
+      "effects": [
+        "abandon_low_level_file_content_from_previous_turns",
+        "recenter_on_align_encode_promise"
+      ]
+    }
+  ],
+  "version": "1.0.0",
+  "id": "QL-RULE-003"
+}

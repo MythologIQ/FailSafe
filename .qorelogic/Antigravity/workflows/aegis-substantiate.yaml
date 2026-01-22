@@ -1,0 +1,331 @@
+name: aegis-substantiate
+version: "1.0.0"
+description: A.E.G.I.S. Substantiation and Session Seal - verify reality matches promise
+phase: SUBSTANTIATE
+orbit: orbit-judge
+risk_grade: L2
+
+triggers:
+  - command: "/aegis-substantiate"
+  - command: "/seal"
+  - condition: "implementation_complete"
+
+inputs: []
+
+outputs:
+  - docs/META_LEDGER.md (sealed)
+  - docs/SYSTEM_STATE.md (updated)
+  - .agent/staging/ (cleared)
+
+preconditions:
+  - name: pass_verdict_exists
+    check: ".agent/staging/AUDIT_REPORT.md"
+    expect: "exists AND contains 'VERDICT: PASS'"
+    on_fail:
+      action: abort
+      message: "Cannot substantiate without PASS verdict. Run /aegis-gate first."
+
+  - name: implementation_exists
+    check: "src/"
+    expect: "has_files"
+    on_fail:
+      action: abort
+      message: "No implementation found. Run /aegis-implement first."
+
+  - name: chain_valid
+    check: "validate_merkle_chain(docs/META_LEDGER.md)"
+    expect: "VALID"
+    on_fail:
+      action: abort
+      message: "Merkle chain broken. Run /aegis-validate and repair first."
+
+steps:
+  - id: activate_judge
+    name: Identity Activation
+    action: activate_orbit
+    orbit: orbit-judge
+    mode: "Substantiation"
+    note: "Prove, not improve. Verify reality matches promise."
+
+  - id: load_state
+    name: Load State Artifacts
+    action: read_files
+    files:
+      - path: docs/META_LEDGER.md
+        variable: ledger
+      - path: docs/ARCHITECTURE_PLAN.md
+        variable: blueprint
+      - path: .agent/staging/AUDIT_REPORT.md
+        variable: audit_report
+      - path: docs/CONCEPT.md
+        variable: concept
+
+  - id: extract_blueprint_files
+    name: Extract Planned Files from Blueprint
+    action: extract
+    from: blueprint
+    pattern: "```[\\s\\S]*?(src/[^\\s]+)[\\s\\S]*?```"
+    output: planned_files
+
+  - id: scan_actual_files
+    name: Scan Actual Implementation
+    action: glob
+    patterns:
+      - "src/**/*"
+      - "tests/**/*"
+    output: actual_files
+
+  - id: reality_audit
+    name: Reality vs Promise Comparison
+    action: compare
+    planned: "{{ planned_files }}"
+    actual: "{{ actual_files }}"
+    output: reality_comparison
+    report: |
+      ### Reality vs Promise
+
+      | Planned (Blueprint) | Actual (src/) | Status |
+      |---------------------|---------------|--------|
+      {% for p in planned_files %}
+      | {{ p }} | {{ actual_files[p] | default('MISSING') }} | {{ '✓' if p in actual_files else '✗ MISSING' }} |
+      {% endfor %}
+      {% for a in actual_files if a not in planned_files %}
+      | [not planned] | {{ a }} | ⚠ UNPLANNED |
+      {% endfor %}
+
+  - id: check_missing
+    name: Check for Missing Files
+    action: filter
+    from: planned_files
+    condition: "file not in actual_files"
+    output: missing_files
+    on_found:
+      action: fail
+      message: "Missing files: {{ missing_files | join(', ') }}"
+
+  - id: functional_verification
+    name: Functional Verification
+    steps:
+      - id: test_audit
+        name: Test File Audit
+        action: glob
+        pattern: "tests/**/*.test.{ts,tsx,js}"
+        output: test_files
+        check: "test_files.count > 0"
+        on_fail:
+          severity: warning
+          message: "No test files found"
+
+      - id: visual_silence_audit
+        name: Visual Silence Audit
+        action: grep
+        patterns:
+          - "color:\\s*#[0-9a-fA-F]+"
+          - "background:\\s*#[0-9a-fA-F]+"
+          - "rgb\\("
+        paths: ["src/**/*.css", "src/**/*.tsx"]
+        output: visual_violations
+        on_found:
+          severity: warning
+          message: "Visual Silence violations: {{ visual_violations | length }}"
+
+      - id: console_log_audit
+        name: Debug Artifact Audit
+        action: grep
+        pattern: "console\\.log"
+        paths: ["src/**/*"]
+        output: debug_artifacts
+        on_found:
+          severity: warning
+          message: "Debug artifacts found: {{ debug_artifacts | length }}"
+
+  - id: kiss_final_check
+    name: §4 Razor Final Check
+    action: analyze
+    targets: "{{ actual_files }}"
+    metrics:
+      - file_lines
+      - max_function_lines
+      - max_nesting_depth
+    thresholds:
+      file_lines: 250
+      max_function_lines: 40
+      max_nesting_depth: 3
+    output: kiss_compliance
+    report: |
+      ### Simplicity Compliance
+
+      | File | Lines | Max Function | Max Nesting | Status |
+      |------|-------|--------------|-------------|--------|
+      {% for f in kiss_compliance.files %}
+      | {{ f.path }} | {{ f.lines }}/250 | {{ f.max_fn }}/40 | {{ f.nesting }}/3 | {{ '✓' if f.compliant else '✗' }} |
+      {% endfor %}
+
+  - id: sync_system_state
+    name: Sync System State
+    action: create_file
+    path: docs/SYSTEM_STATE.md
+    content: |
+      # System State
+
+      ## Snapshot Metadata
+
+      | Attribute | Value |
+      |-----------|-------|
+      | **Sealed** | {{ ISO_8601_NOW }} |
+      | **Sealed By** | Judge (substantiation) |
+      | **Phase** | SUBSTANTIATED |
+      | **Session Seal** | {{ session_seal[:12] }}... |
+
+      ## File Tree (Reality)
+
+      ```
+      {{ generate_tree(actual_files) }}
+      ```
+
+      ## Metrics
+
+      | Metric | Value |
+      |--------|-------|
+      | Total Source Files | {{ actual_files | selectattr('path', 'startswith', 'src/') | list | length }} |
+      | Total Test Files | {{ test_files | length }} |
+      | Total Lines of Code | {{ total_lines }} |
+      | §4 Violations | {{ kiss_compliance.violations | length }} |
+
+      ## Blueprint Compliance
+
+      | Promised | Delivered | Match |
+      |----------|-----------|-------|
+      | {{ planned_files | length }} | {{ actual_files | length }} | {{ compliance_percentage }}% |
+
+  - id: calculate_seal
+    name: Calculate Session Seal
+    action: compute
+    algorithm: |
+      # Gather all content
+      concept = read_file('docs/CONCEPT.md')
+      architecture = read_file('docs/ARCHITECTURE_PLAN.md')
+      audit_report = read_file('.agent/staging/AUDIT_REPORT.md')
+      system_state = read_file('docs/SYSTEM_STATE.md')
+      source_content = read_all_files('src/')
+
+      # Calculate content hash
+      combined = concept + architecture + audit_report + system_state + source_content
+      content_hash = sha256(combined)
+
+      # Get previous hash
+      previous_hash = get_latest_hash('docs/META_LEDGER.md')
+
+      # Calculate session seal
+      session_seal = sha256(content_hash + previous_hash)
+
+      return {
+        'content_hash': content_hash,
+        'previous_hash': previous_hash,
+        'session_seal': session_seal
+      }
+    output: seal_calculation
+
+  - id: update_ledger
+    name: Update Meta Ledger with Seal
+    action: append_ledger_entry
+    path: docs/META_LEDGER.md
+    entry:
+      id: "{{ next_entry_id }}"
+      timestamp: "{{ ISO_8601_NOW }}"
+      phase: SUBSTANTIATE
+      author: Judge
+      type: FINAL_SEAL
+      session_summary:
+        files_created: "{{ actual_files | length }}"
+        tests_created: "{{ test_files | length }}"
+        compliance: "{{ compliance_percentage }}%"
+      content_hash: "{{ seal_calculation.content_hash }}"
+      previous_hash: "{{ seal_calculation.previous_hash }}"
+      session_seal: "{{ seal_calculation.session_seal }}"
+      decision: "SUBSTANTIATED. Reality matches Promise."
+
+  - id: cleanup_staging
+    name: Cleanup Staging Area
+    action: clear_directory
+    path: .agent/staging/
+    preserve:
+      - AUDIT_REPORT.md
+
+  - id: final_report
+    name: Generate Substantiation Report
+    action: output
+    format: |
+      # Substantiation Report
+
+      **Timestamp**: {{ ISO_8601_NOW }}
+      **Session Seal**: {{ seal_calculation.session_seal[:16] }}...
+
+      ---
+
+      ## Verdict: SUBSTANTIATED ✓
+
+      Reality matches Promise. Session cryptographically sealed.
+
+      ---
+
+      ### Verification Summary
+
+      | Check | Result |
+      |-------|--------|
+      | Blueprint Compliance | {{ planned_files | length }}/{{ planned_files | length }} files |
+      | Test Coverage | {{ test_files | length }} test files |
+      | Visual Silence | {{ 'PASS' if visual_violations | length == 0 else visual_violations | length + ' violations' }} |
+      | Debug Artifacts | {{ 'None' if debug_artifacts | length == 0 else debug_artifacts | length + ' found' }} |
+      | §4 Razor | {{ 'COMPLIANT' if kiss_compliance.all_pass else 'VIOLATIONS' }} |
+      | Merkle Chain | VALID |
+
+      ### Session Artifacts
+
+      | Artifact | Status | Hash Prefix |
+      |----------|--------|-------------|
+      | docs/CONCEPT.md | Sealed | {{ hash_prefix(concept) }} |
+      | docs/ARCHITECTURE_PLAN.md | Sealed | {{ hash_prefix(blueprint) }} |
+      | docs/META_LEDGER.md | Updated | {{ hash_prefix(ledger) }} |
+      | docs/SYSTEM_STATE.md | Updated | {{ hash_prefix(system_state) }} |
+
+      ### Disposition
+
+      ```
+      Session: SEALED
+      Ledger: UPDATED
+      State: SYNCHRONIZED
+      ```
+
+      ---
+
+      *Substantiated. Reality matches Promise. Session Sealed.*
+
+      **Next Actions**:
+      - New feature: `/aegis-bootstrap`
+      - Check status: `/aegis-status`
+      - Validate chain: `/aegis-validate`
+
+postconditions:
+  - name: ledger_sealed
+    check: "docs/META_LEDGER.md contains {{ seal_calculation.session_seal }}"
+    expect: "true"
+
+  - name: state_updated
+    check: "docs/SYSTEM_STATE.md"
+    expect: "updated within last minute"
+
+error_handling:
+  on_missing_files:
+    action: fail
+    message: "Cannot seal with missing files. Complete implementation first."
+
+  on_kiss_violation:
+    action: warn
+    message: "§4 violations exist. Consider /aegis-refactor before sealing."
+    allow_continue: true
+
+  on_visual_violation:
+    action: warn
+    message: "Visual Silence violations. Consider fixing before sealing."
+    allow_continue: true

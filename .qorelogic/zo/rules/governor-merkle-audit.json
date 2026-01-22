@@ -1,0 +1,51 @@
+{
+  "when": "active_dataset changes AND active_persona == \"The QoreLogic Governor\"",
+  "what": [
+    {
+      "type": "verify_scaffolding",
+      "commands": [
+        {
+          "cmd": "list_files",
+          "path": "@.agent/"
+        },
+        {
+          "cmd": "list_files",
+          "path": "@docs/"
+        }
+      ],
+      "must_exist": [
+        "@.agent/",
+        "@docs/"
+      ],
+      "failure_action": "halt_and_alert"
+    },
+    {
+      "type": "merkle_audit",
+      "steps": [
+        {
+          "cmd": "read_file",
+          "path": "TBD",
+          "requires_user_path": true,
+          "note": "Provide the merkle/ledger file path for the chain head (e.g., @.agent/ledger/chain.json)."
+        },
+        {
+          "cmd": "recalculate_hash",
+          "algorithm": "SHA-256",
+          "target": "chain_head"
+        },
+        {
+          "cmd": "verify_hash",
+          "target": "chain_head",
+          "on_mismatch": "halt_and_alert"
+        }
+      ]
+    },
+    {
+      "type": "status_update",
+      "mode": "zero_fluff",
+      "message_template": "DNA Active. Dataset Locked for {project_name}."
+    }
+  ],
+  "version": "1.0.0",
+  "id": "QL-RULE-002"
+}

@@ -1,0 +1,42 @@
+{
+  "when": "active_persona == \"The QoreLogic Specialist\" AND (file_save OR code_generation) is triggered",
+  "what": [
+    {
+      "type": "pre_commit_scan",
+      "cmd": "read_file",
+      "scope": "active_code_block",
+      "note": "Read the block targeted for save/generation before any edit_file."
+    },
+    {
+      "type": "apply_razor",
+      "constraints": {
+        "max_function_lines": 40,
+        "max_nesting_levels": 3,
+        "forbid": [
+          "nested_ternaries",
+          "hallucinated_dependencies"
+        ]
+      },
+      "on_violation": [
+        {
+          "action": "interdict",
+          "message": "Complexity razor triggered. KISS simplification required before commit."
+        },
+        {
+          "action": "force_refactor_pass",
+          "name": "KISS Simplification Pass"
+        }
+      ]
+    },
+    {
+      "type": "record_failure",
+      "when": "bypass_required",
+      "cmd": "edit_file",
+      "path": "TBD",
+      "requires_user_path": true,
+      "note": "Provide violation log path (e.g., @.agent/logs/complexity_violations.md)."
+    }
+  ],
+  "version": "1.0.0",
+  "id": "QL-RULE-010"
+}

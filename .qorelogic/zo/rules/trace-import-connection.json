@@ -1,0 +1,25 @@
+{
+  "when": "before edit_file OR create_file",
+  "what": [
+    {
+      "type": "trace_entry",
+      "cmd": "read_file",
+      "path": "TBD_project_root_entry",
+      "requires_user_path": true,
+      "note": "Provide project root entry file to trace imports (e.g., package.json, pyproject.toml, src/index.ts)."
+    },
+    {
+      "type": "verify_connection",
+      "checks": [
+        "target_file_in_active_build_path",
+        "not_orphaned"
+      ],
+      "on_orphaned": {
+        "action": "stop_and_alert",
+        "message": "Target file appears orphaned (not in active build path). Halting to prevent dead code / ghost paths."
+      }
+    }
+  ],
+  "version": "1.0.0",
+  "id": "QL-RULE-007"
+}

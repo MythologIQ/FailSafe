@@ -1,0 +1,36 @@
+{
+  "when": "active_persona == \"The QoreLogic Judge\" AND file_path matches \"**/security/**\" or \"**/auth/*\"",
+  "what": [
+    {
+      "type": "block_commands",
+      "scope": "source_code_modification",
+      "blocked_commands": [
+        "write_to_file",
+        "edit_file",
+        "create_file"
+      ],
+      "reason": "Critical security/auth path under Judge persona"
+    },
+    {
+      "type": "gate_audit",
+      "mode": "formal_review",
+      "checks": [
+        "logic_stubs",
+        "ghost_ui_paths"
+      ],
+      "definition": {
+        "logic_stub": "Any placeholder logic (TODO, pass, throw NotImplemented, hardcoded allow/deny, mock return) that could bypass intended security behavior.",
+        "ghost_ui_path": "UI flow that appears complete but does not connect to real authorization or enforcement logic."
+      }
+    },
+    {
+      "type": "require_seal",
+      "block_until": "signed_L3_entry_recorded",
+      "seal_location": "TBD",
+      "requires_user_path": true,
+      "note": "Provide the local ledger/seal file path used for L3 sign-off."
+    }
+  ],
+  "version": "1.0.0",
+  "id": "QL-RULE-001"
+}

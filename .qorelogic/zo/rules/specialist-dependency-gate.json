@@ -1,0 +1,21 @@
+{
+  "when": "during implementation AND active_persona == \"The QoreLogic Specialist\"",
+  "what": [
+    {
+      "type": "dependency_gate",
+      "before": "edit_file",
+      "rule": "Before adding any new library/import, verify dependency manifest and project root.",
+      "commands": [
+        {
+          "cmd": "list_files",
+          "path": "@package.json",
+          "fallback": "@",
+          "note": "If package.json not present, inspect project root."
+        }
+      ],
+      "on_missing_manifest": "halt_and_alert"
+    }
+  ],
+  "version": "1.0.0",
+  "id": "QL-RULE-008"
+}

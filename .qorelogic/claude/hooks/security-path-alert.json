@@ -1,0 +1,69 @@
+{
+  "name": "Security Path Alert",
+  "description": "Automatically escalates to Judge persona and blocks modifications on security/auth paths",
+  "version": "1.0.0",
+  "id": "QL-HOOK-002",
+
+  "hook_type": "PreToolUse",
+  "tools": ["Write", "Edit"],
+
+  "conditions": {
+    "file_patterns": [
+      "**/security/**",
+      "**/auth/**",
+      "**/authentication/**",
+      "**/authorization/**",
+      "**/*auth*.ts",
+      "**/*auth*.js",
+      "**/*security*.ts",
+      "**/*security*.js",
+      "**/middleware/auth*",
+      "**/guards/**"
+    ]
+  },
+
+  "actions": [
+    {
+      "type": "alert",
+      "severity": "critical",
+      "message": "SECURITY PATH DETECTED: This file is in a critical security path. Risk Grade: L3."
+    },
+    {
+      "type": "persona_switch",
+      "target": "ql-judge",
+      "reason": "Security paths require Judge oversight"
+    },
+    {
+      "type": "require_audit",
+      "message": "Modifications to security paths require formal L3 audit. Run /ql-audit before proceeding.",
+      "check": {
+        "file": ".agent/staging/AUDIT_REPORT.md",
+        "contains": "VERDICT: PASS",
+        "recency": "24h"
+      }
+    },
+    {
+      "type": "block_if_stub",
+      "patterns": [
+        "TODO",
+        "FIXME",
+        "throw new Error\\('Not implemented'\\)",
+        "pass\\s*#",
+        "return true\\s*//\\s*temp",
+        "// disabled for testing"
+      ],
+      "message": "BLOCKED: Security stubs detected. All security logic must be fully implemented."
+    }
+  ],
+
+  "l3_seal_requirement": {
+    "description": "L3 changes require explicit sign-off recorded in META_LEDGER",
+    "seal_location": "docs/META_LEDGER.md",
+    "required_fields": ["L3_AUTHORIZATION", "AUDITOR", "TIMESTAMP"]
+  },
+
+  "implementation_notes": {
+    "claude_code_hook": "This hook should trigger whenever files matching the security patterns are targeted for modification.",
+    "behavior": "Warn user, suggest /ql-audit, and block if security stubs are present"
+  }
+}

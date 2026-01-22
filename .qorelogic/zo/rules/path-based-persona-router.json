@@ -1,0 +1,58 @@
+{
+  "when": "active_persona matches \"The QoreLogic*\" AND current_file_path changes",
+  "what": [
+    {
+      "type": "route_by_path",
+      "routes": [
+        {
+          "match": [
+            "*/security/*",
+            "*/auth/*"
+          ],
+          "switch_to": "The QoreLogic Judge",
+          "actions": [
+            {
+              "cmd": "read_file",
+              "path": "TBD",
+              "requires_user_path": true,
+              "note": "Audit target file for stubs/regressions."
+            }
+          ]
+        },
+        {
+          "match": [
+            "*/src/*",
+            "*/components/*"
+          ],
+          "switch_to": "The QoreLogic Specialist",
+          "enforcements": [
+            {
+              "rule": "40_line_razor"
+            },
+            {
+              "cmd": "read_file",
+              "scope": "buffer_before_edit",
+              "note": "Read active buffer before any edit_file."
+            }
+          ]
+        },
+        {
+          "match": [
+            "*/docs/*"
+          ],
+          "switch_to": "The QoreLogic Governor",
+          "actions": [
+            {
+              "cmd": "read_file",
+              "path": "TBD",
+              "requires_user_path": true,
+              "note": "Verify merkle-chain integrity in docs."
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "version": "1.0.0",
+  "id": "QL-RULE-009"
+}

@@ -51,6 +51,9 @@ export class ConfigManager {
                 ledgerPath: config.get<string>('qorelogic.ledgerPath', '.failsafe/ledger/soa_ledger.db'),
                 strictMode: config.get<boolean>('qorelogic.strictMode', false),
                 l3SLA: config.get<number>('qorelogic.l3SLA', 120)
+            },
+            feedback: {
+                outputDir: config.get<string>('feedback.outputDir', '.failsafe/feedback')
             }
         };
     }
@@ -87,10 +90,25 @@ export class ConfigManager {
     }
 
     /**
+     * Get the feedback output directory path
+     */
+    getFeedbackDir(): string {
+        const config = this.getConfig();
+        if (path.isAbsolute(config.feedback.outputDir)) {
+            return config.feedback.outputDir;
+        }
+        if (!this.workspaceRoot) {
+            throw new Error('No workspace folder open');
+        }
+        return path.join(this.workspaceRoot, config.feedback.outputDir);
+    }
+
+    /**
      * Ensure the .failsafe directory structure exists
      */
     async ensureDirectoryStructure(): Promise<void> {
         const failsafeDir = this.getFailSafeDir();
+        const feedbackDir = this.getFeedbackDir();
 
         const dirs = [
             failsafeDir,
@@ -100,7 +118,8 @@ export class ConfigManager {
             path.join(failsafeDir, 'ledger'),
             path.join(failsafeDir, 'keystore'),
             path.join(failsafeDir, 'cache'),
-            path.join(failsafeDir, 'logs')
+            path.join(failsafeDir, 'logs'),
+            feedbackDir
         ];
 
         for (const dir of dirs) {

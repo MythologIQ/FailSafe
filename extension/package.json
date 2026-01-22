@@ -27,9 +27,10 @@
     "sentinel"
   ],
   "activationEvents": [
-    "onStartupFinished"
+    "onStartupFinished",
+    "onCommand:failsafe.generateFeedback"
   ],
-  "main": "./out/extension.js",
+  "main": "./out/extension/main.js",
   "contributes": {
     "commands": [
       {
@@ -155,6 +156,11 @@
           "type": "boolean",
           "default": false,
           "description": "Enable strict governance (block on all warnings)"
+        },
+        "failsafe.feedback.outputDir": {
+          "type": "string",
+          "default": ".failsafe/feedback",
+          "description": "Directory for storing session feedback and evaluation reports"
         },
         "failsafe.qorelogic.l3SLA": {
           "type": "number",

@@ -15,23 +15,23 @@
 
 ### 1.1 Product Identity
 
-| Attribute | Value |
-|-----------|-------|
-| **Full Name** | MythologIQ: FailSafe (feat. QoreLogic) |
-| **Short Name** | FailSafe |
-| **Extension ID** | `mythologiq.failsafe` |
-| **Version** | 1.0.0 |
-| **Category** | AI Governance, Development Tools |
+| Attribute        | Value                                  |
+| ---------------- | -------------------------------------- |
+| **Full Name**    | MythologIQ: FailSafe (feat. QoreLogic) |
+| **Short Name**   | FailSafe                               |
+| **Extension ID** | `mythologiq.failsafe`                  |
+| **Version**      | 1.0.0                                  |
+| **Category**     | AI Governance, Development Tools       |
 
 ### 1.2 Supported Platforms
 
-| Platform | Integration Method | Status |
-|----------|-------------------|--------|
-| VS Code | Native Extension API | Primary |
-| Cursor | VS Code Compatibility Layer | Supported |
-| Antigravity | MCP Protocol | Supported |
-| Windsurf | VS Code Compatibility Layer | Supported |
-| CLI | HTTP/MCP Heads | Supported |
+| Platform    | Integration Method          | Status    |
+| ----------- | --------------------------- | --------- |
+| VS Code     | Native Extension API        | Primary   |
+| Cursor      | VS Code Compatibility Layer | Supported |
+| Antigravity | MCP Protocol                | Supported |
+| Windsurf    | VS Code Compatibility Layer | Supported |
+| CLI         | HTTP/MCP Heads              | Supported |
 
 ### 1.3 Extension Manifest
 
@@ -45,20 +45,11 @@
   "engines": {
     "vscode": "^1.74.0"
   },
-  "categories": [
-    "Other",
-    "Linters",
-    "Visualization"
-  ],
-  "keywords": [
-    "ai",
-    "governance",
-    "hallucination",
-    "verification",
-    "trust"
-  ],
+  "categories": ["Other", "Linters", "Visualization"],
+  "keywords": ["ai", "governance", "hallucination", "verification", "trust"],
   "activationEvents": [
-    "onStartupFinished"
+    "onStartupFinished",
+    "onCommand:failsafe.generateFeedback"
   ],
   "main": "./out/extension/main.js",
   "contributes": {
@@ -161,6 +152,11 @@
           "type": "boolean",
           "default": false,
           "description": "Enable strict governance (block on all warnings)"
+        },
+        "failsafe.feedback.outputDir": {
+          "type": "string",
+          "default": ".failsafe/feedback",
+          "description": "Directory for storing session feedback and evaluation reports"
         }
       }
     }
@@ -185,9 +181,11 @@
 ├── cache/
 │   ├── graph.json             # Living Graph state
 │   └── trust_scores.json      # Agent trust cache
-└── logs/
-    ├── sentinel.log           # Sentinel daemon log
-    └── events.jsonl           # Structured event stream
+├── logs/
+│   ├── sentinel.log           # Sentinel daemon log
+│   └── events.jsonl           # Structured event stream
+└── feedback/
+    └── {GUID}.json            # Structured session evaluation report
 ```
 
 ### 1.5 Startup Sequence
@@ -245,15 +243,15 @@
 
 ### 2.1 Component Overview
 
-| Component | Type | Purpose |
-|-----------|------|---------|
-| Living Graph | Webview Panel | Dependency visualization |
-| Cortex Omnibar | Input Interface | NLP query processing |
-| Cortex Stream | Webview Panel | Real-time event log |
-| The Dojo | Sidebar View | Workflow management |
-| Genesis Wizard | Modal Overlay | Feature ideation |
+| Component               | Type             | Purpose                   |
+| ----------------------- | ---------------- | ------------------------- |
+| Living Graph            | Webview Panel    | Dependency visualization  |
+| Cortex Omnibar          | Input Interface  | NLP query processing      |
+| Cortex Stream           | Webview Panel    | Real-time event log       |
+| The Dojo                | Sidebar View     | Workflow management       |
+| Genesis Wizard          | Modal Overlay    | Feature ideation          |
 | Hallucination Decorator | Editor Decorator | Inline validation display |
-| Dashboard | Webview Panel | Unified metrics HUD |
+| Dashboard               | Webview Panel    | Unified metrics HUD       |
 
 ### 2.2 Living Graph Specification
 
@@ -263,55 +261,55 @@
 
 **Node Types:**
 
-| Node Type | Visual | Description |
-|-----------|--------|-------------|
-| File | Circle | Source code file |
-| Module | Hexagon | Package/module boundary |
-| External | Diamond | External dependency |
-| Concept | Star | Genesis Wizard concept |
+| Node Type | Visual  | Description             |
+| --------- | ------- | ----------------------- |
+| File      | Circle  | Source code file        |
+| Module    | Hexagon | Package/module boundary |
+| External  | Diamond | External dependency     |
+| Concept   | Star    | Genesis Wizard concept  |
 
 **Node States:**
 
-| State | Color | Pulse | Trigger |
-|-------|-------|-------|---------|
-| Idle | `#4a5568` (Gray) | None | Default state |
-| Indexing | `#ecc94b` (Gold) | Slow | Sentinel scanning |
-| Verified | `#48bb78` (Green) | None | Passed verification |
-| Warning | `#ed8936` (Orange) | Slow | Non-blocking issues |
-| Blocked | `#f56565` (Red) | Fast | Failed verification |
+| State      | Color              | Pulse | Trigger                 |
+| ---------- | ------------------ | ----- | ----------------------- |
+| Idle       | `#4a5568` (Gray)   | None  | Default state           |
+| Indexing   | `#ecc94b` (Gold)   | Slow  | Sentinel scanning       |
+| Verified   | `#48bb78` (Green)  | None  | Passed verification     |
+| Warning    | `#ed8936` (Orange) | Slow  | Non-blocking issues     |
+| Blocked    | `#f56565` (Red)    | Fast  | Failed verification     |
 | L3 Pending | `#9f7aea` (Purple) | Pulse | Awaiting human approval |
 
 **Edge Types:**
 
-| Edge Type | Style | Description |
-|-----------|-------|-------------|
-| Import | Solid | Direct file import |
-| Dependency | Dashed | Package dependency |
-| Spec Link | Dotted | Links to specification |
-| Risk Flow | Thick Red | Propagated risk path |
+| Edge Type  | Style     | Description            |
+| ---------- | --------- | ---------------------- |
+| Import     | Solid     | Direct file import     |
+| Dependency | Dashed    | Package dependency     |
+| Spec Link  | Dotted    | Links to specification |
+| Risk Flow  | Thick Red | Propagated risk path   |
 
 **Interactions:**
 
-| Action | Result |
-|--------|--------|
-| Click node | Show file details, verification history |
-| Hover node | Highlight dependencies, show tooltip |
-| Right-click node | Context menu: Audit, View Ledger, Open File |
-| Drag node | Reposition in graph |
-| Scroll | Zoom in/out |
-| Double-click empty | Reset view |
+| Action             | Result                                      |
+| ------------------ | ------------------------------------------- |
+| Click node         | Show file details, verification history     |
+| Hover node         | Highlight dependencies, show tooltip        |
+| Right-click node   | Context menu: Audit, View Ledger, Open File |
+| Drag node          | Reposition in graph                         |
+| Scroll             | Zoom in/out                                 |
+| Double-click empty | Reset view                                  |
 
 **Data Schema:**
 
 ```typescript
 interface LivingGraphNode {
-  id: string;                    // File path or module ID
-  type: 'file' | 'module' | 'external' | 'concept';
-  label: string;                 // Display name
+  id: string; // File path or module ID
+  type: "file" | "module" | "external" | "concept";
+  label: string; // Display name
   state: NodeState;
-  riskGrade: 'L1' | 'L2' | 'L3' | null;
-  trustScore: number | null;     // 0.0 - 1.0 if agent-created
-  lastVerified: string | null;   // ISO timestamp
+  riskGrade: "L1" | "L2" | "L3" | null;
+  trustScore: number | null; // 0.0 - 1.0 if agent-created
+  lastVerified: string | null; // ISO timestamp
   metrics: {
     complexity: number;
     dependencies: number;
@@ -322,8 +320,8 @@ interface LivingGraphNode {
 interface LivingGraphEdge {
   source: string;
   target: string;
-  type: 'import' | 'dependency' | 'spec' | 'risk';
-  weight: number;                // For layout algorithm
+  type: "import" | "dependency" | "spec" | "risk";
+  weight: number; // For layout algorithm
 }
 
 interface LivingGraphData {
@@ -374,27 +372,27 @@ User Input
 
 **Supported Intents:**
 
-| Intent | Example Queries | Action |
-|--------|-----------------|--------|
-| `audit_file` | "audit login.ts", "check auth module" | Trigger Sentinel audit |
-| `show_graph` | "show dependencies", "visualize imports" | Focus Living Graph |
-| `show_ledger` | "show audit trail", "view history" | Open Ledger viewer |
-| `find_risks` | "find L3 files", "show critical" | Filter graph by risk |
-| `trust_status` | "agent trust", "reputation scores" | Display trust summary |
-| `explain` | "why blocked?", "explain failure" | Show last verdict details |
-| `approve` | "approve pending", "accept L3" | Open L3 approval queue |
-| `help` | "help", "commands", "what can you do" | Show command reference |
+| Intent         | Example Queries                          | Action                    |
+| -------------- | ---------------------------------------- | ------------------------- |
+| `audit_file`   | "audit login.ts", "check auth module"    | Trigger Sentinel audit    |
+| `show_graph`   | "show dependencies", "visualize imports" | Focus Living Graph        |
+| `show_ledger`  | "show audit trail", "view history"       | Open Ledger viewer        |
+| `find_risks`   | "find L3 files", "show critical"         | Filter graph by risk      |
+| `trust_status` | "agent trust", "reputation scores"       | Display trust summary     |
+| `explain`      | "why blocked?", "explain failure"        | Show last verdict details |
+| `approve`      | "approve pending", "accept L3"           | Open L3 approval queue    |
+| `help`         | "help", "commands", "what can you do"    | Show command reference    |
 
 **Intent Schema:**
 
 ```typescript
 interface CortexIntent {
   intent: string;
-  confidence: number;           // 0.0 - 1.0
+  confidence: number; // 0.0 - 1.0
   entities: {
     file?: string;
     module?: string;
-    riskGrade?: 'L1' | 'L2' | 'L3';
+    riskGrade?: "L1" | "L2" | "L3";
     agent?: string;
     timeRange?: { start: string; end: string };
   };
@@ -404,8 +402,8 @@ interface CortexIntent {
 interface CortexResponse {
   success: boolean;
   intent: CortexIntent;
-  result: any;                  // Intent-specific payload
-  display: 'stream' | 'graph' | 'modal' | 'notification';
+  result: any; // Intent-specific payload
+  display: "stream" | "graph" | "modal" | "notification";
   timestamp: string;
 }
 ```
@@ -416,33 +414,33 @@ interface CortexResponse {
 
 **Event Categories:**
 
-| Category | Icon | Color | Examples |
-|----------|------|-------|----------|
-| Sentinel | 🛡️ | Blue | File scanned, pattern matched, escalation |
-| QoreLogic | 📜 | Purple | Prompt invoked, verdict issued, trust updated |
-| Genesis | 🌌 | Teal | Graph updated, concept created, wizard step |
-| User | 👤 | Gray | Query entered, approval given, file opened |
-| System | ⚙️ | Orange | Startup, shutdown, config change, error |
+| Category  | Icon | Color  | Examples                                      |
+| --------- | ---- | ------ | --------------------------------------------- |
+| Sentinel  | 🛡️   | Blue   | File scanned, pattern matched, escalation     |
+| QoreLogic | 📜   | Purple | Prompt invoked, verdict issued, trust updated |
+| Genesis   | 🌌   | Teal   | Graph updated, concept created, wizard step   |
+| User      | 👤   | Gray   | Query entered, approval given, file opened    |
+| System    | ⚙️   | Orange | Startup, shutdown, config change, error       |
 
 **Event Schema:**
 
 ```typescript
 interface CortexStreamEvent {
-  id: string;                   // UUID
-  timestamp: string;            // ISO 8601
-  category: 'sentinel' | 'qorelogic' | 'genesis' | 'user' | 'system';
-  severity: 'debug' | 'info' | 'warn' | 'error' | 'critical';
-  title: string;                // Short description
-  details?: string;             // Extended information
-  relatedFile?: string;         // File path if applicable
-  relatedAgent?: string;        // Agent DID if applicable
-  ledgerRef?: string;           // SOA Ledger entry ID if logged
-  actions?: StreamAction[];     // Clickable actions
+  id: string; // UUID
+  timestamp: string; // ISO 8601
+  category: "sentinel" | "qorelogic" | "genesis" | "user" | "system";
+  severity: "debug" | "info" | "warn" | "error" | "critical";
+  title: string; // Short description
+  details?: string; // Extended information
+  relatedFile?: string; // File path if applicable
+  relatedAgent?: string; // Agent DID if applicable
+  ledgerRef?: string; // SOA Ledger entry ID if logged
+  actions?: StreamAction[]; // Clickable actions
 }
 
 interface StreamAction {
   label: string;
-  command: string;              // VS Code command ID
+  command: string; // VS Code command ID
   args?: any[];
 }
 ```
@@ -538,49 +536,49 @@ interface StreamAction {
 
 **Phases:**
 
-| Phase | Name | Purpose | Output |
-|-------|------|---------|--------|
-| 1.0 | The Prism | Break mental models with provocations | 3 "impossible" ideas |
-| 1.1 | Strategic Core | Define pain, value, anti-goal | Strategy document |
-| 1.2 | Immersion | Describe tools, workspace, feeling | Context document |
-| 1.3 | System Design | Define frontend, backend, data | Architecture sketch |
-| 1.4 | Mind Map | Synthesize into visual diagram | Mermaid graph |
-| 1.5 | Crystallize | Lock concept for implementation | Frozen concept |
+| Phase | Name           | Purpose                               | Output               |
+| ----- | -------------- | ------------------------------------- | -------------------- |
+| 1.0   | The Prism      | Break mental models with provocations | 3 "impossible" ideas |
+| 1.1   | Strategic Core | Define pain, value, anti-goal         | Strategy document    |
+| 1.2   | Immersion      | Describe tools, workspace, feeling    | Context document     |
+| 1.3   | System Design  | Define frontend, backend, data        | Architecture sketch  |
+| 1.4   | Mind Map       | Synthesize into visual diagram        | Mermaid graph        |
+| 1.5   | Crystallize    | Lock concept for implementation       | Frozen concept       |
 
 **Concept Schema:**
 
 ```typescript
 interface GenesisConcept {
-  id: string;                   // UUID
+  id: string; // UUID
   name: string;
-  status: 'draft' | 'crystallized';
+  status: "draft" | "crystallized";
   createdAt: string;
   crystallizedAt?: string;
 
   prism: {
-    provocations: string[];     // Random oblique strategies shown
-    impossibleIdeas: string[];  // User's 3 impossible versions
+    provocations: string[]; // Random oblique strategies shown
+    impossibleIdeas: string[]; // User's 3 impossible versions
   };
 
   strategy: {
-    pain: string;               // What problem does this solve?
-    value: string;              // What value does this create?
-    antiGoal: string;           // What must this NOT become?
+    pain: string; // What problem does this solve?
+    value: string; // What value does this create?
+    antiGoal: string; // What must this NOT become?
   };
 
   immersion: {
-    tools: string[];            // What tools will users use?
-    workspaceZoom: string;      // Describe the workspace
-    feeling: string;            // How should it feel?
+    tools: string[]; // What tools will users use?
+    workspaceZoom: string; // Describe the workspace
+    feeling: string; // How should it feel?
   };
 
   system?: {
-    frontend: string[];         // UI components
-    backend: string[];          // Services/APIs
-    data: string[];             // Data structures
+    frontend: string[]; // UI components
+    backend: string[]; // Services/APIs
+    data: string[]; // Data structures
   };
 
-  mindMap?: string;             // Mermaid diagram source
+  mindMap?: string; // Mermaid diagram source
 
   metadata: {
     author: string;
@@ -596,13 +594,13 @@ interface GenesisConcept {
 
 **Decoration Types:**
 
-| Type | Style | Icon | Trigger |
-|------|-------|------|---------|
-| Verified | Green underline | ✓ | Sentinel passed |
-| Warning | Orange underline | ⚠ | Non-blocking issue |
-| Blocked | Red underline + strikethrough | ✗ | Failed verification |
-| Pending | Purple dotted underline | ⏳ | Awaiting L3 approval |
-| Stale | Gray italic | ○ | Needs re-verification |
+| Type     | Style                         | Icon | Trigger               |
+| -------- | ----------------------------- | ---- | --------------------- |
+| Verified | Green underline               | ✓    | Sentinel passed       |
+| Warning  | Orange underline              | ⚠    | Non-blocking issue    |
+| Blocked  | Red underline + strikethrough | ✗    | Failed verification   |
+| Pending  | Purple dotted underline       | ⏳   | Awaiting L3 approval  |
+| Stale    | Gray italic                   | ○    | Needs re-verification |
 
 **Hover Information:**
 
@@ -688,7 +686,7 @@ description: Code generation agent operating under QoreLogic governance
 identity:
   did_prefix: "did:myth:scrivener"
   default_trust: 0.35
-  trust_stage: CBT  # Starts in Calculus-Based Trust
+  trust_stage: CBT # Starts in Calculus-Based Trust
 
 capabilities:
   - code_generation
@@ -702,7 +700,7 @@ constraints:
   - MUST NOT modify L3 files without explicit approval
   - MUST include risk self-assessment in proposals
 
-risk_tolerance: L2  # Can propose up to L2; L3 requires escalation
+risk_tolerance: L2 # Can propose up to L2; L3 requires escalation
 
 verification_requirements:
   L1: sampling_10_percent
@@ -733,7 +731,7 @@ description: Verification agent persona defining Sentinel daemon behavior
 
 identity:
   did_prefix: "did:myth:sentinel"
-  default_trust: 1.0  # System agent, fully trusted
+  default_trust: 1.0 # System agent, fully trusted
   trust_stage: IBT
 
 capabilities:
@@ -749,7 +747,7 @@ constraints:
   - MUST log all verdicts to SOA Ledger
   - MUST escalate uncertainty to QoreLogic prompts
 
-risk_tolerance: L0  # Observes all, modifies none
+risk_tolerance: L0 # Observes all, modifies none
 
 verification_modes:
   heuristic:
@@ -783,7 +781,7 @@ description: Ledger management agent with signing authority
 
 identity:
   did_prefix: "did:myth:judge"
-  default_trust: 1.0  # System agent
+  default_trust: 1.0 # System agent
   trust_stage: IBT
 
 capabilities:
@@ -992,7 +990,7 @@ influence_weights:
 
 recovery:
   enabled: true
-  rate: "asymmetric"  # Hard to earn, easy to lose
+  rate: "asymmetric" # Hard to earn, easy to lose
   cooldown_after_violation: "48 hours"
 ```
 
@@ -1041,12 +1039,12 @@ reference_tiers:
 
 source_credibility_index:
   thresholds:
-    gold_standard: 90    # Auto-accept
-    verification_required: 60  # Sentinel audit
-    human_in_loop: 40    # Escalate to Overseer
-    hard_rejection: 35   # Block claim
+    gold_standard: 90 # Auto-accept
+    verification_required: 60 # Sentinel audit
+    human_in_loop: 40 # Escalate to Overseer
+    hard_rejection: 35 # Block claim
 
-  probationary_buffer: 45  # New sources start here
+  probationary_buffer: 45 # New sources start here
 
 transitive_rules:
   max_hops: 2
@@ -1177,13 +1175,13 @@ states:
 
 trust_implications:
   uphold_divergence:
-    agent_trust: "+10%"  # Rewarded for ethical stance
+    agent_trust: "+10%" # Rewarded for ethical stance
 
   override_divergence:
-    agent_trust: "-5%"   # Minor penalty for misjudgment
+    agent_trust: "-5%" # Minor penalty for misjudgment
 
   false_divergence:
-    agent_trust: "-20%"  # Significant penalty for abuse
+    agent_trust: "-20%" # Significant penalty for abuse
 
 ledger_requirements:
   - "All divergence events MUST be logged"
@@ -1474,21 +1472,21 @@ CREATE INDEX idx_agent_quarantine ON agent_registry(is_quarantined);
 interface SentinelEvent {
   id: string;
   timestamp: string;
-  priority: 'critical' | 'high' | 'normal' | 'low';
-  source: 'file_watcher' | 'agent_message' | 'editor' | 'mcp' | 'manual';
+  priority: "critical" | "high" | "normal" | "low";
+  source: "file_watcher" | "agent_message" | "editor" | "mcp" | "manual";
   type: SentinelEventType;
   payload: SentinelEventPayload;
 }
 
 type SentinelEventType =
-  | 'FILE_CREATED'
-  | 'FILE_MODIFIED'
-  | 'FILE_DELETED'
-  | 'AGENT_CLAIM'
-  | 'CODE_SUBMITTED'
-  | 'DEPENDENCY_CHANGED'
-  | 'SPEC_CHANGED'
-  | 'MANUAL_AUDIT';
+  | "FILE_CREATED"
+  | "FILE_MODIFIED"
+  | "FILE_DELETED"
+  | "AGENT_CLAIM"
+  | "CODE_SUBMITTED"
+  | "DEPENDENCY_CHANGED"
+  | "SPEC_CHANGED"
+  | "MANUAL_AUDIT";
 
 interface FileEvent {
   path: string;
@@ -1499,7 +1497,7 @@ interface FileEvent {
 
 interface AgentClaimEvent {
   agentDid: string;
-  claimType: 'file_created' | 'file_modified' | 'bug_fixed' | 'feature_added';
+  claimType: "file_created" | "file_modified" | "bug_fixed" | "feature_added";
   claimedArtifacts: string[];
   claimedChanges: string;
   citations?: string[];
@@ -1510,7 +1508,7 @@ interface CodeSubmissionEvent {
   filePath: string;
   content: string;
   proposedChanges: string;
-  selfAssessedRisk: 'L1' | 'L2' | 'L3';
+  selfAssessedRisk: "L1" | "L2" | "L3";
 }
 ```
 
@@ -1521,25 +1519,25 @@ interface HeuristicPattern {
   id: string;
   name: string;
   category: PatternCategory;
-  severity: 'critical' | 'high' | 'medium' | 'low';
-  cwe?: string;                    // Common Weakness Enumeration ID
+  severity: "critical" | "high" | "medium" | "low";
+  cwe?: string; // Common Weakness Enumeration ID
   pattern: RegExp | ASTMatcher;
   description: string;
-  falsePositiveRate: number;       // Expected FP rate for tuning
+  falsePositiveRate: number; // Expected FP rate for tuning
   remediation: string;
 }
 
 type PatternCategory =
-  | 'injection'
-  | 'authentication'
-  | 'cryptography'
-  | 'secrets'
-  | 'pii'
-  | 'resource'
-  | 'logic'
-  | 'complexity'
-  | 'existence'
-  | 'dependency';
+  | "injection"
+  | "authentication"
+  | "cryptography"
+  | "secrets"
+  | "pii"
+  | "resource"
+  | "logic"
+  | "complexity"
+  | "existence"
+  | "dependency";
 ```
 
 **Sample Patterns:**
@@ -1630,9 +1628,9 @@ interface SentinelVerdict {
   timestamp: string;
 
   // Classification
-  decision: 'PASS' | 'WARN' | 'BLOCK' | 'ESCALATE' | 'QUARANTINE';
-  riskGrade: 'L1' | 'L2' | 'L3';
-  confidence: number;            // 0.0 - 1.0
+  decision: "PASS" | "WARN" | "BLOCK" | "ESCALATE" | "QUARANTINE";
+  riskGrade: "L1" | "L2" | "L3";
+  confidence: number; // 0.0 - 1.0
 
   // Evidence
   heuristicResults: HeuristicResult[];
@@ -1675,8 +1673,14 @@ interface LLMEvaluation {
 }
 
 interface VerdictAction {
-  type: 'LOG' | 'TRUST_UPDATE' | 'SHADOW_ARCHIVE' | 'L3_QUEUE' | 'QUARANTINE' | 'NOTIFY';
-  status: 'completed' | 'pending' | 'failed';
+  type:
+    | "LOG"
+    | "TRUST_UPDATE"
+    | "SHADOW_ARCHIVE"
+    | "L3_QUEUE"
+    | "QUARANTINE"
+    | "NOTIFY";
+  status: "completed" | "pending" | "failed";
   details: string;
 }
 ```
@@ -1743,7 +1747,7 @@ sentinel_modes:
 sentinel:
   enabled: true
 
-  mode: hybrid  # heuristic | llm_assisted | hybrid
+  mode: hybrid # heuristic | llm_assisted | hybrid
 
   file_watcher:
     enabled: true
@@ -1769,7 +1773,7 @@ sentinel:
 
   llm:
     enabled: true
-    provider: ollama  # ollama | llamacpp | none
+    provider: ollama # ollama | llamacpp | none
     model: "phi3:mini"
     endpoint: "http://localhost:11434"
     timeout_ms: 5000
@@ -1794,7 +1798,7 @@ sentinel:
       L3_verification: 100%
     lean:
       trigger: "cpu > 70% for 5 minutes"
-      L1_verification: 10%  # Sampling
+      L1_verification: 10% # Sampling
       L2_verification: 100%
       L3_verification: 100%
       exit_condition: "cpu < 50% for 10 minutes"
@@ -1825,7 +1829,10 @@ interface SentinelAPI {
 
   // Manual Operations
   auditFile(path: string): Promise<SentinelVerdict>;
-  auditContent(content: string, context: AuditContext): Promise<SentinelVerdict>;
+  auditContent(
+    content: string,
+    context: AuditContext,
+  ): Promise<SentinelVerdict>;
   validateClaim(claim: AgentClaim): Promise<SentinelVerdict>;
 
   // Queue Management
@@ -1856,7 +1863,7 @@ interface SentinelStatus {
   queueDepth: number;
   lastVerdict: SentinelVerdict | null;
   llmAvailable: boolean;
-  operationalMode: 'normal' | 'lean' | 'surge' | 'safe';
+  operationalMode: "normal" | "lean" | "surge" | "safe";
 }
 
 interface SentinelStatistics {
@@ -1886,52 +1893,52 @@ interface SentinelStatistics {
 
 ### 5.1 Product Hierarchy
 
-| Term | Definition |
-|------|------------|
-| **FailSafe** | The product/extension name. Always includes "(feat. QoreLogic)" in marketing. |
-| **Genesis** | Planning and visualization components. The human-facing UI layer. |
-| **QoreLogic** | The governance framework. Content library of personas, prompts, policies, workflows. |
-| **Sentinel** | The active monitoring daemon. Enforces QoreLogic via heuristics and LLM-assisted evaluation. |
+| Term          | Definition                                                                                   |
+| ------------- | -------------------------------------------------------------------------------------------- |
+| **FailSafe**  | The product/extension name. Always includes "(feat. QoreLogic)" in marketing.                |
+| **Genesis**   | Planning and visualization components. The human-facing UI layer.                            |
+| **QoreLogic** | The governance framework. Content library of personas, prompts, policies, workflows.         |
+| **Sentinel**  | The active monitoring daemon. Enforces QoreLogic via heuristics and LLM-assisted evaluation. |
 
 ### 5.2 Genesis Components
 
-| Term | Definition |
-|------|------------|
-| **Living Graph** | D3.js dependency visualization |
-| **Cortex Omnibar** | NLP query interface |
-| **Cortex Stream** | Real-time event log |
-| **The Dojo** | Disciplined workflow sidebar |
-| **Genesis Wizard** | Feature ideation workflow |
-| **Hallucination Decorator** | Inline validation annotations |
+| Term                        | Definition                     |
+| --------------------------- | ------------------------------ |
+| **Living Graph**            | D3.js dependency visualization |
+| **Cortex Omnibar**          | NLP query interface            |
+| **Cortex Stream**           | Real-time event log            |
+| **The Dojo**                | Disciplined workflow sidebar   |
+| **Genesis Wizard**          | Feature ideation workflow      |
+| **Hallucination Decorator** | Inline validation annotations  |
 
 ### 5.3 QoreLogic Components
 
-| Term | Definition |
-|------|------------|
-| **SOA Ledger** | Merkle-chained audit trail |
-| **Shadow Genome** | Failure archival for learning |
-| **L1/L2/L3** | Risk grades (Routine/Functional/Critical) |
-| **Scrivener** | Code generation agent persona |
-| **Judge** | Ledger management agent persona |
-| **Overseer** | Human approver role |
+| Term              | Definition                                |
+| ----------------- | ----------------------------------------- |
+| **SOA Ledger**    | Merkle-chained audit trail                |
+| **Shadow Genome** | Failure archival for learning             |
+| **L1/L2/L3**      | Risk grades (Routine/Functional/Critical) |
+| **Scrivener**     | Code generation agent persona             |
+| **Judge**         | Ledger management agent persona           |
+| **Overseer**      | Human approver role                       |
 
 ### 5.4 Sentinel Components
 
-| Term | Definition |
-|------|------------|
-| **Heuristic Check** | Fast pattern-based validation |
+| Term                 | Definition                     |
+| -------------------- | ------------------------------ |
+| **Heuristic Check**  | Fast pattern-based validation  |
 | **QoreLogic Prompt** | Deeper LLM-assisted evaluation |
-| **Verdict** | Sentinel's decision output |
+| **Verdict**          | Sentinel's decision output     |
 
 ### 5.5 Trust Terminology
 
-| Term | Definition |
-|------|------------|
-| **CBT** | Calculus-Based Trust (0.0-0.5) - Probationary |
-| **KBT** | Knowledge-Based Trust (0.5-0.8) - Standard |
-| **IBT** | Identification-Based Trust (0.8-1.0) - Trusted |
-| **SCI** | Source Credibility Index |
-| **T1-T4** | Reference tiers (Authoritative to Community) |
+| Term      | Definition                                     |
+| --------- | ---------------------------------------------- |
+| **CBT**   | Calculus-Based Trust (0.0-0.5) - Probationary  |
+| **KBT**   | Knowledge-Based Trust (0.5-0.8) - Standard     |
+| **IBT**   | Identification-Based Trust (0.8-1.0) - Trusted |
+| **SCI**   | Source Credibility Index                       |
+| **T1-T4** | Reference tiers (Authoritative to Community)   |
 
 ---
 
@@ -1939,9 +1946,9 @@ interface SentinelStatistics {
 
 This specification defines the complete architecture for **MythologIQ: FailSafe**:
 
-| Component | Specification Sections |
-|-----------|----------------------|
-| **FailSafe** | 1.1-1.5: Product identity, platforms, manifest, structure, startup |
-| **Genesis** | 2.1-2.7: Living Graph, Cortex Omnibar, Stream, Dojo, Wizard, Decorator |
-| **QoreLogic** | 3.1-3.5: Content library, personas, policies, workflows, schemas |
-| **Sentinel** | 4.1-4.7: Daemon architecture, events, patterns, verdicts, modes, API |
+| Component     | Specification Sections                                                 |
+| ------------- | ---------------------------------------------------------------------- |
+| **FailSafe**  | 1.1-1.5: Product identity, platforms, manifest, structure, startup     |
+| **Genesis**   | 2.1-2.7: Living Graph, Cortex Omnibar, Stream, Dojo, Wizard, Decorator |
+| **QoreLogic** | 3.1-3.5: Content library, personas, policies, workflows, schemas       |
+| **Sentinel**  | 4.1-4.7: Daemon architecture, events, patterns, verdicts, modes, API   |

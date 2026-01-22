@@ -17,8 +17,38 @@ This document formalizes the execution plan for the MythologIQ: FailSafe extensi
 
 **Goal**: Establish the filesystem persistence layer.
 
-- [ ] **Sprint 1.1**: `.failsafe` scaffold (ConfigManager).
-- [ ] **Sprint 1.2**: SQLite-backed SOA Ledger.
+- [x] **Sprint 1.1**: `.failsafe` scaffold (ConfigManager).
+- [x] **Sprint 1.2**: SQLite-backed SOA Ledger.
+
+### M1.5: Tribunal Remediation (CRITICAL - 2026-01-22)
+
+**Goal**: Address critical findings from External Tribunal audit (Codex, Claude, GLM 4.7).
+
+**Source**: `.agent/staging/responses/AGENT_*.md`
+
+- [ ] **Sprint 1.5.1 [P0]**: **Harden `verifyChain()` Implementation**
+  - _Finding_: Chain verification is "cryptographic theater"—hashes are not recalculated, signatures are not validated (Claude: CWE-345, CWE-347).
+  - _Action_:
+    1. Recalculate `entryHash` from all persisted fields during verification.
+    2. Verify HMAC signature against recalculated hash.
+    3. Replace genesis placeholders with computed values.
+
+- [ ] **Sprint 1.5.2 [P0]**: **Fix Extension Lifecycle (close() on deactivate)**
+  - _Finding_: `ledgerManager.close()` is never called; database locks persist across VS Code restarts (GLM 4.7: Edge Case #6).
+  - _Action_:
+    1. Move `ledgerManager` to module scope in `main.ts`.
+    2. Call `ledgerManager.close()` in `deactivate()`.
+    3. Guard `initialize()` against double-initialization.
+
+- [ ] **Sprint 1.5.3 [P1]**: **Migrate Secret Storage**
+  - _Finding_: HMAC signing secret stored in unencrypted `globalState` (Claude: CWE-522).
+  - _Action_: Use VS Code's `SecretStorage` API (`context.secrets`).
+
+- [ ] **Sprint 1.5.4 [P2]**: **Harden ConfigManager**
+  - _Finding_: `fs.mkdirSync` failures crash extension; YAML writes are non-atomic (Codex, GLM 4.7).
+  - _Action_:
+    1. Wrap `fs.mkdirSync` in try-catch with user-friendly error.
+    2. Implement atomic write (write to `.tmp`, then rename).
 
 ## Phase 2: The Sentinel (Hardened)
 
@@ -65,6 +95,13 @@ This document formalizes the execution plan for the MythologIQ: FailSafe extensi
 
 ## Execution Log
 
-| Date       | Sprint | Action         | Status      |
-| ---------- | ------ | -------------- | ----------- |
-| 2026-01-22 | M0.1   | Spec Alignment | In Progress |
+| Date       | Sprint | Action                        | Status      |
+| ---------- | ------ | ----------------------------- | ----------- |
+| 2026-01-22 | M0.1   | Spec Alignment                | ✅ Complete |
+| 2026-01-22 | M1.1   | ConfigManager Scaffold        | ✅ Complete |
+| 2026-01-22 | M1.2   | SQLite Ledger Implementation  | ✅ Complete |
+| 2026-01-22 | M1.5   | External Tribunal Audit       | 📋 Planned  |
+| -          | M1.5.1 | Harden verifyChain [P0]       | ⏳ Pending  |
+| -          | M1.5.2 | Fix deactivate lifecycle [P0] | ⏳ Pending  |
+| -          | M1.5.3 | Migrate SecretStorage [P1]    | ⏳ Pending  |
+| -          | M1.5.4 | Harden ConfigManager [P2]     | ⏳ Pending  |

@@ -5,7 +5,7 @@
  * Exports all QoreLogic components
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PolicyEngine = exports.TrustEngine = exports.LedgerManager = exports.QoreLogicManager = void 0;
+exports.ShadowGenomeManager = exports.PolicyEngine = exports.TrustEngine = exports.LedgerManager = exports.QoreLogicManager = void 0;
 // Main manager
 var QoreLogicManager_1 = require("./QoreLogicManager");
 Object.defineProperty(exports, "QoreLogicManager", { enumerable: true, get: function () { return QoreLogicManager_1.QoreLogicManager; } });
@@ -18,4 +18,7 @@ Object.defineProperty(exports, "TrustEngine", { enumerable: true, get: function 
 // Policies
 var PolicyEngine_1 = require("./policies/PolicyEngine");
 Object.defineProperty(exports, "PolicyEngine", { enumerable: true, get: function () { return PolicyEngine_1.PolicyEngine; } });
+// Shadow Genome (Failure Archival)
+var ShadowGenomeManager_1 = require("./shadow/ShadowGenomeManager");
+Object.defineProperty(exports, "ShadowGenomeManager", { enumerable: true, get: function () { return ShadowGenomeManager_1.ShadowGenomeManager; } });
 //# sourceMappingURL=index.js.map

@@ -24,6 +24,8 @@ export declare class DashboardPanel {
     reveal(): void;
     private update;
     private getHtmlContent;
+    private getTrustSummary;
+    private formatUptime;
     dispose(): void;
 }
 //# sourceMappingURL=DashboardPanel.d.ts.map

@@ -10,19 +10,21 @@
  */
 import * as vscode from 'vscode';
 import { EventBus } from '../shared/EventBus';
-import { L3ApprovalRequest, AgentIdentity } from '../shared/types';
+import { L3ApprovalRequest, AgentIdentity, SentinelVerdict, ShadowGenomeEntry, FailureMode } from '../shared/types';
 import { LedgerManager } from './ledger/LedgerManager';
 import { TrustEngine } from './trust/TrustEngine';
 import { PolicyEngine } from './policies/PolicyEngine';
+import { ShadowGenomeManager } from './shadow/ShadowGenomeManager';
 export declare class QoreLogicManager {
     private context;
     private ledgerManager;
     private trustEngine;
     private policyEngine;
+    private shadowGenomeManager;
     private eventBus;
     private logger;
     private l3Queue;
-    constructor(context: vscode.ExtensionContext, ledgerManager: LedgerManager, trustEngine: TrustEngine, policyEngine: PolicyEngine, eventBus: EventBus);
+    constructor(context: vscode.ExtensionContext, ledgerManager: LedgerManager, trustEngine: TrustEngine, policyEngine: PolicyEngine, shadowGenomeManager: ShadowGenomeManager, eventBus: EventBus);
     initialize(): Promise<void>;
     /**
      * Get the ledger manager instance
@@ -56,6 +58,31 @@ export declare class QoreLogicManager {
      * Persist L3 queue to workspace state
      */
     private persistL3Queue;
+    /**
+     * Get the shadow genome manager instance
+     */
+    getShadowGenomeManager(): ShadowGenomeManager;
+    /**
+     * Archive a failed verdict to the Shadow Genome
+     */
+    archiveFailedVerdict(verdict: SentinelVerdict, inputVector: string, environmentContext?: string): Promise<ShadowGenomeEntry | null>;
+    /**
+     * Get negative constraints for an agent (for learning injection)
+     */
+    getAgentNegativeConstraints(agentDid: string): Promise<string[]>;
+    /**
+     * Get failure patterns across all agents (for systemic learning)
+     */
+    getFailurePatterns(): Promise<{
+        failureMode: FailureMode;
+        count: number;
+        agentDids: string[];
+        recentCauses: string[];
+    }[]>;
+    /**
+     * Get failure history for an agent
+     */
+    getAgentFailureHistory(agentDid: string, limit?: number): Promise<ShadowGenomeEntry[]>;
     dispose(): void;
 }
 //# sourceMappingURL=QoreLogicManager.d.ts.map

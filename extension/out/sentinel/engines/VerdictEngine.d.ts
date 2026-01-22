@@ -8,11 +8,13 @@ import { SentinelVerdict, SentinelEvent, HeuristicResult, LLMEvaluation } from '
 import { TrustEngine } from '../../qorelogic/trust/TrustEngine';
 import { PolicyEngine } from '../../qorelogic/policies/PolicyEngine';
 import { LedgerManager } from '../../qorelogic/ledger/LedgerManager';
+import { ShadowGenomeManager } from '../../qorelogic/shadow/ShadowGenomeManager';
 export declare class VerdictEngine {
     private trustEngine;
     private policyEngine;
     private ledgerManager;
-    constructor(trustEngine: TrustEngine, policyEngine: PolicyEngine, ledgerManager: LedgerManager);
+    private shadowGenomeManager?;
+    constructor(trustEngine: TrustEngine, policyEngine: PolicyEngine, ledgerManager: LedgerManager, shadowGenomeManager?: ShadowGenomeManager);
     /**
      * Generate a verdict from analysis results
      */

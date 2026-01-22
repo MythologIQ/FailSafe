@@ -33,19 +33,39 @@ export class DashboardPanel {
         this.qorelogic = qorelogic;
         this.eventBus = eventBus;
 
-        this.update();
+        void this.update();
 
         // Subscribe to updates
         const unsubscribes = [
-            this.eventBus.on('sentinel.verdict', () => this.update()),
-            this.eventBus.on('qorelogic.trustUpdate', () => this.update()),
-            this.eventBus.on('qorelogic.l3Queued', () => this.update())
+            this.eventBus.on('sentinel.verdict', () => void this.update()),
+            this.eventBus.on('qorelogic.trustUpdate', () => void this.update()),
+            this.eventBus.on('qorelogic.l3Queued', () => void this.update())
         ];
         unsubscribes.forEach(unsub => this.disposables.push({ dispose: unsub }));
 
         // Periodic refresh
-        const interval = setInterval(() => this.update(), 5000);
+        const interval = setInterval(() => void this.update(), 5000);
         this.disposables.push({ dispose: () => clearInterval(interval) });
+
+        this.panel.webview.onDidReceiveMessage(message => {
+            switch (message.command) {
+                case 'auditFile':
+                    vscode.commands.executeCommand('failsafe.auditFile');
+                    break;
+                case 'showGraph':
+                    vscode.commands.executeCommand('failsafe.showLivingGraph');
+                    break;
+                case 'showLedger':
+                    vscode.commands.executeCommand('failsafe.viewLedger');
+                    break;
+                case 'focusCortex':
+                    vscode.commands.executeCommand('failsafe.focusCortex');
+                    break;
+                case 'showL3Queue':
+                    vscode.commands.executeCommand('failsafe.approveL3');
+                    break;
+            }
+        }, null, this.disposables);
 
         this.panel.onDidDispose(() => this.dispose(), null, this.disposables);
     }
@@ -84,13 +104,16 @@ export class DashboardPanel {
         this.panel.reveal();
     }
 
-    private update(): void {
-        this.panel.webview.html = this.getHtmlContent();
+    private async update(): Promise<void> {
+        this.panel.webview.html = await this.getHtmlContent();
     }
 
-    private getHtmlContent(): string {
+    private async getHtmlContent(): Promise<string> {
         const status = this.sentinel.getStatus();
         const l3Queue = this.qorelogic.getL3Queue();
+        const trustSummary = await this.getTrustSummary();
+        const lastVerdict = status.lastVerdict;
+        const uptime = this.formatUptime(status.uptime);
 
         return `<!DOCTYPE html>
 <html>
@@ -98,12 +121,24 @@ export class DashboardPanel {
     <title>FailSafe Dashboard</title>
     <style>
         * { box-sizing: border-box; }
+        :root {
+            --card-bg: var(--vscode-editorWidget-background);
+            --card-border: var(--vscode-editorWidget-border);
+            --text: var(--vscode-foreground);
+            --muted: var(--vscode-descriptionForeground);
+            --badge-bg: var(--vscode-badge-background);
+            --badge-fg: var(--vscode-badge-foreground);
+            --accent: var(--vscode-charts-blue);
+            --success: var(--vscode-charts-green);
+            --warning: var(--vscode-charts-orange);
+            --error: var(--vscode-charts-red);
+        }
         body {
             margin: 0;
             padding: 20px;
-            background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
-            color: #c9d1d9;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            background: var(--vscode-editor-background);
+            color: var(--text);
+            font-family: var(--vscode-font-family);
             min-height: 100vh;
         }
         .header {
@@ -115,11 +150,11 @@ export class DashboardPanel {
         .title {
             font-size: 24px;
             font-weight: 600;
-            color: #f0f6fc;
+            color: var(--text);
         }
         .subtitle {
             font-size: 12px;
-            color: #8b949e;
+            color: var(--muted);
         }
         .grid {
             display: grid;
@@ -127,28 +162,27 @@ export class DashboardPanel {
             gap: 16px;
         }
         .card {
-            background: rgba(22, 27, 34, 0.8);
-            border: 1px solid #30363d;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
             border-radius: 8px;
             padding: 16px;
-            backdrop-filter: blur(10px);
         }
         .card-title {
             font-size: 12px;
             font-weight: 600;
             text-transform: uppercase;
-            color: #8b949e;
+            color: var(--muted);
             margin-bottom: 12px;
         }
         .metric {
             display: flex;
             justify-content: space-between;
             padding: 8px 0;
-            border-bottom: 1px solid #21262d;
+            border-bottom: 1px solid var(--vscode-panel-border);
         }
         .metric:last-child { border-bottom: none; }
-        .metric-label { color: #8b949e; }
-        .metric-value { font-weight: 600; color: #f0f6fc; }
+        .metric-label { color: var(--muted); }
+        .metric-value { font-weight: 600; color: var(--text); }
         .status-badge {
             display: inline-block;
             padding: 2px 8px;
@@ -156,33 +190,46 @@ export class DashboardPanel {
             font-size: 11px;
             font-weight: 500;
         }
-        .status-active { background: #238636; color: #fff; }
-        .status-warning { background: #9e6a03; color: #fff; }
-        .status-error { background: #da3633; color: #fff; }
+        .status-active { background: var(--success); color: #fff; }
+        .status-warning { background: var(--warning); color: #fff; }
+        .status-error { background: var(--error); color: #fff; }
         .l3-item {
             padding: 8px;
             margin: 4px 0;
-            background: #21262d;
+            background: var(--vscode-list-inactiveSelectionBackground);
             border-radius: 4px;
             font-size: 12px;
+            border: 1px solid var(--vscode-panel-border);
+        }
+        .trust-bar {
+            height: 6px;
+            background: var(--vscode-progressBar-background);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 6px;
+        }
+        .trust-fill {
+            height: 100%;
+            background: var(--success);
         }
         .action-btn {
             width: 100%;
             padding: 10px;
             margin-top: 12px;
-            background: #238636;
-            color: #fff;
+            background: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
             border: none;
             border-radius: 6px;
             cursor: pointer;
             font-weight: 500;
         }
-        .action-btn:hover { background: #2ea043; }
+        .action-btn:hover { background: var(--vscode-button-hoverBackground); }
         .action-btn.secondary {
-            background: #21262d;
-            border: 1px solid #30363d;
+            background: var(--vscode-button-secondaryBackground);
+            color: var(--vscode-button-secondaryForeground);
+            border: 1px solid var(--vscode-panel-border);
         }
-        .action-btn.secondary:hover { background: #30363d; }
+        .action-btn.secondary:hover { background: var(--vscode-button-secondaryHoverBackground); }
     </style>
 </head>
 <body>
@@ -208,6 +255,10 @@ export class DashboardPanel {
                 <span class="metric-value">${status.operationalMode.toUpperCase()}</span>
             </div>
             <div class="metric">
+                <span class="metric-label">Uptime</span>
+                <span class="metric-value">${uptime}</span>
+            </div>
+            <div class="metric">
                 <span class="metric-label">Files Watched</span>
                 <span class="metric-value">${status.filesWatched}</span>
             </div>
@@ -223,22 +274,49 @@ export class DashboardPanel {
                 <span class="metric-label">LLM Available</span>
                 <span class="metric-value">${status.llmAvailable ? 'Yes' : 'No'}</span>
             </div>
+            <div class="metric">
+                <span class="metric-label">Last Verdict</span>
+                <span class="metric-value">${lastVerdict ? `${lastVerdict.decision} (${lastVerdict.riskGrade})` : 'None'}</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">QoreLogic Trust</div>
+            <div class="metric">
+                <span class="metric-label">Agents</span>
+                <span class="metric-value">${trustSummary.totalAgents}</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Avg trust</span>
+                <span class="metric-value">${(trustSummary.avgTrust * 100).toFixed(0)}%</span>
+            </div>
+            <div class="trust-bar">
+                <div class="trust-fill" style="width: ${(trustSummary.avgTrust * 100).toFixed(0)}%"></div>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Quarantined</span>
+                <span class="metric-value">${trustSummary.quarantined}</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Stages (CBT/KBT/IBT)</span>
+                <span class="metric-value">${trustSummary.stageCounts.CBT}/${trustSummary.stageCounts.KBT}/${trustSummary.stageCounts.IBT}</span>
+            </div>
         </div>
 
         <div class="card">
             <div class="card-title">L3 Approval Queue (${l3Queue.length})</div>
             ${l3Queue.length === 0 ?
-                '<div style="color: #8b949e; font-style: italic;">No pending approvals</div>' :
+                '<div style="color: var(--vscode-descriptionForeground); font-style: italic;">No pending approvals</div>' :
                 l3Queue.slice(0, 5).map(item => `
                     <div class="l3-item">
                         <strong>${item.filePath.split(/[/\\]/).pop()}</strong><br>
-                        <span style="color: #8b949e; font-size: 10px;">
+                        <span style="color: var(--vscode-descriptionForeground); font-size: 10px;">
                             Risk: ${item.riskGrade} | Agent Trust: ${(item.agentTrust * 100).toFixed(0)}%
                         </span>
                     </div>
                 `).join('')
             }
-            ${l3Queue.length > 0 ? '<button class="action-btn">Review Queue</button>' : ''}
+            ${l3Queue.length > 0 ? '<button class="action-btn" onclick="showL3Queue()">Review Queue</button>' : ''}
         </div>
 
         <div class="card">
@@ -256,9 +334,59 @@ export class DashboardPanel {
         function showGraph() { vscode.postMessage({ command: 'showGraph' }); }
         function showLedger() { vscode.postMessage({ command: 'showLedger' }); }
         function focusCortex() { vscode.postMessage({ command: 'focusCortex' }); }
+        function showL3Queue() { vscode.postMessage({ command: 'showL3Queue' }); }
     </script>
 </body>
 </html>`;
+    }
+
+    private async getTrustSummary(): Promise<{
+        totalAgents: number;
+        avgTrust: number;
+        quarantined: number;
+        stageCounts: { CBT: number; KBT: number; IBT: number };
+    }> {
+        try {
+            const agents = await this.qorelogic.getTrustEngine().getAllAgents();
+            const totalAgents = agents.length;
+            const quarantined = agents.filter(agent => agent.isQuarantined).length;
+            const totalTrust = agents.reduce((sum, agent) => sum + agent.trustScore, 0);
+            const avgTrust = totalAgents === 0 ? 0 : totalTrust / totalAgents;
+            const stageCounts = agents.reduce(
+                (counts, agent) => {
+                    counts[agent.trustStage] = (counts[agent.trustStage] || 0) + 1;
+                    return counts;
+                },
+                { CBT: 0, KBT: 0, IBT: 0 } as { CBT: number; KBT: number; IBT: number }
+            );
+
+            return { totalAgents, avgTrust, quarantined, stageCounts };
+        } catch {
+            return {
+                totalAgents: 0,
+                avgTrust: 0,
+                quarantined: 0,
+                stageCounts: { CBT: 0, KBT: 0, IBT: 0 }
+            };
+        }
+    }
+
+    private formatUptime(uptimeMs: number): string {
+        if (!uptimeMs || uptimeMs < 0) {
+            return '0s';
+        }
+
+        const totalSeconds = Math.floor(uptimeMs / 1000);
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        if (hours > 0) {
+            return `${hours}h ${minutes}m`;
+        }
+        if (minutes > 0) {
+            return `${minutes}m ${seconds}s`;
+        }
+        return `${seconds}s`;
     }
 
     public dispose(): void {

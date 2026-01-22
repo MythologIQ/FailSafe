@@ -109,11 +109,13 @@ export class LivingGraphProvider implements vscode.WebviewViewProvider {
         .node {
             cursor: pointer;
         }
+        /* Node type base colors */
         .node-file { fill: #4a5568; }
         .node-module { fill: #2d3748; }
         .node-external { fill: #718096; }
         .node-concept { fill: #9f7aea; }
 
+        /* State colors (operational) */
         .state-idle { fill: #4a5568; }
         .state-indexing { fill: #ecc94b; }
         .state-verified { fill: #48bb78; }
@@ -121,14 +123,33 @@ export class LivingGraphProvider implements vscode.WebviewViewProvider {
         .state-blocked { fill: #f56565; }
         .state-l3-pending { fill: #9f7aea; }
 
+        /* Risk grade colors (L1=safe, L2=moderate, L3=critical) */
+        .risk-L1 { fill: #48bb78; } /* Green - Safe */
+        .risk-L2 { fill: #ecc94b; } /* Yellow - Moderate */
+        .risk-L3 { fill: #f56565; } /* Red - Critical */
+        .risk-L1-stroke { stroke: #48bb78; stroke-width: 2; }
+        .risk-L2-stroke { stroke: #ecc94b; stroke-width: 2; }
+        .risk-L3-stroke { stroke: #f56565; stroke-width: 3; }
+
+        /* Trust-based visual effects */
+        .trust-high { filter: drop-shadow(0 0 4px #48bb78); }
+        .trust-medium { filter: drop-shadow(0 0 2px #ecc94b); }
+        .trust-low { filter: drop-shadow(0 0 3px #f56565); opacity: 0.8; }
+
+        /* Edge/Link styling */
         .link {
             stroke: #4a5568;
             stroke-opacity: 0.6;
         }
-        .link-import { stroke-dasharray: none; }
-        .link-dependency { stroke-dasharray: 5,5; }
-        .link-spec { stroke-dasharray: 2,2; }
-        .link-risk { stroke: #f56565; stroke-width: 2; }
+        .link-import { stroke: #63b3ed; stroke-dasharray: none; }
+        .link-dependency { stroke: #a0aec0; stroke-dasharray: 5,5; }
+        .link-spec { stroke: #9f7aea; stroke-dasharray: 2,2; }
+        .link-risk { stroke: #f56565; stroke-width: 2; stroke-dasharray: 3,3; animation: pulse-risk 1.5s infinite; }
+
+        @keyframes pulse-risk {
+            0%, 100% { stroke-opacity: 1; }
+            50% { stroke-opacity: 0.4; }
+        }
 
         .node-label {
             font-size: 10px;
@@ -185,12 +206,17 @@ export class LivingGraphProvider implements vscode.WebviewViewProvider {
                 .scaleExtent([0.1, 4])
                 .on('zoom', (event) => g.attr('transform', event.transform)));
 
-            // Create simulation
+            // Create simulation with trust-aware collision
             simulation = d3.forceSimulation()
                 .force('link', d3.forceLink().id(d => d.id).distance(100))
                 .force('charge', d3.forceManyBody().strength(-200))
                 .force('center', d3.forceCenter(width / 2, height / 2))
-                .force('collision', d3.forceCollide().radius(30));
+                .force('collision', d3.forceCollide().radius(d => {
+                    // Dynamic collision radius based on trust
+                    const baseRadius = d.type === 'module' ? 12 : 8;
+                    const trustBonus = (d.trustScore || 0.5) * 10;
+                    return baseRadius + trustBonus + 8; // Add padding
+                }));
 
             updateGraph(graphData);
         }
@@ -222,10 +248,44 @@ export class LivingGraphProvider implements vscode.WebviewViewProvider {
                     .on('drag', dragged)
                     .on('end', dragended));
 
-            // Node circles
+            // Helper: Calculate radius based on trust (0.0-1.0 maps to 8-18px)
+            function getNodeRadius(d) {
+                const baseRadius = d.type === 'module' ? 12 : 8;
+                const trustBonus = (d.trustScore || 0.5) * 10; // 0-10px bonus
+                return baseRadius + trustBonus;
+            }
+
+            // Helper: Get trust class for visual effects
+            function getTrustClass(trustScore) {
+                if (trustScore === null || trustScore === undefined) return '';
+                if (trustScore >= 0.7) return 'trust-high';
+                if (trustScore >= 0.4) return 'trust-medium';
+                return 'trust-low';
+            }
+
+            // Helper: Get risk class
+            function getRiskClass(riskGrade) {
+                if (!riskGrade) return '';
+                return 'risk-' + riskGrade;
+            }
+
+            // Risk grade stroke ring (outer ring for L1/L2/L3 indicator)
+            node.filter(d => d.riskGrade)
+                .append('circle')
+                .attr('r', d => getNodeRadius(d) + 3)
+                .attr('fill', 'none')
+                .attr('class', d => 'risk-' + d.riskGrade + '-stroke');
+
+            // Node circles with trust-based scaling and risk coloring
             node.append('circle')
-                .attr('r', d => d.type === 'module' ? 15 : 10)
-                .attr('class', d => \`node-\${d.type} state-\${d.state || 'idle'}\`);
+                .attr('r', d => getNodeRadius(d))
+                .attr('class', d => {
+                    const classes = ['node-circle'];
+                    classes.push('state-' + (d.state || 'idle'));
+                    if (d.riskGrade) classes.push(getRiskClass(d.riskGrade));
+                    classes.push(getTrustClass(d.trustScore));
+                    return classes.join(' ');
+                });
 
             // Node labels
             node.append('text')

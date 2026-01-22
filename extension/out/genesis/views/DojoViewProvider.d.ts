@@ -19,8 +19,10 @@ export declare class DojoViewProvider implements vscode.WebviewViewProvider {
     private qorelogic;
     private eventBus;
     constructor(extensionUri: vscode.Uri, sentinel: SentinelDaemon, qorelogic: QoreLogicManager, eventBus: EventBus);
-    resolveWebviewView(webviewView: vscode.WebviewView, _context: vscode.WebviewViewResolveContext, _token: vscode.CancellationToken): void;
+    resolveWebviewView(webviewView: vscode.WebviewView, _context: vscode.WebviewViewResolveContext, _token: vscode.CancellationToken): Promise<void>;
     private refresh;
     private getHtmlContent;
+    private getTrustSummary;
+    private formatUptime;
 }
 //# sourceMappingURL=DojoViewProvider.d.ts.map

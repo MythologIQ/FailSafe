@@ -60,6 +60,18 @@
       {
         "command": "failsafe.approveL3",
         "title": "FailSafe: Review L3 Queue"
+      },
+      {
+        "command": "failsafe.generateFeedback",
+        "title": "FailSafe: Generate Feedback"
+      },
+      {
+        "command": "failsafe.viewFeedback",
+        "title": "FailSafe: View Feedback"
+      },
+      {
+        "command": "failsafe.exportFeedback",
+        "title": "FailSafe: Export Feedback"
       }
     ],
     "keybindings": [

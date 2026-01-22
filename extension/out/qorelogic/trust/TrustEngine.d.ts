@@ -11,12 +11,14 @@ import { TrustScore, TrustUpdate, AgentIdentity } from '../../shared/types';
 export declare class TrustEngine {
     private ledgerManager;
     private agents;
+    private db;
     private readonly config;
     constructor(ledgerManager: LedgerManager);
+    initialize(): Promise<void>;
     /**
      * Register a new agent
      */
-    registerAgent(persona: string, publicKey: string): Promise<AgentIdentity>;
+    registerAgent(persona: string, publicKey: string, didOverride?: string): Promise<AgentIdentity>;
     /**
      * Get an agent's identity
      */
@@ -53,5 +55,6 @@ export declare class TrustEngine {
      * Calculate influence weight
      */
     private calculateInfluenceWeight;
+    private persistAgent;
 }
 //# sourceMappingURL=TrustEngine.d.ts.map

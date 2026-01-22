@@ -5,6 +5,7 @@
  * backed by SQLite.
  */
 import * as vscode from 'vscode';
+import Database from 'better-sqlite3';
 import { ConfigManager } from '../../shared/ConfigManager';
 import { LedgerEntry, LedgerEventType, RiskGrade } from '../../shared/types';
 interface LedgerAppendRequest {
@@ -61,6 +62,7 @@ export declare class LedgerManager {
     verifyChain(): boolean;
     getEntryCount(): number;
     close(): void;
+    getDatabase(): Database.Database;
 }
 export {};
 //# sourceMappingURL=LedgerManager.d.ts.map

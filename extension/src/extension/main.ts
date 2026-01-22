@@ -15,6 +15,7 @@ import { LivingGraphProvider } from '../genesis/views/LivingGraphProvider';
 import { DojoViewProvider } from '../genesis/views/DojoViewProvider';
 import { CortexStreamProvider } from '../genesis/views/CortexStreamProvider';
 import { HallucinationDecorator } from '../genesis/decorators/HallucinationDecorator';
+import { FeedbackManager } from '../genesis/FeedbackManager';
 
 // QoreLogic imports
 import { QoreLogicManager } from '../qorelogic/QoreLogicManager';
@@ -41,6 +42,7 @@ let qorelogicManager: QoreLogicManager;
 let sentinelDaemon: SentinelDaemon;
 let eventBus: EventBus;
 let logger: Logger;
+let feedbackManager: FeedbackManager;
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
     logger = new Logger('FailSafe');
@@ -145,9 +147,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         context.subscriptions.push(hallucinationDecorator);
 
         // ============================================================
-        // PHASE 4: Register Commands
+        // PHASE 4: Initialize Feedback Manager
         // ============================================================
-        registerCommands(context, genesisManager, qorelogicManager, sentinelDaemon);
+        logger.info('Initializing Feedback manager...');
+        feedbackManager = new FeedbackManager(context);
+
+        // ============================================================
+        // PHASE 5: Register Commands
+        // ============================================================
+        registerCommands(context, genesisManager, qorelogicManager, sentinelDaemon, feedbackManager);
 
         // ============================================================
         // PHASE 5: Ready
@@ -175,7 +183,8 @@ function registerCommands(
     context: vscode.ExtensionContext,
     genesis: GenesisManager,
     qorelogic: QoreLogicManager,
-    sentinel: SentinelDaemon
+    sentinel: SentinelDaemon,
+    feedback: FeedbackManager
 ): void {
 
     // Dashboard command
@@ -242,6 +251,56 @@ function registerCommands(
     context.subscriptions.push(
         vscode.commands.registerCommand('failsafe.approveL3', () => {
             genesis.showL3ApprovalQueue();
+        })
+    );
+
+    // Generate feedback command
+    context.subscriptions.push(
+        vscode.commands.registerCommand('failsafe.generateFeedback', async () => {
+            const entry = await feedback.createFeedbackEntry();
+            if (entry) {
+                try {
+                    const filepath = await feedback.saveFeedback(entry);
+                    vscode.window.showInformationMessage(
+                        `✅ Feedback saved! ID: ${entry.id}`,
+                        'View Feedback'
+                    ).then(action => {
+                        if (action === 'View Feedback') {
+                            feedback.showFeedbackPanel();
+                        }
+                    });
+                } catch (error) {
+                    vscode.window.showErrorMessage(`Failed to save feedback: ${error}`);
+                }
+            }
+        })
+    );
+
+    // View feedback command
+    context.subscriptions.push(
+        vscode.commands.registerCommand('failsafe.viewFeedback', () => {
+            feedback.showFeedbackPanel();
+        })
+    );
+
+    // Export feedback command
+    context.subscriptions.push(
+        vscode.commands.registerCommand('failsafe.exportFeedback', async () => {
+            const saveUri = await vscode.window.showSaveDialog({
+                defaultUri: vscode.Uri.file('failsafe-feedback-export.json'),
+                filters: {
+                    'JSON Files': ['json']
+                }
+            });
+
+            if (saveUri) {
+                try {
+                    await feedback.exportFeedback(saveUri.fsPath);
+                    vscode.window.showInformationMessage(`Feedback exported to: ${saveUri.fsPath}`);
+                } catch (error) {
+                    vscode.window.showErrorMessage(`Failed to export feedback: ${error}`);
+                }
+            }
         })
     );
 }

@@ -45,10 +45,12 @@ class VerdictEngine {
     trustEngine;
     policyEngine;
     ledgerManager;
-    constructor(trustEngine, policyEngine, ledgerManager) {
+    shadowGenomeManager;
+    constructor(trustEngine, policyEngine, ledgerManager, shadowGenomeManager) {
         this.trustEngine = trustEngine;
         this.policyEngine = policyEngine;
         this.ledgerManager = ledgerManager;
+        this.shadowGenomeManager = shadowGenomeManager;
     }
     /**
      * Generate a verdict from analysis results
@@ -241,6 +243,30 @@ class VerdictEngine {
                     type: 'TRUST_UPDATE',
                     status: 'failed',
                     details: `Failed to update trust: ${error}`
+                });
+            }
+        }
+        // Archive to Shadow Genome for non-PASS verdicts
+        if (verdict.decision !== 'PASS' && this.shadowGenomeManager) {
+            try {
+                const inputVector = verdict.artifactPath || 'unknown';
+                const entry = await this.shadowGenomeManager.archiveFailure({
+                    verdict,
+                    inputVector,
+                    decisionRationale: verdict.summary,
+                    causalVector: verdict.details
+                });
+                actions.push({
+                    type: 'SHADOW_ARCHIVE',
+                    status: 'completed',
+                    details: `Archived to Shadow Genome entry #${entry.id}`
+                });
+            }
+            catch (error) {
+                actions.push({
+                    type: 'SHADOW_ARCHIVE',
+                    status: 'failed',
+                    details: `Failed to archive: ${error}`
                 });
             }
         }

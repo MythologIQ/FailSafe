@@ -49,11 +49,13 @@ const GenesisManager_1 = require("../genesis/GenesisManager");
 const DojoViewProvider_1 = require("../genesis/views/DojoViewProvider");
 const CortexStreamProvider_1 = require("../genesis/views/CortexStreamProvider");
 const HallucinationDecorator_1 = require("../genesis/decorators/HallucinationDecorator");
+const FeedbackManager_1 = require("../genesis/FeedbackManager");
 // QoreLogic imports
 const QoreLogicManager_1 = require("../qorelogic/QoreLogicManager");
 const LedgerManager_1 = require("../qorelogic/ledger/LedgerManager");
 const TrustEngine_1 = require("../qorelogic/trust/TrustEngine");
 const PolicyEngine_1 = require("../qorelogic/policies/PolicyEngine");
+const ShadowGenomeManager_1 = require("../qorelogic/shadow/ShadowGenomeManager");
 // Sentinel imports
 const SentinelDaemon_1 = require("../sentinel/SentinelDaemon");
 const HeuristicEngine_1 = require("../sentinel/engines/HeuristicEngine");
@@ -70,6 +72,7 @@ let qorelogicManager;
 let sentinelDaemon;
 let eventBus;
 let logger;
+let feedbackManager;
 async function activate(context) {
     logger = new Logger_1.Logger('FailSafe');
     logger.info('Activating MythologIQ: FailSafe (feat. QoreLogic)...');
@@ -85,9 +88,12 @@ async function activate(context) {
         ledgerManager = new LedgerManager_1.LedgerManager(context, configManager);
         await ledgerManager.initialize();
         const trustEngine = new TrustEngine_1.TrustEngine(ledgerManager);
+        await trustEngine.initialize();
         const policyEngine = new PolicyEngine_1.PolicyEngine(context);
         await policyEngine.loadPolicies();
-        qorelogicManager = new QoreLogicManager_1.QoreLogicManager(context, ledgerManager, trustEngine, policyEngine, eventBus);
+        shadowGenomeManager = new ShadowGenomeManager_1.ShadowGenomeManager(context, configManager, ledgerManager);
+        await shadowGenomeManager.initialize();
+        qorelogicManager = new QoreLogicManager_1.QoreLogicManager(context, ledgerManager, trustEngine, policyEngine, shadowGenomeManager, eventBus);
         await qorelogicManager.initialize();
         // ============================================================
         // PHASE 2: Initialize Sentinel Daemon (Active Monitoring)
@@ -96,7 +102,7 @@ async function activate(context) {
         const patternLoader = new PatternLoader_1.PatternLoader(configManager.getWorkspaceRoot());
         await patternLoader.loadCustomPatterns();
         const heuristicEngine = new HeuristicEngine_1.HeuristicEngine(policyEngine, patternLoader);
-        const verdictEngine = new VerdictEngine_1.VerdictEngine(trustEngine, policyEngine, ledgerManager);
+        const verdictEngine = new VerdictEngine_1.VerdictEngine(trustEngine, policyEngine, ledgerManager, shadowGenomeManager);
         const existenceEngine = new ExistenceEngine_1.ExistenceEngine(configManager);
         const architectureEngine = new ArchitectureEngine_1.ArchitectureEngine();
         sentinelDaemon = new SentinelDaemon_1.SentinelDaemon(context, configManager, heuristicEngine, verdictEngine, existenceEngine, qorelogicManager, eventBus);
@@ -117,9 +123,14 @@ async function activate(context) {
         const hallucinationDecorator = new HallucinationDecorator_1.HallucinationDecorator(sentinelDaemon, eventBus);
         context.subscriptions.push(hallucinationDecorator);
         // ============================================================
-        // PHASE 4: Register Commands
+        // PHASE 4: Initialize Feedback Manager
         // ============================================================
-        registerCommands(context, genesisManager, qorelogicManager, sentinelDaemon);
+        logger.info('Initializing Feedback manager...');
+        feedbackManager = new FeedbackManager_1.FeedbackManager(context);
+        // ============================================================
+        // PHASE 5: Register Commands
+        // ============================================================
+        registerCommands(context, genesisManager, qorelogicManager, sentinelDaemon, feedbackManager);
         // ============================================================
         // PHASE 5: Ready
         // ============================================================
@@ -140,7 +151,7 @@ async function activate(context) {
         throw error;
     }
 }
-function registerCommands(context, genesis, qorelogic, sentinel) {
+function registerCommands(context, genesis, qorelogic, sentinel, feedback) {
     // Dashboard command
     context.subscriptions.push(vscode.commands.registerCommand('failsafe.showDashboard', () => {
         genesis.showDashboard();
@@ -184,13 +195,54 @@ function registerCommands(context, genesis, qorelogic, sentinel) {
     context.subscriptions.push(vscode.commands.registerCommand('failsafe.approveL3', () => {
         genesis.showL3ApprovalQueue();
     }));
+    // Generate feedback command
+    context.subscriptions.push(vscode.commands.registerCommand('failsafe.generateFeedback', async () => {
+        const entry = await feedback.createFeedbackEntry();
+        if (entry) {
+            try {
+                const filepath = await feedback.saveFeedback(entry);
+                vscode.window.showInformationMessage(`✅ Feedback saved! ID: ${entry.id}`, 'View Feedback').then(action => {
+                    if (action === 'View Feedback') {
+                        feedback.showFeedbackPanel();
+                    }
+                });
+            }
+            catch (error) {
+                vscode.window.showErrorMessage(`Failed to save feedback: ${error}`);
+            }
+        }
+    }));
+    // View feedback command
+    context.subscriptions.push(vscode.commands.registerCommand('failsafe.viewFeedback', () => {
+        feedback.showFeedbackPanel();
+    }));
+    // Export feedback command
+    context.subscriptions.push(vscode.commands.registerCommand('failsafe.exportFeedback', async () => {
+        const saveUri = await vscode.window.showSaveDialog({
+            defaultUri: vscode.Uri.file('failsafe-feedback-export.json'),
+            filters: {
+                'JSON Files': ['json']
+            }
+        });
+        if (saveUri) {
+            try {
+                await feedback.exportFeedback(saveUri.fsPath);
+                vscode.window.showInformationMessage(`Feedback exported to: ${saveUri.fsPath}`);
+            }
+            catch (error) {
+                vscode.window.showErrorMessage(`Failed to export feedback: ${error}`);
+            }
+        }
+    }));
 }
 // Module-scope managers defined at lines 35-39
 let ledgerManager;
+let shadowGenomeManager;
 function deactivate() {
     logger?.info('Deactivating MythologIQ: FailSafe...');
-    // P0 FIX: Close ledger database connection first to prevent locks
+    // P0 FIX: Close database connections first to prevent locks
     ledgerManager?.close();
+    shadowGenomeManager?.close();
     // Stop Sentinel daemon
     sentinelDaemon?.stop();
     // Cleanup QoreLogic

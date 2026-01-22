@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(if not exist \"g:\\\\MythologIQ\\\\FailSafe\\\\.agent\\\\staging\\\\responses\" mkdir \"g:\\\\MythologIQ\\\\FailSafe\\\\.agent\\\\staging\\\\responses\")"
+    ]
+  }
+}

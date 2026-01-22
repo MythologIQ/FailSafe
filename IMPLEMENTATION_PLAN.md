@@ -100,8 +100,8 @@ This document formalizes the execution plan for the MythologIQ: FailSafe extensi
 | 2026-01-22 | M0.1   | Spec Alignment                | ✅ Complete |
 | 2026-01-22 | M1.1   | ConfigManager Scaffold        | ✅ Complete |
 | 2026-01-22 | M1.2   | SQLite Ledger Implementation  | ✅ Complete |
-| 2026-01-22 | M1.5   | External Tribunal Audit       | 📋 Planned  |
-| -          | M1.5.1 | Harden verifyChain [P0]       | ⏳ Pending  |
-| -          | M1.5.2 | Fix deactivate lifecycle [P0] | ⏳ Pending  |
-| -          | M1.5.3 | Migrate SecretStorage [P1]    | ⏳ Pending  |
-| -          | M1.5.4 | Harden ConfigManager [P2]     | ⏳ Pending  |
+| 2026-01-22 | M1.5   | External Tribunal Audit       | ✅ Complete |
+| 2026-01-22 | M1.5.1 | Harden verifyChain [P0]       | ✅ Complete |
+| 2026-01-22 | M1.5.2 | Fix deactivate lifecycle [P0] | ✅ Complete |
+| 2026-01-22 | M1.5.3 | Migrate SecretStorage [P1]    | ✅ Complete |
+| 2026-01-22 | M1.5.4 | Harden ConfigManager [P2]     | ✅ Complete |

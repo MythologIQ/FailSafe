@@ -36,6 +36,7 @@ export class LedgerManager {
     private ledgerPath: string = '';
     private db: Database.Database | undefined;
     private lastHash: string = 'GENESIS_HASH_PLACEHOLDER';
+    private cachedSecret: string | undefined;
 
     constructor(context: vscode.ExtensionContext, configManager: ConfigManager) {
         this.context = context;
@@ -49,6 +50,13 @@ export class LedgerManager {
             } finally {
                 this.db = undefined;
             }
+        }
+
+        // Initialize secret from secure storage (M1.5.3 Fix)
+        // Note: secrets.get is async, so we must load it here first
+        this.cachedSecret = await this.context.secrets.get('ledgerSecret');
+        if (!this.cachedSecret) {
+            this.cachedSecret = await this.generateSecret();
         }
 
         // Ensure directory structure
@@ -71,11 +79,7 @@ export class LedgerManager {
             throw error;
         }
     }
-        } catch (error) {
-            console.error('Failed to initialize Ledger DB:', error);
-            throw error;
-        }
-    }
+
 
     private initSchema(): void {
         if (!this.db) { return; }
@@ -294,13 +298,15 @@ export class LedgerManager {
     }
 
     private sign(hash: string): string {
-        const secret = this.context.globalState.get<string>('ledgerSecret') || this.generateSecret();
-        return crypto.createHmac('sha256', secret).update(hash).digest('hex');
+        if (!this.cachedSecret) {
+            throw new Error('Ledger secret not initialized');
+        }
+        return crypto.createHmac('sha256', this.cachedSecret).update(hash).digest('hex');
     }
 
-    private generateSecret(): string {
+    private async generateSecret(): Promise<string> {
         const secret = crypto.randomBytes(32).toString('hex');
-        this.context.globalState.update('ledgerSecret', secret);
+        await this.context.secrets.store('ledgerSecret', secret);
         return secret;
     }
 
@@ -313,11 +319,11 @@ export class LedgerManager {
         const rows = this.db.prepare('SELECT * FROM soa_ledger ORDER BY id ASC').all() as any[];
         if (rows.length === 0) { return true; }
 
-        const secret = this.context.globalState.get<string>('ledgerSecret');
-        if (!secret) {
+        if (!this.cachedSecret) {
             console.error('Ledger secret missing; cannot verify signatures');
             return false;
         }
+        const secret = this.cachedSecret;
 
         for (let i = 0; i < rows.length; i++) {
             const current = rows[i];

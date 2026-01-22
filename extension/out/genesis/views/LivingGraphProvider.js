@@ -93,7 +93,7 @@ class LivingGraphProvider {
     }
     handleNodeClick(nodeId) {
         // Open file in editor
-        vscode.workspace.openTextDocument(nodeId).then(doc => {
+        Promise.resolve(vscode.workspace.openTextDocument(nodeId)).then(doc => {
             vscode.window.showTextDocument(doc);
         }).catch(() => {
             // Node might be a module or concept, not a file

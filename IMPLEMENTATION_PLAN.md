@@ -56,9 +56,9 @@ This document formalizes the execution plan for the MythologIQ: FailSafe extensi
 
 **Goal**: Active monitoring with "Zo Mitigation" enhancements.
 
-- [ ] **Sprint 2.1**: Pattern Library (YAML + Custom).
-- [ ] **Sprint 2.2**: Structural Checks (File existence).
-- [ ] **Sprint 2.3 (NEW)**: **Macro-KISS Architecture Validation**.
+- [x] **Sprint 2.1**: Pattern Library (YAML + Custom).
+- [x] **Sprint 2.2**: Structural Checks (File existence).
+- [x] **Sprint 2.3 (NEW)**: **Macro-KISS Architecture Validation**.
   - _Lesson Learned_: Code quality checks missed architectural bloat.
   - _Implementation_: New Sentinel engine `ArchitectureEngine` that checks:
     - Number of active services vs. user count (heuristic).

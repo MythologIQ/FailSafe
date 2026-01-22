@@ -14,10 +14,12 @@ import * as vscode from 'vscode';
 import { EventBus } from '../shared/EventBus';
 import { SentinelVerdict } from '../shared/types';
 import { SentinelDaemon } from '../sentinel/SentinelDaemon';
+import { ArchitectureEngine } from '../sentinel/engines/ArchitectureEngine';
 import { QoreLogicManager } from '../qorelogic/QoreLogicManager';
 export declare class GenesisManager {
     private context;
     private sentinel;
+    private architectureEngine;
     private qorelogic;
     private eventBus;
     private logger;
@@ -27,7 +29,7 @@ export declare class GenesisManager {
     private l3ApprovalPanel;
     private intentScout;
     private graphData;
-    constructor(context: vscode.ExtensionContext, sentinel: SentinelDaemon, qorelogic: QoreLogicManager, eventBus: EventBus);
+    constructor(context: vscode.ExtensionContext, sentinel: SentinelDaemon, architectureEngine: ArchitectureEngine, qorelogic: QoreLogicManager, eventBus: EventBus);
     initialize(): Promise<void>;
     private setupEventSubscriptions;
     /**
@@ -78,6 +80,7 @@ export declare class GenesisManager {
      * Show trust summary for all agents
      */
     private showTrustSummary;
+    private runArchitectureScan;
     /**
      * Explain the last failure
      */

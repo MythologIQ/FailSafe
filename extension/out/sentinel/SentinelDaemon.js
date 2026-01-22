@@ -57,6 +57,7 @@ class SentinelDaemon {
     configManager;
     heuristicEngine;
     verdictEngine;
+    existenceEngine;
     qorelogic;
     eventBus;
     logger;
@@ -76,11 +77,12 @@ class SentinelDaemon {
     };
     startTime = 0;
     processInterval;
-    constructor(context, configManager, heuristicEngine, verdictEngine, qorelogic, eventBus) {
+    constructor(context, configManager, heuristicEngine, verdictEngine, existenceEngine, qorelogic, eventBus) {
         this.context = context;
         this.configManager = configManager;
         this.heuristicEngine = heuristicEngine;
         this.verdictEngine = verdictEngine;
+        this.existenceEngine = existenceEngine;
         this.qorelogic = qorelogic;
         this.eventBus = eventBus;
         this.logger = new Logger_1.Logger('Sentinel');
@@ -419,6 +421,27 @@ Respond with:
             this.logger.warn('LLM evaluation failed', error);
             return undefined;
         }
+    }
+    /**
+     * Validate an agent's claim (Existence Check)
+     */
+    async validateClaim(claim) {
+        this.logger.info('Validating agent claim', { agentDid: claim.agentDid });
+        const artifacts = claim.claimedArtifacts || [];
+        const existenceResults = this.existenceEngine.validateClaim(artifacts);
+        // Pass results to verdict engine (simplified for now, usually we'd merge with heuristics)
+        const verdict = await this.verdictEngine.generateVerdict({
+            id: crypto.randomUUID(),
+            type: 'AGENT_CLAIM',
+            timestamp: new Date().toISOString(),
+            priority: 'high',
+            source: 'agent_message',
+            payload: claim
+        }, artifacts[0] || 'claim_manifest', // Associate with first artifact for now
+        existenceResults, undefined // No LLM for basic existence check
+        );
+        this.eventBus.emit('sentinel.verdict', verdict);
+        return verdict;
     }
 }
 exports.SentinelDaemon = SentinelDaemon;

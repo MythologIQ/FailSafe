@@ -7,12 +7,13 @@
  * - File existence validation
  * - Dependency verification
  */
-import { HeuristicPattern, HeuristicResult } from '../../shared/types';
+import { HeuristicResult } from '../../shared/types';
 import { PolicyEngine } from '../../qorelogic/policies/PolicyEngine';
+import { PatternLoader } from '../PatternLoader';
 export declare class HeuristicEngine {
     private policyEngine;
-    private patterns;
-    constructor(policyEngine: PolicyEngine);
+    private patternLoader;
+    constructor(policyEngine: PolicyEngine, patternLoader: PatternLoader);
     /**
      * Analyze a file using heuristic patterns
      */
@@ -21,25 +22,5 @@ export declare class HeuristicEngine {
      * Calculate cyclomatic complexity (simplified)
      */
     private calculateComplexity;
-    /**
-     * Load default heuristic patterns
-     */
-    private loadDefaultPatterns;
-    /**
-     * Get all patterns
-     */
-    getPatterns(): HeuristicPattern[];
-    /**
-     * Add a custom pattern
-     */
-    addPattern(pattern: HeuristicPattern): void;
-    /**
-     * Disable a pattern
-     */
-    disablePattern(patternId: string): void;
-    /**
-     * Enable a pattern
-     */
-    enablePattern(patternId: string): void;
 }
 //# sourceMappingURL=HeuristicEngine.d.ts.map

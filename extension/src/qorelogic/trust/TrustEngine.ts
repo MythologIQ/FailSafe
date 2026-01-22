@@ -8,6 +8,7 @@
  */
 
 import * as crypto from 'crypto';
+import Database from 'better-sqlite3';
 import { LedgerManager } from '../ledger/LedgerManager';
 import {
     TrustScore,
@@ -20,6 +21,7 @@ import {
 export class TrustEngine {
     private ledgerManager: LedgerManager;
     private agents: Map<string, AgentIdentity> = new Map();
+    private db: Database.Database | undefined;
 
     // Trust configuration
     private readonly config = {
@@ -41,12 +43,29 @@ export class TrustEngine {
         this.ledgerManager = ledgerManager;
     }
 
+    async initialize(): Promise<void> {
+        this.db = this.ledgerManager.getDatabase();
+        const rows = this.db.prepare('SELECT * FROM agent_trust').all() as any[];
+        for (const row of rows) {
+            const identity: AgentIdentity = {
+                did: row.did,
+                persona: row.persona as PersonaType,
+                publicKey: row.public_key,
+                trustScore: row.trust_score,
+                trustStage: row.trust_stage as TrustStage,
+                isQuarantined: row.is_quarantined === 1,
+                createdAt: row.created_at
+            };
+            this.agents.set(identity.did, identity);
+        }
+    }
+
     /**
      * Register a new agent
      */
-    async registerAgent(persona: string, publicKey: string): Promise<AgentIdentity> {
+    async registerAgent(persona: string, publicKey: string, didOverride?: string): Promise<AgentIdentity> {
         const nonce = crypto.randomBytes(6).toString('hex');
-        const did = `did:myth:${persona}:${nonce}`;
+        const did = didOverride || `did:myth:${persona}:${nonce}`;
 
         const identity: AgentIdentity = {
             did,
@@ -59,6 +78,7 @@ export class TrustEngine {
         };
 
         this.agents.set(did, identity);
+        this.persistAgent(identity);
 
         return identity;
     }
@@ -108,9 +128,7 @@ export class TrustEngine {
 
         // Auto-register unknown agents with default trust
         if (!agent) {
-            agent = await this.registerAgent('scrivener', 'auto-registered');
-            agent.did = did; // Use the provided DID
-            this.agents.set(did, agent);
+            agent = await this.registerAgent('scrivener', 'auto-registered', did);
         }
 
         const previousScore = agent.trustScore;
@@ -146,6 +164,7 @@ export class TrustEngine {
 
         // Update stage
         agent.trustStage = this.determineStage(agent.trustScore);
+        this.persistAgent(agent);
 
         const update: TrustUpdate = {
             did,
@@ -184,6 +203,7 @@ export class TrustEngine {
         }
 
         agent.isQuarantined = true;
+        this.persistAgent(agent);
 
         await this.ledgerManager.appendEntry({
             eventType: 'QUARANTINE_START',
@@ -203,6 +223,7 @@ export class TrustEngine {
         }
 
         agent.isQuarantined = false;
+        this.persistAgent(agent);
 
         await this.ledgerManager.appendEntry({
             eventType: 'QUARANTINE_END',
@@ -251,5 +272,36 @@ export class TrustEngine {
         }
 
         return Math.max(0.1, Math.min(2.0, weight));
+    }
+
+    private persistAgent(agent: AgentIdentity): void {
+        const db = this.db || this.ledgerManager.getDatabase();
+        const now = new Date().toISOString();
+        const sql = `
+            INSERT INTO agent_trust (
+                did, persona, public_key, trust_score, trust_stage,
+                is_quarantined, created_at, updated_at
+            ) VALUES (
+                @did, @persona, @publicKey, @trustScore, @trustStage,
+                @isQuarantined, @createdAt, @updatedAt
+            )
+            ON CONFLICT(did) DO UPDATE SET
+                persona = excluded.persona,
+                public_key = excluded.public_key,
+                trust_score = excluded.trust_score,
+                trust_stage = excluded.trust_stage,
+                is_quarantined = excluded.is_quarantined,
+                updated_at = excluded.updated_at
+        `;
+        db.prepare(sql).run({
+            did: agent.did,
+            persona: agent.persona,
+            publicKey: agent.publicKey,
+            trustScore: agent.trustScore,
+            trustStage: agent.trustStage,
+            isQuarantined: agent.isQuarantined ? 1 : 0,
+            createdAt: agent.createdAt,
+            updatedAt: now
+        });
     }
 }

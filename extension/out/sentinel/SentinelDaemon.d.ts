@@ -17,12 +17,14 @@ import { ConfigManager } from '../shared/ConfigManager';
 import { SentinelStatus, SentinelVerdict } from '../shared/types';
 import { HeuristicEngine } from './engines/HeuristicEngine';
 import { VerdictEngine } from './engines/VerdictEngine';
+import { ExistenceEngine } from './engines/ExistenceEngine';
 import { QoreLogicManager } from '../qorelogic/QoreLogicManager';
 export declare class SentinelDaemon {
     private context;
     private configManager;
     private heuristicEngine;
     private verdictEngine;
+    private existenceEngine;
     private qorelogic;
     private eventBus;
     private logger;
@@ -32,7 +34,7 @@ export declare class SentinelDaemon {
     private status;
     private startTime;
     private processInterval;
-    constructor(context: vscode.ExtensionContext, configManager: ConfigManager, heuristicEngine: HeuristicEngine, verdictEngine: VerdictEngine, qorelogic: QoreLogicManager, eventBus: EventBus);
+    constructor(context: vscode.ExtensionContext, configManager: ConfigManager, heuristicEngine: HeuristicEngine, verdictEngine: VerdictEngine, existenceEngine: ExistenceEngine, qorelogic: QoreLogicManager, eventBus: EventBus);
     /**
      * Start the Sentinel daemon
      */
@@ -85,5 +87,9 @@ export declare class SentinelDaemon {
      * Invoke LLM for deeper evaluation
      */
     private invokeLLM;
+    /**
+     * Validate an agent's claim (Existence Check)
+     */
+    validateClaim(claim: any): Promise<SentinelVerdict>;
 }
 //# sourceMappingURL=SentinelDaemon.d.ts.map

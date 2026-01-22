@@ -130,25 +130,32 @@ class ConfigManager {
      * Ensure the .failsafe directory structure exists and populate default configs
      */
     async ensureDirectoryStructure() {
-        const failsafeDir = this.getFailSafeDir();
-        const feedbackDir = this.getFeedbackDir();
-        const dirs = [
-            failsafeDir,
-            path.join(failsafeDir, 'config'),
-            path.join(failsafeDir, 'config', 'personas'),
-            path.join(failsafeDir, 'config', 'policies'),
-            path.join(failsafeDir, 'ledger'),
-            path.join(failsafeDir, 'keystore'),
-            path.join(failsafeDir, 'cache'),
-            path.join(failsafeDir, 'logs'),
-            feedbackDir
-        ];
-        for (const dir of dirs) {
-            if (!fs.existsSync(dir)) {
-                fs.mkdirSync(dir, { recursive: true });
+        try {
+            const failsafeDir = this.getFailSafeDir();
+            const feedbackDir = this.getFeedbackDir();
+            const dirs = [
+                failsafeDir,
+                path.join(failsafeDir, 'config'),
+                path.join(failsafeDir, 'config', 'personas'),
+                path.join(failsafeDir, 'config', 'policies'),
+                path.join(failsafeDir, 'ledger'),
+                path.join(failsafeDir, 'keystore'),
+                path.join(failsafeDir, 'cache'),
+                path.join(failsafeDir, 'logs'),
+                feedbackDir
+            ];
+            for (const dir of dirs) {
+                if (!fs.existsSync(dir)) {
+                    fs.mkdirSync(dir, { recursive: true });
+                }
             }
+            await this.ensureConfigFiles();
         }
-        await this.ensureConfigFiles();
+        catch (error) {
+            console.error('Failed to initialize FailSafe directory structure:', error);
+            vscode.window.showErrorMessage('FailSafe initialization failed: Could not create .failsafe directory. check permissions.');
+            throw error;
+        }
     }
     /**
      * Populate default configuration files if they are missing
@@ -165,7 +172,7 @@ sentinel:
   localModel: "phi3:mini"
   ollamaEndpoint: "http://localhost:11434"
 `;
-            fs.writeFileSync(sentinelConfig, content);
+            await this.writeConfigAtomic(sentinelConfig, content);
         }
         // 2. personas/scrivener.yaml
         const scrivenerConfig = path.join(failsafeDir, 'config', 'personas', 'scrivener.yaml');
@@ -180,7 +187,7 @@ verification_requirements:
   L2: full_sentinel_pass
   L3: escalate_to_overseer
 `;
-            fs.writeFileSync(scrivenerConfig, content);
+            await this.writeConfigAtomic(scrivenerConfig, content);
         }
         // 3. policies/risk_grading.yaml
         const riskConfig = path.join(failsafeDir, 'config', 'policies', 'risk_grading.yaml');
@@ -193,7 +200,21 @@ auto_classification:
   content_triggers:
     L3: ["private_key", "password", "api_key"]
 `;
-            fs.writeFileSync(riskConfig, content);
+            await this.writeConfigAtomic(riskConfig, content);
+        }
+    }
+    async writeConfigAtomic(filePath, content) {
+        const tempPath = `${filePath}.tmp`;
+        try {
+            await fs.promises.writeFile(tempPath, content, 'utf8');
+            await fs.promises.rename(tempPath, filePath);
+        }
+        catch (error) {
+            console.error(`Failed to write config file ${filePath}:`, error);
+            if (fs.existsSync(tempPath)) {
+                fs.unlinkSync(tempPath);
+            }
+            throw error;
         }
     }
     /**

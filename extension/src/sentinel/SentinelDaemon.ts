@@ -30,6 +30,7 @@ import {
 } from '../shared/types';
 import { HeuristicEngine } from './engines/HeuristicEngine';
 import { VerdictEngine } from './engines/VerdictEngine';
+import { ExistenceEngine } from './engines/ExistenceEngine';
 import { QoreLogicManager } from '../qorelogic/QoreLogicManager';
 
 export class SentinelDaemon {
@@ -37,6 +38,7 @@ export class SentinelDaemon {
     private configManager: ConfigManager;
     private heuristicEngine: HeuristicEngine;
     private verdictEngine: VerdictEngine;
+    private existenceEngine: ExistenceEngine;
     private qorelogic: QoreLogicManager;
     private eventBus: EventBus;
     private logger: Logger;
@@ -65,6 +67,7 @@ export class SentinelDaemon {
         configManager: ConfigManager,
         heuristicEngine: HeuristicEngine,
         verdictEngine: VerdictEngine,
+        existenceEngine: ExistenceEngine,
         qorelogic: QoreLogicManager,
         eventBus: EventBus
     ) {
@@ -72,6 +75,7 @@ export class SentinelDaemon {
         this.configManager = configManager;
         this.heuristicEngine = heuristicEngine;
         this.verdictEngine = verdictEngine;
+        this.existenceEngine = existenceEngine;
         this.qorelogic = qorelogic;
         this.eventBus = eventBus;
         this.logger = new Logger('Sentinel');
@@ -457,7 +461,7 @@ Respond with:
                 return undefined;
             }
 
-            const result = await response.json();
+            const result = await response.json() as any;
             return {
                 model,
                 promptUsed: prompt,
@@ -469,5 +473,32 @@ Respond with:
             this.logger.warn('LLM evaluation failed', error);
             return undefined;
         }
+    }
+    /**
+     * Validate an agent's claim (Existence Check)
+     */
+    async validateClaim(claim: any): Promise<SentinelVerdict> {
+        this.logger.info('Validating agent claim', { agentDid: claim.agentDid });
+
+        const artifacts = claim.claimedArtifacts || [];
+        const existenceResults = this.existenceEngine.validateClaim(artifacts);
+        
+        // Pass results to verdict engine (simplified for now, usually we'd merge with heuristics)
+        const verdict = await this.verdictEngine.generateVerdict(
+            {
+                id: crypto.randomUUID(),
+                type: 'AGENT_CLAIM',
+                timestamp: new Date().toISOString(),
+                priority: 'high',
+                source: 'agent_message',
+                payload: claim
+            },
+            artifacts[0] || 'claim_manifest', // Associate with first artifact for now
+            existenceResults,
+            undefined // No LLM for basic existence check
+        );
+
+        this.eventBus.emit('sentinel.verdict', verdict);
+        return verdict;
     }
 }

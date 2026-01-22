@@ -56,6 +56,7 @@ const IntentScout_1 = require("./cortex/IntentScout");
 class GenesisManager {
     context;
     sentinel;
+    architectureEngine;
     qorelogic;
     eventBus;
     logger;
@@ -65,9 +66,10 @@ class GenesisManager {
     l3ApprovalPanel;
     intentScout;
     graphData;
-    constructor(context, sentinel, qorelogic, eventBus) {
+    constructor(context, sentinel, architectureEngine, qorelogic, eventBus) {
         this.context = context;
         this.sentinel = sentinel;
+        this.architectureEngine = architectureEngine;
         this.qorelogic = qorelogic;
         this.eventBus = eventBus;
         this.logger = new Logger_1.Logger('Genesis');
@@ -103,7 +105,7 @@ class GenesisManager {
             this.dashboardPanel.reveal();
         }
         else {
-            this.dashboardPanel = new DashboardPanel_1.DashboardPanel(this.context.extensionUri, this.sentinel, this.qorelogic, this.eventBus);
+            this.dashboardPanel = DashboardPanel_1.DashboardPanel.createOrShow(this.context.extensionUri, this.sentinel, this.qorelogic, this.eventBus);
         }
     }
     /**
@@ -114,7 +116,7 @@ class GenesisManager {
             this.livingGraphPanel.reveal();
         }
         else {
-            this.livingGraphPanel = new LivingGraphPanel_1.LivingGraphPanel(this.context.extensionUri, this.graphData, this.eventBus);
+            this.livingGraphPanel = LivingGraphPanel_1.LivingGraphPanel.createOrShow(this.context.extensionUri, this.graphData, this.eventBus);
         }
     }
     /**
@@ -150,6 +152,9 @@ class GenesisManager {
                     vscode.commands.executeCommand('failsafe.auditFile');
                 }
                 break;
+            case 'audit_architecture':
+                await this.runArchitectureScan();
+                break;
             case 'show_graph':
                 this.showLivingGraph();
                 break;
@@ -183,7 +188,7 @@ class GenesisManager {
             this.ledgerViewerPanel.reveal();
         }
         else {
-            this.ledgerViewerPanel = new LedgerViewerPanel_1.LedgerViewerPanel(this.context.extensionUri, this.qorelogic.getLedgerManager());
+            this.ledgerViewerPanel = LedgerViewerPanel_1.LedgerViewerPanel.createOrShow(this.context.extensionUri, this.qorelogic.getLedgerManager());
         }
     }
     /**
@@ -194,7 +199,7 @@ class GenesisManager {
             this.l3ApprovalPanel.reveal();
         }
         else {
-            this.l3ApprovalPanel = new L3ApprovalPanel_1.L3ApprovalPanel(this.context.extensionUri, this.qorelogic, this.eventBus);
+            this.l3ApprovalPanel = L3ApprovalPanel_1.L3ApprovalPanel.createOrShow(this.context.extensionUri, this.qorelogic, this.eventBus);
         }
     }
     /**
@@ -290,6 +295,22 @@ class GenesisManager {
             placeHolder: 'Agent Trust Scores',
             canPickMany: false
         });
+    }
+    async runArchitectureScan() {
+        this.emitStreamEvent('system', 'info', 'Starting Architecture Scan...');
+        const root = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+        if (!root)
+            return;
+        const report = await this.architectureEngine.analyzeWorkspace(root);
+        let msg = `Architecture Score: ${report.score}/100. `;
+        if (report.smells.length > 0) {
+            msg += `Found ${report.smells.length} smells: ` + report.smells.map(s => s.name).join(', ');
+        }
+        else {
+            msg += "Clean architecture.";
+        }
+        this.emitStreamEvent('sentinel', report.score < 80 ? 'warn' : 'info', 'Architecture Report', msg);
+        vscode.window.showInformationMessage(msg);
     }
     /**
      * Explain the last failure

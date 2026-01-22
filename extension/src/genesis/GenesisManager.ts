@@ -16,6 +16,7 @@ import { EventBus } from '../shared/EventBus';
 import { Logger } from '../shared/Logger';
 import { SentinelVerdict, LivingGraphData, CortexIntent } from '../shared/types';
 import { SentinelDaemon } from '../sentinel/SentinelDaemon';
+import { ArchitectureEngine } from '../sentinel/engines/ArchitectureEngine';
 import { QoreLogicManager } from '../qorelogic/QoreLogicManager';
 import { LivingGraphPanel } from './panels/LivingGraphPanel';
 import { DashboardPanel } from './panels/DashboardPanel';
@@ -26,6 +27,7 @@ import { IntentScout } from './cortex/IntentScout';
 export class GenesisManager {
     private context: vscode.ExtensionContext;
     private sentinel: SentinelDaemon;
+    private architectureEngine: ArchitectureEngine;
     private qorelogic: QoreLogicManager;
     private eventBus: EventBus;
     private logger: Logger;
@@ -41,11 +43,13 @@ export class GenesisManager {
     constructor(
         context: vscode.ExtensionContext,
         sentinel: SentinelDaemon,
+        architectureEngine: ArchitectureEngine,
         qorelogic: QoreLogicManager,
         eventBus: EventBus
     ) {
         this.context = context;
         this.sentinel = sentinel;
+        this.architectureEngine = architectureEngine;
         this.qorelogic = qorelogic;
         this.eventBus = eventBus;
         this.logger = new Logger('Genesis');
@@ -88,7 +92,7 @@ export class GenesisManager {
         if (this.dashboardPanel) {
             this.dashboardPanel.reveal();
         } else {
-            this.dashboardPanel = new DashboardPanel(
+            this.dashboardPanel = DashboardPanel.createOrShow(
                 this.context.extensionUri,
                 this.sentinel,
                 this.qorelogic,
@@ -104,7 +108,7 @@ export class GenesisManager {
         if (this.livingGraphPanel) {
             this.livingGraphPanel.reveal();
         } else {
-            this.livingGraphPanel = new LivingGraphPanel(
+            this.livingGraphPanel = LivingGraphPanel.createOrShow(
                 this.context.extensionUri,
                 this.graphData,
                 this.eventBus
@@ -149,6 +153,10 @@ export class GenesisManager {
                 }
                 break;
 
+            case 'audit_architecture': 
+                await this.runArchitectureScan();
+                break;
+
             case 'show_graph':
                 this.showLivingGraph();
                 break;
@@ -191,7 +199,7 @@ export class GenesisManager {
         if (this.ledgerViewerPanel) {
             this.ledgerViewerPanel.reveal();
         } else {
-            this.ledgerViewerPanel = new LedgerViewerPanel(
+            this.ledgerViewerPanel = LedgerViewerPanel.createOrShow(
                 this.context.extensionUri,
                 this.qorelogic.getLedgerManager()
             );
@@ -205,7 +213,7 @@ export class GenesisManager {
         if (this.l3ApprovalPanel) {
             this.l3ApprovalPanel.reveal();
         } else {
-            this.l3ApprovalPanel = new L3ApprovalPanel(
+            this.l3ApprovalPanel = L3ApprovalPanel.createOrShow(
                 this.context.extensionUri,
                 this.qorelogic,
                 this.eventBus
@@ -317,6 +325,24 @@ export class GenesisManager {
             placeHolder: 'Agent Trust Scores',
             canPickMany: false
         });
+    }
+
+    private async runArchitectureScan(): Promise<void> {
+        this.emitStreamEvent('system', 'info', 'Starting Architecture Scan...');
+        const root = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+        if (!root) return;
+
+        const report = await this.architectureEngine.analyzeWorkspace(root);
+        
+        let msg = `Architecture Score: ${report.score}/100. `;
+        if (report.smells.length > 0) {
+            msg += `Found ${report.smells.length} smells: ` + report.smells.map(s => s.name).join(', ');
+        } else {
+            msg += "Clean architecture.";
+        }
+        
+        this.emitStreamEvent('sentinel', report.score < 80 ? 'warn' : 'info', 'Architecture Report', msg);
+        vscode.window.showInformationMessage(msg);
     }
 
     /**

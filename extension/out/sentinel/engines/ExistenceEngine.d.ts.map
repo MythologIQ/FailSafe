@@ -1,0 +1,1 @@
+{"version":3,"file":"ExistenceEngine.d.ts","sourceRoot":"","sources":["../../../src/sentinel/engines/ExistenceEngine.ts"],"names":[],"mappings":"AAMA,OAAO,EAAE,eAAe,EAAE,MAAM,oBAAoB,CAAC;AACrD,OAAO,EAAE,aAAa,EAAE,MAAM,4BAA4B,CAAC;AAE3D,qBAAa,eAAe;IACxB,OAAO,CAAC,aAAa,CAAgB;gBAEzB,aAAa,EAAE,aAAa;IAIxC;;;OAGG;IACI,aAAa,CAAC,SAAS,EAAE,MAAM,EAAE,GAAG,eAAe,EAAE;CAiD/D"}

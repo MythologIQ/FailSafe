@@ -40,6 +40,7 @@ export declare class ConfigManager {
      * Populate default configuration files if they are missing
      */
     private ensureConfigFiles;
+    private writeConfigAtomic;
     /**
      * Get a value from extension global state
      */

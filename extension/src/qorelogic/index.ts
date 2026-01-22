@@ -15,3 +15,6 @@ export { TrustEngine } from './trust/TrustEngine';
 
 // Policies
 export { PolicyEngine } from './policies/PolicyEngine';
+
+// Shadow Genome (Failure Archival)
+export { ShadowGenomeManager } from './shadow/ShadowGenomeManager';

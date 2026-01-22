@@ -25,6 +25,16 @@ export class IntentScout {
             ]
         },
         {
+            intent: 'audit_architecture',
+            keywords: ['architecture', 'bloat', 'polyglot', 'structure', 'smells'],
+            patterns: [
+                /audit\s+architecture/i,
+                /check\s+architecture/i,
+                /architecture\s+scan/i,
+                /find\s+bloat/i
+            ]
+        },
+        {
             intent: 'show_graph',
             keywords: ['graph', 'dependencies', 'visualize', 'show graph', 'living graph'],
             patterns: [

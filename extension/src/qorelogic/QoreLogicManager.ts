@@ -17,17 +17,22 @@ import {
     L3ApprovalState,
     TrustScore,
     AgentIdentity,
-    LedgerEntry
+    LedgerEntry,
+    SentinelVerdict,
+    ShadowGenomeEntry,
+    FailureMode
 } from '../shared/types';
 import { LedgerManager } from './ledger/LedgerManager';
 import { TrustEngine } from './trust/TrustEngine';
 import { PolicyEngine } from './policies/PolicyEngine';
+import { ShadowGenomeManager } from './shadow/ShadowGenomeManager';
 
 export class QoreLogicManager {
     private context: vscode.ExtensionContext;
     private ledgerManager: LedgerManager;
     private trustEngine: TrustEngine;
     private policyEngine: PolicyEngine;
+    private shadowGenomeManager: ShadowGenomeManager;
     private eventBus: EventBus;
     private logger: Logger;
 
@@ -38,12 +43,14 @@ export class QoreLogicManager {
         ledgerManager: LedgerManager,
         trustEngine: TrustEngine,
         policyEngine: PolicyEngine,
+        shadowGenomeManager: ShadowGenomeManager,
         eventBus: EventBus
     ) {
         this.context = context;
         this.ledgerManager = ledgerManager;
         this.trustEngine = trustEngine;
         this.policyEngine = policyEngine;
+        this.shadowGenomeManager = shadowGenomeManager;
         this.eventBus = eventBus;
         this.logger = new Logger('QoreLogic');
     }
@@ -202,7 +209,79 @@ export class QoreLogicManager {
         await this.context.workspaceState.update('l3Queue', this.l3Queue);
     }
 
+    // =========================================================================
+    // SHADOW GENOME (Failure Archival)
+    // =========================================================================
+
+    /**
+     * Get the shadow genome manager instance
+     */
+    getShadowGenomeManager(): ShadowGenomeManager {
+        return this.shadowGenomeManager;
+    }
+
+    /**
+     * Archive a failed verdict to the Shadow Genome
+     */
+    async archiveFailedVerdict(
+        verdict: SentinelVerdict,
+        inputVector: string,
+        environmentContext?: string
+    ): Promise<ShadowGenomeEntry | null> {
+        // Only archive non-PASS verdicts
+        if (verdict.decision === 'PASS') {
+            return null;
+        }
+
+        try {
+            const entry = await this.shadowGenomeManager.archiveFailure({
+                verdict,
+                inputVector,
+                decisionRationale: verdict.summary,
+                environmentContext,
+                causalVector: verdict.details
+            });
+
+            this.logger.info('Archived failure to Shadow Genome', {
+                entryId: entry.id,
+                failureMode: entry.failureMode,
+                agentDid: verdict.agentDid
+            });
+
+            return entry;
+        } catch (error) {
+            this.logger.error('Failed to archive to Shadow Genome', { error });
+            return null;
+        }
+    }
+
+    /**
+     * Get negative constraints for an agent (for learning injection)
+     */
+    async getAgentNegativeConstraints(agentDid: string): Promise<string[]> {
+        return this.shadowGenomeManager.getNegativeConstraintsForAgent(agentDid);
+    }
+
+    /**
+     * Get failure patterns across all agents (for systemic learning)
+     */
+    async getFailurePatterns(): Promise<{
+        failureMode: FailureMode;
+        count: number;
+        agentDids: string[];
+        recentCauses: string[];
+    }[]> {
+        return this.shadowGenomeManager.analyzeFailurePatterns();
+    }
+
+    /**
+     * Get failure history for an agent
+     */
+    async getAgentFailureHistory(agentDid: string, limit: number = 20): Promise<ShadowGenomeEntry[]> {
+        return this.shadowGenomeManager.getEntriesByAgent(agentDid, limit);
+    }
+
     dispose(): void {
-        // Cleanup if needed
+        this.shadowGenomeManager.close();
     }
 }

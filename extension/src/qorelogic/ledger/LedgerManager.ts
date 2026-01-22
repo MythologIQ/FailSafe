@@ -110,6 +110,17 @@ export class LedgerManager {
         CREATE INDEX IF NOT EXISTS idx_soa_agent ON soa_ledger(agent_did);
         CREATE INDEX IF NOT EXISTS idx_soa_artifact ON soa_ledger(artifact_path);
         CREATE INDEX IF NOT EXISTS idx_soa_event_type ON soa_ledger(event_type);
+        CREATE TABLE IF NOT EXISTS agent_trust (
+            did TEXT PRIMARY KEY,
+            persona TEXT NOT NULL,
+            public_key TEXT NOT NULL,
+            trust_score REAL NOT NULL,
+            trust_stage TEXT NOT NULL,
+            is_quarantined INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_agent_trust_persona ON agent_trust(persona);
         `;
 
         this.db.exec(schema);
@@ -379,5 +390,12 @@ export class LedgerManager {
     close(): void {
         this.db?.close();
         this.db = undefined;
+    }
+
+    getDatabase(): Database.Database {
+        if (!this.db) {
+            throw new Error('Ledger DB not initialized');
+        }
+        return this.db;
     }
 }

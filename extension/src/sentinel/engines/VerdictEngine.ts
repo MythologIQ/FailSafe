@@ -18,20 +18,24 @@ import {
 import { TrustEngine } from '../../qorelogic/trust/TrustEngine';
 import { PolicyEngine } from '../../qorelogic/policies/PolicyEngine';
 import { LedgerManager } from '../../qorelogic/ledger/LedgerManager';
+import { ShadowGenomeManager } from '../../qorelogic/shadow/ShadowGenomeManager';
 
 export class VerdictEngine {
     private trustEngine: TrustEngine;
     private policyEngine: PolicyEngine;
     private ledgerManager: LedgerManager;
+    private shadowGenomeManager?: ShadowGenomeManager;
 
     constructor(
         trustEngine: TrustEngine,
         policyEngine: PolicyEngine,
-        ledgerManager: LedgerManager
+        ledgerManager: LedgerManager,
+        shadowGenomeManager?: ShadowGenomeManager
     ) {
         this.trustEngine = trustEngine;
         this.policyEngine = policyEngine;
         this.ledgerManager = ledgerManager;
+        this.shadowGenomeManager = shadowGenomeManager;
     }
 
     /**
@@ -288,6 +292,31 @@ export class VerdictEngine {
                     type: 'TRUST_UPDATE',
                     status: 'failed',
                     details: `Failed to update trust: ${error}`
+                });
+            }
+        }
+
+        // Archive to Shadow Genome for non-PASS verdicts
+        if (verdict.decision !== 'PASS' && this.shadowGenomeManager) {
+            try {
+                const inputVector = verdict.artifactPath || 'unknown';
+                const entry = await this.shadowGenomeManager.archiveFailure({
+                    verdict,
+                    inputVector,
+                    decisionRationale: verdict.summary,
+                    causalVector: verdict.details
+                });
+
+                actions.push({
+                    type: 'SHADOW_ARCHIVE',
+                    status: 'completed',
+                    details: `Archived to Shadow Genome entry #${entry.id}`
+                });
+            } catch (error) {
+                actions.push({
+                    type: 'SHADOW_ARCHIVE',
+                    status: 'failed',
+                    details: `Failed to archive: ${error}`
                 });
             }
         }

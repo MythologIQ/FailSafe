@@ -190,6 +190,8 @@
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
+    "@types/glob": "^8.1.0",
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.10.0",
     "@types/vscode": "^1.74.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
@@ -202,7 +204,8 @@
     "better-sqlite3": "^9.2.2",
     "chokidar": "^3.5.3",
     "d3": "^7.8.5",
-    "glob": "^10.3.10",
+    "glob": "^10.5.0",
+    "js-yaml": "^4.1.1",
     "uuid": "^9.0.0"
   }
 }

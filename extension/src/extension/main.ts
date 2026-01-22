@@ -10,27 +10,31 @@
 import * as vscode from 'vscode';
 
 // Genesis imports
-import { GenesisManager } from './genesis/GenesisManager';
-import { LivingGraphProvider } from './genesis/views/LivingGraphProvider';
-import { DojoViewProvider } from './genesis/views/DojoViewProvider';
-import { CortexStreamProvider } from './genesis/views/CortexStreamProvider';
-import { HallucinationDecorator } from './genesis/decorators/HallucinationDecorator';
+import { GenesisManager } from '../genesis/GenesisManager';
+import { LivingGraphProvider } from '../genesis/views/LivingGraphProvider';
+import { DojoViewProvider } from '../genesis/views/DojoViewProvider';
+import { CortexStreamProvider } from '../genesis/views/CortexStreamProvider';
+import { HallucinationDecorator } from '../genesis/decorators/HallucinationDecorator';
 
 // QoreLogic imports
-import { QoreLogicManager } from './qorelogic/QoreLogicManager';
-import { LedgerManager } from './qorelogic/ledger/LedgerManager';
-import { TrustEngine } from './qorelogic/trust/TrustEngine';
-import { PolicyEngine } from './qorelogic/policies/PolicyEngine';
+import { QoreLogicManager } from '../qorelogic/QoreLogicManager';
+import { LedgerManager } from '../qorelogic/ledger/LedgerManager';
+import { TrustEngine } from '../qorelogic/trust/TrustEngine';
+import { PolicyEngine } from '../qorelogic/policies/PolicyEngine';
+import { ShadowGenomeManager } from '../qorelogic/shadow/ShadowGenomeManager';
 
 // Sentinel imports
-import { SentinelDaemon } from './sentinel/SentinelDaemon';
-import { HeuristicEngine } from './sentinel/engines/HeuristicEngine';
-import { VerdictEngine } from './sentinel/engines/VerdictEngine';
+import { SentinelDaemon } from '../sentinel/SentinelDaemon';
+import { HeuristicEngine } from '../sentinel/engines/HeuristicEngine';
+import { VerdictEngine } from '../sentinel/engines/VerdictEngine';
+import { PatternLoader } from '../sentinel/PatternLoader';
+import { ExistenceEngine } from '../sentinel/engines/ExistenceEngine';
+import { ArchitectureEngine } from '../sentinel/engines/ArchitectureEngine';
 
 // Shared
-import { EventBus } from './shared/EventBus';
-import { Logger } from './shared/Logger';
-import { ConfigManager } from './shared/ConfigManager';
+import { EventBus } from '../shared/EventBus';
+import { Logger } from '../shared/Logger';
+import { ConfigManager } from '../shared/ConfigManager';
 
 let genesisManager: GenesisManager;
 let qorelogicManager: QoreLogicManager;
@@ -54,18 +58,23 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         // ============================================================
         logger.info('Initializing QoreLogic layer...');
 
-        const ledgerManager = new LedgerManager(context, configManager);
+        ledgerManager = new LedgerManager(context, configManager);
         await ledgerManager.initialize();
 
         const trustEngine = new TrustEngine(ledgerManager);
+        await trustEngine.initialize();
         const policyEngine = new PolicyEngine(context);
         await policyEngine.loadPolicies();
+
+        shadowGenomeManager = new ShadowGenomeManager(context, configManager, ledgerManager);
+        await shadowGenomeManager.initialize();
 
         qorelogicManager = new QoreLogicManager(
             context,
             ledgerManager,
             trustEngine,
             policyEngine,
+            shadowGenomeManager,
             eventBus
         );
         await qorelogicManager.initialize();
@@ -75,14 +84,20 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         // ============================================================
         logger.info('Initializing Sentinel daemon...');
 
-        const heuristicEngine = new HeuristicEngine(policyEngine);
-        const verdictEngine = new VerdictEngine(trustEngine, policyEngine, ledgerManager);
+        const patternLoader = new PatternLoader(configManager.getWorkspaceRoot());
+        await patternLoader.loadCustomPatterns();
+
+        const heuristicEngine = new HeuristicEngine(policyEngine, patternLoader);
+        const verdictEngine = new VerdictEngine(trustEngine, policyEngine, ledgerManager, shadowGenomeManager);
+        const existenceEngine = new ExistenceEngine(configManager);
+        const architectureEngine = new ArchitectureEngine();
 
         sentinelDaemon = new SentinelDaemon(
             context,
             configManager,
             heuristicEngine,
             verdictEngine,
+            existenceEngine,
             qorelogicManager,
             eventBus
         );
@@ -116,6 +131,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         genesisManager = new GenesisManager(
             context,
             sentinelDaemon,
+            architectureEngine,
             qorelogicManager,
             eventBus
         );
@@ -232,12 +248,14 @@ function registerCommands(
 
 // Module-scope managers defined at lines 35-39
 let ledgerManager: LedgerManager;
+let shadowGenomeManager: ShadowGenomeManager;
 
 export function deactivate(): void {
     logger?.info('Deactivating MythologIQ: FailSafe...');
 
-    // P0 FIX: Close ledger database connection first to prevent locks
+    // P0 FIX: Close database connections first to prevent locks
     ledgerManager?.close();
+    shadowGenomeManager?.close();
 
     // Stop Sentinel daemon
     sentinelDaemon?.stop();

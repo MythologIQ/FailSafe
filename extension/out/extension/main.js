@@ -45,23 +45,26 @@ exports.activate = activate;
 exports.deactivate = deactivate;
 const vscode = __importStar(require("vscode"));
 // Genesis imports
-const GenesisManager_1 = require("./genesis/GenesisManager");
-const DojoViewProvider_1 = require("./genesis/views/DojoViewProvider");
-const CortexStreamProvider_1 = require("./genesis/views/CortexStreamProvider");
-const HallucinationDecorator_1 = require("./genesis/decorators/HallucinationDecorator");
+const GenesisManager_1 = require("../genesis/GenesisManager");
+const DojoViewProvider_1 = require("../genesis/views/DojoViewProvider");
+const CortexStreamProvider_1 = require("../genesis/views/CortexStreamProvider");
+const HallucinationDecorator_1 = require("../genesis/decorators/HallucinationDecorator");
 // QoreLogic imports
-const QoreLogicManager_1 = require("./qorelogic/QoreLogicManager");
-const LedgerManager_1 = require("./qorelogic/ledger/LedgerManager");
-const TrustEngine_1 = require("./qorelogic/trust/TrustEngine");
-const PolicyEngine_1 = require("./qorelogic/policies/PolicyEngine");
+const QoreLogicManager_1 = require("../qorelogic/QoreLogicManager");
+const LedgerManager_1 = require("../qorelogic/ledger/LedgerManager");
+const TrustEngine_1 = require("../qorelogic/trust/TrustEngine");
+const PolicyEngine_1 = require("../qorelogic/policies/PolicyEngine");
 // Sentinel imports
-const SentinelDaemon_1 = require("./sentinel/SentinelDaemon");
-const HeuristicEngine_1 = require("./sentinel/engines/HeuristicEngine");
-const VerdictEngine_1 = require("./sentinel/engines/VerdictEngine");
+const SentinelDaemon_1 = require("../sentinel/SentinelDaemon");
+const HeuristicEngine_1 = require("../sentinel/engines/HeuristicEngine");
+const VerdictEngine_1 = require("../sentinel/engines/VerdictEngine");
+const PatternLoader_1 = require("../sentinel/PatternLoader");
+const ExistenceEngine_1 = require("../sentinel/engines/ExistenceEngine");
+const ArchitectureEngine_1 = require("../sentinel/engines/ArchitectureEngine");
 // Shared
-const EventBus_1 = require("./shared/EventBus");
-const Logger_1 = require("./shared/Logger");
-const ConfigManager_1 = require("./shared/ConfigManager");
+const EventBus_1 = require("../shared/EventBus");
+const Logger_1 = require("../shared/Logger");
+const ConfigManager_1 = require("../shared/ConfigManager");
 let genesisManager;
 let qorelogicManager;
 let sentinelDaemon;
@@ -79,7 +82,7 @@ async function activate(context) {
         // PHASE 1: Initialize QoreLogic Layer (Governance Framework)
         // ============================================================
         logger.info('Initializing QoreLogic layer...');
-        const ledgerManager = new LedgerManager_1.LedgerManager(context, configManager);
+        ledgerManager = new LedgerManager_1.LedgerManager(context, configManager);
         await ledgerManager.initialize();
         const trustEngine = new TrustEngine_1.TrustEngine(ledgerManager);
         const policyEngine = new PolicyEngine_1.PolicyEngine(context);
@@ -90,9 +93,13 @@ async function activate(context) {
         // PHASE 2: Initialize Sentinel Daemon (Active Monitoring)
         // ============================================================
         logger.info('Initializing Sentinel daemon...');
-        const heuristicEngine = new HeuristicEngine_1.HeuristicEngine(policyEngine);
+        const patternLoader = new PatternLoader_1.PatternLoader(configManager.getWorkspaceRoot());
+        await patternLoader.loadCustomPatterns();
+        const heuristicEngine = new HeuristicEngine_1.HeuristicEngine(policyEngine, patternLoader);
         const verdictEngine = new VerdictEngine_1.VerdictEngine(trustEngine, policyEngine, ledgerManager);
-        sentinelDaemon = new SentinelDaemon_1.SentinelDaemon(context, configManager, heuristicEngine, verdictEngine, qorelogicManager, eventBus);
+        const existenceEngine = new ExistenceEngine_1.ExistenceEngine(configManager);
+        const architectureEngine = new ArchitectureEngine_1.ArchitectureEngine();
+        sentinelDaemon = new SentinelDaemon_1.SentinelDaemon(context, configManager, heuristicEngine, verdictEngine, existenceEngine, qorelogicManager, eventBus);
         await sentinelDaemon.start();
         // ============================================================
         // PHASE 3: Initialize Genesis Layer (Visualization & UX)
@@ -104,7 +111,7 @@ async function activate(context) {
         const streamProvider = new CortexStreamProvider_1.CortexStreamProvider(context.extensionUri, eventBus);
         context.subscriptions.push(vscode.window.registerWebviewViewProvider('failsafe.stream', streamProvider));
         // Initialize Genesis manager
-        genesisManager = new GenesisManager_1.GenesisManager(context, sentinelDaemon, qorelogicManager, eventBus);
+        genesisManager = new GenesisManager_1.GenesisManager(context, sentinelDaemon, architectureEngine, qorelogicManager, eventBus);
         await genesisManager.initialize();
         // Initialize Hallucination Decorator
         const hallucinationDecorator = new HallucinationDecorator_1.HallucinationDecorator(sentinelDaemon, eventBus);

@@ -1,72 +1,85 @@
+"use strict";
 /**
  * LedgerManager - SOA Ledger (Merkle-Chained Audit Trail)
  *
  * Manages the append-only, cryptographically-signed audit log
  * backed by SQLite.
  */
-
-import * as vscode from 'vscode';
-import * as path from 'path';
-import * as fs from 'fs';
-import * as crypto from 'crypto';
-import Database from 'better-sqlite3';
-import { ConfigManager } from '../../shared/ConfigManager';
-import { LedgerEntry, LedgerEventType, RiskGrade } from '../../shared/types';
-
-interface LedgerAppendRequest {
-    eventType: LedgerEventType;
-    agentDid: string;
-    agentTrustAtAction?: number;
-    modelVersion?: string;
-    artifactPath?: string;
-    artifactHash?: string;
-    riskGrade?: RiskGrade;
-    verificationMethod?: string;
-    verificationResult?: string;
-    sentinelConfidence?: number;
-    overseerDid?: string;
-    overseerDecision?: string;
-    gdprTrigger?: boolean;
-    payload?: Record<string, unknown>;
-}
-
-export class LedgerManager {
-    private context: vscode.ExtensionContext;
-    private configManager: ConfigManager;
-    private ledgerPath: string = '';
-    private db: Database.Database | undefined;
-    private lastHash: string = 'GENESIS_HASH_PLACEHOLDER';
-
-    constructor(context: vscode.ExtensionContext, configManager: ConfigManager) {
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.LedgerManager = void 0;
+const path = __importStar(require("path"));
+const fs = __importStar(require("fs"));
+const crypto = __importStar(require("crypto"));
+const better_sqlite3_1 = __importDefault(require("better-sqlite3"));
+class LedgerManager {
+    context;
+    configManager;
+    ledgerPath = '';
+    db;
+    lastHash = 'GENESIS_HASH_PLACEHOLDER';
+    constructor(context, configManager) {
         this.context = context;
         this.configManager = configManager;
     }
-
-    async initialize(): Promise<void> {
+    async initialize() {
         // Ensure directory structure
         await this.configManager.ensureDirectoryStructure();
-
         this.ledgerPath = this.configManager.getLedgerPath();
         const ledgerDir = path.dirname(this.ledgerPath);
-
         if (!fs.existsSync(ledgerDir)) {
             fs.mkdirSync(ledgerDir, { recursive: true });
         }
-
         try {
-            this.db = new Database(this.ledgerPath);
+            this.db = new better_sqlite3_1.default(this.ledgerPath);
             this.db.pragma('journal_mode = WAL');
             this.initSchema();
             this.loadLastHash();
-        } catch (error) {
+        }
+        catch (error) {
             console.error('Failed to initialize Ledger DB:', error);
             throw error;
         }
     }
-
-    private initSchema(): void {
-        if (!this.db) { return; }
-
+    initSchema() {
+        if (!this.db) {
+            return;
+        }
         const schema = `
         CREATE TABLE IF NOT EXISTS soa_ledger (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -94,19 +107,17 @@ export class LedgerManager {
         CREATE INDEX IF NOT EXISTS idx_soa_artifact ON soa_ledger(artifact_path);
         CREATE INDEX IF NOT EXISTS idx_soa_event_type ON soa_ledger(event_type);
         `;
-
         this.db.exec(schema);
-
         // Check if genesis block is needed
-        const count = this.db.prepare('SELECT count(*) as c FROM soa_ledger').get() as { c: number };
+        const count = this.db.prepare('SELECT count(*) as c FROM soa_ledger').get();
         if (count.c === 0) {
             this.createGenesisEntry();
         }
     }
-
-    private createGenesisEntry(): void {
-        if (!this.db) { return; }
-
+    createGenesisEntry() {
+        if (!this.db) {
+            return;
+        }
         const genesisSql = `
         INSERT INTO soa_ledger (
             event_type, agent_did, payload,
@@ -114,41 +125,31 @@ export class LedgerManager {
         ) VALUES (
             ?, ?, ?, ?, ?, ?
         )`;
-
         const payload = JSON.stringify({ message: 'SOA Ledger initialized' });
         const entryHash = 'GENESIS_HASH_PLACEHOLDER';
         const prevHash = 'GENESIS_HASH_PLACEHOLDER';
         const signature = 'GENESIS_SIGNATURE_PLACEHOLDER';
-
-        this.db.prepare(genesisSql).run(
-            'SYSTEM_EVENT',
-            'did:myth:system:genesis',
-            payload,
-            entryHash,
-            prevHash,
-            signature
-        );
-
+        this.db.prepare(genesisSql).run('SYSTEM_EVENT', 'did:myth:system:genesis', payload, entryHash, prevHash, signature);
         this.lastHash = entryHash;
     }
-
-    private loadLastHash(): void {
-        if (!this.db) { return; }
-        const last = this.db.prepare('SELECT entry_hash FROM soa_ledger ORDER BY id DESC LIMIT 1').get() as { entry_hash: string } | undefined;
+    loadLastHash() {
+        if (!this.db) {
+            return;
+        }
+        const last = this.db.prepare('SELECT entry_hash FROM soa_ledger ORDER BY id DESC LIMIT 1').get();
         if (last) {
             this.lastHash = last.entry_hash;
         }
     }
-
     /**
      * Append a new entry to the ledger
      */
-    async appendEntry(request: LedgerAppendRequest): Promise<LedgerEntry> {
-        if (!this.db) { throw new Error('Ledger DB not initialized'); }
-
+    async appendEntry(request) {
+        if (!this.db) {
+            throw new Error('Ledger DB not initialized');
+        }
         const timestamp = new Date().toISOString();
         const prevHash = this.lastHash;
-        
         // Calculate hash
         const hashPayload = {
             timestamp,
@@ -157,10 +158,8 @@ export class LedgerManager {
             payload: request.payload,
             prevHash
         };
-        
         const entryHash = this.calculateHash(JSON.stringify(hashPayload));
         const signature = this.sign(entryHash);
-
         const sql = `
         INSERT INTO soa_ledger (
             timestamp, event_type, agent_did, agent_trust_at_action,
@@ -175,7 +174,6 @@ export class LedgerManager {
             @overseerDid, @overseerDecision, @gdprTrigger, @payload,
             @entryHash, @prevHash, @signature
         )`;
-
         const info = this.db.prepare(sql).run({
             timestamp,
             eventType: request.eventType,
@@ -196,9 +194,7 @@ export class LedgerManager {
             prevHash,
             signature
         });
-
         this.lastHash = entryHash;
-
         return {
             id: Number(info.lastInsertRowid),
             timestamp,
@@ -210,47 +206,49 @@ export class LedgerManager {
             signature,
             payload: request.payload || {},
             gdprTrigger: !!request.gdprTrigger
-        } as LedgerEntry;
+        };
     }
-
     /**
      * Get recent entries
      */
-    async getRecentEntries(limit: number = 50): Promise<LedgerEntry[]> {
-        if (!this.db) { return []; }
-        const rows = this.db.prepare('SELECT * FROM soa_ledger ORDER BY id DESC LIMIT ?').all(limit) as any[];
+    async getRecentEntries(limit = 50) {
+        if (!this.db) {
+            return [];
+        }
+        const rows = this.db.prepare('SELECT * FROM soa_ledger ORDER BY id DESC LIMIT ?').all(limit);
         return rows.map(this.mapRowToEntry);
     }
-
     /**
      * Get entries by event type
      */
-    async getEntriesByType(eventType: LedgerEventType, limit: number = 50): Promise<LedgerEntry[]> {
-        if (!this.db) { return []; }
-        const rows = this.db.prepare('SELECT * FROM soa_ledger WHERE event_type = ? ORDER BY id DESC LIMIT ?').all(eventType, limit) as any[];
+    async getEntriesByType(eventType, limit = 50) {
+        if (!this.db) {
+            return [];
+        }
+        const rows = this.db.prepare('SELECT * FROM soa_ledger WHERE event_type = ? ORDER BY id DESC LIMIT ?').all(eventType, limit);
         return rows.map(this.mapRowToEntry);
     }
-
     /**
      * Get entries by agent
      */
-    async getEntriesByAgent(agentDid: string, limit: number = 50): Promise<LedgerEntry[]> {
-        if (!this.db) { return []; }
-        const rows = this.db.prepare('SELECT * FROM soa_ledger WHERE agent_did = ? ORDER BY id DESC LIMIT ?').all(agentDid, limit) as any[];
+    async getEntriesByAgent(agentDid, limit = 50) {
+        if (!this.db) {
+            return [];
+        }
+        const rows = this.db.prepare('SELECT * FROM soa_ledger WHERE agent_did = ? ORDER BY id DESC LIMIT ?').all(agentDid, limit);
         return rows.map(this.mapRowToEntry);
     }
-
-    private mapRowToEntry(row: any): LedgerEntry {
+    mapRowToEntry(row) {
         return {
             id: row.id,
             timestamp: row.timestamp,
-            eventType: row.event_type as LedgerEventType,
+            eventType: row.event_type,
             agentDid: row.agent_did,
             agentTrustAtAction: row.agent_trust_at_action,
             modelVersion: row.model_version,
             artifactPath: row.artifact_path,
             artifactHash: row.artifact_hash,
-            riskGrade: row.risk_grade as RiskGrade,
+            riskGrade: row.risk_grade,
             verificationMethod: row.verification_method,
             verificationResult: row.verification_result,
             sentinelConfidence: row.sentinel_confidence,
@@ -263,36 +261,32 @@ export class LedgerManager {
             signature: row.signature
         };
     }
-
-    private calculateHash(data: string): string {
+    calculateHash(data) {
         return crypto.createHash('sha256').update(data).digest('hex');
     }
-
-    private sign(hash: string): string {
-        const secret = this.context.globalState.get<string>('ledgerSecret') || this.generateSecret();
+    sign(hash) {
+        const secret = this.context.globalState.get('ledgerSecret') || this.generateSecret();
         return crypto.createHmac('sha256', secret).update(hash).digest('hex');
     }
-
-    private generateSecret(): string {
+    generateSecret() {
         const secret = crypto.randomBytes(32).toString('hex');
         this.context.globalState.update('ledgerSecret', secret);
         return secret;
     }
-
     /**
      * Verify the integrity of the hash chain
      */
-    verifyChain(): boolean {
-        if (!this.db) { return false; }
-        
+    verifyChain() {
+        if (!this.db) {
+            return false;
+        }
         // This is expensive for large chains, should just check last X in production
-        const rows = this.db.prepare('SELECT * FROM soa_ledger ORDER BY id ASC').all() as any[];
-        if (rows.length === 0) return true;
-
+        const rows = this.db.prepare('SELECT * FROM soa_ledger ORDER BY id ASC').all();
+        if (rows.length === 0)
+            return true;
         for (let i = 1; i < rows.length; i++) {
             const current = rows[i];
             const previous = rows[i - 1];
-
             if (current.prev_hash !== previous.entry_hash) {
                 console.error(`Chain broken at ID ${current.id}: prevHash mismatch`);
                 return false;
@@ -300,18 +294,19 @@ export class LedgerManager {
             // Note: Recalculating hash would require exact reconstruction of payload string
             // For now, we trust the database integrity + prevHash link
         }
-
         return true;
     }
-
-    getEntryCount(): number {
-        if (!this.db) { return 0; }
-        const res = this.db.prepare('SELECT count(*) as c FROM soa_ledger').get() as { c: number };
+    getEntryCount() {
+        if (!this.db) {
+            return 0;
+        }
+        const res = this.db.prepare('SELECT count(*) as c FROM soa_ledger').get();
         return res.c;
     }
-    
-    close(): void {
+    close() {
         this.db?.close();
         this.db = undefined;
     }
 }
+exports.LedgerManager = LedgerManager;
+//# sourceMappingURL=LedgerManager.js.map

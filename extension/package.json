@@ -122,7 +122,11 @@
         },
         "failsafe.genesis.theme": {
           "type": "string",
-          "enum": ["starry-night", "light", "high-contrast"],
+          "enum": [
+            "starry-night",
+            "light",
+            "high-contrast"
+          ],
           "default": "starry-night",
           "description": "Genesis UI theme"
         },
@@ -133,7 +137,11 @@
         },
         "failsafe.sentinel.mode": {
           "type": "string",
-          "enum": ["heuristic", "llm-assisted", "hybrid"],
+          "enum": [
+            "heuristic",
+            "llm-assisted",
+            "hybrid"
+          ],
           "default": "heuristic",
           "description": "Sentinel operating mode"
         },
@@ -181,17 +189,18 @@
     "publish": "vsce publish"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20.10.0",
     "@types/vscode": "^1.74.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
+    "@vscode/vsce": "^2.22.0",
     "eslint": "^8.50.0",
-    "typescript": "^5.2.0",
-    "@vscode/vsce": "^2.22.0"
+    "typescript": "^5.2.0"
   },
   "dependencies": {
-    "chokidar": "^3.5.3",
     "better-sqlite3": "^9.2.2",
+    "chokidar": "^3.5.3",
     "d3": "^7.8.5",
     "glob": "^10.3.10",
     "uuid": "^9.0.0"

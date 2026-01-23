@@ -8,11 +8,18 @@
  */
 import { LedgerManager } from '../ledger/LedgerManager';
 import { TrustScore, TrustUpdate, AgentIdentity } from '../../shared/types';
+export declare class OptimisticLockError extends Error {
+    readonly did: string;
+    readonly expectedVersion: number;
+    readonly actualVersion: number;
+    constructor(did: string, expectedVersion: number, actualVersion: number);
+}
 export declare class TrustEngine {
     private ledgerManager;
     private agents;
     private db;
     private readonly config;
+    private readonly optimisticLockConfig;
     constructor(ledgerManager: LedgerManager);
     initialize(): Promise<void>;
     /**
@@ -55,6 +62,8 @@ export declare class TrustEngine {
      * Calculate influence weight
      */
     private calculateInfluenceWeight;
+    private loadAgentFromDb;
     private persistAgent;
+    private withOptimisticRetry;
 }
 //# sourceMappingURL=TrustEngine.d.ts.map

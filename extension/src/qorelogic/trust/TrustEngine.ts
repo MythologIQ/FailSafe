@@ -7,7 +7,6 @@
  * - IBT (0.8-1.0): Identification-Based Trust (trusted)
  */
 
-import * as crypto from 'crypto';
 import Database from 'better-sqlite3';
 import { LedgerManager } from '../ledger/LedgerManager';
 import {
@@ -17,6 +16,35 @@ import {
     AgentIdentity,
     PersonaType
 } from '../../shared/types';
+import {
+    checkPersonaAssignmentRestriction,
+    deriveDIDHash,
+    extractPersonaFromDID
+} from '../../shared/utils/security';
+
+export class OptimisticLockError extends Error {
+    readonly did: string;
+    readonly expectedVersion: number;
+    readonly actualVersion: number;
+
+    constructor(did: string, expectedVersion: number, actualVersion: number) {
+        super(
+            `Optimistic lock failed for agent ${did}: ` +
+            `expected version ${expectedVersion}, found ${actualVersion}`
+        );
+        this.name = 'OptimisticLockError';
+        this.did = did;
+        this.expectedVersion = expectedVersion;
+        this.actualVersion = actualVersion;
+    }
+}
+
+async function backoffDelay(attempt: number, baseDelayMs: number, maxDelayMs: number): Promise<void> {
+    const exponential = baseDelayMs * Math.pow(2, attempt);
+    const delay = Math.min(maxDelayMs, exponential);
+    const jitter = Math.floor(Math.random() * Math.max(1, delay * 0.25));
+    await new Promise((resolve) => setTimeout(resolve, delay + jitter));
+}
 
 export class TrustEngine {
     private ledgerManager: LedgerManager;
@@ -38,6 +66,11 @@ export class TrustEngine {
             IBT: { min: 0.8, max: 1.0 }
         }
     };
+    private readonly optimisticLockConfig = {
+        maxRetries: 3,
+        baseDelayMs: 25,
+        maxDelayMs: 400
+    };
 
     constructor(ledgerManager: LedgerManager) {
         this.ledgerManager = ledgerManager;
@@ -54,7 +87,9 @@ export class TrustEngine {
                 trustScore: row.trust_score,
                 trustStage: row.trust_stage as TrustStage,
                 isQuarantined: row.is_quarantined === 1,
-                createdAt: row.created_at
+                verificationsCompleted: row.verifications_completed || 0,
+                createdAt: row.created_at,
+                version: row.version ?? 0
             };
             this.agents.set(identity.did, identity);
         }
@@ -64,23 +99,48 @@ export class TrustEngine {
      * Register a new agent
      */
     async registerAgent(persona: string, publicKey: string, didOverride?: string): Promise<AgentIdentity> {
-        const nonce = crypto.randomBytes(6).toString('hex');
-        const did = didOverride || `did:myth:${persona}:${nonce}`;
+        return this.withOptimisticRetry(async () => {
+            const personaType = persona as PersonaType;
+            const validPersonas: PersonaType[] = ['scrivener', 'sentinel', 'judge', 'overseer'];
+            if (!validPersonas.includes(personaType)) {
+                throw new Error(`Invalid persona: ${persona}`);
+            }
+            const derived = deriveDIDHash(personaType, publicKey);
+            const did = didOverride || derived.did;
 
-        const identity: AgentIdentity = {
-            did,
-            persona: persona as PersonaType,
-            publicKey,
-            trustScore: this.config.defaultTrust,
-            trustStage: 'CBT',
-            isQuarantined: false,
-            createdAt: new Date().toISOString()
-        };
+            const existing = this.loadAgentFromDb(did);
+            if (existing) {
+                this.agents.set(did, existing);
+                return existing;
+            }
 
-        this.agents.set(did, identity);
-        this.persistAgent(identity);
+            const existingPersona = this.agents.get(did)?.persona;
+            const restriction = checkPersonaAssignmentRestriction(did, personaType, existingPersona);
+            if (!restriction.allowed) {
+                throw new Error(`Persona assignment rejected: ${restriction.reason}`);
+            }
 
-        return identity;
+            if (didOverride && publicKey !== 'auto-registered' && derived.did !== didOverride) {
+                throw new Error(`DID does not match derived hash for persona ${persona}`);
+            }
+
+            const identity: AgentIdentity = {
+                did,
+                persona: personaType,
+                publicKey,
+                trustScore: this.config.defaultTrust,
+                trustStage: 'CBT',
+                isQuarantined: false,
+                verificationsCompleted: 0,
+                createdAt: new Date().toISOString(),
+                version: 0
+            };
+
+            this.agents.set(did, identity);
+            this.persistAgent(identity);
+
+            return identity;
+        });
     }
 
     /**
@@ -112,7 +172,7 @@ export class TrustEngine {
             stage: agent.trustStage,
             influenceWeight: this.calculateInfluenceWeight(agent),
             isProbationary: this.isProbationary(agent),
-            verificationsCompleted: 0, // TODO: Track this
+            verificationsCompleted: agent.verificationsCompleted || 0,
             lastUpdated: new Date().toISOString()
         };
     }
@@ -124,92 +184,101 @@ export class TrustEngine {
         did: string,
         outcome: 'success' | 'failure' | 'violation'
     ): Promise<TrustUpdate> {
-        let agent = this.agents.get(did);
+        return this.withOptimisticRetry(async () => {
+            let agent = this.loadAgentFromDb(did) || this.agents.get(did);
 
-        // Auto-register unknown agents with default trust
-        if (!agent) {
-            agent = await this.registerAgent('scrivener', 'auto-registered', did);
-        }
+            // Auto-register unknown agents with default trust
+            if (!agent) {
+                const inferredPersona = extractPersonaFromDID(did) || 'scrivener';
+                agent = await this.registerAgent(inferredPersona, 'auto-registered', did);
+            }
 
-        const previousScore = agent.trustScore;
-        const previousStage = agent.trustStage;
+            const previousScore = agent.trustScore;
+            const previousStage = agent.trustStage;
 
-        // Calculate new score
-        let delta: number;
-        switch (outcome) {
-            case 'success':
-                delta = this.config.successDelta;
-                break;
-            case 'failure':
-                delta = this.config.failureDelta;
-                break;
-            case 'violation':
-                delta = this.config.violationPenalty;
-                // Force demotion on violation
-                if (agent.trustStage === 'IBT') {
-                    agent.trustScore = Math.min(agent.trustScore, 0.79);
-                } else if (agent.trustStage === 'KBT') {
-                    agent.trustScore = Math.min(agent.trustScore, 0.49);
-                }
-                break;
-        }
+            // Calculate new score
+            let delta: number;
+            switch (outcome) {
+                case 'success':
+                    delta = this.config.successDelta;
+                    // P1-1: Increment verification counter on success
+                    agent.verificationsCompleted = (agent.verificationsCompleted || 0) + 1;
+                    break;
+                case 'failure':
+                    delta = this.config.failureDelta;
+                    break;
+                case 'violation':
+                    delta = this.config.violationPenalty;
+                    // Force demotion on violation
+                    if (agent.trustStage === 'IBT') {
+                        agent.trustScore = Math.min(agent.trustScore, 0.79);
+                    } else if (agent.trustStage === 'KBT') {
+                        agent.trustScore = Math.min(agent.trustScore, 0.49);
+                    }
+                    break;
+            }
 
-        // Apply delta
-        agent.trustScore = Math.max(0, Math.min(1, agent.trustScore + delta));
+            // Apply delta
+            agent.trustScore = Math.max(0, Math.min(1, agent.trustScore + delta));
 
-        // Apply probation floor
-        if (this.isProbationary(agent) && agent.trustScore < this.config.probationFloor) {
-            agent.trustScore = this.config.probationFloor;
-        }
+            // Apply probation floor
+            if (this.isProbationary(agent) && agent.trustScore < this.config.probationFloor) {
+                agent.trustScore = this.config.probationFloor;
+            }
 
-        // Update stage
-        agent.trustStage = this.determineStage(agent.trustScore);
-        this.persistAgent(agent);
+            // Update stage
+            agent.trustStage = this.determineStage(agent.trustScore);
+            this.persistAgent(agent);
+            this.agents.set(agent.did, agent);
 
-        const update: TrustUpdate = {
-            did,
-            previousScore,
-            newScore: agent.trustScore,
-            previousStage,
-            newStage: agent.trustStage,
-            reason: outcome,
-            timestamp: new Date().toISOString()
-        };
-
-        // Log to ledger
-        await this.ledgerManager.appendEntry({
-            eventType: 'TRUST_UPDATE',
-            agentDid: did,
-            agentTrustAtAction: agent.trustScore,
-            payload: {
+            const update: TrustUpdate = {
+                did,
                 previousScore,
                 newScore: agent.trustScore,
                 previousStage,
                 newStage: agent.trustStage,
-                reason: outcome
-            }
-        });
+                reason: outcome,
+                timestamp: new Date().toISOString()
+            };
 
-        return update;
+            // Log to ledger
+            await this.ledgerManager.appendEntry({
+                eventType: 'TRUST_UPDATE',
+                agentDid: did,
+                agentTrustAtAction: agent.trustScore,
+                payload: {
+                    previousScore,
+                    newScore: agent.trustScore,
+                    previousStage,
+                    newStage: agent.trustStage,
+                    reason: outcome
+                }
+            });
+
+            return update;
+        });
     }
 
     /**
      * Quarantine an agent
      */
     async quarantineAgent(did: string, reason: string, durationHours: number = 48): Promise<void> {
-        const agent = this.agents.get(did);
-        if (!agent) {
-            throw new Error(`Agent not found: ${did}`);
-        }
+        await this.withOptimisticRetry(async () => {
+            const agent = this.loadAgentFromDb(did) || this.agents.get(did);
+            if (!agent) {
+                throw new Error(`Agent not found: ${did}`);
+            }
 
-        agent.isQuarantined = true;
-        this.persistAgent(agent);
+            agent.isQuarantined = true;
+            this.persistAgent(agent);
+            this.agents.set(agent.did, agent);
 
-        await this.ledgerManager.appendEntry({
-            eventType: 'QUARANTINE_START',
-            agentDid: did,
-            agentTrustAtAction: agent.trustScore,
-            payload: { reason, durationHours }
+            await this.ledgerManager.appendEntry({
+                eventType: 'QUARANTINE_START',
+                agentDid: did,
+                agentTrustAtAction: agent.trustScore,
+                payload: { reason, durationHours }
+            });
         });
     }
 
@@ -217,19 +286,22 @@ export class TrustEngine {
      * Release an agent from quarantine
      */
     async releaseFromQuarantine(did: string): Promise<void> {
-        const agent = this.agents.get(did);
-        if (!agent) {
-            throw new Error(`Agent not found: ${did}`);
-        }
+        await this.withOptimisticRetry(async () => {
+            const agent = this.loadAgentFromDb(did) || this.agents.get(did);
+            if (!agent) {
+                throw new Error(`Agent not found: ${did}`);
+            }
 
-        agent.isQuarantined = false;
-        this.persistAgent(agent);
+            agent.isQuarantined = false;
+            this.persistAgent(agent);
+            this.agents.set(agent.did, agent);
 
-        await this.ledgerManager.appendEntry({
-            eventType: 'QUARANTINE_END',
-            agentDid: did,
-            agentTrustAtAction: agent.trustScore,
-            payload: {}
+            await this.ledgerManager.appendEntry({
+                eventType: 'QUARANTINE_END',
+                agentDid: did,
+                agentTrustAtAction: agent.trustScore,
+                payload: {}
+            });
         });
     }
 
@@ -274,16 +346,37 @@ export class TrustEngine {
         return Math.max(0.1, Math.min(2.0, weight));
     }
 
+    private loadAgentFromDb(did: string): AgentIdentity | undefined {
+        const db = this.db || this.ledgerManager.getDatabase();
+        const row = db.prepare('SELECT * FROM agent_trust WHERE did = ?').get(did) as any | undefined;
+        if (!row) {
+            return undefined;
+        }
+        return {
+            did: row.did,
+            persona: row.persona as PersonaType,
+            publicKey: row.public_key,
+            trustScore: row.trust_score,
+            trustStage: row.trust_stage as TrustStage,
+            isQuarantined: row.is_quarantined === 1,
+            verificationsCompleted: row.verifications_completed || 0,
+            createdAt: row.created_at,
+            version: row.version ?? 0
+        };
+    }
+
     private persistAgent(agent: AgentIdentity): void {
         const db = this.db || this.ledgerManager.getDatabase();
         const now = new Date().toISOString();
+        const expectedVersion = agent.version ?? 0;
+        const nextVersion = expectedVersion + 1;
         const sql = `
             INSERT INTO agent_trust (
                 did, persona, public_key, trust_score, trust_stage,
-                is_quarantined, created_at, updated_at
+                is_quarantined, verifications_completed, created_at, updated_at, version
             ) VALUES (
                 @did, @persona, @publicKey, @trustScore, @trustStage,
-                @isQuarantined, @createdAt, @updatedAt
+                @isQuarantined, @verificationsCompleted, @createdAt, @updatedAt, @insertVersion
             )
             ON CONFLICT(did) DO UPDATE SET
                 persona = excluded.persona,
@@ -291,17 +384,48 @@ export class TrustEngine {
                 trust_score = excluded.trust_score,
                 trust_stage = excluded.trust_stage,
                 is_quarantined = excluded.is_quarantined,
-                updated_at = excluded.updated_at
+                verifications_completed = excluded.verifications_completed,
+                updated_at = excluded.updated_at,
+                version = @nextVersion
+            WHERE agent_trust.version = @expectedVersion
         `;
-        db.prepare(sql).run({
+        const result = db.prepare(sql).run({
             did: agent.did,
             persona: agent.persona,
             publicKey: agent.publicKey,
             trustScore: agent.trustScore,
             trustStage: agent.trustStage,
             isQuarantined: agent.isQuarantined ? 1 : 0,
+            verificationsCompleted: agent.verificationsCompleted || 0,
             createdAt: agent.createdAt,
-            updatedAt: now
+            updatedAt: now,
+            insertVersion: expectedVersion,
+            expectedVersion,
+            nextVersion
         });
+
+        if (result.changes === 0) {
+            const current = db.prepare('SELECT version FROM agent_trust WHERE did = ?').get(agent.did) as { version: number } | undefined;
+            const actualVersion = current?.version ?? expectedVersion;
+            throw new OptimisticLockError(agent.did, expectedVersion, actualVersion);
+        }
+
+        const versionRow = db.prepare('SELECT version FROM agent_trust WHERE did = ?').get(agent.did) as { version: number } | undefined;
+        agent.version = versionRow?.version ?? agent.version;
+    }
+
+    private async withOptimisticRetry<T>(work: () => Promise<T>): Promise<T> {
+        let attempt = 0;
+        while (true) {
+            try {
+                return await work();
+            } catch (error) {
+                if (!(error instanceof OptimisticLockError) || attempt >= this.optimisticLockConfig.maxRetries) {
+                    throw error;
+                }
+                await backoffDelay(attempt, this.optimisticLockConfig.baseDelayMs, this.optimisticLockConfig.maxDelayMs);
+                attempt += 1;
+            }
+        }
     }
 }

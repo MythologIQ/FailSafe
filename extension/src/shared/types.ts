@@ -56,7 +56,9 @@ export interface AgentIdentity {
   trustScore: number;
   trustStage: TrustStage;
   isQuarantined: boolean;
+  verificationsCompleted: number;
   createdAt: string;
+  version: number;
 }
 
 // =============================================================================
@@ -120,6 +122,10 @@ export interface SentinelVerdict {
   matchedPatterns: string[];
   actions: VerdictAction[];
   ledgerEntryId?: number;
+  // P0 Security: Signature field for verification
+  signature?: string;
+  signatureTimestamp?: string;
+  publicKey?: string;
 }
 
 export interface HeuristicResult {
@@ -247,6 +253,7 @@ export type RemediationStatus =
   | "SUPERSEDED";
 
 export interface ShadowGenomeEntry {
+  schemaVersion: string;
   id: number;
   createdAt: string;
   updatedAt?: string;

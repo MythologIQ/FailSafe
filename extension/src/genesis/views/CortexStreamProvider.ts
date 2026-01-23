@@ -21,6 +21,7 @@
 import * as vscode from 'vscode';
 import { EventBus } from '../../shared/EventBus';
 import { CortexStreamEvent } from '../../shared/types';
+import { escapeHtml, escapeJsString, getNonce } from '../../shared/utils/htmlSanitizer';
 
 export class CortexStreamProvider implements vscode.WebviewViewProvider {
     private view?: vscode.WebviewView;
@@ -176,6 +177,9 @@ export class CortexStreamProvider implements vscode.WebviewViewProvider {
     }
 
     private getHtmlContent(): string {
+        const nonce = getNonce();
+        const cspSource = this.view?.webview.cspSource || '';
+        
         const categoryIcons: Record<string, string> = {
             sentinel: '🛡️',
             qorelogic: '📜',
@@ -184,44 +188,27 @@ export class CortexStreamProvider implements vscode.WebviewViewProvider {
             system: '⚙️'
         };
 
-        const severityColors: Record<string, string> = {
-            debug: 'var(--vscode-descriptionForeground)',
-            info: 'var(--vscode-foreground)',
-            warn: '#ed8936',
-            error: '#f56565',
-            critical: '#f56565'
-        };
-
-        const severityBgColors: Record<string, string> = {
-            debug: 'rgba(128, 128, 128, 0.1)',
-            info: 'rgba(100, 149, 237, 0.1)',
-            warn: 'rgba(237, 137, 54, 0.15)',
-            error: 'rgba(245, 101, 101, 0.15)',
-            critical: 'rgba(220, 38, 38, 0.2)'
-        };
-
         const filteredEvents = this.getFilteredEvents();
 
         const eventsHtml = filteredEvents.map(event => `
-            <div class="event" data-severity="${event.severity}" data-category="${event.category}" 
-                 style="border-left-color: ${severityColors[event.severity]}; background: ${severityBgColors[event.severity]}">
+            <div class="event severity-${event.severity}" data-severity="${event.severity}" data-category="${event.category}">
                 <div class="event-header">
                     <span class="event-icon">${categoryIcons[event.category] || '•'}</span>
                     <span class="event-time">${this.formatTime(event.timestamp)}</span>
                     <span class="event-category-badge">${event.category}</span>
                 </div>
-                <div class="event-title">${this.escapeHtml(event.title)}</div>
-                ${event.details ? `<div class="event-details">${this.escapeHtml(event.details)}</div>` : ''}
+                <div class="event-title">${escapeHtml(event.title)}</div>
+                ${event.details ? `<div class="event-details">${escapeHtml(event.details)}</div>` : ''}
                 ${event.relatedFile ? `
-                    <div class="event-link" onclick="openFile('${event.relatedFile.replace(/\\/g, '\\\\')}')">
-                        📄 ${event.relatedFile.split(/[/\\]/).pop()}
+                    <div class="event-link" onclick="openFile('${escapeJsString(event.relatedFile)}')">
+                        📄 ${escapeHtml(event.relatedFile.split(/[/\\]/).pop())}
                     </div>
                 ` : ''}
                 ${event.actions?.length ? `
                     <div class="event-actions">
                         ${event.actions.map(a => `
-                            <button onclick="executeAction('${a.command}', ${JSON.stringify(a.args || [])})">
-                                ${a.label}
+                            <button onclick="executeAction('${escapeJsString(a.command)}', ${escapeHtml(JSON.stringify(a.args || []))})">
+                                ${escapeHtml(a.label)}
                             </button>
                         `).join('')}
                     </div>
@@ -243,8 +230,9 @@ export class CortexStreamProvider implements vscode.WebviewViewProvider {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${cspSource} 'nonce-${nonce}'; script-src 'nonce-${nonce}';">
     <title>Cortex Stream</title>
-    <style>
+    <style nonce="${nonce}">
         * {
             box-sizing: border-box;
         }
@@ -259,6 +247,13 @@ export class CortexStreamProvider implements vscode.WebviewViewProvider {
             overflow-x: hidden;
         }
         
+        /* Severity Styles */
+        .severity-debug { border-left-color: var(--vscode-descriptionForeground); background: rgba(128, 128, 128, 0.1); }
+        .severity-info { border-left-color: var(--vscode-foreground); background: rgba(100, 149, 237, 0.1); }
+        .severity-warn { border-left-color: #ed8936; background: rgba(237, 137, 54, 0.15); }
+        .severity-error { border-left-color: #f56565; background: rgba(245, 101, 101, 0.15); }
+        .severity-critical { border-left-color: #f56565; background: rgba(220, 38, 38, 0.2); }
+
         /* Header with enhanced styling */
         .header {
             background: linear-gradient(135deg, var(--vscode-editor-background) 0%, var(--vscode-sideBar-background) 100%);
@@ -639,7 +634,7 @@ export class CortexStreamProvider implements vscode.WebviewViewProvider {
             <input type="text" 
                    class="search-input" 
                    placeholder="Search events..." 
-                   value="${this.searchTerm}"
+                   value="${escapeHtml(this.searchTerm)}"
                    oninput="setSearch(this.value)">
         </div>
         
@@ -671,7 +666,7 @@ export class CortexStreamProvider implements vscode.WebviewViewProvider {
         <div>Press <kbd>?</kbd> for help</div>
     </div>
 
-    <script>
+    <script nonce="${nonce}">
         const vscode = acquireVsCodeApi();
         let searchTimeout;
 
@@ -744,16 +739,7 @@ export class CortexStreamProvider implements vscode.WebviewViewProvider {
 </html>`;
     }
 
-    private escapeHtml(text: string): string {
-        const map: Record<string, string> = {
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#039;'
-        };
-        return text.replace(/[&<>"']/g, (m) => map[m]);
-    }
+
 
     private formatTime(isoString: string): string {
         const date = new Date(isoString);

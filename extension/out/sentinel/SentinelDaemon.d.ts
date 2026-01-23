@@ -1,40 +1,34 @@
 /**
  * SentinelDaemon - Active Monitoring & Enforcement Daemon
  *
- * Continuously monitors:
- * - File system changes
- * - Agent claims
- * - Code submissions
+ * Orchestrates the monitoring and verdict process by coordinating
+ * between the VerdictArbiter (logic) and VerdictRouter (action).
  *
- * Enforces QoreLogic policies through:
- * - Heuristic pattern matching
- * - Optional LLM-assisted evaluation
- * - Verdict generation and actions
+ * Refactored to SRP:
+ * - Daemon: Lifecycle & Event Loop
+ * - Arbiter: Decision Logic
+ * - Router: Action/Distribution
  */
 import * as vscode from 'vscode';
 import { EventBus } from '../shared/EventBus';
 import { ConfigManager } from '../shared/ConfigManager';
 import { SentinelStatus, SentinelVerdict } from '../shared/types';
-import { HeuristicEngine } from './engines/HeuristicEngine';
-import { VerdictEngine } from './engines/VerdictEngine';
-import { ExistenceEngine } from './engines/ExistenceEngine';
-import { QoreLogicManager } from '../qorelogic/QoreLogicManager';
+import { VerdictArbiter } from './VerdictArbiter';
+import { VerdictRouter } from './VerdictRouter';
 export declare class SentinelDaemon {
     private context;
     private configManager;
-    private heuristicEngine;
-    private verdictEngine;
-    private existenceEngine;
-    private qorelogic;
     private eventBus;
     private logger;
+    private arbiter;
+    private router;
     private watcher;
     private eventQueue;
     private processing;
     private status;
     private startTime;
     private processInterval;
-    constructor(context: vscode.ExtensionContext, configManager: ConfigManager, heuristicEngine: HeuristicEngine, verdictEngine: VerdictEngine, existenceEngine: ExistenceEngine, qorelogic: QoreLogicManager, eventBus: EventBus);
+    constructor(context: vscode.ExtensionContext, configManager: ConfigManager, arbiter: VerdictArbiter, router: VerdictRouter, eventBus: EventBus);
     /**
      * Start the Sentinel daemon
      */
@@ -60,10 +54,6 @@ export declare class SentinelDaemon {
      */
     private initializeWatcher;
     /**
-     * Check if LLM is available
-     */
-    private checkLLMAvailability;
-    /**
      * Queue an event for processing
      */
     private queueEvent;
@@ -76,19 +66,12 @@ export declare class SentinelDaemon {
      */
     private processEvents;
     /**
-     * Process a single event
+     * Process a single event (Internal helper for both queue and manual audit)
      */
-    private processEvent;
+    private processSingleEvent;
     /**
-     * Determine if LLM evaluation should be invoked
-     */
-    private shouldInvokeLLM;
-    /**
-     * Invoke LLM for deeper evaluation
-     */
-    private invokeLLM;
-    /**
-     * Validate an agent's claim (Existence Check)
+     * Validate an agent's claim
+     * Delegates to Arbiter -> Router
      */
     validateClaim(claim: any): Promise<SentinelVerdict>;
 }

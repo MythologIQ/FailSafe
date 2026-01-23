@@ -40,6 +40,7 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.L3ApprovalPanel = void 0;
 const vscode = __importStar(require("vscode"));
+const htmlSanitizer_1 = require("../../shared/utils/htmlSanitizer");
 class L3ApprovalPanel {
     static currentPanel;
     panel;
@@ -99,11 +100,14 @@ class L3ApprovalPanel {
         this.panel.webview.html = this.getHtmlContent(queue);
     }
     getHtmlContent(queue) {
+        const nonce = (0, htmlSanitizer_1.getNonce)();
+        const cspSource = this.panel.webview.cspSource;
         return `<!DOCTYPE html>
 <html>
 <head>
     <title>L3 Approval Queue</title>
-    <style>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${cspSource} 'nonce-${nonce}'; script-src 'nonce-${nonce}';">
+    <style nonce="${nonce}">
         body {
             margin: 0;
             padding: 20px;
@@ -197,28 +201,28 @@ class L3ApprovalPanel {
     ` : queue.map(item => `
         <div class="item">
             <div class="item-header">
-                <div class="item-title">${item.filePath.split(/[/\\]/).pop()}</div>
-                <span class="item-risk">${item.riskGrade}</span>
+                <div class="item-title">${(0, htmlSanitizer_1.escapeHtml)(item.filePath.split(/[/\\]/).pop())}</div>
+                <span class="item-risk">${(0, htmlSanitizer_1.escapeHtml)(item.riskGrade)}</span>
             </div>
             <div class="item-meta">
-                Agent: ${item.agentDid.substring(0, 25)}... | Trust: ${(item.agentTrust * 100).toFixed(0)}%<br>
-                Queued: ${new Date(item.queuedAt).toLocaleString()}
+                Agent: ${(0, htmlSanitizer_1.escapeHtml)(item.agentDid.substring(0, 25))}... | Trust: ${(item.agentTrust * 100).toFixed(0)}%<br>
+                Queued: ${(0, htmlSanitizer_1.escapeHtml)(new Date(item.queuedAt).toLocaleString())}
             </div>
-            <div class="item-summary">${item.sentinelSummary}</div>
+            <div class="item-summary">${(0, htmlSanitizer_1.escapeHtml)(item.sentinelSummary)}</div>
             ${item.flags.length > 0 ? `
                 <div class="item-flags">
-                    ${item.flags.map(f => `<span class="flag">${f}</span>`).join('')}
+                    ${item.flags.map(f => `<span class="flag">${(0, htmlSanitizer_1.escapeHtml)(f)}</span>`).join('')}
                 </div>
             ` : ''}
             <div class="item-actions">
-                <button class="btn-approve" onclick="approve('${item.id}')">Approve</button>
-                <button class="btn-reject" onclick="reject('${item.id}')">Reject</button>
-                <button class="btn-view" onclick="viewFile('${item.filePath.replace(/\\/g, '\\\\')}')">View File</button>
+                <button class="btn-approve" onclick="approve('${(0, htmlSanitizer_1.escapeJsString)(item.id)}')">Approve</button>
+                <button class="btn-reject" onclick="reject('${(0, htmlSanitizer_1.escapeJsString)(item.id)}')">Reject</button>
+                <button class="btn-view" onclick="viewFile('${(0, htmlSanitizer_1.escapeJsString)(item.filePath)}')">View File</button>
             </div>
         </div>
     `).join('')}
 
-    <script>
+    <script nonce="${nonce}">
         const vscode = acquireVsCodeApi();
         function approve(id) { vscode.postMessage({ command: 'approve', id }); }
         function reject(id) { vscode.postMessage({ command: 'reject', id }); }

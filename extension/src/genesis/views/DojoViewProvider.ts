@@ -13,6 +13,7 @@ import * as vscode from 'vscode';
 import { EventBus } from '../../shared/EventBus';
 import { SentinelDaemon } from '../../sentinel/SentinelDaemon';
 import { QoreLogicManager } from '../../qorelogic/QoreLogicManager';
+import { escapeHtml, getNonce } from '../../shared/utils/htmlSanitizer';
 
 export class DojoViewProvider implements vscode.WebviewViewProvider {
     private view?: vscode.WebviewView;
@@ -78,6 +79,8 @@ export class DojoViewProvider implements vscode.WebviewViewProvider {
     }
 
     private async getHtmlContent(): Promise<string> {
+        const nonce = getNonce();
+        const cspSource = this.view?.webview.cspSource || '';
         const status = this.sentinel.getStatus();
         const l3Queue = this.qorelogic.getL3Queue();
         const trustSummary = await this.getTrustSummary();
@@ -88,8 +91,9 @@ export class DojoViewProvider implements vscode.WebviewViewProvider {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${cspSource} 'nonce-${nonce}'; script-src 'nonce-${nonce}';">
     <title>The Dojo</title>
-    <style>
+    <style nonce="${nonce}">
         body {
             font-family: var(--vscode-font-family);
             font-size: var(--vscode-font-size);
@@ -223,7 +227,7 @@ export class DojoViewProvider implements vscode.WebviewViewProvider {
                 <span class="status-indicator ${status.running ? 'status-active' : 'status-error'}"></span>
                 ${status.running ? 'Active' : 'Stopped'}
             </span>
-            <span class="metric-value">${status.mode}</span>
+            <span class="metric-value">${escapeHtml(status.mode)}</span>
         </div>
         <div class="metric">
             <span class="metric-label">Files watched</span>
@@ -235,15 +239,15 @@ export class DojoViewProvider implements vscode.WebviewViewProvider {
         </div>
         <div class="metric">
             <span class="metric-label">Mode</span>
-            <span class="metric-value">${status.operationalMode.toUpperCase()}</span>
+            <span class="metric-value">${escapeHtml(status.operationalMode.toUpperCase())}</span>
         </div>
         <div class="metric">
             <span class="metric-label">Uptime</span>
-            <span class="metric-value">${this.formatUptime(status.uptime)}</span>
+            <span class="metric-value">${escapeHtml(this.formatUptime(status.uptime))}</span>
         </div>
         <div class="metric">
             <span class="metric-label">Last verdict</span>
-            <span class="metric-value">${lastVerdict ? `${lastVerdict.decision} (${lastVerdict.riskGrade})` : 'None'}</span>
+            <span class="metric-value">${lastVerdict ? `${escapeHtml(lastVerdict.decision)} (${escapeHtml(lastVerdict.riskGrade)})` : 'None'}</span>
         </div>
     </div>
 
@@ -253,7 +257,7 @@ export class DojoViewProvider implements vscode.WebviewViewProvider {
           l3Queue.slice(0, 3).map(item => `
             <div class="l3-item">
                 <span class="status-indicator status-pending"></span>
-                ${item.filePath.split('/').pop()}
+                ${escapeHtml(item.filePath.split(/[/\\]/).pop())}
             </div>
           `).join('')}
         ${l3Queue.length > 0 ? '<button onclick="showL3Queue()">Review Queue</button>' : ''}
@@ -348,7 +352,7 @@ export class DojoViewProvider implements vscode.WebviewViewProvider {
         <button onclick="trustProcess()">I Trust The Process</button>
     </div>
 
-    <script>
+    <script nonce="${nonce}">
         const vscode = acquireVsCodeApi();
         const workflowState = (vscode.getState() && vscode.getState().workflow) || {};
 

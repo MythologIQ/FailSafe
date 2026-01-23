@@ -128,16 +128,29 @@ class LedgerManager {
             trust_score REAL NOT NULL,
             trust_stage TEXT NOT NULL,
             is_quarantined INTEGER NOT NULL DEFAULT 0,
+            verifications_completed INTEGER NOT NULL DEFAULT 0,
             created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
+            updated_at TEXT NOT NULL,
+            version INTEGER NOT NULL DEFAULT 0
         );
         CREATE INDEX IF NOT EXISTS idx_agent_trust_persona ON agent_trust(persona);
         `;
         this.db.exec(schema);
+        this.ensureAgentTrustVersionColumn();
         // Check if genesis block is needed
         const count = this.db.prepare('SELECT count(*) as c FROM soa_ledger').get();
         if (count.c === 0) {
             this.createGenesisEntry();
+        }
+    }
+    ensureAgentTrustVersionColumn() {
+        if (!this.db) {
+            return;
+        }
+        const columns = this.db.prepare("PRAGMA table_info('agent_trust')").all();
+        const hasVersion = columns.some((column) => column.name === 'version');
+        if (!hasVersion) {
+            this.db.exec("ALTER TABLE agent_trust ADD COLUMN version INTEGER NOT NULL DEFAULT 0");
         }
     }
     createGenesisEntry() {

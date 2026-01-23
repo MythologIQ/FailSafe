@@ -31,6 +31,8 @@ import { VerdictEngine } from '../sentinel/engines/VerdictEngine';
 import { PatternLoader } from '../sentinel/PatternLoader';
 import { ExistenceEngine } from '../sentinel/engines/ExistenceEngine';
 import { ArchitectureEngine } from '../sentinel/engines/ArchitectureEngine';
+import { VerdictArbiter } from '../sentinel/VerdictArbiter';
+import { VerdictRouter } from '../sentinel/VerdictRouter';
 
 // Shared
 import { EventBus } from '../shared/EventBus';
@@ -94,13 +96,24 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         const existenceEngine = new ExistenceEngine(configManager);
         const architectureEngine = new ArchitectureEngine();
 
-        sentinelDaemon = new SentinelDaemon(
-            context,
+
+        const verdictArbiter = new VerdictArbiter(
             configManager,
             heuristicEngine,
             verdictEngine,
-            existenceEngine,
-            qorelogicManager,
+            existenceEngine
+        );
+
+        const verdictRouter = new VerdictRouter(
+            eventBus,
+            qorelogicManager
+        );
+
+        sentinelDaemon = new SentinelDaemon(
+            context,
+            configManager,
+            verdictArbiter,
+            verdictRouter,
             eventBus
         );
         await sentinelDaemon.start();

@@ -40,6 +40,7 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.LedgerViewerPanel = void 0;
 const vscode = __importStar(require("vscode"));
+const htmlSanitizer_1 = require("../../shared/utils/htmlSanitizer");
 class LedgerViewerPanel {
     static currentPanel;
     panel;
@@ -68,11 +69,14 @@ class LedgerViewerPanel {
         this.panel.webview.html = this.getHtmlContent(entries);
     }
     getHtmlContent(entries) {
+        const nonce = (0, htmlSanitizer_1.getNonce)();
+        const cspSource = this.panel.webview.cspSource;
         return `<!DOCTYPE html>
 <html>
 <head>
     <title>SOA Ledger</title>
-    <style>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${cspSource} 'nonce-${nonce}'; script-src 'nonce-${nonce}';">
+    <style nonce="${nonce}">
         body {
             margin: 0;
             padding: 20px;
@@ -104,12 +108,12 @@ class LedgerViewerPanel {
         <tbody>
             ${entries.map(e => `
                 <tr>
-                    <td>${e.id}</td>
-                    <td>${new Date(e.timestamp).toLocaleString()}</td>
-                    <td>${e.eventType}</td>
-                    <td>${e.agentDid?.substring(0, 20) || 'N/A'}...</td>
-                    <td>${e.riskGrade || 'N/A'}</td>
-                    <td class="hash">${e.entryHash?.substring(0, 16) || 'N/A'}...</td>
+                    <td>${(0, htmlSanitizer_1.escapeHtml)(String(e.id))}</td>
+                    <td>${(0, htmlSanitizer_1.escapeHtml)(new Date(e.timestamp).toLocaleString())}</td>
+                    <td>${(0, htmlSanitizer_1.escapeHtml)(e.eventType)}</td>
+                    <td>${(0, htmlSanitizer_1.escapeHtml)(e.agentDid?.substring(0, 20) || 'N/A')}...</td>
+                    <td>${(0, htmlSanitizer_1.escapeHtml)(e.riskGrade || 'N/A')}</td>
+                    <td class="hash">${(0, htmlSanitizer_1.escapeHtml)(e.entryHash?.substring(0, 16) || 'N/A')}...</td>
                 </tr>
             `).join('')}
         </tbody>

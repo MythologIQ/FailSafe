@@ -34,6 +34,7 @@ export declare class LedgerManager {
     constructor(context: vscode.ExtensionContext, configManager: ConfigManager);
     initialize(): Promise<void>;
     private initSchema;
+    private ensureAgentTrustVersionColumn;
     private createGenesisEntry;
     private loadLastHash;
     /**

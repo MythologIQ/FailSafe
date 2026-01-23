@@ -8,6 +8,7 @@ import * as vscode from 'vscode';
 import { EventBus } from '../../shared/EventBus';
 import { QoreLogicManager } from '../../qorelogic/QoreLogicManager';
 import { L3ApprovalRequest } from '../../shared/types';
+import { escapeHtml, escapeJsString, getNonce } from '../../shared/utils/htmlSanitizer';
 
 export class L3ApprovalPanel {
     public static currentPanel: L3ApprovalPanel | undefined;
@@ -92,11 +93,15 @@ export class L3ApprovalPanel {
     }
 
     private getHtmlContent(queue: L3ApprovalRequest[]): string {
+        const nonce = getNonce();
+        const cspSource = this.panel.webview.cspSource;
+
         return `<!DOCTYPE html>
 <html>
 <head>
     <title>L3 Approval Queue</title>
-    <style>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${cspSource} 'nonce-${nonce}'; script-src 'nonce-${nonce}';">
+    <style nonce="${nonce}">
         body {
             margin: 0;
             padding: 20px;
@@ -190,28 +195,28 @@ export class L3ApprovalPanel {
     ` : queue.map(item => `
         <div class="item">
             <div class="item-header">
-                <div class="item-title">${item.filePath.split(/[/\\]/).pop()}</div>
-                <span class="item-risk">${item.riskGrade}</span>
+                <div class="item-title">${escapeHtml(item.filePath.split(/[/\\]/).pop())}</div>
+                <span class="item-risk">${escapeHtml(item.riskGrade)}</span>
             </div>
             <div class="item-meta">
-                Agent: ${item.agentDid.substring(0, 25)}... | Trust: ${(item.agentTrust * 100).toFixed(0)}%<br>
-                Queued: ${new Date(item.queuedAt).toLocaleString()}
+                Agent: ${escapeHtml(item.agentDid.substring(0, 25))}... | Trust: ${(item.agentTrust * 100).toFixed(0)}%<br>
+                Queued: ${escapeHtml(new Date(item.queuedAt).toLocaleString())}
             </div>
-            <div class="item-summary">${item.sentinelSummary}</div>
+            <div class="item-summary">${escapeHtml(item.sentinelSummary)}</div>
             ${item.flags.length > 0 ? `
                 <div class="item-flags">
-                    ${item.flags.map(f => `<span class="flag">${f}</span>`).join('')}
+                    ${item.flags.map(f => `<span class="flag">${escapeHtml(f)}</span>`).join('')}
                 </div>
             ` : ''}
             <div class="item-actions">
-                <button class="btn-approve" onclick="approve('${item.id}')">Approve</button>
-                <button class="btn-reject" onclick="reject('${item.id}')">Reject</button>
-                <button class="btn-view" onclick="viewFile('${item.filePath.replace(/\\/g, '\\\\')}')">View File</button>
+                <button class="btn-approve" onclick="approve('${escapeJsString(item.id)}')">Approve</button>
+                <button class="btn-reject" onclick="reject('${escapeJsString(item.id)}')">Reject</button>
+                <button class="btn-view" onclick="viewFile('${escapeJsString(item.filePath)}')">View File</button>
             </div>
         </div>
     `).join('')}
 
-    <script>
+    <script nonce="${nonce}">
         const vscode = acquireVsCodeApi();
         function approve(id) { vscode.postMessage({ command: 'approve', id }); }
         function reject(id) { vscode.postMessage({ command: 'reject', id }); }

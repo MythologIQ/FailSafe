@@ -95,13 +95,19 @@ This document formalizes the execution plan for the MythologIQ: FailSafe extensi
 
 ## Execution Log
 
-| Date       | Sprint | Action                        | Status      |
-| ---------- | ------ | ----------------------------- | ----------- |
-| 2026-01-22 | M0.1   | Spec Alignment                | ✅ Complete |
-| 2026-01-22 | M1.1   | ConfigManager Scaffold        | ✅ Complete |
-| 2026-01-22 | M1.2   | SQLite Ledger Implementation  | ✅ Complete |
-| 2026-01-22 | M1.5   | External Tribunal Audit       | ✅ Complete |
-| 2026-01-22 | M1.5.1 | Harden verifyChain [P0]       | ✅ Complete |
-| 2026-01-22 | M1.5.2 | Fix deactivate lifecycle [P0] | ✅ Complete |
-| 2026-01-22 | M1.5.3 | Migrate SecretStorage [P1]    | ✅ Complete |
-| 2026-01-22 | M1.5.4 | Harden ConfigManager [P2]     | ✅ Complete |
+| Date       | Sprint | Action                                            | Status      |
+| ---------- | ------ | ------------------------------------------------- | ----------- |
+| 2026-01-22 | M0.1   | Spec Alignment                                    | ✅ Complete |
+| 2026-01-22 | M1.1   | ConfigManager Scaffold                            | ✅ Complete |
+| 2026-01-22 | M1.2   | SQLite Ledger Implementation                      | ✅ Complete |
+| 2026-01-22 | M1.5   | External Tribunal Audit                           | ✅ Complete |
+| 2026-01-22 | M1.5.1 | Harden verifyChain [P0]                           | ✅ Complete |
+| 2026-01-22 | M1.5.2 | Fix deactivate lifecycle [P0]                     | ✅ Complete |
+| 2026-01-22 | M1.5.3 | Migrate SecretStorage [P1]                        | ✅ Complete |
+| 2026-01-22 | M1.5.4 | Harden ConfigManager [P2]                         | ✅ Complete |
+| 2026-01-22 | M4.5   | Webview Security Hardening                        | ✅ Complete |
+| 2026-01-22 | M2.x   | Sentinel SRP Refactor                             | ✅ Complete |
+| 2026-01-22 | M2.x   | Tribunal Remediations (P0-P4)                     | ✅ Complete |
+| 2026-01-22 | M3.x   | Phase 3 P0 Security Hardening                     | ✅ Complete |
+| 2026-01-22 | M3.x   | Phase 3 P1 Items (Verif/Cap/Retention)            | ✅ Complete |
+| 2026-01-22 | M3.x   | Phase 3 P2 Items (Optimistic Lock/Ed25519 Design) | ✅ Complete |

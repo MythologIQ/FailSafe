@@ -6,6 +6,11 @@
  * - Environmental context at time of failure
  * - Negative constraints for future avoidance
  * - Remediation tracking for learning cycles
+ * - P0 Security Hardening (Phase 3):
+ *   - DID hash derivation
+ *   - Signature verification protocol
+ *   - Persona assignment restriction
+ *   - Schema versioning
  */
 
 import * as vscode from 'vscode';
@@ -19,8 +24,19 @@ import {
     FailureMode,
     RemediationStatus,
     SentinelVerdict,
-    VerdictDecision
+    VerdictDecision,
+    PersonaType
 } from '../../shared/types';
+import {
+    verifySignature,
+    SignedData,
+    checkPersonaAssignmentRestriction
+} from '../../shared/utils/security';
+import {
+    SchemaVersionManager,
+    SHADOW_GENOME_V1_DDL,
+    MigrationResult
+} from './SchemaVersionManager';
 
 interface ArchiveRequest {
     verdict: SentinelVerdict;
@@ -43,6 +59,8 @@ export class ShadowGenomeManager {
     private ledgerManager: LedgerManager;
     private db: Database.Database | undefined;
     private dbPath: string = '';
+    private schemaVersionManager: SchemaVersionManager | undefined;
+    private enableSecurityHardening: boolean = true;
 
     constructor(
         context: vscode.ExtensionContext,
@@ -76,7 +94,36 @@ export class ShadowGenomeManager {
         try {
             this.db = new Database(this.dbPath);
             this.db.pragma('journal_mode = WAL');
+            
+            // Initialize schema versioning system
+            this.schemaVersionManager = new SchemaVersionManager(this.db);
+            this.schemaVersionManager.initialize();
+            
+            // Validate schema version on init
+            this.schemaVersionManager.validateOnInit();
+            
+            // Apply pending migrations
+            const migrationResults = this.schemaVersionManager.migrate();
+            if (migrationResults.length > 0) {
+                console.log(`Shadow Genome: Applied ${migrationResults.length} migration(s)`);
+                migrationResults.forEach(result => {
+                    if (result.success) {
+                        console.log(`  - ${result.version}: ${result.direction}`);
+                    } else {
+                        console.error(`  - ${result.version} failed: ${result.error}`);
+                    }
+                });
+            }
+            
+            // Initialize base schema if needed
             this.initSchema();
+            
+            // Log schema status
+            const status = this.schemaVersionManager.getStatus();
+            console.log(`Shadow Genome: Schema status - Version: ${status.currentVersion || 'none'}, ` +
+                       `Latest: ${status.latestVersion}, Pending: ${status.pendingMigrations}, ` +
+                       `Integrity: ${status.integrityValid ? 'valid' : 'invalid'}`);
+            
         } catch (error) {
             console.error('Failed to initialize ShadowGenome DB:', error);
             throw error;
@@ -86,31 +133,8 @@ export class ShadowGenomeManager {
     private initSchema(): void {
         if (!this.db) { return; }
 
-        const schema = `
-        CREATE TABLE IF NOT EXISTS shadow_genome (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            created_at TEXT NOT NULL DEFAULT (datetime('now')),
-            updated_at TEXT,
-            ledger_ref INTEGER,
-            agent_did TEXT NOT NULL,
-            input_vector TEXT NOT NULL,
-            decision_rationale TEXT,
-            environment_context TEXT,
-            failure_mode TEXT NOT NULL,
-            causal_vector TEXT,
-            negative_constraint TEXT,
-            remediation_status TEXT NOT NULL DEFAULT 'UNRESOLVED',
-            remediation_notes TEXT,
-            resolved_at TEXT,
-            resolved_by TEXT
-        );
-        CREATE INDEX IF NOT EXISTS idx_shadow_agent ON shadow_genome(agent_did);
-        CREATE INDEX IF NOT EXISTS idx_shadow_failure_mode ON shadow_genome(failure_mode);
-        CREATE INDEX IF NOT EXISTS idx_shadow_status ON shadow_genome(remediation_status);
-        CREATE INDEX IF NOT EXISTS idx_shadow_created ON shadow_genome(created_at);
-        `;
-
-        this.db.exec(schema);
+        // Use the versioned schema DDL
+        this.db.exec(SHADOW_GENOME_V1_DDL);
     }
 
     /**
@@ -121,21 +145,50 @@ export class ShadowGenomeManager {
 
         const { verdict, inputVector, decisionRationale, environmentContext, causalVector } = request;
 
+        // P0 Security: Validate agent persona before archiving
+        if (this.enableSecurityHardening) {
+            const personaValidation = this.validateAgentPersonaForArchive(verdict.agentDid);
+            if (!personaValidation.valid) {
+                throw new Error(`Persona validation failed: ${personaValidation.reason}`);
+            }
+        }
+
         // Determine failure mode from verdict patterns
         const failureMode = this.classifyFailureMode(verdict);
 
         // Generate negative constraint from failure analysis
         const negativeConstraint = this.generateNegativeConstraint(verdict, failureMode);
 
+        // P0 Security: Derive DID hash
+        let didHash: string | undefined;
+        if (this.enableSecurityHardening) {
+            didHash = this.deriveDIDHashFromAgent(verdict.agentDid);
+        }
+
+        // P0 Security: Verify signature if provided
+        let signature: string | undefined;
+        let signatureTimestamp: string | undefined;
+        if (this.enableSecurityHardening && verdict.signature) {
+            const signatureResult = this.verifyVerdictSignature(verdict);
+            if (signatureResult.valid) {
+                signature = verdict.signature;
+                signatureTimestamp = new Date().toISOString();
+            } else {
+                console.warn(`Signature verification failed for ${verdict.agentDid}: ${signatureResult.error}`);
+            }
+        }
+
         const sql = `
         INSERT INTO shadow_genome (
             created_at, ledger_ref, agent_did, input_vector,
             decision_rationale, environment_context, failure_mode,
-            causal_vector, negative_constraint, remediation_status
+            causal_vector, negative_constraint, remediation_status,
+            did_hash, signature, signature_timestamp
         ) VALUES (
             @createdAt, @ledgerRef, @agentDid, @inputVector,
             @decisionRationale, @environmentContext, @failureMode,
-            @causalVector, @negativeConstraint, @remediationStatus
+            @causalVector, @negativeConstraint, @remediationStatus,
+            @didHash, @signature, @signatureTimestamp
         )`;
 
         const createdAt = new Date().toISOString();
@@ -149,10 +202,14 @@ export class ShadowGenomeManager {
             failureMode,
             causalVector: causalVector || verdict.details,
             negativeConstraint,
-            remediationStatus: 'UNRESOLVED'
+            remediationStatus: 'UNRESOLVED',
+            didHash: didHash || null,
+            signature: signature || null,
+            signatureTimestamp: signatureTimestamp || null
         });
 
         const entry: ShadowGenomeEntry = {
+            schemaVersion: this.schemaVersionManager?.getCurrentVersion() || '1.0.0',
             id: Number(info.lastInsertRowid),
             createdAt,
             ledgerRef: verdict.ledgerEntryId,
@@ -384,8 +441,142 @@ export class ShadowGenomeManager {
         return res.c;
     }
 
+    /**
+     * P0 Security: Validate agent persona for archive operation
+     */
+    private validateAgentPersonaForArchive(agentDid: string): { valid: boolean; reason?: string } {
+        try {
+            // Extract persona from DID
+            const persona = this.extractPersonaFromDID(agentDid);
+            
+            if (!persona) {
+                return {
+                    valid: false,
+                    reason: `Invalid DID format: ${agentDid}`
+                };
+            }
+            
+            // Validate persona assignment restriction
+            const restriction = checkPersonaAssignmentRestriction(agentDid, persona);
+            
+            if (!restriction.allowed) {
+                return {
+                    valid: false,
+                    reason: restriction.reason
+                };
+            }
+            
+            return { valid: true };
+            
+        } catch (error) {
+            return {
+                valid: false,
+                reason: `Validation error: ${error instanceof Error ? error.message : String(error)}`
+            };
+        }
+    }
+
+    /**
+     * P0 Security: Derive DID hash from agent DID
+     */
+    private deriveDIDHashFromAgent(agentDid: string): string {
+        try {
+            // Extract persona from DID
+            const persona = this.extractPersonaFromDID(agentDid);
+            
+            if (!persona) {
+                throw new Error(`Invalid DID format: ${agentDid}`);
+            }
+            
+            // For DID hash derivation, we need the persona and a public key
+            // Since we only have the DID, we'll derive a hash from the DID itself
+            // In a real implementation, this would use the agent's registered public key
+            const crypto = require('crypto');
+            const hash = crypto.createHash('sha256')
+                .update(agentDid)
+                .digest('hex')
+                .substring(0, 32);
+            
+            return hash;
+            
+        } catch (error) {
+            console.error('Failed to derive DID hash:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * P0 Security: Verify verdict signature
+     */
+    private verifyVerdictSignature(verdict: SentinelVerdict): { valid: boolean; error?: string } {
+        try {
+            if (!verdict.signature || !verdict.publicKey) {
+                return { valid: false, error: 'Missing signature or public key' };
+            }
+
+            const signedPayload = { ...verdict };
+            delete (signedPayload as Partial<SentinelVerdict>).signature;
+            delete (signedPayload as Partial<SentinelVerdict>).signatureTimestamp;
+            delete (signedPayload as Partial<SentinelVerdict>).publicKey;
+
+            const signedData: SignedData = {
+                data: JSON.stringify(signedPayload),
+                signature: verdict.signature,
+                publicKey: verdict.publicKey,
+                timestamp: verdict.signatureTimestamp || verdict.timestamp
+            };
+
+            const result = verifySignature(signedData);
+            if (!result.valid) {
+                return { valid: false, error: result.error };
+            }
+
+            return { valid: true };
+            
+        } catch (error) {
+            return {
+                valid: false,
+                error: `Signature verification error: ${error instanceof Error ? error.message : String(error)}`
+            };
+        }
+    }
+
+    /**
+     * Extract persona from DID
+     */
+    private extractPersonaFromDID(did: string): PersonaType | null {
+        const match = did.match(/^did:myth:(scrivener|sentinel|judge|overseer):[a-f0-9]+$/);
+        return match ? (match[1] as PersonaType) : null;
+    }
+
+    /**
+     * Get schema version status
+     */
+    getSchemaStatus(): {
+        currentVersion: string | null;
+        latestVersion: string;
+        pendingMigrations: number;
+        integrityValid: boolean;
+    } | null {
+        if (!this.schemaVersionManager) {
+            return null;
+        }
+        return this.schemaVersionManager.getStatus();
+    }
+
+    /**
+     * Migrate schema to latest version
+     */
+    migrateSchema(): MigrationResult[] {
+        if (!this.schemaVersionManager) {
+            throw new Error('Schema version manager not initialized');
+        }
+        return this.schemaVersionManager.migrate();
+    }
+
     private mapRowToEntry(row: any): ShadowGenomeEntry {
         return {
+            schemaVersion: this.schemaVersionManager?.getCurrentVersion() || '1.0.0',
             id: row.id,
             createdAt: row.created_at,
             updatedAt: row.updated_at || undefined,

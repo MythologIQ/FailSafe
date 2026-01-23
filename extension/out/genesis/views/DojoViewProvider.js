@@ -45,6 +45,7 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DojoViewProvider = void 0;
 const vscode = __importStar(require("vscode"));
+const htmlSanitizer_1 = require("../../shared/utils/htmlSanitizer");
 class DojoViewProvider {
     view;
     extensionUri;
@@ -91,6 +92,8 @@ class DojoViewProvider {
         }
     }
     async getHtmlContent() {
+        const nonce = (0, htmlSanitizer_1.getNonce)();
+        const cspSource = this.view?.webview.cspSource || '';
         const status = this.sentinel.getStatus();
         const l3Queue = this.qorelogic.getL3Queue();
         const trustSummary = await this.getTrustSummary();
@@ -100,8 +103,9 @@ class DojoViewProvider {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${cspSource} 'nonce-${nonce}'; script-src 'nonce-${nonce}';">
     <title>The Dojo</title>
-    <style>
+    <style nonce="${nonce}">
         body {
             font-family: var(--vscode-font-family);
             font-size: var(--vscode-font-size);
@@ -235,7 +239,7 @@ class DojoViewProvider {
                 <span class="status-indicator ${status.running ? 'status-active' : 'status-error'}"></span>
                 ${status.running ? 'Active' : 'Stopped'}
             </span>
-            <span class="metric-value">${status.mode}</span>
+            <span class="metric-value">${(0, htmlSanitizer_1.escapeHtml)(status.mode)}</span>
         </div>
         <div class="metric">
             <span class="metric-label">Files watched</span>
@@ -247,15 +251,15 @@ class DojoViewProvider {
         </div>
         <div class="metric">
             <span class="metric-label">Mode</span>
-            <span class="metric-value">${status.operationalMode.toUpperCase()}</span>
+            <span class="metric-value">${(0, htmlSanitizer_1.escapeHtml)(status.operationalMode.toUpperCase())}</span>
         </div>
         <div class="metric">
             <span class="metric-label">Uptime</span>
-            <span class="metric-value">${this.formatUptime(status.uptime)}</span>
+            <span class="metric-value">${(0, htmlSanitizer_1.escapeHtml)(this.formatUptime(status.uptime))}</span>
         </div>
         <div class="metric">
             <span class="metric-label">Last verdict</span>
-            <span class="metric-value">${lastVerdict ? `${lastVerdict.decision} (${lastVerdict.riskGrade})` : 'None'}</span>
+            <span class="metric-value">${lastVerdict ? `${(0, htmlSanitizer_1.escapeHtml)(lastVerdict.decision)} (${(0, htmlSanitizer_1.escapeHtml)(lastVerdict.riskGrade)})` : 'None'}</span>
         </div>
     </div>
 
@@ -265,7 +269,7 @@ class DojoViewProvider {
             l3Queue.slice(0, 3).map(item => `
             <div class="l3-item">
                 <span class="status-indicator status-pending"></span>
-                ${item.filePath.split('/').pop()}
+                ${(0, htmlSanitizer_1.escapeHtml)(item.filePath.split(/[/\\]/).pop())}
             </div>
           `).join('')}
         ${l3Queue.length > 0 ? '<button onclick="showL3Queue()">Review Queue</button>' : ''}
@@ -360,7 +364,7 @@ class DojoViewProvider {
         <button onclick="trustProcess()">I Trust The Process</button>
     </div>
 
-    <script>
+    <script nonce="${nonce}">
         const vscode = acquireVsCodeApi();
         const workflowState = (vscode.getState() && vscode.getState().workflow) || {};
 

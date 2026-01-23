@@ -6,6 +6,7 @@
 
 import * as vscode from 'vscode';
 import { LedgerManager } from '../../qorelogic/ledger/LedgerManager';
+import { escapeHtml, getNonce } from '../../shared/utils/htmlSanitizer';
 
 export class LedgerViewerPanel {
     public static currentPanel: LedgerViewerPanel | undefined;
@@ -47,11 +48,15 @@ export class LedgerViewerPanel {
     }
 
     private getHtmlContent(entries: any[]): string {
+        const nonce = getNonce();
+        const cspSource = this.panel.webview.cspSource;
+        
         return `<!DOCTYPE html>
 <html>
 <head>
     <title>SOA Ledger</title>
-    <style>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${cspSource} 'nonce-${nonce}'; script-src 'nonce-${nonce}';">
+    <style nonce="${nonce}">
         body {
             margin: 0;
             padding: 20px;
@@ -83,12 +88,12 @@ export class LedgerViewerPanel {
         <tbody>
             ${entries.map(e => `
                 <tr>
-                    <td>${e.id}</td>
-                    <td>${new Date(e.timestamp).toLocaleString()}</td>
-                    <td>${e.eventType}</td>
-                    <td>${e.agentDid?.substring(0, 20) || 'N/A'}...</td>
-                    <td>${e.riskGrade || 'N/A'}</td>
-                    <td class="hash">${e.entryHash?.substring(0, 16) || 'N/A'}...</td>
+                    <td>${escapeHtml(String(e.id))}</td>
+                    <td>${escapeHtml(new Date(e.timestamp).toLocaleString())}</td>
+                    <td>${escapeHtml(e.eventType)}</td>
+                    <td>${escapeHtml(e.agentDid?.substring(0, 20) || 'N/A')}...</td>
+                    <td>${escapeHtml(e.riskGrade || 'N/A')}</td>
+                    <td class="hash">${escapeHtml(e.entryHash?.substring(0, 16) || 'N/A')}...</td>
                 </tr>
             `).join('')}
         </tbody>

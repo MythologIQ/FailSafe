@@ -63,6 +63,8 @@ const VerdictEngine_1 = require("../sentinel/engines/VerdictEngine");
 const PatternLoader_1 = require("../sentinel/PatternLoader");
 const ExistenceEngine_1 = require("../sentinel/engines/ExistenceEngine");
 const ArchitectureEngine_1 = require("../sentinel/engines/ArchitectureEngine");
+const VerdictArbiter_1 = require("../sentinel/VerdictArbiter");
+const VerdictRouter_1 = require("../sentinel/VerdictRouter");
 // Shared
 const EventBus_1 = require("../shared/EventBus");
 const Logger_1 = require("../shared/Logger");
@@ -105,7 +107,9 @@ async function activate(context) {
         const verdictEngine = new VerdictEngine_1.VerdictEngine(trustEngine, policyEngine, ledgerManager, shadowGenomeManager);
         const existenceEngine = new ExistenceEngine_1.ExistenceEngine(configManager);
         const architectureEngine = new ArchitectureEngine_1.ArchitectureEngine();
-        sentinelDaemon = new SentinelDaemon_1.SentinelDaemon(context, configManager, heuristicEngine, verdictEngine, existenceEngine, qorelogicManager, eventBus);
+        const verdictArbiter = new VerdictArbiter_1.VerdictArbiter(configManager, heuristicEngine, verdictEngine, existenceEngine);
+        const verdictRouter = new VerdictRouter_1.VerdictRouter(eventBus, qorelogicManager);
+        sentinelDaemon = new SentinelDaemon_1.SentinelDaemon(context, configManager, verdictArbiter, verdictRouter, eventBus);
         await sentinelDaemon.start();
         // ============================================================
         // PHASE 3: Initialize Genesis Layer (Visualization & UX)

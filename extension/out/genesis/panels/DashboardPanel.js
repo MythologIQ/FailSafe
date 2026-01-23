@@ -45,6 +45,7 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DashboardPanel = void 0;
 const vscode = __importStar(require("vscode"));
+const htmlSanitizer_1 = require("../../shared/utils/htmlSanitizer");
 class DashboardPanel {
     static currentPanel;
     panel;
@@ -112,6 +113,8 @@ class DashboardPanel {
         this.panel.webview.html = await this.getHtmlContent();
     }
     async getHtmlContent() {
+        const nonce = (0, htmlSanitizer_1.getNonce)();
+        const cspSource = this.panel.webview.cspSource;
         const status = this.sentinel.getStatus();
         const l3Queue = this.qorelogic.getL3Queue();
         const trustSummary = await this.getTrustSummary();
@@ -121,7 +124,8 @@ class DashboardPanel {
 <html>
 <head>
     <title>FailSafe Dashboard</title>
-    <style>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${cspSource} 'nonce-${nonce}'; script-src 'nonce-${nonce}';">
+    <style nonce="${nonce}">
         * { box-sizing: border-box; }
         :root {
             --card-bg: var(--vscode-editorWidget-background);
@@ -250,15 +254,15 @@ class DashboardPanel {
             <div class="card-title">Sentinel Status</div>
             <div class="metric">
                 <span class="metric-label">Mode</span>
-                <span class="metric-value">${status.mode}</span>
+                <span class="metric-value">${(0, htmlSanitizer_1.escapeHtml)(status.mode)}</span>
             </div>
             <div class="metric">
                 <span class="metric-label">Operational Mode</span>
-                <span class="metric-value">${status.operationalMode.toUpperCase()}</span>
+                <span class="metric-value">${(0, htmlSanitizer_1.escapeHtml)(status.operationalMode.toUpperCase())}</span>
             </div>
             <div class="metric">
                 <span class="metric-label">Uptime</span>
-                <span class="metric-value">${uptime}</span>
+                <span class="metric-value">${(0, htmlSanitizer_1.escapeHtml)(uptime)}</span>
             </div>
             <div class="metric">
                 <span class="metric-label">Files Watched</span>
@@ -278,7 +282,7 @@ class DashboardPanel {
             </div>
             <div class="metric">
                 <span class="metric-label">Last Verdict</span>
-                <span class="metric-value">${lastVerdict ? `${lastVerdict.decision} (${lastVerdict.riskGrade})` : 'None'}</span>
+                <span class="metric-value">${lastVerdict ? `${(0, htmlSanitizer_1.escapeHtml)(lastVerdict.decision)} (${(0, htmlSanitizer_1.escapeHtml)(lastVerdict.riskGrade)})` : 'None'}</span>
             </div>
         </div>
 
@@ -311,9 +315,9 @@ class DashboardPanel {
             '<div style="color: var(--vscode-descriptionForeground); font-style: italic;">No pending approvals</div>' :
             l3Queue.slice(0, 5).map(item => `
                     <div class="l3-item">
-                        <strong>${item.filePath.split(/[/\\]/).pop()}</strong><br>
+                        <strong>${(0, htmlSanitizer_1.escapeHtml)(item.filePath.split(/[/\\]/).pop())}</strong><br>
                         <span style="color: var(--vscode-descriptionForeground); font-size: 10px;">
-                            Risk: ${item.riskGrade} | Agent Trust: ${(item.agentTrust * 100).toFixed(0)}%
+                            Risk: ${(0, htmlSanitizer_1.escapeHtml)(item.riskGrade)} | Agent Trust: ${(item.agentTrust * 100).toFixed(0)}%
                         </span>
                     </div>
                 `).join('')}
@@ -329,7 +333,7 @@ class DashboardPanel {
         </div>
     </div>
 
-    <script>
+    <script nonce="${nonce}">
         const vscode = acquireVsCodeApi();
         function auditFile() { vscode.postMessage({ command: 'auditFile' }); }
         function showGraph() { vscode.postMessage({ command: 'showGraph' }); }

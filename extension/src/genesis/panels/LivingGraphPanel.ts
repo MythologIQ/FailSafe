@@ -11,6 +11,7 @@
 import * as vscode from 'vscode';
 import { EventBus } from '../../shared/EventBus';
 import { LivingGraphData } from '../../shared/types';
+import { escapeHtml, getNonce } from '../../shared/utils/htmlSanitizer';
 
 export class LivingGraphPanel {
     public static currentPanel: LivingGraphPanel | undefined;
@@ -80,13 +81,21 @@ export class LivingGraphPanel {
         this.panel.webview.html = this.getHtmlContent();
     }
 
+
+
     private getHtmlContent(): string {
+        const nonce = getNonce();
+        const cspSource = this.panel.webview.cspSource;
+        const nodeCount = escapeHtml(String(this.graphData?.metadata?.nodeCount || 0));
+        const edgeCount = escapeHtml(String(this.graphData?.metadata?.edgeCount || 0));
+
         // Simplified version - full implementation would be more elaborate
         return `<!DOCTYPE html>
 <html>
 <head>
     <title>Living Graph</title>
-    <style>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${cspSource} 'nonce-${nonce}'; script-src 'nonce-${nonce}';">
+    <style nonce="${nonce}">
         body {
             margin: 0;
             padding: 20px;
@@ -106,8 +115,8 @@ export class LivingGraphPanel {
     <h1>Living Graph</h1>
     <div class="placeholder">
         Full Living Graph visualization will be rendered here.<br>
-        Nodes: ${this.graphData?.metadata?.nodeCount || 0}<br>
-        Edges: ${this.graphData?.metadata?.edgeCount || 0}
+        Nodes: ${nodeCount}<br>
+        Edges: ${edgeCount}
     </div>
 </body>
 </html>`;

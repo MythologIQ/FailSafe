@@ -44,6 +44,7 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.LivingGraphPanel = void 0;
 const vscode = __importStar(require("vscode"));
+const htmlSanitizer_1 = require("../../shared/utils/htmlSanitizer");
 class LivingGraphPanel {
     static currentPanel;
     panel;
@@ -88,12 +89,17 @@ class LivingGraphPanel {
         this.panel.webview.html = this.getHtmlContent();
     }
     getHtmlContent() {
+        const nonce = (0, htmlSanitizer_1.getNonce)();
+        const cspSource = this.panel.webview.cspSource;
+        const nodeCount = (0, htmlSanitizer_1.escapeHtml)(String(this.graphData?.metadata?.nodeCount || 0));
+        const edgeCount = (0, htmlSanitizer_1.escapeHtml)(String(this.graphData?.metadata?.edgeCount || 0));
         // Simplified version - full implementation would be more elaborate
         return `<!DOCTYPE html>
 <html>
 <head>
     <title>Living Graph</title>
-    <style>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${cspSource} 'nonce-${nonce}'; script-src 'nonce-${nonce}';">
+    <style nonce="${nonce}">
         body {
             margin: 0;
             padding: 20px;
@@ -113,8 +119,8 @@ class LivingGraphPanel {
     <h1>Living Graph</h1>
     <div class="placeholder">
         Full Living Graph visualization will be rendered here.<br>
-        Nodes: ${this.graphData?.metadata?.nodeCount || 0}<br>
-        Edges: ${this.graphData?.metadata?.edgeCount || 0}
+        Nodes: ${nodeCount}<br>
+        Edges: ${edgeCount}
     </div>
 </body>
 </html>`;

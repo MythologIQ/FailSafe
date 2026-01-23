@@ -1,21 +1,18 @@
 /**
  * SentinelDaemon - Active Monitoring & Enforcement Daemon
  *
- * Continuously monitors:
- * - File system changes
- * - Agent claims
- * - Code submissions
+ * Orchestrates the monitoring and verdict process by coordinating
+ * between the VerdictArbiter (logic) and VerdictRouter (action).
  *
- * Enforces QoreLogic policies through:
- * - Heuristic pattern matching
- * - Optional LLM-assisted evaluation
- * - Verdict generation and actions
+ * Refactored to SRP:
+ * - Daemon: Lifecycle & Event Loop
+ * - Arbiter: Decision Logic
+ * - Router: Action/Distribution
  */
 
 import * as vscode from 'vscode';
 import * as chokidar from 'chokidar';
 import * as path from 'path';
-import * as fs from 'fs';
 import * as crypto from 'crypto';
 import { EventBus } from '../shared/EventBus';
 import { Logger } from '../shared/Logger';
@@ -23,25 +20,20 @@ import { ConfigManager } from '../shared/ConfigManager';
 import {
     SentinelStatus,
     SentinelEvent,
-    SentinelVerdict,
-    SentinelMode,
-    OperationalMode,
-    RiskGrade
+    SentinelVerdict
 } from '../shared/types';
-import { HeuristicEngine } from './engines/HeuristicEngine';
-import { VerdictEngine } from './engines/VerdictEngine';
-import { ExistenceEngine } from './engines/ExistenceEngine';
-import { QoreLogicManager } from '../qorelogic/QoreLogicManager';
+import { VerdictArbiter } from './VerdictArbiter';
+import { VerdictRouter } from './VerdictRouter';
 
 export class SentinelDaemon {
     private context: vscode.ExtensionContext;
     private configManager: ConfigManager;
-    private heuristicEngine: HeuristicEngine;
-    private verdictEngine: VerdictEngine;
-    private existenceEngine: ExistenceEngine;
-    private qorelogic: QoreLogicManager;
     private eventBus: EventBus;
     private logger: Logger;
+
+    // Refactored Components
+    private arbiter: VerdictArbiter;
+    private router: VerdictRouter;
 
     private watcher: chokidar.FSWatcher | undefined;
     private eventQueue: SentinelEvent[] = [];
@@ -49,7 +41,7 @@ export class SentinelDaemon {
 
     private status: SentinelStatus = {
         running: false,
-        mode: 'heuristic',
+        mode: 'heuristic', // Will be synced from Arbiter
         operationalMode: 'normal',
         uptime: 0,
         filesWatched: 0,
@@ -65,24 +57,19 @@ export class SentinelDaemon {
     constructor(
         context: vscode.ExtensionContext,
         configManager: ConfigManager,
-        heuristicEngine: HeuristicEngine,
-        verdictEngine: VerdictEngine,
-        existenceEngine: ExistenceEngine,
-        qorelogic: QoreLogicManager,
+        arbiter: VerdictArbiter,
+        router: VerdictRouter,
         eventBus: EventBus
     ) {
         this.context = context;
         this.configManager = configManager;
-        this.heuristicEngine = heuristicEngine;
-        this.verdictEngine = verdictEngine;
-        this.existenceEngine = existenceEngine;
-        this.qorelogic = qorelogic;
+        this.arbiter = arbiter;
+        this.router = router;
         this.eventBus = eventBus;
         this.logger = new Logger('Sentinel');
 
-        // Load configuration
-        const config = this.configManager.getConfig();
-        this.status.mode = config.sentinel.mode;
+        // Sync initial status
+        this.status.mode = this.arbiter.getMode();
     }
 
     /**
@@ -101,8 +88,9 @@ export class SentinelDaemon {
         // Initialize file watcher
         await this.initializeWatcher();
 
-        // Check LLM availability
-        await this.checkLLMAvailability();
+        // Check LLM availability via Arbiter
+        this.status.llmAvailable = await this.arbiter.checkLLMAvailability();
+        this.status.mode = this.arbiter.getMode();
 
         // Start event processing loop
         this.processInterval = setInterval(() => this.processEvents(), 100);
@@ -152,7 +140,10 @@ export class SentinelDaemon {
         return {
             ...this.status,
             uptime: this.status.running ? Date.now() - this.startTime : 0,
-            queueDepth: this.eventQueue.length
+            queueDepth: this.eventQueue.length,
+            // Refresh dynamic props from arbiter
+            mode: this.arbiter.getMode(),
+            llmAvailable: this.arbiter.isLlmAvailable()
         };
     }
 
@@ -179,8 +170,9 @@ export class SentinelDaemon {
             payload: { path: filePath }
         };
 
-        // Process immediately
-        return this.processEvent(event);
+        // Process immediately (bypass queue for manual)
+        // Note: We bypass the processLoop but still rely on the inner working logic
+        return this.processSingleEvent(event);
     }
 
     /**
@@ -193,7 +185,6 @@ export class SentinelDaemon {
             return;
         }
 
-        const config = this.configManager.getConfig();
         const ignorePatterns = [
             '**/node_modules/**',
             '**/.git/**',
@@ -228,33 +219,6 @@ export class SentinelDaemon {
             .on('error', (error) => {
                 this.logger.error('File watcher error', error);
             });
-    }
-
-    /**
-     * Check if LLM is available
-     */
-    private async checkLLMAvailability(): Promise<void> {
-        const config = this.configManager.getConfig();
-        const endpoint = config.sentinel.ollamaEndpoint;
-
-        try {
-            const response = await fetch(`${endpoint}/api/tags`, {
-                method: 'GET',
-                signal: AbortSignal.timeout(2000)
-            });
-            this.status.llmAvailable = response.ok;
-        } catch {
-            this.status.llmAvailable = false;
-        }
-
-        if (this.status.llmAvailable) {
-            this.logger.info('LLM available at ' + endpoint);
-        } else {
-            this.logger.info('LLM not available, using heuristic mode only');
-            if (this.status.mode === 'llm-assisted') {
-                this.status.mode = 'heuristic';
-            }
-        }
     }
 
     /**
@@ -332,7 +296,7 @@ export class SentinelDaemon {
         try {
             const event = this.eventQueue.shift();
             if (event) {
-                await this.processEvent(event);
+                await this.processSingleEvent(event);
             }
         } catch (error) {
             this.logger.error('Error processing event', error);
@@ -342,163 +306,35 @@ export class SentinelDaemon {
     }
 
     /**
-     * Process a single event
+     * Process a single event (Internal helper for both queue and manual audit)
      */
-    private async processEvent(event: SentinelEvent): Promise<SentinelVerdict> {
-        const filePath = (event.payload as any).path;
-        this.logger.debug('Processing event', { type: event.type, path: filePath });
+    private async processSingleEvent(event: SentinelEvent): Promise<SentinelVerdict> {
+        // 1. Arbitrate (Generate Verdict)
+        const verdict = await this.arbiter.evaluateEvent(event);
 
-        // Read file content (if exists)
-        let content: string | undefined;
-        if (event.type !== 'FILE_DELETED' && fs.existsSync(filePath)) {
-            try {
-                content = fs.readFileSync(filePath, 'utf-8');
-            } catch {
-                content = undefined;
-            }
-        }
-
-        // Run heuristic checks
-        const heuristicResults = this.heuristicEngine.analyze(filePath, content);
-
-        // Determine if LLM evaluation is needed
-        let llmEvaluation;
-        if (this.shouldInvokeLLM(heuristicResults)) {
-            llmEvaluation = await this.invokeLLM(filePath, content, heuristicResults);
-        }
-
-        // Generate verdict
-        const verdict = await this.verdictEngine.generateVerdict(
-            event,
-            filePath,
-            heuristicResults,
-            llmEvaluation
-        );
-
-        // Update status
+        // 2. Update Status
         this.status.eventsProcessed++;
         this.status.lastVerdict = verdict;
 
-        // Emit verdict event
-        this.eventBus.emit('sentinel.verdict', verdict);
-
-        // Handle escalations
-        if (verdict.decision === 'ESCALATE') {
-            await this.qorelogic.queueL3Approval({
-                filePath: verdict.artifactPath || filePath,
-                riskGrade: verdict.riskGrade,
-                agentDid: verdict.agentDid,
-                agentTrust: verdict.agentTrustAtVerdict,
-                sentinelSummary: verdict.summary,
-                flags: verdict.matchedPatterns
-            });
-        }
+        // 3. Route (Act on Verdict)
+        await this.router.route(verdict, event);
 
         return verdict;
     }
 
     /**
-     * Determine if LLM evaluation should be invoked
-     */
-    private shouldInvokeLLM(heuristicResults: any[]): boolean {
-        if (!this.status.llmAvailable) {
-            return false;
-        }
-
-        if (this.status.mode === 'heuristic') {
-            return false;
-        }
-
-        if (this.status.mode === 'llm-assisted') {
-            return true;
-        }
-
-        // Hybrid mode: invoke on flags or low confidence
-        const hasFlags = heuristicResults.some(r => r.matched && r.severity !== 'low');
-        return hasFlags;
-    }
-
-    /**
-     * Invoke LLM for deeper evaluation
-     */
-    private async invokeLLM(
-        filePath: string,
-        content: string | undefined,
-        heuristicResults: any[]
-    ): Promise<any> {
-        const config = this.configManager.getConfig();
-        const endpoint = config.sentinel.ollamaEndpoint;
-        const model = config.sentinel.localModel;
-
-        const prompt = `Analyze this code for security vulnerabilities, logic errors, and best practices violations.
-
-File: ${filePath}
-Heuristic Flags: ${heuristicResults.filter(r => r.matched).map(r => r.patternId).join(', ')}
-
-Code:
-\`\`\`
-${content?.substring(0, 2000) || 'File not readable'}
-\`\`\`
-
-Respond with:
-1. Risk assessment (L1/L2/L3)
-2. Issues found (if any)
-3. Confidence (0-1)`;
-
-        try {
-            const response = await fetch(`${endpoint}/api/generate`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    model,
-                    prompt,
-                    stream: false
-                }),
-                signal: AbortSignal.timeout(5000)
-            });
-
-            if (!response.ok) {
-                return undefined;
-            }
-
-            const result = await response.json() as any;
-            return {
-                model,
-                promptUsed: prompt,
-                response: result.response,
-                confidence: 0.7, // TODO: Parse from response
-                processingTime: result.total_duration || 0
-            };
-        } catch (error) {
-            this.logger.warn('LLM evaluation failed', error);
-            return undefined;
-        }
-    }
-    /**
-     * Validate an agent's claim (Existence Check)
+     * Validate an agent's claim
+     * Delegates to Arbiter -> Router
      */
     async validateClaim(claim: any): Promise<SentinelVerdict> {
         this.logger.info('Validating agent claim', { agentDid: claim.agentDid });
-
-        const artifacts = claim.claimedArtifacts || [];
-        const existenceResults = this.existenceEngine.validateClaim(artifacts);
         
-        // Pass results to verdict engine (simplified for now, usually we'd merge with heuristics)
-        const verdict = await this.verdictEngine.generateVerdict(
-            {
-                id: crypto.randomUUID(),
-                type: 'AGENT_CLAIM',
-                timestamp: new Date().toISOString(),
-                priority: 'high',
-                source: 'agent_message',
-                payload: claim
-            },
-            artifacts[0] || 'claim_manifest', // Associate with first artifact for now
-            existenceResults,
-            undefined // No LLM for basic existence check
-        );
+        // 1. Arbitrate
+        const verdict = await this.arbiter.validateClaim(claim);
 
-        this.eventBus.emit('sentinel.verdict', verdict);
+        // 2. Route
+        await this.router.route(verdict);
+        
         return verdict;
     }
 }

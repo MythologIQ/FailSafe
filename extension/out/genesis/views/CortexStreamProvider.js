@@ -54,6 +54,7 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CortexStreamProvider = void 0;
 const vscode = __importStar(require("vscode"));
+const htmlSanitizer_1 = require("../../shared/utils/htmlSanitizer");
 class CortexStreamProvider {
     view;
     extensionUri;
@@ -189,6 +190,8 @@ class CortexStreamProvider {
         }
     }
     getHtmlContent() {
+        const nonce = (0, htmlSanitizer_1.getNonce)();
+        const cspSource = this.view?.webview.cspSource || '';
         const categoryIcons = {
             sentinel: '🛡️',
             qorelogic: '📜',
@@ -196,41 +199,26 @@ class CortexStreamProvider {
             user: '👤',
             system: '⚙️'
         };
-        const severityColors = {
-            debug: 'var(--vscode-descriptionForeground)',
-            info: 'var(--vscode-foreground)',
-            warn: '#ed8936',
-            error: '#f56565',
-            critical: '#f56565'
-        };
-        const severityBgColors = {
-            debug: 'rgba(128, 128, 128, 0.1)',
-            info: 'rgba(100, 149, 237, 0.1)',
-            warn: 'rgba(237, 137, 54, 0.15)',
-            error: 'rgba(245, 101, 101, 0.15)',
-            critical: 'rgba(220, 38, 38, 0.2)'
-        };
         const filteredEvents = this.getFilteredEvents();
         const eventsHtml = filteredEvents.map(event => `
-            <div class="event" data-severity="${event.severity}" data-category="${event.category}" 
-                 style="border-left-color: ${severityColors[event.severity]}; background: ${severityBgColors[event.severity]}">
+            <div class="event severity-${event.severity}" data-severity="${event.severity}" data-category="${event.category}">
                 <div class="event-header">
                     <span class="event-icon">${categoryIcons[event.category] || '•'}</span>
                     <span class="event-time">${this.formatTime(event.timestamp)}</span>
                     <span class="event-category-badge">${event.category}</span>
                 </div>
-                <div class="event-title">${this.escapeHtml(event.title)}</div>
-                ${event.details ? `<div class="event-details">${this.escapeHtml(event.details)}</div>` : ''}
+                <div class="event-title">${(0, htmlSanitizer_1.escapeHtml)(event.title)}</div>
+                ${event.details ? `<div class="event-details">${(0, htmlSanitizer_1.escapeHtml)(event.details)}</div>` : ''}
                 ${event.relatedFile ? `
-                    <div class="event-link" onclick="openFile('${event.relatedFile.replace(/\\/g, '\\\\')}')">
-                        📄 ${event.relatedFile.split(/[/\\]/).pop()}
+                    <div class="event-link" onclick="openFile('${(0, htmlSanitizer_1.escapeJsString)(event.relatedFile)}')">
+                        📄 ${(0, htmlSanitizer_1.escapeHtml)(event.relatedFile.split(/[/\\]/).pop())}
                     </div>
                 ` : ''}
                 ${event.actions?.length ? `
                     <div class="event-actions">
                         ${event.actions.map(a => `
-                            <button onclick="executeAction('${a.command}', ${JSON.stringify(a.args || [])})">
-                                ${a.label}
+                            <button onclick="executeAction('${(0, htmlSanitizer_1.escapeJsString)(a.command)}', ${(0, htmlSanitizer_1.escapeHtml)(JSON.stringify(a.args || []))})">
+                                ${(0, htmlSanitizer_1.escapeHtml)(a.label)}
                             </button>
                         `).join('')}
                     </div>
@@ -250,8 +238,9 @@ class CortexStreamProvider {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${cspSource} 'nonce-${nonce}'; script-src 'nonce-${nonce}';">
     <title>Cortex Stream</title>
-    <style>
+    <style nonce="${nonce}">
         * {
             box-sizing: border-box;
         }
@@ -266,6 +255,13 @@ class CortexStreamProvider {
             overflow-x: hidden;
         }
         
+        /* Severity Styles */
+        .severity-debug { border-left-color: var(--vscode-descriptionForeground); background: rgba(128, 128, 128, 0.1); }
+        .severity-info { border-left-color: var(--vscode-foreground); background: rgba(100, 149, 237, 0.1); }
+        .severity-warn { border-left-color: #ed8936; background: rgba(237, 137, 54, 0.15); }
+        .severity-error { border-left-color: #f56565; background: rgba(245, 101, 101, 0.15); }
+        .severity-critical { border-left-color: #f56565; background: rgba(220, 38, 38, 0.2); }
+
         /* Header with enhanced styling */
         .header {
             background: linear-gradient(135deg, var(--vscode-editor-background) 0%, var(--vscode-sideBar-background) 100%);
@@ -646,7 +642,7 @@ class CortexStreamProvider {
             <input type="text" 
                    class="search-input" 
                    placeholder="Search events..." 
-                   value="${this.searchTerm}"
+                   value="${(0, htmlSanitizer_1.escapeHtml)(this.searchTerm)}"
                    oninput="setSearch(this.value)">
         </div>
         
@@ -678,7 +674,7 @@ class CortexStreamProvider {
         <div>Press <kbd>?</kbd> for help</div>
     </div>
 
-    <script>
+    <script nonce="${nonce}">
         const vscode = acquireVsCodeApi();
         let searchTimeout;
 
@@ -749,16 +745,6 @@ class CortexStreamProvider {
     </script>
 </body>
 </html>`;
-    }
-    escapeHtml(text) {
-        const map = {
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#039;'
-        };
-        return text.replace(/[&<>"']/g, (m) => map[m]);
     }
     formatTime(isoString) {
         const date = new Date(isoString);

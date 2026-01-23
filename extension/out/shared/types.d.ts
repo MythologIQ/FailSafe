@@ -37,7 +37,9 @@ export interface AgentIdentity {
     trustScore: number;
     trustStage: TrustStage;
     isQuarantined: boolean;
+    verificationsCompleted: number;
     createdAt: string;
+    version: number;
 }
 export type SentinelMode = "heuristic" | "llm-assisted" | "hybrid";
 export type OperationalMode = "normal" | "lean" | "surge" | "safe";
@@ -79,6 +81,9 @@ export interface SentinelVerdict {
     matchedPatterns: string[];
     actions: VerdictAction[];
     ledgerEntryId?: number;
+    signature?: string;
+    signatureTimestamp?: string;
+    publicKey?: string;
 }
 export interface HeuristicResult {
     patternId: string;
@@ -140,6 +145,7 @@ export interface LedgerEntry {
 export type FailureMode = "HALLUCINATION" | "INJECTION_VULNERABILITY" | "LOGIC_ERROR" | "SPEC_VIOLATION" | "HIGH_COMPLEXITY" | "SECRET_EXPOSURE" | "PII_LEAK" | "DEPENDENCY_CONFLICT" | "TRUST_VIOLATION" | "OTHER";
 export type RemediationStatus = "UNRESOLVED" | "IN_PROGRESS" | "RESOLVED" | "WONT_FIX" | "SUPERSEDED";
 export interface ShadowGenomeEntry {
+    schemaVersion: string;
     id: number;
     createdAt: string;
     updatedAt?: string;

@@ -35,7 +35,6 @@ export declare class CortexStreamProvider implements vscode.WebviewViewProvider 
     resolveWebviewView(webviewView: vscode.WebviewView, _context: vscode.WebviewViewResolveContext, _token: vscode.CancellationToken): void;
     private refresh;
     private getHtmlContent;
-    private escapeHtml;
     private formatTime;
 }
 //# sourceMappingURL=CortexStreamProvider.d.ts.map

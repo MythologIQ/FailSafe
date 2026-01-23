@@ -69,12 +69,21 @@ const VerdictRouter_1 = require("../sentinel/VerdictRouter");
 const EventBus_1 = require("../shared/EventBus");
 const Logger_1 = require("../shared/Logger");
 const ConfigManager_1 = require("../shared/ConfigManager");
+// Governance (M-Core)
+const IntentService_1 = require("../governance/IntentService");
+const EnforcementEngine_1 = require("../governance/EnforcementEngine");
+const GovernanceRouter_1 = require("../governance/GovernanceRouter");
+const GovernanceStatusBar_1 = require("../governance/GovernanceStatusBar");
 let genesisManager;
 let qorelogicManager;
 let sentinelDaemon;
 let eventBus;
 let logger;
 let feedbackManager;
+// Governance globals
+let intentService;
+let governanceRouter;
+let governanceStatusBar;
 async function activate(context) {
     logger = new Logger_1.Logger('FailSafe');
     logger.info('Activating MythologIQ: FailSafe (feat. QoreLogic)...');
@@ -83,6 +92,28 @@ async function activate(context) {
         eventBus = new EventBus_1.EventBus();
         // Initialize configuration manager
         const configManager = new ConfigManager_1.ConfigManager(context);
+        const workspaceRoot = configManager.getWorkspaceRoot();
+        if (!workspaceRoot) {
+            throw new Error("FailSafe requires an open workspace.");
+        }
+        // ============================================================
+        // PHASE 1.5: Initialize Governance Substrate (M-Core)
+        // ============================================================
+        logger.info('Initializing Governance Substrate...');
+        intentService = new IntentService_1.IntentService(workspaceRoot);
+        const enforcement = new EnforcementEngine_1.EnforcementEngine(intentService, workspaceRoot);
+        governanceStatusBar = new GovernanceStatusBar_1.GovernanceStatusBar();
+        governanceRouter = new GovernanceRouter_1.GovernanceRouter(intentService, enforcement, governanceStatusBar);
+        // Initial UI State
+        governanceStatusBar.update(await intentService.getActiveIntent());
+        // Wire File Hooks (The Blockade)
+        context.subscriptions.push(vscode.workspace.onWillSaveTextDocument(event => {
+            event.waitUntil(governanceRouter.handleFileOperation('file_write', event.document.uri).then(allowed => {
+                if (!allowed)
+                    throw new Error('Action Blocked by FailSafe');
+            }));
+        }));
+        registerGovernanceCommands(context, intentService);
         // ============================================================
         // PHASE 1: Initialize QoreLogic Layer (Governance Framework)
         // ============================================================
@@ -242,6 +273,57 @@ function registerCommands(context, genesis, qorelogic, sentinel, feedback) {
 // Module-scope managers defined at lines 35-39
 let ledgerManager;
 let shadowGenomeManager;
+function registerGovernanceCommands(context, intentService) {
+    // Create Intent Command
+    context.subscriptions.push(vscode.commands.registerCommand('failsafe.createIntent', async () => {
+        // 1. Select Type
+        const type = await vscode.window.showQuickPick(['feature', 'bugfix', 'refactor', 'security', 'docs'], { placeHolder: 'Select Intent Type' });
+        if (!type)
+            return;
+        // 2. Input Purpose
+        const purpose = await vscode.window.showInputBox({
+            prompt: 'Enter Intent Purpose (Why are you doing this?)',
+            placeHolder: 'Short, descriptive sentence'
+        });
+        if (!purpose)
+            return;
+        // 3. Define Scope (Simulated Wizard)
+        const scopeInput = await vscode.window.showInputBox({
+            prompt: 'Enter Scope (File paths, comma separated)',
+            placeHolder: 'src/main.ts, src/utils.ts'
+        });
+        const files = scopeInput ? scopeInput.split(',').map(s => s.trim()) : [];
+        try {
+            await intentService.createIntent({
+                type: type,
+                purpose,
+                scope: { files, modules: [], riskGrade: 'L1' }, // Default L1 for now
+                metadata: { author: 'user', tags: [] }
+            });
+            vscode.window.showInformationMessage('Intent Created Successfully');
+            vscode.commands.executeCommand('failsafe.showMenu'); // Update UI
+        }
+        catch (err) {
+            vscode.window.showErrorMessage(`Failed to create Intent: ${err.message}`);
+        }
+    }));
+    // Show Menu / Status
+    context.subscriptions.push(vscode.commands.registerCommand('failsafe.showMenu', async () => {
+        const active = await intentService.getActiveIntent();
+        if (!active) {
+            const choice = await vscode.window.showInformationMessage('FailSafe: No Active Intent. Writes are BLOCKED.', 'Create Intent');
+            if (choice === 'Create Intent') {
+                vscode.commands.executeCommand('failsafe.createIntent');
+            }
+            return;
+        }
+        const choice = await vscode.window.showInformationMessage(`Active Intent: ${active.purpose} [${active.status}]`, 'Seal Intent');
+        if (choice === 'Seal Intent') {
+            // Placeholder for Seal
+            vscode.window.showInformationMessage('Seal functionality coming in M-Core.3');
+        }
+    }));
+}
 function deactivate() {
     logger?.info('Deactivating MythologIQ: FailSafe...');
     // P0 FIX: Close database connections first to prevent locks
@@ -253,6 +335,8 @@ function deactivate() {
     qorelogicManager?.dispose();
     // Cleanup Genesis
     genesisManager?.dispose();
+    // Cleanup Governance
+    governanceStatusBar?.dispose();
     // Cleanup event bus
     eventBus?.dispose();
     logger?.info('FailSafe deactivated');

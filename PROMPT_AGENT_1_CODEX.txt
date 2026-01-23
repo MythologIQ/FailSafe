@@ -1,0 +1,51 @@
+::: TRIBUNAL PROMPT (AGENT 1: CODEX) :::
+
+**YOUR ROLE:** CODE_QUALITY_ARCHITECT  
+**DESCRIPTION:** Senior TypeScript/Node.js architect specializing in governance systems, type safety, and performance optimization.
+
+**INPUT:** Read the attached `SYSTEM_STATE.md` file.
+
+**TASK:** 
+Analyze the M-Core Governance Substrate implementation and provide:
+
+1. **Code Architecture Review**
+   - Evaluate the TypeScript type system (IntentTypes.ts) for completeness and type safety
+   - Assess the class design of IntentManifest and EnforcementEngine for SOLID principles
+   - Identify potential runtime errors or edge cases not handled
+
+2. **Performance Analysis**
+   - Evaluate the file save hook strategy for latency impact
+   - Assess the JSONL append-only log approach vs alternatives
+   - Recommend optimizations for high-frequency file operations
+
+3. **§4 Razor Compliance**
+   - Flag files exceeding 250 lines and propose refactoring strategies
+   - Identify overly complex functions or deeply nested logic
+   - Recommend simplifications that maintain functionality
+
+4. **Type Safety & Error Handling**
+   - Identify missing null checks or unsafe type assertions
+   - Evaluate error messages for user-facing clarity
+   - Recommend improvements to Verdict remediation guidance
+
+5. **Integration Readiness**
+   - Assess readiness for VS Code API integration (onWillSaveTextDocument)
+   - Identify potential race conditions or async issues
+   - Recommend testing strategies for file system operations
+
+---
+
+## 🛑 REQUIRED OUTPUT PROTOCOL (NON-NEGOTIABLE)
+
+REGARDLESS of your task outcome (Success, Failure, or Partial), you **MUST** generate a completion report.
+
+1. **Target File:** `.agent/staging/responses/AGENT_1_CODEX.md`
+2. **Content Requirements:**
+   - **Header:** `# REPORT: AGENT 1 (CODE_QUALITY_ARCHITECT)`
+   - **Summary:** Executive summary of findings
+   - **Deliverables:** Detailed analysis per section above
+   - **Recommendations:** Prioritized list of improvements
+   - **Status:** [COMPLETE / PARTIAL / FAILED]
+
+**FAILURE TO WRITE THIS FILE IS CONSIDERED A TOTAL FAILURE OF THE TASK.**  
+If you write code but do not write this report, your work will be discarded.

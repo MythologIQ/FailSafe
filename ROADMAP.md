@@ -4,6 +4,7 @@ This roadmap tracks the sprinted remediation plan and future enhancements.
 
 ## Remediation Phases (From GapAudit)
 
+- **M-Core: Governing Substrate** - Establish the Axioms and the Sovereignty Protocol (ALIGN phase).
 - **M0: Spec/Manifest Alignment** - Ensure alignment between spec and implementation.
 - **M1: Storage + Ledger Backbone** - Establish persistence layers.
 - **M2: Sentinel Enforcement Engine** - Implement active monitoring.

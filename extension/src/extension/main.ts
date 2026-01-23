@@ -39,12 +39,24 @@ import { EventBus } from '../shared/EventBus';
 import { Logger } from '../shared/Logger';
 import { ConfigManager } from '../shared/ConfigManager';
 
+// Governance (M-Core)
+import { IntentService } from '../governance/IntentService';
+import { EnforcementEngine } from '../governance/EnforcementEngine';
+import { GovernanceRouter } from '../governance/GovernanceRouter';
+import { GovernanceStatusBar } from '../governance/GovernanceStatusBar';
+import { IntentType, IntentScope } from '../governance/types/IntentTypes';
+
 let genesisManager: GenesisManager;
 let qorelogicManager: QoreLogicManager;
 let sentinelDaemon: SentinelDaemon;
 let eventBus: EventBus;
 let logger: Logger;
 let feedbackManager: FeedbackManager;
+
+// Governance globals
+let intentService: IntentService;
+let governanceRouter: GovernanceRouter;
+let governanceStatusBar: GovernanceStatusBar;
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
     logger = new Logger('FailSafe');
@@ -56,6 +68,37 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
         // Initialize configuration manager
         const configManager = new ConfigManager(context);
+        const workspaceRoot = configManager.getWorkspaceRoot();
+
+        if (!workspaceRoot) {
+            throw new Error("FailSafe requires an open workspace.");
+        }
+
+        // ============================================================
+        // PHASE 1.5: Initialize Governance Substrate (M-Core)
+        // ============================================================
+        logger.info('Initializing Governance Substrate...');
+
+        intentService = new IntentService(workspaceRoot);
+        const enforcement = new EnforcementEngine(intentService, workspaceRoot);
+        governanceStatusBar = new GovernanceStatusBar();
+        governanceRouter = new GovernanceRouter(intentService, enforcement, governanceStatusBar);
+
+        // Initial UI State
+        governanceStatusBar.update(await intentService.getActiveIntent());
+
+        // Wire File Hooks (The Blockade)
+        context.subscriptions.push(
+            vscode.workspace.onWillSaveTextDocument(event => {
+                event.waitUntil(
+                    governanceRouter.handleFileOperation('file_write', event.document.uri).then(allowed => {
+                        if (!allowed) throw new Error('Action Blocked by FailSafe');
+                    })
+                );
+            })
+        );
+        
+        registerGovernanceCommands(context, intentService);
 
         // ============================================================
         // PHASE 1: Initialize QoreLogic Layer (Governance Framework)
@@ -322,6 +365,74 @@ function registerCommands(
 let ledgerManager: LedgerManager;
 let shadowGenomeManager: ShadowGenomeManager;
 
+function registerGovernanceCommands(context: vscode.ExtensionContext, intentService: IntentService) {
+    // Create Intent Command
+    context.subscriptions.push(
+        vscode.commands.registerCommand('failsafe.createIntent', async () => {
+            // 1. Select Type
+            const type = await vscode.window.showQuickPick(
+                ['feature', 'bugfix', 'refactor', 'security', 'docs'] as IntentType[],
+                { placeHolder: 'Select Intent Type' }
+            );
+            if (!type) return;
+
+            // 2. Input Purpose
+            const purpose = await vscode.window.showInputBox({ 
+                prompt: 'Enter Intent Purpose (Why are you doing this?)',
+                placeHolder: 'Short, descriptive sentence'
+            });
+            if (!purpose) return;
+
+            // 3. Define Scope (Simulated Wizard)
+            const scopeInput = await vscode.window.showInputBox({ 
+                prompt: 'Enter Scope (File paths, comma separated)',
+                placeHolder: 'src/main.ts, src/utils.ts'
+            });
+            const files = scopeInput ? scopeInput.split(',').map(s => s.trim()) : [];
+            
+            try {
+                await intentService.createIntent({
+                    type: type as IntentType,
+                    purpose,
+                    scope: { files, modules: [], riskGrade: 'L1' }, // Default L1 for now
+                    metadata: { author: 'user', tags: [] }
+                });
+                vscode.window.showInformationMessage('Intent Created Successfully');
+                vscode.commands.executeCommand('failsafe.showMenu'); // Update UI
+            } catch (err: any) {
+                vscode.window.showErrorMessage(`Failed to create Intent: ${err.message}`);
+            }
+        })
+    );
+
+    // Show Menu / Status
+    context.subscriptions.push(
+        vscode.commands.registerCommand('failsafe.showMenu', async () => {
+             const active = await intentService.getActiveIntent();
+             if (!active) {
+                 const choice = await vscode.window.showInformationMessage(
+                     'FailSafe: No Active Intent. Writes are BLOCKED.',
+                     'Create Intent'
+                 );
+                 if (choice === 'Create Intent') {
+                     vscode.commands.executeCommand('failsafe.createIntent');
+                 }
+                 return;
+             }
+
+             const choice = await vscode.window.showInformationMessage(
+                 `Active Intent: ${active.purpose} [${active.status}]`,
+                 'Seal Intent'
+             );
+
+             if (choice === 'Seal Intent') {
+                 // Placeholder for Seal
+                 vscode.window.showInformationMessage('Seal functionality coming in M-Core.3');
+             }
+        })
+    );
+}
+
 export function deactivate(): void {
     logger?.info('Deactivating MythologIQ: FailSafe...');
 
@@ -337,6 +448,9 @@ export function deactivate(): void {
 
     // Cleanup Genesis
     genesisManager?.dispose();
+
+    // Cleanup Governance
+    governanceStatusBar?.dispose();
 
     // Cleanup event bus
     eventBus?.dispose();

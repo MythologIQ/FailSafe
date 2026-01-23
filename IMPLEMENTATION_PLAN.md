@@ -92,6 +92,9 @@ This document formalizes the execution plan for the MythologIQ: FailSafe extensi
   - Implement `failsafe.generateFeedback` command.
   - Output GUID-stamped JSON to `.failsafe/feedback`.
   - (Future) Github Issue integration.
+- [ ] **Sprint 4.4 (NEW)**: **Kanban Dashboard**.
+  - Visualize Shadow Genome (Unresolved -> In Progress -> Resolved).
+  - Visualize L3 Approvals (Queued -> Review -> Decided).
 
 ## Execution Log
 

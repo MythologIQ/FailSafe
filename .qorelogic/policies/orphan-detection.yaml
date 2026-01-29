@@ -1,0 +1,282 @@
+name: orphan-detection
+version: "1.0.0"
+description: "Build Path Verification - prevent creation of files not connected to build"
+id: QL-POLICY-004
+
+enabled: true
+priority: 3
+
+triggers:
+  - event: pre_file_create
+  - event: pre_file_write (new file)
+  - event: post_implementation
+  - event: pre_substantiate
+
+conditions:
+  file_patterns:
+    include:
+      - "src/**/*"
+      - "lib/**/*"
+      - "components/**/*"
+      - "modules/**/*"
+      - "packages/**/*"
+    exclude:
+      - "**/tests/**"
+      - "**/__tests__/**"
+      - "**/*.test.*"
+      - "**/*.spec.*"
+      - "**/node_modules/**"
+      - "**/dist/**"
+      - "**/build/**"
+
+# ============================================
+# ENTRY POINT DISCOVERY
+# ============================================
+entry_points:
+  discovery:
+    - method: package_json
+      check: "package.json main field"
+      fallback: "src/index.ts"
+
+    - method: common_patterns
+      patterns:
+        - src/index.ts
+        - src/index.js
+        - src/main.ts
+        - src/main.tsx
+        - src/App.tsx
+        - index.ts
+        - index.js
+        - main.ts
+
+    - method: framework_specific
+      react: "src/App.tsx or src/index.tsx"
+      vue: "src/main.ts or src/App.vue"
+      angular: "src/main.ts"
+      node: "src/index.ts or index.js"
+
+  validation:
+    - check: "At least one entry point must exist"
+      on_fail:
+        severity: warn
+        message: "No entry point found. Cannot verify build path."
+
+# ============================================
+# IMPORT TRACING
+# ============================================
+import_tracing:
+  languages:
+    typescript:
+      patterns:
+        - "import.*from\\s*['\"]([^'\"]+)['\"]"
+        - "require\\(['\"]([^'\"]+)['\"]\\)"
+        - "import\\(['\"]([^'\"]+)['\"]\\)"
+      resolve:
+        - relative: "resolve from current file"
+        - alias: "check tsconfig.json paths"
+        - bare: "check node_modules"
+
+    javascript:
+      patterns:
+        - "import.*from\\s*['\"]([^'\"]+)['\"]"
+        - "require\\(['\"]([^'\"]+)['\"]\\)"
+        - "import\\(['\"]([^'\"]+)['\"]\\)"
+
+    python:
+      patterns:
+        - "from\\s+([\\w.]+)\\s+import"
+        - "import\\s+([\\w.]+)"
+
+  algorithm: |
+    function traceFromEntryPoint(entryPoint, targetFile):
+      visited = set()
+      queue = [entryPoint]
+
+      while queue:
+        current = queue.pop()
+        if current in visited:
+          continue
+        visited.add(current)
+
+        if current == targetFile:
+          return True  # Connected!
+
+        imports = extractImports(current)
+        for imp in imports:
+          resolved = resolveImport(imp, current)
+          if resolved:
+            queue.append(resolved)
+
+      return False  # Not connected (orphan)
+
+# ============================================
+# ORPHAN DETECTION
+# ============================================
+detection:
+  on_new_file:
+    steps:
+      - name: check_blueprint
+        action: read_file
+        path: docs/ARCHITECTURE_PLAN.md
+        check: "Is {{ new_file }} listed in blueprint?"
+        on_not_found:
+          severity: warn
+          message: "File not in blueprint. Consider updating ARCHITECTURE_PLAN.md"
+
+      - name: check_will_import
+        action: prompt
+        question: "Which existing file will import {{ new_file }}?"
+        validate: "File exists and is in build path"
+
+      - name: verify_connection
+        action: simulate_trace
+        from: entry_point
+        through: importing_file
+        to: new_file
+        on_fail:
+          severity: warn
+          message: "New file would be orphaned"
+
+  on_post_implementation:
+    steps:
+      - name: scan_all_source
+        action: glob
+        pattern: "src/**/*"
+
+      - name: trace_each_file
+        action: iterate
+        for_each: source_file
+        check: "Is {{ file }} reachable from entry point?"
+
+      - name: report_orphans
+        action: collect
+        condition: "not reachable"
+        output: orphan_list
+
+# ============================================
+# GHOST PATH DETECTION
+# ============================================
+ghost_paths:
+  description: "Detect UI components without backend handlers"
+
+  ui_patterns:
+    - name: button_without_handler
+      pattern: "<button[^>]*>(?!.*onClick)"
+      message: "Button without click handler"
+
+    - name: form_without_submit
+      pattern: "<form[^>]*>(?!.*onSubmit)"
+      message: "Form without submission handler"
+
+    - name: link_without_href
+      pattern: "<a[^>]*>(?!.*href)"
+      message: "Link without destination"
+
+    - name: event_handler_empty
+      pattern: "onClick=\\{\\s*\\(\\)\\s*=>\\s*\\{\\s*\\}\\s*\\}"
+      message: "Empty click handler"
+
+    - name: coming_soon
+      pattern: "coming.?soon|placeholder|TODO.*implement"
+      message: "Placeholder UI element"
+
+  on_ghost:
+    severity: warn
+    message: |
+      GHOST PATH DETECTED
+
+      Component: {{ component }}
+      Issue: {{ issue }}
+      Location: {{ location }}
+
+      UI elements must connect to real functionality.
+
+# ============================================
+# REPORTING
+# ============================================
+reporting:
+  orphan_report: |
+    ## Orphan Detection Report
+
+    **Scan Time**: {{ timestamp }}
+    **Entry Points**: {{ entry_points | join(', ') }}
+    **Total Source Files**: {{ total_files }}
+    **Connected Files**: {{ connected_count }}
+    **Orphaned Files**: {{ orphan_count }}
+
+    {% if orphan_list %}
+    ### Orphaned Files
+
+    | File | Reason |
+    |------|--------|
+    {% for o in orphan_list %}
+    | {{ o.path }} | {{ o.reason }} |
+    {% endfor %}
+
+    ### Recommended Actions
+
+    For each orphan:
+    1. If needed: Add import from connected file
+    2. If obsolete: Delete the file
+    3. If new feature: Update ARCHITECTURE_PLAN.md first
+
+    {% else %}
+    ### All Files Connected ✓
+
+    No orphaned files detected.
+    {% endif %}
+
+  ghost_report: |
+    ## Ghost Path Report
+
+    **Files Scanned**: {{ files_scanned }}
+    **Ghosts Found**: {{ ghost_count }}
+
+    {% if ghost_list %}
+    ### Ghost Paths
+
+    | Component | Issue | Location |
+    |-----------|-------|----------|
+    {% for g in ghost_list %}
+    | {{ g.component }} | {{ g.issue }} | {{ g.location }} |
+    {% endfor %}
+
+    {% else %}
+    ### No Ghost Paths ✓
+    {% endif %}
+
+# ============================================
+# ACTIONS
+# ============================================
+actions:
+  on_orphan_detected:
+    - severity: warn
+    - suggest:
+        - "Add import from connected file"
+        - "Delete orphaned file"
+        - "Update blueprint if intentional"
+
+  on_many_orphans:
+    threshold: 5
+    severity: block
+    message: "Too many orphaned files. Review project structure."
+
+  on_substantiate_with_orphans:
+    action: warn
+    message: "Orphaned files exist. Consider cleanup before sealing."
+    allow_continue: true
+
+# ============================================
+# EXCEPTIONS
+# ============================================
+exceptions:
+  allowed_orphans:
+    - "**/*.d.ts"  # Type definitions
+    - "**/types.ts"  # Type files
+    - "**/constants.ts"  # May be partially used
+    - "**/config.*"  # Configuration files
+
+  ignored_patterns:
+    - "**/README.md"
+    - "**/LICENSE"
+    - "**/.gitignore"

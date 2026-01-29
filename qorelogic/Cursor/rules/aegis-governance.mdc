@@ -1,0 +1,23 @@
+# Cursor A.E.G.I.S. Governance Rule
+
+This rule applies to all agent activities within Cursor to ensure QoreLogic compliance.
+
+## Kissinger (KISS) Razor - §4
+- **Functions**: Max 40 lines.
+- **Files**: Max 250 lines.
+- **Nesting**: Max 3 levels.
+- **Ternaries**: No nested ternaries (`a ? b : c ? d : e` is forbidden).
+- **Naming**: Variables must be `noun` or `verbNoun`. Avoid `data`, `obj`, `x`, `temp`.
+
+## Merkle Chain Traceability
+- Every major decision must be logged to `docs/META_LEDGER.md`.
+- Architecture changes must be hashed and linked to the previous state.
+
+## Operational Modes
+- **Governor**: ALIGN (Why) and ENCODE (Blueprint) phases.
+- **Judge**: GATE (Audit) and SUBSTANTIATE (Verification) phases.
+- **Specialist**: IMPLEMENT (Build) phase.
+
+## Enforcement
+- If an agent task exceeds complexity limits, you must PAUSE and propose a modular refactor.
+- Security-sensitive paths (`/auth/`, `/security/`, `/PII/`) require a L3/Judge audit.

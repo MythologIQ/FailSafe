@@ -1,0 +1,184 @@
+name: aegis-status
+version: "1.0.0"
+description: Lifecycle diagnostic - analyze project state and determine next actions
+phase: ANY
+orbit: orbit-governor
+risk_grade: L1
+
+triggers:
+  - command: "/aegis-status"
+  - command: "/status"
+
+inputs: []
+
+outputs:
+  - status_report (console output)
+
+preconditions: []
+
+steps:
+  - id: activate_governor
+    name: Identity Activation
+    action: activate_orbit
+    orbit: orbit-governor
+    mode: "Diagnostic (read-only)"
+
+  - id: scan_artifacts
+    name: Environment Scan
+    action: check_files
+    files:
+      - path: docs/META_LEDGER.md
+        variable: has_ledger
+      - path: docs/CONCEPT.md
+        variable: has_concept
+      - path: docs/ARCHITECTURE_PLAN.md
+        variable: has_blueprint
+      - path: .agent/staging/AUDIT_REPORT.md
+        variable: has_audit
+      - path: docs/SYSTEM_STATE.md
+        variable: has_state
+    glob:
+      - pattern: "src/**/*"
+        variable: source_files
+      - pattern: "tests/**/*"
+        variable: test_files
+
+  - id: determine_stage
+    name: Lifecycle Stage Detection
+    action: conditional
+    conditions:
+      - if: "{{ has_ledger }} == false"
+        then:
+          stage: UNINITIALIZED
+          persona: None
+          directive: "No DNA detected. Run /aegis-bootstrap to initialize."
+          next_action: aegis-bootstrap
+
+      - if: "{{ has_ledger }} == true && {{ has_blueprint }} == false"
+        then:
+          stage: ALIGN/ENCODE
+          persona: Governor
+          directive: "Strategy incomplete. Governor is required."
+          next_action: "Complete ARCHITECTURE_PLAN.md"
+
+      - if: "{{ has_blueprint }} == true && {{ has_audit }} == false"
+        then:
+          stage: GATED
+          persona: Judge
+          directive: "Tribunal pending. Judge is required."
+          next_action: aegis-gate
+
+      - if: "{{ has_audit }} == true && audit_verdict != 'PASS'"
+        then:
+          stage: GATED (VETO)
+          persona: Governor
+          directive: "Audit VETO. Revise blueprint and re-audit."
+          next_action: "Revise ARCHITECTURE_PLAN.md, then aegis-gate"
+
+      - if: "{{ has_audit }} == true && audit_verdict == 'PASS' && source_files.count < blueprint_files.count"
+        then:
+          stage: IMPLEMENTING
+          persona: Specialist
+          directive: "Gate cleared. Specialist is active. Apply §4 Razor."
+          next_action: aegis-implement
+
+      - if: "source_files.count >= blueprint_files.count && !session_sealed"
+        then:
+          stage: SUBSTANTIATING
+          persona: Judge
+          directive: "Work complete. Judge must verify and seal."
+          next_action: aegis-substantiate
+
+      - if: "session_sealed == true"
+        then:
+          stage: SEALED
+          persona: None
+          directive: "Session complete. Reality matches Promise."
+          next_action: "Start new feature with aegis-bootstrap"
+
+  - id: verify_merkle
+    name: Merkle Chain Integrity Check
+    action: validate_merkle_chain
+    ledger: docs/META_LEDGER.md
+    algorithm: SHA-256
+    output:
+      valid: chain_valid
+      broken_at: chain_break_entry
+      total_entries: chain_length
+
+  - id: extract_audit_verdict
+    name: Extract Audit Verdict (if exists)
+    action: conditional
+    if: "{{ has_audit }} == true"
+    then:
+      action: read_file
+      path: .agent/staging/AUDIT_REPORT.md
+      extract:
+        pattern: "VERDICT: (PASS|VETO)"
+        variable: audit_verdict
+
+  - id: count_implementation
+    name: Calculate Implementation Progress
+    action: compute
+    planned: "{{ blueprint_files.count }}"
+    actual: "{{ source_files.count }}"
+    completion: "{{ (actual / planned) * 100 }}%"
+
+  - id: generate_report
+    name: Generate Status Report
+    action: output
+    format: |
+      # QoreLogic Status Report
+
+      **Timestamp**: {{ ISO_8601_NOW }}
+      **Project**: {{ project_name | from_concept | default('Unknown') }}
+
+      ## Lifecycle Stage
+
+      | Attribute | Value |
+      |-----------|-------|
+      | **Stage** | {{ stage }} |
+      | **Active Persona** | {{ persona }} |
+      | **Risk Grade** | {{ risk_grade | from_blueprint | default('Unknown') }} |
+      | **Chain Integrity** | {{ 'VALID' if chain_valid else 'BROKEN at #' + chain_break_entry }} |
+
+      ## Artifact Status
+
+      | Artifact | Status |
+      |----------|--------|
+      | docs/CONCEPT.md | {{ '✓' if has_concept else '✗ Missing' }} |
+      | docs/ARCHITECTURE_PLAN.md | {{ '✓' if has_blueprint else '✗ Missing' }} |
+      | docs/META_LEDGER.md | {{ '✓' if has_ledger else '✗ Missing' }} |
+      | .agent/staging/AUDIT_REPORT.md | {{ audit_verdict if has_audit else 'Missing' }} |
+      | docs/SYSTEM_STATE.md | {{ '✓' if has_state else '✗ Missing' }} |
+
+      ## Implementation Progress
+
+      | Metric | Value |
+      |--------|-------|
+      | Planned Files | {{ planned }} |
+      | Created Files | {{ actual }} |
+      | Completion | {{ completion }} |
+
+      ## Merkle Chain
+
+      | Check | Result |
+      |-------|--------|
+      | Chain Status | {{ 'VALID' if chain_valid else 'BROKEN' }} |
+      | Total Entries | {{ chain_length }} |
+      {{ '| Broken At | #' + chain_break_entry + ' |' if not chain_valid else '' }}
+
+      ## Next Step
+
+      **Command**: {{ next_action }}
+      **Reason**: {{ directive }}
+
+      ---
+      *Status generated by QoreLogic Governor*
+
+postconditions: []
+
+error_handling:
+  on_read_error:
+    action: report
+    message: "Could not read artifact. File may be corrupted."

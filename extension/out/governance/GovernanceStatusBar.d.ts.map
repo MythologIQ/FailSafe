@@ -1,1 +1,0 @@
-{"version":3,"file":"GovernanceStatusBar.d.ts","sourceRoot":"","sources":["../../src/governance/GovernanceStatusBar.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,MAAM,MAAM,QAAQ,CAAC;AACjC,OAAO,EAAE,MAAM,EAAE,MAAM,qBAAqB,CAAC;AAE7C,qBAAa,mBAAoB,YAAW,MAAM,CAAC,UAAU;IAC3D,OAAO,CAAC,IAAI,CAAuB;;IAOnC,MAAM,CAAC,MAAM,EAAE,MAAM,GAAG,IAAI;IAqB5B,OAAO;CACR"}

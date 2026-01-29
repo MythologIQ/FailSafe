@@ -3,14 +3,17 @@ import { v4 as uuidv4 } from 'uuid';
 import { Intent, IntentType, IntentScope, IntentMetadata, IntentStatus, IntentEvidence, IntentSchema } from './types/IntentTypes';
 import { IntentStore } from './IntentStore';
 import { IntentHistoryLog } from './IntentHistoryLog';
+import { SessionManager } from './SessionManager';
 
 export class IntentService {
   private store: IntentStore;
   private history: IntentHistoryLog;
+  private session: SessionManager;
 
-  constructor(workspaceRoot: string) {
+  constructor(workspaceRoot: string, sessionManager: SessionManager) {
     this.store = new IntentStore(workspaceRoot);
     this.history = new IntentHistoryLog(this.store.getManifestDir());
+    this.session = sessionManager;
   }
 
   // D1: Runtime validation using Zod
@@ -34,6 +37,7 @@ export class IntentService {
 
     await this.store.saveActiveIntent(intent);
     await this.history.appendEntry({ intentId: intent.id, timestamp: now, event: 'CREATED', newStatus: 'PULSE', actor: params.metadata.author });
+    await this.session.setActiveIntent(intent.id);
     return intent;
   }
 
@@ -73,5 +77,6 @@ export class IntentService {
     
     await this.history.appendEntry({ intentId: active.id, timestamp: new Date().toISOString(), event: 'SEALED', actor });
     await this.store.deleteActiveIntent();
+    await this.session.setActiveIntent(null);
   }
 }

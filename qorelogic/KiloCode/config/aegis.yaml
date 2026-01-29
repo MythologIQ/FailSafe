@@ -1,0 +1,25 @@
+# KiloCode A.E.G.I.S. Configuration
+
+Identities and rules for the KiloCode agentic environment.
+
+## Policy Engine Mapping
+Mappings between QoreLogic rules and KiloCode internal triggers.
+
+- **Trigger**: `onFileCreate` -> Action: `ApplyKissRazor`
+- **Trigger**: `onTaskStart` -> Action: `RequireIntentLog`
+- **Trigger**: `onTaskEnd`   -> Action: `SubstantiateInLedger`
+
+## Agent Configuration
+- **Persona**: `governor`
+  - Mode: `ZeroFluff`
+  - Goal: `StrategicBlueprint`
+- **Persona**: `judge`
+  - Mode: `Adversarial`
+  - Goal: `SecurityAudit`
+- **Persona**: `specialist`
+  - Mode: `Implementation`
+  - Goal: `PrecisionBuild`
+
+## Environment Nuance
+KiloCode should check the `.kilo/config.json` for workspace-specific overrides to the base A.E.G.I.S. policies.
+All writes to the ledger must use the KiloCode metadata block for traceability.

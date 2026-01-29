@@ -1,0 +1,30 @@
+{
+  "referenceTiers": {
+    "T1": {
+      "weight": 100,
+      "examples": ["RFC", "IEEE", "ISO", "Peer-reviewed publications"]
+    },
+    "T2": {
+      "weight": 90,
+      "examples": ["OWASP", "Official documentation", "Major textbooks"]
+    },
+    "T3": {
+      "weight": 70,
+      "examples": ["Tech publications", "Conference proceedings"]
+    },
+    "T4": {
+      "weight": 45,
+      "examples": ["Stack Overflow", "GitHub discussions", "LLM output"]
+    }
+  },
+  "thresholds": {
+    "goldStandard": 90,
+    "verificationRequired": 60,
+    "humanInLoop": 40,
+    "hardRejection": 35
+  },
+  "transitiveRules": {
+    "maxHops": 2,
+    "decayPerHop": 15
+  }
+}

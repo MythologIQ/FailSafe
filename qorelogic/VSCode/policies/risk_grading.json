@@ -1,0 +1,17 @@
+{
+  "filePathTriggers": {
+    "L1": ["readme", "changelog", "license", ".md", ".txt"],
+    "L2": ["component", "util", "helper", "service"],
+    "L3": ["auth", "login", "password", "payment", "billing", "encrypt", "crypto", "migration", "admin", "secret", "credential", "token"]
+  },
+  "contentTriggers": {
+    "L1": [],
+    "L2": ["function", "class", "interface"],
+    "L3": ["CREATE TABLE", "DROP TABLE", "ALTER TABLE", "authenticate", "bcrypt", "AES", "RSA", "private_key", "api_key", "password", "credential", "secret"]
+  },
+  "defaults": {
+    "documentation": "L1",
+    "functional": "L2",
+    "security": "L3"
+  }
+}

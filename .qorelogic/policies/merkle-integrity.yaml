@@ -1,0 +1,286 @@
+name: merkle-integrity
+version: "1.0.0"
+description: "Merkle Chain Validation - ensure cryptographic integrity of decision trail"
+id: QL-POLICY-003
+
+enabled: true
+priority: 2
+
+triggers:
+  - event: session_init
+  - event: pre_ledger_update
+  - event: pre_substantiate
+  - event: periodic (every 10 operations)
+
+conditions:
+  requires_file: docs/META_LEDGER.md
+
+# ============================================
+# CHAIN VALIDATION
+# ============================================
+validation:
+  algorithm: SHA-256
+
+  genesis_rules:
+    previous_hash: "0000000000000000000000000000000000000000000000000000000000000000"
+    content_sources:
+      - docs/CONCEPT.md
+      - docs/ARCHITECTURE_PLAN.md
+
+  entry_rules:
+    required_fields:
+      - id: "sequential integer"
+      - timestamp: "ISO 8601 format"
+      - phase: "one of [BOOTSTRAP, ENCODE, GATE, IMPLEMENT, REFACTOR, SUBSTANTIATE]"
+      - author: "one of [Governor, Judge, Specialist]"
+      - content_hash: "SHA-256 hex string"
+      - previous_hash: "SHA-256 hex string matching prior entry"
+      - chain_hash: "SHA-256(content_hash + previous_hash)"
+
+  chain_rules:
+    - rule: "chain_hash[n] == SHA256(content_hash[n] + chain_hash[n-1])"
+      description: "Each entry's chain hash must be computed from its content and the previous entry's chain hash"
+
+    - rule: "previous_hash[n] == chain_hash[n-1]"
+      description: "Each entry's previous_hash must exactly match the prior entry's chain_hash"
+
+    - rule: "id[n] == id[n-1] + 1"
+      description: "Entry IDs must be sequential"
+
+    - rule: "timestamp[n] >= timestamp[n-1]"
+      description: "Timestamps must be monotonically increasing"
+
+# ============================================
+# VALIDATION PROCESS
+# ============================================
+process:
+  on_session_init:
+    steps:
+      - name: load_ledger
+        action: read_file
+        path: docs/META_LEDGER.md
+
+      - name: parse_entries
+        action: parse
+        extract_all_entries: true
+
+      - name: validate_chain
+        action: iterate
+        for_each: entry
+        logic: |
+          if entry.id == 1:
+            expected_previous = GENESIS_HASH
+          else:
+            expected_previous = entries[entry.id - 1].chain_hash
+
+          expected_chain = sha256(entry.content_hash + expected_previous)
+
+          if entry.chain_hash != expected_chain:
+            return CHAIN_BROKEN(entry.id)
+
+          if entry.previous_hash != expected_previous:
+            return CHAIN_BROKEN(entry.id)
+
+      - name: report_result
+        action: set_flag
+        flag: chain_valid
+        value: "{{ validation_result }}"
+
+  on_chain_broken:
+    immediate_actions:
+      - action: lock_dataset
+        scope: all_modifications
+        reason: "Merkle chain integrity failure"
+
+      - action: alert
+        severity: critical
+        message: |
+          CHAIN INTEGRITY FAILURE
+
+          Broken at: Entry #{{ broken_entry_id }}
+          Expected chain hash: {{ expected_hash }}
+          Recorded chain hash: {{ actual_hash }}
+
+          All modifications are BLOCKED until chain is repaired.
+
+      - action: set_flag
+        flag: dataset_locked
+        value: true
+
+# ============================================
+# CONTENT VERIFICATION (DEEP)
+# ============================================
+deep_verification:
+  enabled: true
+  frequency: "on_substantiate"
+  description: "Verify content hashes still match referenced files"
+
+  checks:
+    - entry_phase: BOOTSTRAP
+      verify_files:
+        - docs/CONCEPT.md
+        - docs/ARCHITECTURE_PLAN.md
+      tolerance: "exact match required"
+
+    - entry_phase: GATE
+      verify_files:
+        - .agent/staging/AUDIT_REPORT.md
+      tolerance: "may be overwritten by newer audits"
+      note: "Old audit reports expected to drift"
+
+    - entry_phase: IMPLEMENT
+      verify_files: "files listed in entry"
+      tolerance: "may be modified in later iterations"
+
+    - entry_phase: SUBSTANTIATE
+      verify_files:
+        - docs/SYSTEM_STATE.md
+      tolerance: "should match if no changes since seal"
+
+  on_drift:
+    - if: "entry is recent (< 24h)"
+      severity: warn
+      message: "Content drift in recent entry. Unexpected modification."
+
+    - if: "entry is old (> 24h)"
+      severity: info
+      message: "Content drift in old entry. Expected due to iteration."
+
+# ============================================
+# ITERATION SUPPORT
+# ============================================
+iteration_support:
+  description: "Handle iterative development correctly"
+
+  rules:
+    - rule: "Chain is linear, not branching"
+      enforcement: "Reject any attempt to branch the chain"
+
+    - rule: "Iteration markers are informational"
+      description: "Chain validation ignores iteration numbers"
+
+    - rule: "Old content may drift"
+      description: "Content hashes for old iterations may not match current files"
+
+    - rule: "Chain hashes must always verify"
+      description: "The chain of hashes is immutable even if content changes"
+
+  entry_types:
+    - GENESIS: "Initial bootstrap"
+    - ENCODE: "Initial blueprint"
+    - ENCODE_UPDATE: "Blueprint revision (new iteration)"
+    - GATE: "Audit pass"
+    - IMPLEMENT: "Code creation"
+    - REFACTOR: "Code restructuring"
+    - SUBSTANTIATE: "Session seal"
+    - RETROSPECTIVE_SEAL: "Late seal for previous work"
+
+# ============================================
+# RECOVERY OPTIONS
+# ============================================
+recovery:
+  on_broken_chain:
+    options:
+      - name: restore_backup
+        description: "Restore META_LEDGER.md from backup"
+        steps:
+          - "Locate backup (git history, external backup)"
+          - "Verify backup chain integrity"
+          - "Replace current ledger with backup"
+          - "Re-validate chain"
+
+      - name: rebuild_chain
+        description: "Rebuild chain from break point"
+        steps:
+          - "Identify last valid entry"
+          - "Document the break in SHADOW_GENOME.md"
+          - "Create CHAIN_REPAIR entry"
+          - "Continue chain from repair point"
+
+      - name: manual_audit
+        description: "Investigate and document"
+        steps:
+          - "Identify cause of break"
+          - "Document in SHADOW_GENOME.md"
+          - "Create CHAIN_REPAIR entry with explanation"
+          - "Get human sign-off"
+
+  chain_repair_entry:
+    format: |
+      ### Entry #{{ next_id }}: CHAIN_REPAIR
+
+      **Timestamp**: {{ ISO_8601_NOW }}
+      **Phase**: REPAIR
+      **Author**: [Human + System]
+
+      **Repair Summary**:
+      - Break detected at: Entry #{{ broken_at }}
+      - Cause: {{ cause }}
+      - Resolution: {{ resolution }}
+
+      **Content Hash**:
+      ```
+      SHA256(repair_documentation)
+      = {{ repair_hash }}
+      ```
+
+      **Previous Hash**: {{ last_valid_hash }}
+
+      **Chain Hash**:
+      ```
+      SHA256({{ repair_hash }} + {{ last_valid_hash }})
+      = {{ new_chain_hash }}
+      ```
+
+      **Decision**: Chain repaired. Integrity restored.
+
+# ============================================
+# REPORTING
+# ============================================
+reporting:
+  on_valid_chain: |
+    ## Merkle Chain Status: VALID ✓
+
+    **Validated**: {{ timestamp }}
+    **Total Entries**: {{ entry_count }}
+    **Genesis**: {{ genesis_hash[:12] }}...
+    **Head**: {{ head_hash[:12] }}...
+
+    Chain integrity confirmed.
+
+  on_broken_chain: |
+    ## Merkle Chain Status: BROKEN ✗
+
+    **Detected**: {{ timestamp }}
+    **Break Location**: Entry #{{ broken_at }}
+
+    ### Discrepancy
+
+    | Field | Expected | Actual |
+    |-------|----------|--------|
+    | Chain Hash | {{ expected_hash }} | {{ actual_hash }} |
+    | Previous Hash | {{ expected_prev }} | {{ actual_prev }} |
+
+    ### Impact
+
+    **DATASET LOCKED** - All modifications blocked.
+
+    ### Recovery Options
+
+    1. Restore from backup
+    2. Rebuild chain from break point
+    3. Manual audit and repair
+
+    See MERKLE_ITERATION_GUIDE.md for details.
+
+# ============================================
+# AUDIT TRAIL
+# ============================================
+audit_trail:
+  log_validations: true
+  log_location: ".agent/logs/merkle_validations.log"
+  log_format: "{{ timestamp }} | {{ result }} | entries={{ count }} | head={{ head_hash[:8] }}"
+
+  retention:
+    keep_days: 30
+    compress_after: 7

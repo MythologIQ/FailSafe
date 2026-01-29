@@ -1,0 +1,14 @@
+{
+  "defaultTrust": 0.35,
+  "successDelta": 0.05,
+  "failureDelta": -0.10,
+  "violationPenalty": -0.25,
+  "probationFloor": 0.35,
+  "probationVerifications": 5,
+  "probationDays": 30,
+  "stages": {
+    "CBT": { "min": 0.0, "max": 0.5 },
+    "KBT": { "min": 0.5, "max": 0.8 },
+    "IBT": { "min": 0.8, "max": 1.0 }
+  }
+}

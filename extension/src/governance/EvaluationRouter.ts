@@ -13,6 +13,7 @@ import {
 } from "./fingerprint";
 import { CacheInstrumentation } from "./CacheInstrumentation";
 import { NoveltyAccuracyMonitor } from "./NoveltyAccuracyMonitor";
+import { CacheSizeMonitor } from "./CacheSizeMonitor";
 
 export type EvaluationTier = 0 | 1 | 2 | 3;
 export type RiskGrade = "R0" | "R1" | "R2" | "R3";
@@ -83,6 +84,7 @@ export class EvaluationRouter {
   private cacheMetrics = new CacheInstrumentation();
   private noveltyAccuracy = new NoveltyAccuracyMonitor();
   private metricsEmitCounter = 0;
+  private cacheSizeMonitor = new CacheSizeMonitor();
   private riskRank: Record<RiskGrade, number> = {
     R0: 0,
     R1: 1,
@@ -361,6 +363,10 @@ export class EvaluationRouter {
         fingerprint: this.fingerprintCache.size(),
         novelty: this.noveltyCache.size(),
       },
+      cacheBytes: this.cacheSizeMonitor.buildMetrics(
+        this.fingerprintCache as unknown as LRUCache<string, unknown>,
+        this.noveltyCache as unknown as LRUCache<string, unknown>,
+      ),
     });
   }
 }

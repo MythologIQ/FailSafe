@@ -200,6 +200,8 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile",
     "test": "node ./out/test/runTest.js",
+    "benchmark:novelty": "node ./scripts/novelty_benchmark.js",
+    "test:novelty": "node ./scripts/novelty_smoke_test.js",
     "lint": "eslint src --ext ts",
     "package": "vsce package",
     "publish": "vsce publish"

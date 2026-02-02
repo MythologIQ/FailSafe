@@ -49,7 +49,7 @@ Scope: Only artifacts under `g:\MythologIQ\Q-DNA\.qorelogic`.
 
 6. Platform support claims
 
-- Spec claims Antigravity/MCP/CLI integration but only VS Code extension exists in `.qorelogic`.
+- Spec claims MCP/CLI integration but only VS Code extension exists in `.qorelogic`.
 
 7. Governance Substrate (Axioms & Sovereignty)
 
@@ -191,7 +191,7 @@ Sprint 4.4: Cortex Omnibar responses
 
 ### Milestone M5: Platform Extensions
 
-Goal: Antigravity/MCP/CLI integration.
+Goal: MCP/CLI integration.
 
 Sprint 5.1: MCP adapter contract
 

@@ -1,0 +1,13 @@
+{
+  "id": "kilocode",
+  "name": "KiloCode",
+  "description": "KiloCode AI",
+  "sourceDir": "qorelogic/KiloCode",
+  "targetDir": ".kilo",
+  "detection": {
+    "folderExists": [".kilo"],
+    "extensionKeywords": ["kilo"],
+    "alwaysInstalled": false
+  },
+  "governancePaths": [".kilo"]
+}

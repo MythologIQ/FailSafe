@@ -1,0 +1,12 @@
+{
+  "id": "zo",
+  "name": "Zo",
+  "description": "Zo agent policy and prompt bundle",
+  "sourceDir": "qorelogic/Zo",
+  "targetDir": null,
+  "detection": {
+    "folderExists": [".agent"],
+    "alwaysInstalled": false
+  },
+  "governancePaths": [".agent"]
+}

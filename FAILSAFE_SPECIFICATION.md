@@ -25,13 +25,12 @@
 
 ### 1.2 Supported Platforms
 
-| Platform    | Integration Method          | Status    |
-| ----------- | --------------------------- | --------- |
-| VS Code     | Native Extension API        | Primary   |
-| Cursor      | VS Code Compatibility Layer | Supported |
-| Antigravity | MCP Protocol                | Supported |
-| Windsurf    | VS Code Compatibility Layer | Supported |
-| CLI         | HTTP/MCP Heads              | Supported |
+| Platform Type              | Integration Method     | Status    |
+| -------------------------- | ---------------------- | --------- |
+| VS Code Host               | Native Extension API   | Primary   |
+| VS Code-Compatible Editors | Compatibility Layer    | Supported |
+| MCP-Compatible Systems     | MCP Protocol           | Supported |
+| CLI / Headless             | HTTP/MCP Heads         | Supported |
 
 ### 1.3 Extension Manifest
 

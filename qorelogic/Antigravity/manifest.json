@@ -1,0 +1,24 @@
+{
+  "id": "antigravity",
+  "name": "Antigravity / Gemini",
+  "description": "Antigravity Orbit-based architecture",
+  "sourceDir": "qorelogic/Antigravity",
+  "targetDir": ".qorelogic",
+  "detection": {
+    "folderExists": [".qorelogic/orbits"],
+    "alwaysInstalled": true
+  },
+  "governancePaths": [".qorelogic/orbits"],
+  "extraCopies": [
+    {
+      "source": "qorelogic/Antigravity/workflows",
+      "target": ".agent/workflows"
+    }
+  ],
+  "templates": [
+    {
+      "source": "qorelogic/Antigravity/templates/GEMINI.md.tpl",
+      "output": "GEMINI.md"
+    }
+  ]
+}

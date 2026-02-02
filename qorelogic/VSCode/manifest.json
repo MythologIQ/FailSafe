@@ -1,0 +1,11 @@
+{
+  "id": "vscode",
+  "name": "VS Code",
+  "description": "VS Code host integration for FailSafe",
+  "sourceDir": "qorelogic/VSCode",
+  "targetDir": ".failsafe/config",
+  "detection": {
+    "alwaysInstalled": true
+  },
+  "governancePaths": [".failsafe/config/policies"]
+}

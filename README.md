@@ -20,7 +20,7 @@ The visual and interactive core of FailSafe.
 
 The "Constitution" for your AI agents.
 
-- **Universal Identity Propagation**: Seamlessly sync QoreLogic identities across **Antigravity**, **Claude CLI**, **Cursor**, **Codex**, and **KiloCode**.
+- **Universal Identity Propagation**: Seamlessly sync QoreLogic identities across any supported system via `qorelogic/{system}` manifests.
 - **SOA Ledger**: A Merkle-tree backed verifiable log of all high-stakes (L2/L3) AI decisions.
 - **Intent Service**: Cryptographic locking of the workspace—no AI writes are permitted without a verified "Intent."
 
@@ -90,12 +90,10 @@ graph TD
 
 ## 📜 Governance Models
 
-The `/qorelogic` directory contains the source-of-truth instructions for all supported platforms:
+The `/qorelogic` directory contains the source-of-truth instructions for all supported systems:
 
-- **Antigravity**: JSON Orbits & Workflows.
-- **Cursor**: `.mdc` Rules.
-- **Codex**: `GOVERNANCE.md` directives.
-- **KiloCode**: YAML policy mappings.
+- Each system is defined by a `manifest.json` and its templates/policies.
+- New systems can be added without core code changes.
 
 ---
 

@@ -1,0 +1,14 @@
+{
+  "id": "cursor",
+  "name": "Cursor",
+  "description": "Cursor AI Code Editor",
+  "sourceDir": "qorelogic/Cursor",
+  "targetDir": ".cursor",
+  "detection": {
+    "folderExists": [".cursor"],
+    "hostAppNames": ["cursor"],
+    "extensionKeywords": ["cursor"],
+    "alwaysInstalled": false
+  },
+  "governancePaths": [".cursor/rules"]
+}

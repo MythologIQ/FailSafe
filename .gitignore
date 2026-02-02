@@ -18,3 +18,5 @@ out/
 .DS_Store
 dist/
 build/
+plans/
+docs/Deep Review/

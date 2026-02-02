@@ -47,6 +47,7 @@ import { GovernanceRouter } from "../governance/GovernanceRouter";
 import { GovernanceStatusBar } from "../governance/GovernanceStatusBar";
 import { IntentType, IntentScope } from "../governance/types/IntentTypes";
 import { SessionManager } from "../governance/SessionManager";
+import { EvaluationRouter } from "../governance/EvaluationRouter";
 import { FrameworkSync } from "../qorelogic/FrameworkSync";
 import { FailSafeMCPServer } from "../mcp/FailSafeServer";
 
@@ -109,10 +110,15 @@ export async function activate(
     intentService = new IntentService(workspaceRoot, sessionManager);
     const enforcement = new EnforcementEngine(intentService, workspaceRoot);
     governanceStatusBar = new GovernanceStatusBar();
+    const evaluationRouter = EvaluationRouter.fromConfigManager(
+      configManager,
+      eventBus,
+    );
     governanceRouter = new GovernanceRouter(
       intentService,
       enforcement,
       governanceStatusBar,
+      evaluationRouter,
     );
 
     // Core synchronization manager
@@ -163,8 +169,10 @@ export async function activate(
       policyEngine,
       shadowGenomeManager,
       eventBus,
+      configManager,
     );
     await qorelogicManager.initialize();
+    governanceRouter.setQoreLogicManager(qorelogicManager);
 
     // ============================================================
     // PHASE 2.5: MCP Server (External Federation)

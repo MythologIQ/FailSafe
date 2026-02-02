@@ -8,7 +8,7 @@ This document formalizes the execution plan for the MythologIQ: FailSafe extensi
 
 **Goal**: Eliminate drift between `FAILSAFE_SPECIFICATION.md` and `package.json`.
 
-- [ ] **Action**: Update `package.json` to match Spec.
+- [x] **Action**: Update `package.json` to match Spec.
   - Add `onCommand:failsafe.generateFeedback` activation event.
   - Add `failsafe.feedback.outputDir` configuration.
   - Align `main` entry point (`./out/extension/main.js` vs `./out/extension.js`).
@@ -26,25 +26,25 @@ This document formalizes the execution plan for the MythologIQ: FailSafe extensi
 
 **Source**: `.agent/staging/responses/AGENT_*.md`
 
-- [ ] **Sprint 1.5.1 [P0]**: **Harden `verifyChain()` Implementation**
+- [x] **Sprint 1.5.1 [P0]**: **Harden `verifyChain()` Implementation**
   - _Finding_: Chain verification is "cryptographic theater"—hashes are not recalculated, signatures are not validated (Claude: CWE-345, CWE-347).
   - _Action_:
     1. Recalculate `entryHash` from all persisted fields during verification.
     2. Verify HMAC signature against recalculated hash.
     3. Replace genesis placeholders with computed values.
 
-- [ ] **Sprint 1.5.2 [P0]**: **Fix Extension Lifecycle (close() on deactivate)**
+- [x] **Sprint 1.5.2 [P0]**: **Fix Extension Lifecycle (close() on deactivate)**
   - _Finding_: `ledgerManager.close()` is never called; database locks persist across VS Code restarts (GLM 4.7: Edge Case #6).
   - _Action_:
     1. Move `ledgerManager` to module scope in `main.ts`.
     2. Call `ledgerManager.close()` in `deactivate()`.
     3. Guard `initialize()` against double-initialization.
 
-- [ ] **Sprint 1.5.3 [P1]**: **Migrate Secret Storage**
+- [x] **Sprint 1.5.3 [P1]**: **Migrate Secret Storage**
   - _Finding_: HMAC signing secret stored in unencrypted `globalState` (Claude: CWE-522).
   - _Action_: Use VS Code's `SecretStorage` API (`context.secrets`).
 
-- [ ] **Sprint 1.5.4 [P2]**: **Harden ConfigManager**
+- [x] **Sprint 1.5.4 [P2]**: **Harden ConfigManager**
   - _Finding_: `fs.mkdirSync` failures crash extension; YAML writes are non-atomic (Codex, GLM 4.7).
   - _Action_:
     1. Wrap `fs.mkdirSync` in try-catch with user-friendly error.
@@ -95,6 +95,25 @@ This document formalizes the execution plan for the MythologIQ: FailSafe extensi
 - [ ] **Sprint 4.4 (NEW)**: **Kanban Dashboard**.
   - Visualize Shadow Genome (Unresolved -> In Progress -> Resolved).
   - Visualize L3 Approvals (Queued -> Review -> Decided).
+
+## Phase 5: Token-Efficient Governance Integration
+
+### M5: Evaluation Routing & Cost Governance
+
+**Goal**: Enforce token-efficient routing, novelty controls, and multi-agent policy.
+
+- [ ] **Sprint 5.1**: **Single Routing Authority**
+  - Make `EvaluationRouter.route(event)` the sole source of routing decisions.
+  - Update `GovernanceRouter` to execute the returned `RoutingDecision` only.
+- [ ] **Sprint 5.2**: **Config Source of Truth**
+  - Set `.failsafe/config/sentinel.yaml` as canonical routing config.
+  - UI settings write-through to `sentinel.yaml`; no runtime reads from `package.json`.
+- [ ] **Sprint 5.3**: **Two-Stage Novelty Evaluation**
+  - Add fast-path fingerprinting and similarity cache.
+  - Gate deep similarity on `risk >= R2` or `confidence != High`.
+- [ ] **Sprint 5.4**: **Multi-Agent Dispatch Policy**
+  - Enforce tier-based subagent usage and token caps.
+  - Require single primary role output (Judge for Tier 3).
 
 ## Execution Log
 

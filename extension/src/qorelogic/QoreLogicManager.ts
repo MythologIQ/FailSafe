@@ -10,6 +10,7 @@
  */
 
 import * as vscode from 'vscode';
+import * as crypto from 'crypto';
 import { EventBus } from '../shared/EventBus';
 import { Logger } from '../shared/Logger';
 import {
@@ -26,6 +27,8 @@ import { LedgerManager } from './ledger/LedgerManager';
 import { TrustEngine } from './trust/TrustEngine';
 import { PolicyEngine } from './policies/PolicyEngine';
 import { ShadowGenomeManager } from './shadow/ShadowGenomeManager';
+import { ConfigManager } from '../shared/ConfigManager';
+import { CortexEvent, RoutingDecision } from '../governance/EvaluationRouter';
 
 export class QoreLogicManager {
     private context: vscode.ExtensionContext;
@@ -35,6 +38,7 @@ export class QoreLogicManager {
     private shadowGenomeManager: ShadowGenomeManager;
     private eventBus: EventBus;
     private logger: Logger;
+    private configManager: ConfigManager;
 
     private l3Queue: L3ApprovalRequest[] = [];
 
@@ -44,7 +48,8 @@ export class QoreLogicManager {
         trustEngine: TrustEngine,
         policyEngine: PolicyEngine,
         shadowGenomeManager: ShadowGenomeManager,
-        eventBus: EventBus
+        eventBus: EventBus,
+        configManager: ConfigManager
     ) {
         this.context = context;
         this.ledgerManager = ledgerManager;
@@ -52,6 +57,7 @@ export class QoreLogicManager {
         this.policyEngine = policyEngine;
         this.shadowGenomeManager = shadowGenomeManager;
         this.eventBus = eventBus;
+        this.configManager = configManager;
         this.logger = new Logger('QoreLogic');
     }
 
@@ -96,8 +102,8 @@ export class QoreLogicManager {
      * Add an item to the L3 approval queue
      */
     async queueL3Approval(request: Omit<L3ApprovalRequest, 'id' | 'state' | 'queuedAt' | 'slaDeadline'>): Promise<string> {
-        const config = vscode.workspace.getConfiguration('failsafe');
-        const slaSecs = config.get<number>('qorelogic.l3SLA', 120);
+        const config = this.configManager.getConfig();
+        const slaSecs = config.qorelogic.l3SLA;
 
         const id = crypto.randomUUID();
         const now = new Date();
@@ -130,6 +136,50 @@ export class QoreLogicManager {
         this.logger.info('L3 approval queued', { id, filePath: request.filePath });
 
         return id;
+    }
+
+    /**
+     * Process an evaluation routing decision
+     */
+    async processEvaluationDecision(
+        decision: RoutingDecision,
+        event: CortexEvent
+    ): Promise<void> {
+        const mappedRisk = this.mapRiskToLegacy(decision.triage.risk);
+        if (decision.writeLedger) {
+            await this.ledgerManager.appendEntry({
+                eventType: 'EVALUATION_ROUTED',
+                agentDid: (event.payload?.intentId as string) || 'system',
+                artifactPath: event.payload?.targetPath as string,
+                riskGrade: mappedRisk,
+                payload: { tier: decision.tier, triage: decision.triage }
+            });
+        }
+
+        if (decision.tier === 3) {
+            await this.queueL3Approval({
+                agentDid: (event.payload?.intentId as string) || 'system',
+                agentTrust: decision.triage.confidence === 'high' ? 0.9 : 0.7,
+                filePath: event.payload?.targetPath as string,
+                riskGrade: mappedRisk,
+                sentinelSummary: `Tier 3 evaluation: ${decision.triage.risk} risk, ${decision.triage.novelty} novelty`,
+                flags: decision.requiredActions
+            });
+        }
+    }
+
+    private mapRiskToLegacy(risk: RoutingDecision['triage']['risk']): "L1" | "L2" | "L3" {
+        switch (risk) {
+            case "R0":
+            case "R1":
+                return "L1";
+            case "R2":
+                return "L2";
+            case "R3":
+                return "L3";
+            default:
+                return "L1";
+        }
     }
 
     /**

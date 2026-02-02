@@ -31,14 +31,18 @@ export class FailSafeMCPServer {
 
   private registerTools() {
     // TOOL: sentinel_audit_file
-    this.server.tool(
+    (this.server.tool as any)(
       "sentinel_audit_file",
       "Trigger a heuristic audit on a specific file path.",
       {
         path: z.string().describe("Absolute path to the file to audit"),
         intent_id: z.string().describe("Active Intent ID for authorization"),
       },
-      async ({ path: filePath, intent_id }) => {
+      async (args: { path: string; intent_id: string }) => {
+        const { path: filePath, intent_id } = args as {
+          path: string;
+          intent_id: string;
+        };
         await this.validateIntent(intent_id);
 
         if (!this.isPathSafe(filePath)) {
@@ -62,19 +66,22 @@ export class FailSafeMCPServer {
     );
 
     // TOOL: ledger_log_decision
-    this.server.tool(
+    (this.server.tool as any)(
       "ledger_log_decision",
       "Log a governance decision to the SOA Ledger (L2/L3).",
       {
         decision: z.string().max(1000).describe("The decision made"),
-        rationale: z
-          .string()
-          .max(2000)
-          .describe("Justification for the decision"),
+        rationale: z.string().max(2000).describe("Justification for the decision"),
         risk_grade: z.enum(["L1", "L2", "L3"]),
         intent_id: z.string(),
       },
-      async ({ decision, rationale, risk_grade, intent_id }) => {
+      async (args: { decision: string; rationale: string; risk_grade: "L1" | "L2" | "L3"; intent_id: string }) => {
+        const { decision, rationale, risk_grade, intent_id } = args as {
+          decision: string;
+          rationale: string;
+          risk_grade: "L1" | "L2" | "L3";
+          intent_id: string;
+        };
         await this.validateIntent(intent_id);
 
         const entry = await this.ledger.appendEntry({

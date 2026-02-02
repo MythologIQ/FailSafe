@@ -3,6 +3,8 @@ import { IntentService } from './IntentService';
 import { EnforcementEngine } from './EnforcementEngine';
 import { GovernanceStatusBar } from './GovernanceStatusBar';
 import { ProposedAction } from './types/IntentTypes';
+import { EvaluationRouter, CortexEvent } from './EvaluationRouter';
+import { QoreLogicManager } from '../qorelogic/QoreLogicManager';
 
 // ======================================================================================
 // GovernanceRouter: The Central Nervous System for Governance
@@ -12,8 +14,14 @@ export class GovernanceRouter {
   constructor(
     private intentService: IntentService,
     private enforcement: EnforcementEngine,
-    private statusBar: GovernanceStatusBar
+    private statusBar: GovernanceStatusBar,
+    private evaluationRouter: EvaluationRouter,
+    private qoreLogicManager?: QoreLogicManager
   ) {}
+
+  setQoreLogicManager(manager: QoreLogicManager): void {
+    this.qoreLogicManager = manager;
+  }
 
   /**
    * Handle file operations (Save, Rename, Delete)
@@ -33,6 +41,23 @@ export class GovernanceRouter {
       proposedAt: new Date().toISOString(),
       proposedBy: 'vscode-user'
     };
+
+    // Compute routing decision (authoritative, non-blocking for now)
+    const event: CortexEvent = {
+      id: `${action.proposedAt}:${action.targetPath}`,
+      timestamp: action.proposedAt,
+      category: "user",
+      payload: { actionType: action.type, targetPath: action.targetPath, intentId: action.intentId }
+    };
+    const decision = await this.evaluationRouter.route(event);
+
+    if ((decision.invokeQoreLogic || decision.writeLedger) && this.qoreLogicManager) {
+      await this.qoreLogicManager.processEvaluationDecision(decision, event);
+    }
+
+    if (!decision.enforceSentinel) {
+      return true;
+    }
 
     // 2. Evaluate Verdict
     // Note: EnforcementEngine.evaluateAction is now async

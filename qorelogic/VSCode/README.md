@@ -38,3 +38,13 @@ Synced via FailSafe to:
 ## Integration with Other Agents
 
 The VS Code extension acts as the primary enforcement gate for all agents in the workspace. Any write attempt by Antigravity or Claude is evaluated against the policies defined here.
+
+## VS Code Configuration Overrides
+
+VS Code settings are treated as **implementation-specific overrides** for the VS Code host. Core configuration still lives in `.failsafe/config/sentinel.yaml`, while VS Code reads and overrides are scoped to this implementation.
+
+Guidelines:
+
+- Keep any VS Code `workspace.getConfiguration('failsafe')` usage in the VS Code implementation layer.
+- Core logic should depend on `.failsafe/config/sentinel.yaml` via the shared ConfigManager.
+- Claude-specific behavior remains under `qorelogic/Claude`.

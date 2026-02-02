@@ -8,6 +8,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as yaml from 'js-yaml';
 import { FailSafeConfig, SentinelMode } from './types';
 
 export class ConfigManager {
@@ -34,26 +35,28 @@ export class ConfigManager {
      */
     getConfig(): FailSafeConfig {
         const config = vscode.workspace.getConfiguration('failsafe');
+        const sentinelYaml = this.readSentinelYaml();
 
         return {
             genesis: {
-                livingGraph: config.get<boolean>('genesis.livingGraph', true),
-                cortexOmnibar: config.get<boolean>('genesis.cortexOmnibar', true),
-                theme: config.get<'starry-night' | 'light' | 'high-contrast'>('genesis.theme', 'starry-night')
+                livingGraph: sentinelYaml?.genesis?.livingGraph ?? config.get<boolean>('genesis.livingGraph', true),
+                cortexOmnibar: sentinelYaml?.genesis?.cortexOmnibar ?? config.get<boolean>('genesis.cortexOmnibar', true),
+                theme: sentinelYaml?.genesis?.theme ?? config.get<'starry-night' | 'light' | 'high-contrast'>('genesis.theme', 'starry-night')
             },
             sentinel: {
-                enabled: config.get<boolean>('sentinel.enabled', true),
-                mode: config.get<SentinelMode>('sentinel.mode', 'heuristic'),
-                localModel: config.get<string>('sentinel.localModel', 'phi3:mini'),
-                ollamaEndpoint: config.get<string>('sentinel.ollamaEndpoint', 'http://localhost:11434')
+                enabled: sentinelYaml?.sentinel?.enabled ?? config.get<boolean>('sentinel.enabled', true),
+                mode: sentinelYaml?.sentinel?.mode ?? config.get<SentinelMode>('sentinel.mode', 'heuristic'),
+                localModel: sentinelYaml?.sentinel?.localModel ?? config.get<string>('sentinel.localModel', 'phi3:mini'),
+                ollamaEndpoint: sentinelYaml?.sentinel?.ollamaEndpoint ?? config.get<string>('sentinel.ollamaEndpoint', 'http://localhost:11434')
             },
+            evaluation: sentinelYaml?.evaluation,
             qorelogic: {
-                ledgerPath: config.get<string>('qorelogic.ledgerPath', '.failsafe/ledger/soa_ledger.db'),
-                strictMode: config.get<boolean>('qorelogic.strictMode', false),
-                l3SLA: config.get<number>('qorelogic.l3SLA', 120)
+                ledgerPath: sentinelYaml?.qorelogic?.ledgerPath ?? config.get<string>('qorelogic.ledgerPath', '.failsafe/ledger/soa_ledger.db'),
+                strictMode: sentinelYaml?.qorelogic?.strictMode ?? config.get<boolean>('qorelogic.strictMode', false),
+                l3SLA: sentinelYaml?.qorelogic?.l3SLA ?? config.get<number>('qorelogic.l3SLA', 120)
             },
             feedback: {
-                outputDir: config.get<string>('feedback.outputDir', '.failsafe/feedback')
+                outputDir: sentinelYaml?.feedback?.outputDir ?? config.get<string>('feedback.outputDir', '.failsafe/feedback')
             }
         };
     }
@@ -73,6 +76,10 @@ export class ConfigManager {
             throw new Error('No workspace folder open');
         }
         return path.join(this.workspaceRoot, '.failsafe');
+    }
+
+    getSentinelConfigPath(): string {
+        return path.join(this.getFailSafeDir(), 'config', 'sentinel.yaml');
     }
 
     /**
@@ -146,7 +153,7 @@ export class ConfigManager {
         const failsafeDir = this.getFailSafeDir();
 
         // 1. sentinel.yaml
-        const sentinelConfig = path.join(failsafeDir, 'config', 'sentinel.yaml');
+        const sentinelConfig = this.getSentinelConfigPath();
         if (!fs.existsSync(sentinelConfig)) {
             const content = `# Sentinel Configuration
 sentinel:
@@ -154,6 +161,35 @@ sentinel:
   mode: hybrid
   localModel: "phi3:mini"
   ollamaEndpoint: "http://localhost:11434"
+
+evaluation:
+  enabled: true
+  mode: production # production | debug | audit
+  routing:
+    tier2_risk_threshold: R2
+    tier3_risk_threshold: R3
+    tier2_novelty_threshold: high
+    tier3_novelty_threshold: medium
+    tier2_confidence_threshold: low
+    tier3_confidence_threshold: low
+  ledger:
+    tier0_enabled: false
+    tier1_enabled: false
+    tier2_enabled: false
+    tier3_enabled: true
+
+genesis:
+  livingGraph: true
+  cortexOmnibar: true
+  theme: starry-night
+
+qorelogic:
+  ledgerPath: ".failsafe/ledger/soa_ledger.db"
+  strictMode: false
+  l3SLA: 120
+
+feedback:
+  outputDir: ".failsafe/feedback"
 `;
             await this.writeConfigAtomic(sentinelConfig, content);
         }
@@ -201,6 +237,39 @@ auto_classification:
             }
             throw error;
         }
+    }
+
+    private readSentinelYaml(): any | null {
+        try {
+            const sentinelPath = this.getSentinelConfigPath();
+            if (!fs.existsSync(sentinelPath)) {
+                return null;
+            }
+            const content = fs.readFileSync(sentinelPath, 'utf8');
+            return yaml.load(content) as any;
+        } catch (error) {
+            console.error('Failed to read sentinel.yaml:', error);
+            return null;
+        }
+    }
+
+    async updateSentinelYaml(
+        section: 'sentinel' | 'genesis' | 'qorelogic' | 'feedback' | 'evaluation',
+        partial: Record<string, unknown>
+    ): Promise<void> {
+        const sentinelPath = this.getSentinelConfigPath();
+        const existing = this.readSentinelYaml() || {};
+        if (!existing[section]) {
+            existing[section] = {};
+        }
+        existing[section] = { ...existing[section], ...partial };
+        await this.writeConfigAtomic(sentinelPath, yaml.dump(existing));
+        this.configChangeEmitter.fire(this.getConfig());
+    }
+
+    getSentinelSection<T>(section: string, defaultValue: T): T {
+        const yamlConfig = this.readSentinelYaml();
+        return (yamlConfig?.[section] as T) ?? defaultValue;
     }
 
     /**

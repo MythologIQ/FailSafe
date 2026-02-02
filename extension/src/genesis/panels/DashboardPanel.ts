@@ -22,6 +22,17 @@ export class DashboardPanel {
     private qorelogic: QoreLogicManager;
     private eventBus: EventBus;
     private disposables: vscode.Disposable[] = [];
+    private evaluationMetrics: {
+        cache?: Record<string, { hits: number; misses: number }>;
+        noveltyAccuracy?: {
+            totalEvaluations: number;
+            lowCount: number;
+            mediumCount: number;
+            highCount: number;
+            averageConfidence: number;
+        };
+        cacheSizes?: { fingerprint: number; novelty: number };
+    } | null = null;
 
     private constructor(
         panel: vscode.WebviewPanel,
@@ -40,7 +51,11 @@ export class DashboardPanel {
         const unsubscribes = [
             this.eventBus.on('sentinel.verdict', () => void this.update()),
             this.eventBus.on('qorelogic.trustUpdate', () => void this.update()),
-            this.eventBus.on('qorelogic.l3Queued', () => void this.update())
+            this.eventBus.on('qorelogic.l3Queued', () => void this.update()),
+            this.eventBus.on('evaluation.metrics', (event) => {
+                this.evaluationMetrics = event.payload as any;
+                void this.update();
+            })
         ];
         unsubscribes.forEach(unsub => this.disposables.push({ dispose: unsub }));
 
@@ -117,6 +132,10 @@ export class DashboardPanel {
         const trustSummary = await this.getTrustSummary();
         const lastVerdict = status.lastVerdict;
         const uptime = this.formatUptime(status.uptime);
+        const metrics = this.evaluationMetrics;
+        const novelty = metrics?.noveltyAccuracy;
+        const cache = metrics?.cache;
+        const cacheSizes = metrics?.cacheSizes;
 
         return `<!DOCTYPE html>
 <html>
@@ -329,6 +348,36 @@ export class DashboardPanel {
             <button class="action-btn secondary" onclick="showGraph()">Open Living Graph</button>
             <button class="action-btn secondary" onclick="showLedger()">View SOA Ledger</button>
             <button class="action-btn secondary" onclick="focusCortex()">Cortex Query</button>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Evaluation Metrics</div>
+            <div class="metric">
+                <span class="metric-label">Novelty (L/M/H)</span>
+                <span class="metric-value">${novelty ? `${novelty.lowCount}/${novelty.mediumCount}/${novelty.highCount}` : 'N/A'}</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Avg Confidence</span>
+                <span class="metric-value">${novelty ? `${(novelty.averageConfidence * 100).toFixed(0)}%` : 'N/A'}</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Cache Hits (fingerprint/novelty)</span>
+                <span class="metric-value">${
+                    cache ? `${cache.fingerprint?.hits ?? 0}/${cache.novelty?.hits ?? 0}` : 'N/A'
+                }</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Cache Misses (fingerprint/novelty)</span>
+                <span class="metric-value">${
+                    cache ? `${cache.fingerprint?.misses ?? 0}/${cache.novelty?.misses ?? 0}` : 'N/A'
+                }</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Cache Sizes (fp/novelty)</span>
+                <span class="metric-value">${
+                    cacheSizes ? `${cacheSizes.fingerprint}/${cacheSizes.novelty}` : 'N/A'
+                }</span>
+            </div>
         </div>
     </div>
 

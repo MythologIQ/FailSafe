@@ -316,6 +316,13 @@ export class SentinelDaemon {
         this.status.eventsProcessed++;
         this.status.lastVerdict = verdict;
 
+        // Emit confidence signal for EvaluationRouter
+        this.eventBus.emit('sentinel.confidence', {
+            eventId: event.id,
+            confidence: verdict.confidence,
+            timestamp: new Date().toISOString()
+        });
+
         // 3. Route (Act on Verdict)
         await this.router.route(verdict, event);
 

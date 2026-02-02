@@ -194,6 +194,7 @@ export interface HeuristicPattern {
 
 export type LedgerEventType =
   | "PROPOSAL"
+  | "EVALUATION_ROUTED"
   | "AUDIT_PASS"
   | "AUDIT_FAIL"
   | "L3_QUEUED"
@@ -435,6 +436,8 @@ export interface GenesisConcept {
 
 export type FailSafeEventType =
   | "failsafe.ready"
+  | "evaluation.metrics"
+  | "sentinel.confidence"
   | "sentinel.verdict"
   | "sentinel.alert"
   | "sentinel.modeChange"
@@ -467,6 +470,24 @@ export interface FailSafeConfig {
     mode: SentinelMode;
     localModel: string;
     ollamaEndpoint: string;
+  };
+  evaluation?: {
+    enabled: boolean;
+    mode: "production" | "debug" | "audit";
+    routing: {
+      tier2_risk_threshold: "R1" | "R2";
+      tier3_risk_threshold: "R2" | "R3";
+      tier2_novelty_threshold: "medium" | "high";
+      tier3_novelty_threshold: "low" | "medium" | "high";
+      tier2_confidence_threshold: "medium" | "low";
+      tier3_confidence_threshold: "low";
+    };
+    ledger: {
+      tier0_enabled: boolean;
+      tier1_enabled: boolean;
+      tier2_enabled: boolean;
+      tier3_enabled: boolean;
+    };
   };
   qorelogic: {
     ledgerPath: string;

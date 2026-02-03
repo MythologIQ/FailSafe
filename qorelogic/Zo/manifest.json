@@ -9,4 +9,11 @@
     "alwaysInstalled": false
   },
   "governancePaths": [".agent"]
+  ,
+  "templates": [
+    {
+      "source": "qorelogic/Zo/templates/ZO.md.tpl",
+      "output": "ZO.md"
+    }
+  ]
 }

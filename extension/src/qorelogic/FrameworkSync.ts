@@ -2,6 +2,16 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Logger } from '../shared/Logger';
+import {
+    DetectionResult,
+    PostSyncResult,
+    PreSyncResult,
+    QoreLogicSystem,
+    SyncContext,
+    TemplateRenderContext,
+    TemplateRenderResult,
+} from './types/QoreLogicSystem';
+import { SystemRegistry } from './SystemRegistry';
 
 /**
  * FrameworkSync - Multi-Agent Identity Distribution
@@ -18,30 +28,15 @@ export interface DetectedSystem {
     description: string;
 }
 
-interface SystemManifest {
-    id: string;
-    name: string;
-    description: string;
-    sourceDir: string;
-    targetDir: string | null;
-    detection?: {
-        folderExists?: string[];
-        extensionKeywords?: string[];
-        hostAppNames?: string[];
-        alwaysInstalled?: boolean;
-    };
-    governancePaths?: string[];
-    extraCopies?: { source: string; target: string }[];
-    templates?: { source: string; output: string }[];
-}
-
 export class FrameworkSync {
     private logger: Logger;
     private workspaceRoot: string;
+    private registry: SystemRegistry;
 
     constructor(workspaceRoot: string) {
         this.workspaceRoot = workspaceRoot;
         this.logger = new Logger('FrameworkSync');
+        this.registry = new SystemRegistry(workspaceRoot, this.logger);
     }
 
     /**
@@ -70,125 +65,99 @@ export class FrameworkSync {
      * Detect which agent systems are active in the current workspace or environment
      */
     async detectSystems(): Promise<DetectedSystem[]> {
-        const manifests = await this.loadSystemManifests();
-        return manifests.map((manifest) => {
-            const detection = manifest.detection || {};
-            const isInstalled =
-                detection.alwaysInstalled ||
-                this.matchesFolderDetection(detection.folderExists || []) ||
-                this.matchesExtensionKeywords(detection.extensionKeywords || []) ||
-                this.matchesHostAppNames(detection.hostAppNames || []);
-
-            return {
+        const systems = await this.registry.getSystems();
+        const results: DetectedSystem[] = [];
+        for (const system of systems) {
+            const manifest = system.getManifest();
+            const detection = await this.registry.detect(system);
+            results.push({
                 id: manifest.id,
                 name: manifest.name,
-                isInstalled: !!isInstalled,
-                hasGovernance: this.hasGovernance(manifest),
+                isInstalled: detection.detected,
+                hasGovernance: this.registry.hasGovernance(system),
                 description: manifest.description
-            };
-        });
+            });
+        }
+        return results;
     }
 
     /**
      * Propagate governance to a specific system
      */
     async propagate(systemId: string): Promise<void> {
-        const manifests = await this.loadSystemManifests();
-        const manifest = manifests.find((m) => m.id === systemId);
-        if (!manifest) {
+        const system = await this.registry.findById(systemId);
+        if (!system) {
             throw new Error(`Unknown system ID: ${systemId}`);
         }
-        await this.syncSystem(manifest);
+        await this.syncSystem(system);
     }
 
     private async generateRootInstructions(): Promise<void> {
-        const manifests = await this.loadSystemManifests();
-        for (const manifest of manifests) {
+        const systems = await this.registry.getSystems();
+        for (const system of systems) {
+            const manifest = system.getManifest();
             if (!manifest.templates || manifest.templates.length === 0) continue;
             for (const template of manifest.templates) {
-                const templatePath = path.join(this.workspaceRoot, template.source);
+                const templatePath = this.registry.resolvePath(template.source);
                 if (!fs.existsSync(templatePath)) continue;
                 const raw = await fs.promises.readFile(templatePath, 'utf-8');
-                const rendered = this.renderTemplate(raw, manifest);
-                const outputPath = path.join(this.workspaceRoot, template.output);
+                const rendered = await this.renderTemplate(system, {
+                    workspaceRoot: this.workspaceRoot,
+                    manifest,
+                    template,
+                    templateContent: raw,
+                    vscode,
+                    logger: this.logger
+                });
+                const outputPath = this.registry.resolvePath(template.output);
                 await fs.promises.writeFile(outputPath, rendered, 'utf-8');
             }
         }
     }
 
-    private async loadSystemManifests(): Promise<SystemManifest[]> {
-        const baseDir = path.join(this.workspaceRoot, 'qorelogic');
-        if (!fs.existsSync(baseDir)) return [];
-        const entries = await fs.promises.readdir(baseDir, { withFileTypes: true });
-        const manifests: SystemManifest[] = [];
-        for (const entry of entries) {
-            if (!entry.isDirectory()) continue;
-            const manifestPath = path.join(baseDir, entry.name, 'manifest.json');
-            if (!fs.existsSync(manifestPath)) continue;
-            try {
-                const content = await fs.promises.readFile(manifestPath, 'utf-8');
-                const manifest = JSON.parse(content) as SystemManifest;
-                manifests.push(manifest);
-            } catch (error) {
-                this.logger.warn(`Failed to load manifest for ${entry.name}`, error);
-            }
-        }
-        return manifests;
-    }
-
-    private matchesFolderDetection(pathsToCheck: string[]): boolean {
-        return pathsToCheck.some((p) => fs.existsSync(path.join(this.workspaceRoot, p)));
-    }
-
-    private matchesExtensionKeywords(keywords: string[]): boolean {
-        if (keywords.length === 0) return false;
-        return vscode.extensions.all.some((ext) => {
-            const name = ext.packageJSON.name?.toLowerCase() || '';
-            const displayName = ext.packageJSON.displayName?.toLowerCase() || '';
-            const description = ext.packageJSON.description?.toLowerCase() || '';
-            return keywords.some((k) =>
-                name.includes(k) || displayName.includes(k) || description.includes(k)
-            );
-        });
-    }
-
-    private matchesHostAppNames(names: string[]): boolean {
-        if (names.length === 0) return false;
-        const app = vscode.env.appName.toLowerCase();
-        return names.some((n) => app.includes(n.toLowerCase()));
-    }
-
-    private hasGovernance(manifest: SystemManifest): boolean {
-        const pathsToCheck = manifest.governancePaths || [];
-        return pathsToCheck.some((p) => fs.existsSync(path.join(this.workspaceRoot, p)));
-    }
-
-    private async syncSystem(manifest: SystemManifest): Promise<void> {
+    private async syncSystem(system: QoreLogicSystem): Promise<void> {
+        const manifest = system.getManifest();
         if (!manifest.targetDir) {
             this.logger.info(`Skipping sync for ${manifest.id} (no targetDir)`);
             return;
         }
-        const sourceDir = path.join(this.workspaceRoot, manifest.sourceDir);
-        const targetDir = path.join(this.workspaceRoot, manifest.targetDir);
+        const sourceDir = this.registry.resolvePath(manifest.sourceDir);
+        const targetDir = this.registry.resolvePath(manifest.targetDir);
         if (!fs.existsSync(sourceDir)) return;
+
+        const preSync = await this.preSync(system, {
+            workspaceRoot: this.workspaceRoot,
+            manifest,
+            vscode,
+            logger: this.logger
+        });
+        if (!preSync.proceed) {
+            this.logger.warn(`PreSync blocked for ${manifest.id}`, preSync.error);
+            return;
+        }
+
         this.logger.info(`Syncing ${manifest.name} framework...`);
         await this.copyRecursive(sourceDir, targetDir);
 
         if (manifest.extraCopies) {
             for (const extra of manifest.extraCopies) {
-                const extraSource = path.join(this.workspaceRoot, extra.source);
-                const extraTarget = path.join(this.workspaceRoot, extra.target);
+                const extraSource = this.registry.resolvePath(extra.source);
+                const extraTarget = this.registry.resolvePath(extra.target);
                 if (fs.existsSync(extraSource)) {
                     await this.copyRecursive(extraSource, extraTarget);
                 }
             }
         }
-    }
 
-    private renderTemplate(template: string, manifest: SystemManifest): string {
-        return template
-            .replaceAll('{{SYSTEM_NAME}}', manifest.name)
-            .replaceAll('{{SYSTEM_ID}}', manifest.id);
+        const postSync = await this.postSync(system, {
+            workspaceRoot: this.workspaceRoot,
+            manifest,
+            vscode,
+            logger: this.logger
+        }, preSync.data);
+        if (!postSync.success) {
+            this.logger.warn(`PostSync failed for ${manifest.id}`, postSync.error);
+        }
     }
 
     private async copyRecursive(src: string, dest: string): Promise<void> {
@@ -207,6 +176,50 @@ export class FrameworkSync {
             }
         } else {
             await fs.promises.copyFile(src, dest);
+        }
+    }
+
+    private async preSync(system: QoreLogicSystem, context: SyncContext): Promise<PreSyncResult> {
+        if (!system.preSync) {
+            return { proceed: true };
+        }
+        try {
+            return await system.preSync(context);
+        } catch (error) {
+            return { proceed: false, error: String(error) };
+        }
+    }
+
+    private async postSync(
+        system: QoreLogicSystem,
+        context: SyncContext,
+        preSyncData?: Record<string, unknown>
+    ): Promise<PostSyncResult> {
+        if (!system.postSync) {
+            return { success: true };
+        }
+        try {
+            return await system.postSync(context, preSyncData);
+        } catch (error) {
+            return { success: false, error: String(error) };
+        }
+    }
+
+    private async renderTemplate(
+        system: QoreLogicSystem,
+        context: TemplateRenderContext
+    ): Promise<string> {
+        if (!system.renderTemplate) {
+            return this.registry.renderTemplate(context.templateContent, system);
+        }
+        try {
+            const result: TemplateRenderResult = await system.renderTemplate(context);
+            if (result.success) return result.content;
+            this.logger.warn(`Template render failed for ${context.manifest.id}`, result.error);
+            return this.registry.renderTemplate(context.templateContent, system);
+        } catch (error) {
+            this.logger.warn(`Template render threw for ${context.manifest.id}`, error);
+            return this.registry.renderTemplate(context.templateContent, system);
         }
     }
 }

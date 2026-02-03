@@ -10,4 +10,11 @@
     "alwaysInstalled": false
   },
   "governancePaths": [".kilo"]
+  ,
+  "templates": [
+    {
+      "source": "qorelogic/KiloCode/templates/KILOCODE.md.tpl",
+      "output": "KILOCODE.md"
+    }
+  ]
 }

@@ -11,4 +11,11 @@
     "alwaysInstalled": false
   },
   "governancePaths": [".cursor/rules"]
+  ,
+  "templates": [
+    {
+      "source": "qorelogic/Cursor/templates/CURSOR.md.tpl",
+      "output": "CURSOR.md"
+    }
+  ]
 }

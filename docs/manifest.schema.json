@@ -1,0 +1,248 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mythologiq.com/schemas/qorelogic/manifest.schema.json",
+  "title": "QoreLogic System Manifest",
+  "description": "Schema for QoreLogic system manifest files that define how governance frameworks are synchronized across multi-agent environments.",
+  "type": "object",
+  "required": ["id", "name", "description", "sourceDir"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier for the system (kebab-case recommended)",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "examples": ["antigravity", "claude", "gemini", "cursor"]
+    },
+    "name": {
+      "type": "string",
+      "description": "Human-readable display name for the system",
+      "examples": ["Antigravity / Gemini", "Claude", "Cursor"]
+    },
+    "description": {
+      "type": "string",
+      "description": "Brief description of the system and its governance approach",
+      "examples": ["Antigravity Orbit-based architecture", "Claude MCP integration"]
+    },
+    "version": {
+      "type": "string",
+      "description": "Semantic version of the manifest schema (optional for backward compatibility)",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(-[a-zA-Z0-9.]+)?$",
+      "examples": ["1.0.0", "2.1.0-beta"]
+    },
+    "sourceDir": {
+      "type": "string",
+      "description": "Source directory containing the governance framework files (relative to workspace root)",
+      "examples": ["qorelogic/Antigravity", "qorelogic/Claude"]
+    },
+    "targetDir": {
+      "type": ["string", "null"],
+      "description": "Target directory for synchronization (null if no target directory needed)",
+      "examples": [".qorelogic", ".claude", null]
+    },
+    "detection": {
+      "type": "object",
+      "description": "Detection rules for determining if the system is installed/active",
+      "properties": {
+        "folderExists": {
+          "type": "array",
+          "description": "List of folder paths (relative to workspace root) whose presence indicates the system is installed",
+          "items": {
+            "type": "string"
+          },
+          "examples": [[".qorelogic/orbits", ".claude"]]
+        },
+        "extensionKeywords": {
+          "type": "array",
+          "description": "Keywords to search for in installed VS Code extensions",
+          "items": {
+            "type": "string"
+          },
+          "examples": [["claude", "cursor", "copilot"]]
+        },
+        "hostAppNames": {
+          "type": "array",
+          "description": "Host application names to match against",
+          "items": {
+            "type": "string"
+          },
+          "examples": [["Cursor", "VS Code", "Claude Desktop"]]
+        },
+        "alwaysInstalled": {
+          "type": "boolean",
+          "description": "If true, the system is always considered installed regardless of other detection rules",
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "governancePaths": {
+      "type": "array",
+      "description": "Paths that contain governance artifacts (orbits, policies, skills, workflows, etc.)",
+      "items": {
+        "type": "string"
+      },
+      "examples": [[".qorelogic/orbits", ".qorelogic/policies", ".qorelogic/skills"]]
+    },
+    "extraCopies": {
+      "type": "array",
+      "description": "Additional file/directory copies beyond the main sourceDir -> targetDir sync",
+      "items": {
+        "type": "object",
+        "required": ["source", "target"],
+        "properties": {
+          "source": {
+            "type": "string",
+            "description": "Source path (relative to workspace root)",
+            "examples": ["qorelogic/Antigravity/workflows", "qorelogic/Antigravity/skills"]
+          },
+          "target": {
+            "type": "string",
+            "description": "Target path (relative to workspace root)",
+            "examples": [".agent/workflows", ".claude/skills"]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "templates": {
+      "type": "array",
+      "description": "Template files to render and place at the workspace root",
+      "items": {
+        "type": "object",
+        "required": ["source", "output"],
+        "properties": {
+          "source": {
+            "type": "string",
+            "description": "Template source file path (relative to workspace root)",
+            "examples": ["qorelogic/Antigravity/templates/GEMINI.md.tpl"]
+          },
+          "output": {
+            "type": "string",
+            "description": "Output filename at workspace root",
+            "examples": ["GEMINI.md", "CLAUDE.md", "README.md"]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "hooks": {
+      "type": "object",
+      "description": "Extension hooks for custom behavior during sync lifecycle",
+      "properties": {
+        "preSync": {
+          "type": "string",
+          "description": "Path to a script to execute before sync starts (relative to sourceDir)",
+          "examples": ["scripts/pre-sync.js", "scripts/validate.js"]
+        },
+        "postSync": {
+          "type": "string",
+          "description": "Path to a script to execute after sync completes (relative to sourceDir)",
+          "examples": ["scripts/post-sync.js", "scripts/notify.js"]
+        },
+        "onDetect": {
+          "type": "string",
+          "description": "Path to a script to execute when system is detected (relative to sourceDir)",
+          "examples": ["scripts/on-detect.js"]
+        },
+        "onTemplateRender": {
+          "type": "string",
+          "description": "Path to a script to execute for custom template rendering (relative to sourceDir)",
+          "examples": ["scripts/render-template.js"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "capabilities": {
+      "type": "object",
+      "description": "Declared capabilities of the system (for feature detection and compatibility)",
+      "properties": {
+        "supportsOrbits": {
+          "type": "boolean",
+          "description": "Whether the system supports orbit-based governance",
+          "default": false
+        },
+        "supportsPolicies": {
+          "type": "boolean",
+          "description": "Whether the system supports policy-based governance",
+          "default": false
+        },
+        "supportsSkills": {
+          "type": "boolean",
+          "description": "Whether the system supports skill definitions",
+          "default": false
+        },
+        "supportsWorkflows": {
+          "type": "boolean",
+          "description": "Whether the system supports workflow definitions",
+          "default": false
+        },
+        "supportsShadowGenome": {
+          "type": "boolean",
+          "description": "Whether the system supports shadow genome (failure archival)",
+          "default": false
+        },
+        "supportsLedger": {
+          "type": "boolean",
+          "description": "Whether the system supports SOA ledger (audit trail)",
+          "default": false
+        },
+        "supportsTrustEngine": {
+          "type": "boolean",
+          "description": "Whether the system supports trust scoring",
+          "default": false
+        },
+        "supportsL3Approval": {
+          "type": "boolean",
+          "description": "Whether the system supports L3 approval queue",
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "dependencies": {
+      "type": "array",
+      "description": "List of system IDs that this system depends on (must be synced first)",
+      "items": {
+        "type": "string"
+      },
+      "examples": [["base-governance", "shared-utilities"]]
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional metadata about the system",
+      "properties": {
+        "author": {
+          "type": "string",
+          "description": "Author or organization name",
+          "examples": ["MythologIQ", "Community"]
+        },
+        "license": {
+          "type": "string",
+          "description": "License identifier",
+          "examples": ["MIT", "Apache-2.0", "proprietary"]
+        },
+        "homepage": {
+          "type": "string",
+          "format": "uri",
+          "description": "Homepage URL",
+          "examples": ["https://github.com/mythologiq/failsafe"]
+        },
+        "repository": {
+          "type": "string",
+          "format": "uri",
+          "description": "Repository URL",
+          "examples": ["https://github.com/mythologiq/failsafe"]
+        },
+        "tags": {
+          "type": "array",
+          "description": "Tags for categorization",
+          "items": {
+            "type": "string"
+          },
+          "examples": [["governance", "orbits", "production"]]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,14 +1,33 @@
-# 🛡️ FailSafe (feat. QoreLogic)
+﻿# FailSafe
 
-> **Complete AI Governance, Monitoring, and Verification for the Modern Developer.**
+**A kernel architecture for governing autonomous AI agents**
 
-FailSafe is a state-of-the-art VS Code extension and governance framework designed to harmonize AI agent behavior, prevent hallucinations, and enforce strict architectural standards across distributed development environments.
+[![GitHub Stars](https://img.shields.io/github/stars/MythologIQ/FailSafe?style=social)](https://github.com/MythologIQ/FailSafe/stargazers)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Status](https://img.shields.io/badge/status-beta-orange)](#terms-and-conditions-beta)
+[![Node](https://img.shields.io/badge/node-18+-green.svg)](https://nodejs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue.svg)](https://www.typescriptlang.org)
+[![VS Code Extension](https://img.shields.io/badge/VS%20Code-Extension-007ACC?logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe)
+[![Open VSX](https://img.shields.io/badge/Open%20VSX-Extension-orange)](https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe)
+[![Documentation](https://img.shields.io/badge/docs-FAILSAFE_SPECIFICATION-blue)](FAILSAFE_SPECIFICATION.md)
+
+> **If this project helps you, please star it!** It helps others discover FailSafe.
+
+[Getting Started](#getting-started) | [Specification](FAILSAFE_SPECIFICATION.md) | [VS Code Extension](https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe) | [Open VSX](https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe) | [Roadmap](ROADMAP.md)
+
+<br/>
+
+> **BETA NOTICE:** FailSafe is a beta product. Expect breaking changes and rough edges. See [Terms and Conditions (Beta)](#terms-and-conditions-beta).
+>
+> **OPEN SOURCE:** FailSafe is MIT licensed. Fork it, open issues, and submit pull requests.
+
+FailSafe is an open-source VS Code extension and governance framework designed to harmonize AI agent behavior, prevent hallucinations, and enforce strict architectural standards across distributed development environments. Contributions and forks are welcome.
 
 ---
 
-## 🌌 The Three Pillars of FailSafe
+## The Three Pillars of FailSafe
 
-### 1. 🎨 Genesis (The Experience Layer)
+### 1. Genesis (The Experience Layer)
 
 The visual and interactive core of FailSafe.
 
@@ -16,15 +35,15 @@ The visual and interactive core of FailSafe.
 - **Cortex Stream**: A neurological activity feed showing every decision made by AI agents in your workspace.
 - **Feedback Loop**: Integrated community feedback mechanism to capture and resolve AI edge cases.
 
-### 2. ⚖️ QoreLogic (The Governance Layer)
+### 2. QoreLogic (The Governance Layer)
 
 The "Constitution" for your AI agents.
 
 - **Universal Identity Propagation**: Seamlessly sync QoreLogic identities across any supported system via `qorelogic/{system}` manifests.
 - **SOA Ledger**: A Merkle-tree backed verifiable log of all high-stakes (L2/L3) AI decisions.
-- **Intent Service**: Cryptographic locking of the workspace—no AI writes are permitted without a verified "Intent."
+- **Intent Service**: Cryptographic locking of the workspace - no AI writes are permitted without a verified "Intent."
 
-### 3. 👁️ Sentinel (The Enforcement Layer)
+### 3. Sentinel (The Enforcement Layer)
 
 Active monitoring that never sleeps.
 
@@ -34,7 +53,7 @@ Active monitoring that never sleeps.
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -69,7 +88,7 @@ Active monitoring that never sleeps.
 
 ---
 
-## 🛠️ Architecture
+## Architecture
 
 ```mermaid
 graph TD
@@ -88,7 +107,7 @@ graph TD
 
 ---
 
-## 📜 Governance Models
+## Governance Models
 
 The `/qorelogic` directory contains the source-of-truth instructions for all supported systems:
 
@@ -97,7 +116,7 @@ The `/qorelogic` directory contains the source-of-truth instructions for all sup
 
 ---
 
-## 🛡️ Security & Integrity
+## Security and Integrity
 
 FailSafe utilizes a **Triple-Pass Verification** strategy:
 
@@ -113,5 +132,5 @@ FailSafe is a beta product. It is provided "as is" without warranties of any kin
 
 By using this software, you acknowledge that it is experimental and agree to use it at your own risk. MythologIQ is not liable for any loss of data, downtime, or other damages arising from use of this beta release.
 
-Developed with ❤️ by **MythologIQ**.  
-_Ensuring the future of AI development is safe, transparent, and beautiful._
+Developed by **MythologIQ**.
+Ensuring the future of AI development is safe, transparent, and beautiful.

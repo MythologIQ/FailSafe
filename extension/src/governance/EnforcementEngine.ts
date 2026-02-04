@@ -20,11 +20,29 @@ export class EnforcementEngine {
     this.workspaceRoot = workspaceRoot;
   }
 
-  /** D2: Secure Path Validation - prevents path traversal attacks using path.resolve() + boundary checks */
+  /**
+   * D2: Secure Path Validation - prevents path traversal attacks using path.resolve() + boundary checks.
+   *
+   * SECURITY NOTE: This check validates the path at evaluation time. For files that exist,
+   * we resolve symlinks to prevent symlink-based escapes. Callers should be aware that
+   * between validation and actual file operations, the filesystem state could change (TOCTOU).
+   * Critical operations should use file descriptor-based checks where possible.
+   */
   isPathInScope(targetPath: string, scopePaths: string[]): boolean {
     try {
       let absoluteTarget = path.resolve(this.workspaceRoot, targetPath);
-      try { absoluteTarget = fs.realpathSync(absoluteTarget); } catch { /* File may not exist */ }
+
+      // SECURITY FIX: Only resolve symlinks for existing files, with explicit error logging
+      try {
+        absoluteTarget = fs.realpathSync(absoluteTarget);
+      } catch (err) {
+        // File doesn't exist yet - use normalized path (acceptable for new file creation)
+        // For existing files, realpathSync failure could indicate access issues
+        if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
+          // Log non-ENOENT errors as they may indicate permission or other issues
+          console.warn('EnforcementEngine: realpathSync failed for existing path', { targetPath, error: err });
+        }
+      }
 
       const normalizedWorkspace = path.resolve(this.workspaceRoot);
       const relativeToWorkspace = path.relative(normalizedWorkspace, absoluteTarget);
@@ -36,7 +54,11 @@ export class EnforcementEngine {
         if (relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative))) return true;
       }
       return false;
-    } catch { return false; }
+    } catch (err) {
+      // RELIABILITY FIX: Log unexpected errors instead of silently failing
+      console.error('EnforcementEngine: isPathInScope failed unexpectedly', { targetPath, error: err });
+      return false;
+    }
   }
 
   async evaluateAction(action: ProposedAction): Promise<Verdict> {

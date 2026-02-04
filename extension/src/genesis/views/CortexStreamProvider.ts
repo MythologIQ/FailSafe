@@ -20,8 +20,23 @@
 
 import * as vscode from 'vscode';
 import { EventBus } from '../../shared/EventBus';
-import { CortexStreamEvent } from '../../shared/types';
+import { CortexStreamEvent, L3ApprovalRequest, SentinelVerdict, TrustUpdate } from '../../shared/types';
 import { escapeHtml, escapeJsString, getNonce } from '../../shared/utils/htmlSanitizer';
+
+const isSentinelVerdict = (payload: unknown): payload is SentinelVerdict => {
+    if (!payload || typeof payload !== 'object') return false;
+    return typeof (payload as SentinelVerdict).id === 'string';
+};
+
+const isTrustUpdate = (payload: unknown): payload is TrustUpdate => {
+    if (!payload || typeof payload !== 'object') return false;
+    return typeof (payload as TrustUpdate).did === 'string';
+};
+
+const isL3ApprovalRequest = (payload: unknown): payload is L3ApprovalRequest => {
+    if (!payload || typeof payload !== 'object') return false;
+    return typeof (payload as L3ApprovalRequest).id === 'string';
+};
 
 export class CortexStreamProvider implements vscode.WebviewViewProvider {
     private view?: vscode.WebviewView;
@@ -51,7 +66,8 @@ export class CortexStreamProvider implements vscode.WebviewViewProvider {
 
         // Also capture sentinel verdicts
         this.eventBus.on('sentinel.verdict', (event) => {
-            const verdict = event.payload as any;
+            if (!isSentinelVerdict(event.payload)) return;
+            const verdict = event.payload;
             this.addEvent({
                 id: verdict.id,
                 timestamp: verdict.timestamp,
@@ -66,21 +82,23 @@ export class CortexStreamProvider implements vscode.WebviewViewProvider {
 
         // Capture trust updates
         this.eventBus.on('qorelogic.trustUpdate', (event) => {
-            const update = event.payload as any;
+            if (!isTrustUpdate(event.payload)) return;
+            const update = event.payload;
             this.addEvent({
                 id: crypto.randomUUID(),
                 timestamp: new Date().toISOString(),
                 category: 'qorelogic',
                 severity: 'info',
                 title: `Trust Updated: ${update.did?.substring(0, 15)}...`,
-                details: `${(update.previousScore * 100).toFixed(0)}% → ${(update.newScore * 100).toFixed(0)}%`,
+                details: `${(update.previousScore * 100).toFixed(0)}% -> ${(update.newScore * 100).toFixed(0)}%`,
                 relatedAgent: update.did
             });
         });
 
         // Capture L3 queue events
         this.eventBus.on('qorelogic.l3Queued', (event) => {
-            const request = event.payload as any;
+            if (!isL3ApprovalRequest(event.payload)) return;
+            const request = event.payload;
             this.addEvent({
                 id: crypto.randomUUID(),
                 timestamp: new Date().toISOString(),
@@ -181,11 +199,11 @@ export class CortexStreamProvider implements vscode.WebviewViewProvider {
         const cspSource = this.view?.webview.cspSource || '';
         
         const categoryIcons: Record<string, string> = {
-            sentinel: '🛡️',
-            qorelogic: '📜',
-            genesis: '🌌',
-            user: '👤',
-            system: '⚙️'
+            sentinel: '[S]',
+            qorelogic: '[Q]',
+            genesis: '[G]',
+            user: '[U]',
+            system: '[SYS]'
         };
 
         const filteredEvents = this.getFilteredEvents();
@@ -193,7 +211,7 @@ export class CortexStreamProvider implements vscode.WebviewViewProvider {
         const eventsHtml = filteredEvents.map(event => `
             <div class="event severity-${event.severity}" data-severity="${event.severity}" data-category="${event.category}">
                 <div class="event-header">
-                    <span class="event-icon">${categoryIcons[event.category] || '•'}</span>
+                    <span class="event-icon">${categoryIcons[event.category] || '*'}</span>
                     <span class="event-time">${this.formatTime(event.timestamp)}</span>
                     <span class="event-category-badge">${event.category}</span>
                 </div>
@@ -201,7 +219,7 @@ export class CortexStreamProvider implements vscode.WebviewViewProvider {
                 ${event.details ? `<div class="event-details">${escapeHtml(event.details)}</div>` : ''}
                 ${event.relatedFile ? `
                     <div class="event-link" onclick="openFile('${escapeJsString(event.relatedFile)}')">
-                        📄 ${escapeHtml(event.relatedFile.split(/[/\\]/).pop())}
+                        File: ${escapeHtml(event.relatedFile.split(/[/\\]/).pop())}
                     </div>
                 ` : ''}
                 ${event.actions?.length ? `
@@ -220,7 +238,7 @@ export class CortexStreamProvider implements vscode.WebviewViewProvider {
             <button class="filter-btn ${this.activeFilter === filter ? 'active' : ''}" 
                     onclick="setFilter('${filter}')"
                     data-filter="${filter}">
-                ${categoryIcons[filter] || '•'} ${filter.charAt(0).toUpperCase() + filter.slice(1)}
+                ${categoryIcons[filter] || '*'} ${filter.charAt(0).toUpperCase() + filter.slice(1)}
                 <span class="count">${this.eventCounts[filter] || 0}</span>
             </button>
         `).join('');
@@ -617,11 +635,11 @@ export class CortexStreamProvider implements vscode.WebviewViewProvider {
 <body>
     <div class="header">
         <div class="header-top">
-            <span class="header-title">🌊 Cortex Stream</span>
+            <span class="header-title">Cortex Stream</span>
             <div class="header-status">
                 <span class="status-dot"></span>
                 <span>Live</span>
-                <span>•</span>
+                <span>*</span>
                 <span>${filteredEvents.length} events</span>
             </div>
             <div class="header-actions">
@@ -630,7 +648,7 @@ export class CortexStreamProvider implements vscode.WebviewViewProvider {
         </div>
         
         <div class="search-container">
-            <span class="search-icon">🔍</span>
+            <span class="search-icon">Search</span>
             <input type="text" 
                    class="search-input" 
                    placeholder="Search events..." 
@@ -646,7 +664,7 @@ export class CortexStreamProvider implements vscode.WebviewViewProvider {
     <div class="stream">
         ${filteredEvents.length === 0 
             ? `<div class="empty">
-                 <div class="empty-icon">📭</div>
+                 <div class="empty-icon">No Events</div>
                  <div>No events yet</div>
                  <div style="margin-top: 8px; font-size: 10px;">
                     ${this.activeFilter !== 'all' || this.searchTerm 

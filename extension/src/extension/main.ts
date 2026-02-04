@@ -8,11 +8,8 @@
  */
 
 import * as vscode from "vscode";
-import * as path from "path";
-
 // Genesis imports
 import { GenesisManager } from "../genesis/GenesisManager";
-import { LivingGraphProvider } from "../genesis/views/LivingGraphProvider";
 import { DojoViewProvider } from "../genesis/views/DojoViewProvider";
 import { CortexStreamProvider } from "../genesis/views/CortexStreamProvider";
 import { HallucinationDecorator } from "../genesis/decorators/HallucinationDecorator";
@@ -45,10 +42,10 @@ import { IntentService } from "../governance/IntentService";
 import { EnforcementEngine } from "../governance/EnforcementEngine";
 import { GovernanceRouter } from "../governance/GovernanceRouter";
 import { GovernanceStatusBar } from "../governance/GovernanceStatusBar";
-import { IntentType, IntentScope } from "../governance/types/IntentTypes";
+import { IntentType } from "../governance/types/IntentTypes";
 import { SessionManager } from "../governance/SessionManager";
 import { EvaluationRouter } from "../governance/EvaluationRouter";
-import { FrameworkSync } from "../qorelogic/FrameworkSync";
+import { DetectedSystem, FrameworkSync } from "../qorelogic/FrameworkSync";
 import { FailSafeMCPServer } from "../mcp/FailSafeServer";
 
 let genesisManager: GenesisManager;
@@ -190,7 +187,7 @@ export async function activate(
     setTimeout(async () => {
       const systems = await frameworkSync.detectSystems();
       const ungoverned = systems.filter(
-        (s: any) => s.isInstalled && !s.hasGovernance,
+        (system) => system.isInstalled && !system.hasGovernance,
       );
       if (ungoverned.length > 0) {
         const choice = await vscode.window.showInformationMessage(
@@ -407,10 +404,10 @@ function registerCommands(
       const entry = await feedback.createFeedbackEntry();
       if (entry) {
         try {
-          const filepath = await feedback.saveFeedback(entry);
+          const _filepath = await feedback.saveFeedback(entry);
           vscode.window
             .showInformationMessage(
-              `✅ Feedback saved! ID: ${entry.id}`,
+              `Feedback saved. ID: ${entry.id}`,
               "View Feedback",
             )
             .then((action) => {
@@ -500,9 +497,10 @@ function registerGovernanceCommands(
         });
         vscode.window.showInformationMessage("Intent Created Successfully");
         vscode.commands.executeCommand("failsafe.showMenu"); // Update UI
-      } catch (err: any) {
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
         vscode.window.showErrorMessage(
-          `Failed to create Intent: ${err.message}`,
+          `Failed to create Intent: ${message}`,
         );
       }
     }),
@@ -540,9 +538,10 @@ function registerGovernanceCommands(
           vscode.window.showInformationMessage(
             `Intent "${active.purpose}" SEALED and Archived.`,
           );
-        } catch (err: any) {
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
           vscode.window.showErrorMessage(
-            `Failed to seal intent: ${err.message}`,
+            `Failed to seal intent: ${message}`,
           );
         }
       }
@@ -554,15 +553,15 @@ function registerGovernanceCommands(
   context.subscriptions.push(
     vscode.commands.registerCommand("failsafe.syncFramework", async () => {
       const systems = await frameworkSync.detectSystems();
-      const items = systems.map((s: any) => ({
-        label: s.name,
-        description: s.description,
-        detail: s.hasGovernance
-          ? "✅ Governed"
-          : s.isInstalled
-            ? "⚠️ Ungoverned"
-            : "⚪ Not Detected",
-        system: s,
+      const items = systems.map((system: DetectedSystem) => ({
+        label: system.name,
+        description: system.description,
+        detail: system.hasGovernance
+          ? "Governed"
+          : system.isInstalled
+            ? "Ungoverned"
+            : "Not Detected",
+        system,
       }));
 
       const choice = await vscode.window.showQuickPick(items, {

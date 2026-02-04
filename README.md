@@ -107,5 +107,11 @@ FailSafe utilizes a **Triple-Pass Verification** strategy:
 
 ---
 
+## Terms and Conditions (Beta)
+
+FailSafe is a beta product. It is provided "as is" without warranties of any kind, and may contain bugs, incomplete features, or breaking changes.
+
+By using this software, you acknowledge that it is experimental and agree to use it at your own risk. MythologIQ is not liable for any loss of data, downtime, or other damages arising from use of this beta release.
+
 Developed with ❤️ by **MythologIQ**.  
 _Ensuring the future of AI development is safe, transparent, and beautiful._

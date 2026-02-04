@@ -9,7 +9,7 @@
 
 import * as fs from 'fs';
 import Database from 'better-sqlite3';
-import { ShadowGenomeEntry, FailureMode, RemediationStatus } from '../../shared/types';
+import { ShadowGenomeEntry } from '../../shared/types';
 
 export interface RetentionConfig {
     resolvedRetentionDays: number;      // Days to keep resolved entries (default: 90)
@@ -84,7 +84,7 @@ export function archiveEntries(
     db: Database.Database,
     outputPath: string,
     olderThanDays: number = 90,
-    mapRowToEntry: (row: any) => ShadowGenomeEntry
+    mapRowToEntry: (row: Record<string, unknown>) => ShadowGenomeEntry
 ): number {
     const cutoff = new Date(Date.now() - olderThanDays * 24 * 60 * 60 * 1000);
 
@@ -92,7 +92,7 @@ export function archiveEntries(
         SELECT * FROM shadow_genome 
         WHERE created_at < @cutoff
         ORDER BY created_at ASC
-    `).all({ cutoff: cutoff.toISOString() }) as any[];
+    `).all({ cutoff: cutoff.toISOString() }) as Record<string, unknown>[];
 
     if (rows.length === 0) {
         console.log('Shadow Genome Retention: No entries to archive');
@@ -180,7 +180,7 @@ export function getRetentionStats(db: Database.Database): RetentionStats {
 export async function executeRetentionMaintenance(
     db: Database.Database,
     config: Partial<RetentionConfig> = {},
-    mapRowToEntry: (row: any) => ShadowGenomeEntry
+    mapRowToEntry: (row: Record<string, unknown>) => ShadowGenomeEntry
 ): Promise<PruneResult> {
     const cfg = { ...DEFAULT_RETENTION_CONFIG, ...config };
     

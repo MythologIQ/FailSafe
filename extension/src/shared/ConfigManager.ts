@@ -11,6 +11,8 @@ import * as fs from 'fs';
 import * as yaml from 'js-yaml';
 import { FailSafeConfig, SentinelMode } from './types';
 
+type SentinelYamlConfig = Partial<FailSafeConfig> & Record<string, unknown>;
+
 export class ConfigManager {
     private context: vscode.ExtensionContext;
     private workspaceRoot: string | undefined;
@@ -239,14 +241,18 @@ auto_classification:
         }
     }
 
-    private readSentinelYaml(): any | null {
+    private readSentinelYaml(): SentinelYamlConfig | null {
         try {
             const sentinelPath = this.getSentinelConfigPath();
             if (!fs.existsSync(sentinelPath)) {
                 return null;
             }
             const content = fs.readFileSync(sentinelPath, 'utf8');
-            return yaml.load(content) as any;
+            const parsed = yaml.load(content) as unknown;
+            if (parsed && typeof parsed === 'object') {
+                return parsed as SentinelYamlConfig;
+            }
+            return null;
         } catch (error) {
             console.error('Failed to read sentinel.yaml:', error);
             return null;
@@ -258,11 +264,9 @@ auto_classification:
         partial: Record<string, unknown>
     ): Promise<void> {
         const sentinelPath = this.getSentinelConfigPath();
-        const existing = this.readSentinelYaml() || {};
-        if (!existing[section]) {
-            existing[section] = {};
-        }
-        existing[section] = { ...existing[section], ...partial };
+        const existing = (this.readSentinelYaml() ?? {}) as Record<string, unknown>;
+        const currentSection = (existing[section] ?? {}) as Record<string, unknown>;
+        existing[section] = { ...currentSection, ...partial };
         await this.writeConfigAtomic(sentinelPath, yaml.dump(existing));
         this.configChangeEmitter.fire(this.getConfig());
     }

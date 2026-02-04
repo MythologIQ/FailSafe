@@ -1,0 +1,5 @@
+{
+  "files": "out/test/**/*.test.js",
+  "extensionDevelopmentPath": ".",
+  "workspaceFolder": "./src/test/test-workspace"
+}

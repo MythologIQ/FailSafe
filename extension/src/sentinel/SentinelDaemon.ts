@@ -333,7 +333,7 @@ export class SentinelDaemon {
      * Validate an agent's claim
      * Delegates to Arbiter -> Router
      */
-    async validateClaim(claim: any): Promise<SentinelVerdict> {
+    async validateClaim(claim: AgentClaim): Promise<SentinelVerdict> {
         this.logger.info('Validating agent claim', { agentDid: claim.agentDid });
         
         // 1. Arbitrate
@@ -345,3 +345,9 @@ export class SentinelDaemon {
         return verdict;
     }
 }
+
+type AgentClaim = {
+    agentDid: string;
+    claimedArtifacts?: string[];
+    [key: string]: unknown;
+};

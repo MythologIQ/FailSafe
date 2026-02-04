@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as crypto from 'crypto';
 import { ConfigManager } from '../shared/ConfigManager';
 import { Logger } from '../shared/Logger';
-import { SentinelEvent, SentinelVerdict, SentinelMode } from '../shared/types';
+import { HeuristicResult, LLMEvaluation, SentinelEvent, SentinelVerdict, SentinelMode } from '../shared/types';
 import { HeuristicEngine } from './engines/HeuristicEngine';
 import { VerdictEngine } from './engines/VerdictEngine';
 import { ExistenceEngine } from './engines/ExistenceEngine';
@@ -50,12 +50,48 @@ export class VerdictArbiter {
         return this.llmAvailable;
     }
 
+    /** Validate LLM endpoint URL to prevent SSRF */
+    private isValidLLMEndpoint(endpoint: string): boolean {
+        try {
+            const url = new URL(endpoint);
+            // Only allow http/https protocols
+            if (!['http:', 'https:'].includes(url.protocol)) {
+                return false;
+            }
+            // Block internal/private network addresses
+            const hostname = url.hostname.toLowerCase();
+            const blockedHosts = ['169.254.', '10.', '172.16.', '172.17.', '172.18.', '172.19.',
+                '172.20.', '172.21.', '172.22.', '172.23.', '172.24.', '172.25.', '172.26.',
+                '172.27.', '172.28.', '172.29.', '172.30.', '172.31.', '192.168.'];
+            // Allow localhost explicitly for local LLM servers
+            if (hostname === 'localhost' || hostname === '127.0.0.1') {
+                return true;
+            }
+            // Block other private ranges
+            for (const prefix of blockedHosts) {
+                if (hostname.startsWith(prefix)) {
+                    return false;
+                }
+            }
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
     /**
      * Check if LLM is available and update internal state
      */
     public async checkLLMAvailability(): Promise<boolean> {
         const config = this.configManager.getConfig();
         const endpoint = config.sentinel.ollamaEndpoint;
+
+        // SECURITY FIX: Validate endpoint before making requests
+        if (!this.isValidLLMEndpoint(endpoint)) {
+            this.logger.warn('Invalid LLM endpoint URL', { endpoint });
+            this.llmAvailable = false;
+            return false;
+        }
 
         try {
             const response = await fetch(`${endpoint}/api/tags`, {
@@ -87,7 +123,7 @@ export class VerdictArbiter {
     public async evaluateEvent(event: SentinelEvent): Promise<SentinelVerdict> {
         // P0 FIX: AGENT_CLAIM events must route to validateClaim, not evaluateFileEvent
         if (event.type === 'AGENT_CLAIM') {
-            const claim = event.payload;
+            const claim = event.payload as AgentClaim;
             return this.validateClaim(claim);
         }
 
@@ -117,18 +153,28 @@ export class VerdictArbiter {
         this.logger.debug('Arbitrating event', { type: event.type, path: filePath });
 
         // Read file content (if exists and within size limit)
+        // SECURITY FIX: Single atomic read to prevent TOCTOU race condition
         let content: string | undefined;
-        if (event.type !== 'FILE_DELETED' && fs.existsSync(filePath)) {
+        if (event.type !== 'FILE_DELETED') {
             try {
-                // P1 FIX: Check file size before reading to prevent memory exhaustion
-                const stats = fs.statSync(filePath);
-                if (stats.size > VerdictArbiter.MAX_FILE_SIZE) {
-                    this.logger.warn('File too large, skipping content read', { filePath, size: stats.size });
-                    content = undefined;
-                } else {
-                    content = fs.readFileSync(filePath, 'utf-8');
+                // Open file descriptor first to lock the file for this operation
+                const fd = fs.openSync(filePath, 'r');
+                try {
+                    const stats = fs.fstatSync(fd);
+                    if (stats.size > VerdictArbiter.MAX_FILE_SIZE) {
+                        this.logger.warn('File too large, skipping content read', { filePath, size: stats.size });
+                        content = undefined;
+                    } else {
+                        // Read from the same file descriptor to ensure consistency
+                        const buffer = Buffer.alloc(stats.size);
+                        fs.readSync(fd, buffer, 0, stats.size, 0);
+                        content = buffer.toString('utf-8');
+                    }
+                } finally {
+                    fs.closeSync(fd);
                 }
             } catch {
+                // File doesn't exist or access error - content remains undefined
                 content = undefined;
             }
         }
@@ -154,7 +200,7 @@ export class VerdictArbiter {
     /**
      * Validate an agent claim (Existence Check)
      */
-    public async validateClaim(claim: any): Promise<SentinelVerdict> {
+    public async validateClaim(claim: AgentClaim): Promise<SentinelVerdict> {
          // Logic moved from SentinelDaemon.validateClaim
          this.logger.info('Validating agent claim', { agentDid: claim.agentDid });
 
@@ -181,7 +227,7 @@ export class VerdictArbiter {
     /**
      * Determine if LLM evaluation should be invoked
      */
-    private shouldInvokeLLM(heuristicResults: any[]): boolean {
+    private shouldInvokeLLM(heuristicResults: HeuristicResult[]): boolean {
         if (!this.llmAvailable) {
             return false;
         }
@@ -205,8 +251,8 @@ export class VerdictArbiter {
     private async invokeLLM(
         filePath: string,
         content: string | undefined,
-        heuristicResults: any[]
-    ): Promise<any> {
+        heuristicResults: HeuristicResult[]
+    ): Promise<LLMEvaluation | undefined> {
         const config = this.configManager.getConfig();
         const endpoint = config.sentinel.ollamaEndpoint;
         const model = config.sentinel.localModel;
@@ -242,11 +288,11 @@ Respond with:
                 return undefined;
             }
 
-            const result = await response.json() as any;
+            const result = await response.json() as { response?: string; total_duration?: number };
             return {
                 model,
                 promptUsed: prompt,
-                response: result.response,
+                response: result.response || '',
                 confidence: 0.7, // TODO: Parse from response
                 processingTime: result.total_duration || 0
             };
@@ -256,3 +302,9 @@ Respond with:
         }
     }
 }
+
+type AgentClaim = {
+    agentDid: string;
+    claimedArtifacts?: string[];
+    [key: string]: unknown;
+};

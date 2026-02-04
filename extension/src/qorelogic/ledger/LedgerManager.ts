@@ -13,6 +13,28 @@ import Database from 'better-sqlite3';
 import { ConfigManager } from '../../shared/ConfigManager';
 import { LedgerEntry, LedgerEventType, RiskGrade } from '../../shared/types';
 
+type LedgerRow = {
+    id: number;
+    timestamp: string;
+    event_type: LedgerEventType;
+    agent_did: string;
+    agent_trust_at_action: number | null;
+    model_version: string | null;
+    artifact_path: string | null;
+    artifact_hash: string | null;
+    risk_grade: RiskGrade | null;
+    verification_method: string | null;
+    verification_result: string | null;
+    sentinel_confidence: number | null;
+    overseer_did: string | null;
+    overseer_decision: string | null;
+    gdpr_trigger: number;
+    payload: string | null;
+    entry_hash: string;
+    prev_hash: string;
+    signature: string;
+};
+
 interface LedgerAppendRequest {
     eventType: LedgerEventType;
     agentDid: string;
@@ -270,7 +292,7 @@ export class LedgerManager {
      */
     async getRecentEntries(limit: number = 50): Promise<LedgerEntry[]> {
         if (!this.db) { return []; }
-        const rows = this.db.prepare('SELECT * FROM soa_ledger ORDER BY id DESC LIMIT ?').all(limit) as any[];
+        const rows = this.db.prepare('SELECT * FROM soa_ledger ORDER BY id DESC LIMIT ?').all(limit) as LedgerRow[];
         return rows.map(this.mapRowToEntry);
     }
 
@@ -279,7 +301,7 @@ export class LedgerManager {
      */
     async getEntriesByType(eventType: LedgerEventType, limit: number = 50): Promise<LedgerEntry[]> {
         if (!this.db) { return []; }
-        const rows = this.db.prepare('SELECT * FROM soa_ledger WHERE event_type = ? ORDER BY id DESC LIMIT ?').all(eventType, limit) as any[];
+        const rows = this.db.prepare('SELECT * FROM soa_ledger WHERE event_type = ? ORDER BY id DESC LIMIT ?').all(eventType, limit) as LedgerRow[];
         return rows.map(this.mapRowToEntry);
     }
 
@@ -288,28 +310,28 @@ export class LedgerManager {
      */
     async getEntriesByAgent(agentDid: string, limit: number = 50): Promise<LedgerEntry[]> {
         if (!this.db) { return []; }
-        const rows = this.db.prepare('SELECT * FROM soa_ledger WHERE agent_did = ? ORDER BY id DESC LIMIT ?').all(agentDid, limit) as any[];
+        const rows = this.db.prepare('SELECT * FROM soa_ledger WHERE agent_did = ? ORDER BY id DESC LIMIT ?').all(agentDid, limit) as LedgerRow[];
         return rows.map(this.mapRowToEntry);
     }
 
-    private mapRowToEntry(row: any): LedgerEntry {
+    private mapRowToEntry(row: LedgerRow): LedgerEntry {
         return {
             id: row.id,
             timestamp: row.timestamp,
             eventType: row.event_type as LedgerEventType,
             agentDid: row.agent_did,
-            agentTrustAtAction: row.agent_trust_at_action,
-            modelVersion: row.model_version,
-            artifactPath: row.artifact_path,
-            artifactHash: row.artifact_hash,
-            riskGrade: row.risk_grade as RiskGrade,
-            verificationMethod: row.verification_method,
-            verificationResult: row.verification_result,
-            sentinelConfidence: row.sentinel_confidence,
-            overseerDid: row.overseer_did,
-            overseerDecision: row.overseer_decision,
+            agentTrustAtAction: row.agent_trust_at_action ?? 0,
+            modelVersion: row.model_version ?? undefined,
+            artifactPath: row.artifact_path ?? undefined,
+            artifactHash: row.artifact_hash ?? undefined,
+            riskGrade: row.risk_grade ?? undefined,
+            verificationMethod: row.verification_method ?? undefined,
+            verificationResult: row.verification_result ?? undefined,
+            sentinelConfidence: row.sentinel_confidence ?? undefined,
+            overseerDid: row.overseer_did ?? undefined,
+            overseerDecision: row.overseer_decision ?? undefined,
             gdprTrigger: row.gdpr_trigger === 1,
-            payload: row.payload ? JSON.parse(row.payload) : {},
+            payload: row.payload ? JSON.parse(row.payload) as Record<string, unknown> : {},
             entryHash: row.entry_hash,
             prevHash: row.prev_hash,
             signature: row.signature
@@ -339,7 +361,7 @@ export class LedgerManager {
     verifyChain(): boolean {
         if (!this.db) { return false; }
 
-        const rows = this.db.prepare('SELECT * FROM soa_ledger ORDER BY id ASC').all() as any[];
+        const rows = this.db.prepare('SELECT * FROM soa_ledger ORDER BY id ASC').all() as LedgerRow[];
         if (rows.length === 0) { return true; }
 
         if (!this.cachedSecret) {
@@ -351,7 +373,7 @@ export class LedgerManager {
         for (let i = 0; i < rows.length; i++) {
             const current = rows[i];
 
-            let payloadValue: any = undefined;
+            let payloadValue: unknown = undefined;
             if (current.payload) {
                 try {
                     payloadValue = JSON.parse(current.payload);

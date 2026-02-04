@@ -73,7 +73,10 @@ export class VerdictEngine {
         const details = this.generateDetails(heuristicResults, llmEvaluation);
 
         // Get agent info (default to system agent for file watcher events)
-        const agentDid = (event.payload as any).agentDid || 'did:myth:system:watcher';
+        const payloadAgentDid = (event.payload as { agentDid?: unknown }).agentDid;
+        const agentDid = typeof payloadAgentDid === 'string'
+            ? payloadAgentDid
+            : 'did:myth:system:watcher';
         const trustScore = this.trustEngine.getTrustScore(agentDid);
 
         // Create verdict

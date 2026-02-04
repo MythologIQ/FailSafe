@@ -28,7 +28,7 @@ export class VerdictRouter {
     /**
      * Route a verdict to its destinations
      */
-    async route(verdict: SentinelVerdict, event?: SentinelEvent): Promise<void> {
+    async route(verdict: SentinelVerdict, _event?: SentinelEvent): Promise<void> {
         this.logger.debug('Routing verdict', { decision: verdict.decision, risk: verdict.riskGrade });
 
         // 1. Emit verdict event (Internal System)
@@ -37,15 +37,28 @@ export class VerdictRouter {
         // 2. Handle Escalations (QoreLogic)
         if (verdict.decision === 'ESCALATE') {
             this.logger.info('Escalating verdict to L3', { filePath: verdict.artifactPath });
-            
-            await this.qorelogic.queueL3Approval({
-                filePath: verdict.artifactPath || 'unknown',
-                riskGrade: verdict.riskGrade,
-                agentDid: verdict.agentDid,
-                agentTrust: verdict.agentTrustAtVerdict,
-                sentinelSummary: verdict.summary,
-                flags: verdict.matchedPatterns
-            });
+
+            // RELIABILITY FIX: Add error handling for L3 escalation
+            try {
+                await this.qorelogic.queueL3Approval({
+                    filePath: verdict.artifactPath || 'unknown',
+                    riskGrade: verdict.riskGrade,
+                    agentDid: verdict.agentDid,
+                    agentTrust: verdict.agentTrustAtVerdict,
+                    sentinelSummary: verdict.summary,
+                    flags: verdict.matchedPatterns
+                });
+            } catch (error) {
+                this.logger.error('Failed to queue L3 approval', {
+                    filePath: verdict.artifactPath,
+                    error: error instanceof Error ? error.message : String(error)
+                });
+                // Emit failure event for monitoring
+                this.eventBus.emit('sentinel.escalation_failed', {
+                    verdict,
+                    error: error instanceof Error ? error.message : String(error)
+                });
+            }
         }
 
         // 3. (Future) Enforcement Actions

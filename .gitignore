@@ -4,6 +4,9 @@
 node_modules/
 extension/node_modules/
 extension/out/
+extension/.vscode-test/
+extension/test-results/
+extension/*.vsix
 out/
 *.log
 *.txt
@@ -20,3 +23,7 @@ dist/
 build/
 plans/
 docs/Deep Review/
+.vsce-token
+.ovsx-token
+extension/.vsce-token
+extension/.ovsx-token

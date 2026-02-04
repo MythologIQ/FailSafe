@@ -12,6 +12,12 @@ export class FailSafeMCPServer {
   private server: McpServer;
   private logger: Logger;
   private transport: StdioServerTransport | null = null;
+  private toolRegistrar: (
+    name: string,
+    description: string,
+    schema: Record<string, z.ZodTypeAny>,
+    handler: (args: unknown) => Promise<{ content: Array<{ type: "text"; text: string }> }>
+  ) => void;
 
   constructor(
     private context: vscode.ExtensionContext,
@@ -25,20 +31,26 @@ export class FailSafeMCPServer {
       name: "FailSafe Governance",
       version: "1.0.0",
     });
+    this.toolRegistrar = this.server.tool.bind(this.server) as unknown as (
+      name: string,
+      description: string,
+      schema: Record<string, z.ZodTypeAny>,
+      handler: (args: unknown) => Promise<{ content: Array<{ type: "text"; text: string }> }>
+    ) => void;
 
     this.registerTools();
   }
 
   private registerTools() {
     // TOOL: sentinel_audit_file
-    (this.server.tool as any)(
+    this.toolRegistrar(
       "sentinel_audit_file",
       "Trigger a heuristic audit on a specific file path.",
       {
         path: z.string().describe("Absolute path to the file to audit"),
         intent_id: z.string().describe("Active Intent ID for authorization"),
       },
-      async (args: { path: string; intent_id: string }) => {
+      async (args: unknown) => {
         const { path: filePath, intent_id } = args as {
           path: string;
           intent_id: string;
@@ -66,7 +78,7 @@ export class FailSafeMCPServer {
     );
 
     // TOOL: ledger_log_decision
-    (this.server.tool as any)(
+    this.toolRegistrar(
       "ledger_log_decision",
       "Log a governance decision to the SOA Ledger (L2/L3).",
       {
@@ -75,7 +87,7 @@ export class FailSafeMCPServer {
         risk_grade: z.enum(["L1", "L2", "L3"]),
         intent_id: z.string(),
       },
-      async (args: { decision: string; rationale: string; risk_grade: "L1" | "L2" | "L3"; intent_id: string }) => {
+      async (args: unknown) => {
         const { decision, rationale, risk_grade, intent_id } = args as {
           decision: string;
           rationale: string;

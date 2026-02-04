@@ -16,6 +16,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as crypto from 'crypto';
 import Database from 'better-sqlite3';
 import { ConfigManager } from '../../shared/ConfigManager';
 import { LedgerManager } from '../ledger/LedgerManager';
@@ -24,7 +25,6 @@ import {
     FailureMode,
     RemediationStatus,
     SentinelVerdict,
-    VerdictDecision,
     PersonaType
 } from '../../shared/types';
 import {
@@ -52,6 +52,29 @@ interface FailurePattern {
     agentDids: string[];
     recentCauses: string[];
 }
+
+type ShadowGenomeRow = {
+    id: number;
+    created_at: string;
+    updated_at: string | null;
+    ledger_ref: number | null;
+    agent_did: string;
+    input_vector: string;
+    decision_rationale: string | null;
+    environment_context: string | null;
+    failure_mode: FailureMode;
+    causal_vector: string | null;
+    negative_constraint: string | null;
+    remediation_status: RemediationStatus;
+    remediation_notes: string | null;
+    resolved_at: string | null;
+    resolved_by: string | null;
+    did_hash?: string | null;
+    signature?: string | null;
+    signature_timestamp?: string | null;
+    created_by?: string | null;
+    updated_by?: string | null;
+};
 
 export class ShadowGenomeManager {
     private context: vscode.ExtensionContext;
@@ -330,7 +353,7 @@ export class ShadowGenomeManager {
         if (!this.db) { return []; }
         const rows = this.db.prepare(
             'SELECT * FROM shadow_genome WHERE agent_did = ? ORDER BY id DESC LIMIT ?'
-        ).all(agentDid, limit) as any[];
+        ).all(agentDid, limit) as ShadowGenomeRow[];
         return rows.map(this.mapRowToEntry);
     }
 
@@ -341,7 +364,7 @@ export class ShadowGenomeManager {
         if (!this.db) { return []; }
         const rows = this.db.prepare(
             'SELECT * FROM shadow_genome WHERE failure_mode = ? ORDER BY id DESC LIMIT ?'
-        ).all(mode, limit) as any[];
+        ).all(mode, limit) as ShadowGenomeRow[];
         return rows.map(this.mapRowToEntry);
     }
 
@@ -352,7 +375,7 @@ export class ShadowGenomeManager {
         if (!this.db) { return []; }
         const rows = this.db.prepare(
             'SELECT * FROM shadow_genome WHERE remediation_status = ? ORDER BY created_at ASC LIMIT ?'
-        ).all('UNRESOLVED', limit) as any[];
+        ).all('UNRESOLVED', limit) as ShadowGenomeRow[];
         return rows.map(this.mapRowToEntry);
     }
 
@@ -405,7 +428,7 @@ export class ShadowGenomeManager {
             WHERE remediation_status = 'UNRESOLVED'
             GROUP BY failure_mode
             ORDER BY count DESC
-        `).all() as any[];
+        `).all() as Array<{ failure_mode: FailureMode; count: number; agent_dids: string | null; causes: string | null }>;
 
         return rows.map(row => ({
             failureMode: row.failure_mode as FailureMode,
@@ -491,7 +514,6 @@ export class ShadowGenomeManager {
             // For DID hash derivation, we need the persona and a public key
             // Since we only have the DID, we'll derive a hash from the DID itself
             // In a real implementation, this would use the agent's registered public key
-            const crypto = require('crypto');
             const hash = crypto.createHash('sha256')
                 .update(agentDid)
                 .digest('hex')
@@ -574,7 +596,7 @@ export class ShadowGenomeManager {
         return this.schemaVersionManager.migrate();
     }
 
-    private mapRowToEntry(row: any): ShadowGenomeEntry {
+    private mapRowToEntry(row: ShadowGenomeRow): ShadowGenomeEntry {
         return {
             schemaVersion: this.schemaVersionManager?.getCurrentVersion() || '1.0.0',
             id: row.id,

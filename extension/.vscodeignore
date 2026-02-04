@@ -1,0 +1,46 @@
+# Source files (compiled output is in /out)
+src/**
+!src/test/
+
+# Development files
+.vscode/
+.vscode-test/
+.vscode-test.json
+.vscode-test.mjs
+tsconfig.json
+.eslintrc.cjs
+playwright.config.ts
+
+# Test files
+test-results/
+**/*.test.ts
+**/*.test.js
+
+# Build scripts
+scripts/
+
+# Documentation (keep README, CHANGELOG, LICENSE)
+*.md
+!README.md
+!CHANGELOG.md
+
+# Node modules (vsce bundles dependencies automatically for simple cases)
+# If using bundler, uncomment:
+# node_modules/**
+
+# Git
+.git/
+.gitignore
+
+# Misc
+**/*.map
+*.vsix
+.DS_Store
+Thumbs.db
+
+# Secrets - NEVER include
+.vsce-token
+.ovsx-token
+*.token
+.env
+.env.*

@@ -114,6 +114,33 @@ export class ArchitectureEngine {
         return serviceCount;
     }
 
+    /**
+     * Calculate cyclomatic complexity for a code file
+     */
+    private calculateComplexity(content: string): number {
+        const patterns = [
+            /\bif\s*\(/g,
+            /\belse\s+if\s*\(/g,
+            /\bfor\s*\(/g,
+            /\bwhile\s*\(/g,
+            /\bswitch\s*\(/g,
+            /\bcase\s+/g,
+            /\bcatch\s*\(/g,
+            /\?\s*[^:]+\s*:/g,  // Ternary
+            /&&/g,
+            /\|\|/g
+        ];
+
+        let complexity = 1; // Base complexity
+        for (const pattern of patterns) {
+            const matches = content.match(pattern);
+            if (matches) {
+                complexity += matches.length;
+            }
+        }
+        return complexity;
+    }
+
     private async checkGodModules(root: string, smells: ArchSmell[]): Promise<number> {
         // Scan for huge files
         const files = globSync('**/*.{ts,js,py,rs,go}', {
@@ -121,18 +148,18 @@ export class ArchitectureEngine {
             ignore: ['**/node_modules/**', '**/dist/**', '**/*.min.js']
         });
 
-        let maxComplexity = 0; // Placeholder for actual complexity check
+        let maxComplexity = 0;
 
+        // RELIABILITY FIX: Use async I/O to prevent event loop blocking
         for (const f of files) {
             try {
                 const fullPath = path.join(root, f);
-                const stats = fs.statSync(fullPath);
-                
+                const stats = await fs.promises.stat(fullPath);
+
                 // Check God Module by size/lines
-                // Heuristic: > 2000 lines (approx 60KB for code?) 
-                // Let's read lines to be sure
+                // Heuristic: > 2000 lines (approx 60KB for code?)
                 if (stats.size > 100 * 1024) { // Fast fail on 100KB
-                     const content = fs.readFileSync(fullPath, 'utf-8');
+                     const content = await fs.promises.readFile(fullPath, 'utf-8');
                      const lines = content.split('\n').length;
                      if (lines > 2000) {
                          smells.push({
@@ -144,25 +171,35 @@ export class ArchitectureEngine {
                              remediation: 'Decompose into smaller modules.'
                          });
                      }
+                     // Calculate complexity for large files
+                     const complexity = this.calculateComplexity(content);
+                     maxComplexity = Math.max(maxComplexity, complexity);
+                } else if (stats.size > 10 * 1024) {
+                    // Also check complexity for medium-sized files (10KB+)
+                    const content = await fs.promises.readFile(fullPath, 'utf-8');
+                    const complexity = this.calculateComplexity(content);
+                    maxComplexity = Math.max(maxComplexity, complexity);
                 }
-            } catch (e) {
+            } catch (_error) {
                 // ignore access errors
             }
         }
-        return 0;
+        return maxComplexity;
     }
 
     private async checkFrameworkSoup(root: string, smells: ArchSmell[]): Promise<void> {
-        const packageJsons = globSync('**/package.json', { 
-            cwd: root, 
-            ignore: '**/node_modules/**' 
+        const packageJsons = globSync('**/package.json', {
+            cwd: root,
+            ignore: '**/node_modules/**'
         });
 
+        // RELIABILITY FIX: Use async I/O to prevent event loop blocking
         for (const p of packageJsons) {
             try {
-                const content = JSON.parse(fs.readFileSync(path.join(root, p), 'utf-8'));
+                const fileContent = await fs.promises.readFile(path.join(root, p), 'utf-8');
+                const content = JSON.parse(fileContent);
                 const deps = { ...content.dependencies, ...content.devDependencies };
-                
+
                 const hasReact = !!deps['react'];
                 const hasVue = !!deps['vue'];
                 const hasSvelte = !!deps['svelte'];
@@ -179,7 +216,9 @@ export class ArchitectureEngine {
                         remediation: 'Pick one frontend framework.'
                     });
                 }
-            } catch (e) {}
+            } catch (_error) {
+                // ignore malformed package.json files
+            }
         }
     }
 }

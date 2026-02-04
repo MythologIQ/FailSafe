@@ -78,7 +78,7 @@ export class TrustEngine {
 
     async initialize(): Promise<void> {
         this.db = this.ledgerManager.getDatabase();
-        const rows = this.db.prepare('SELECT * FROM agent_trust').all() as any[];
+        const rows = this.db.prepare('SELECT * FROM agent_trust').all() as AgentRow[];
         for (const row of rows) {
             const identity: AgentIdentity = {
                 did: row.did,
@@ -348,7 +348,7 @@ export class TrustEngine {
 
     private loadAgentFromDb(did: string): AgentIdentity | undefined {
         const db = this.db || this.ledgerManager.getDatabase();
-        const row = db.prepare('SELECT * FROM agent_trust WHERE did = ?').get(did) as any | undefined;
+        const row = db.prepare('SELECT * FROM agent_trust WHERE did = ?').get(did) as AgentRow | undefined;
         if (!row) {
             return undefined;
         }
@@ -416,7 +416,7 @@ export class TrustEngine {
 
     private async withOptimisticRetry<T>(work: () => Promise<T>): Promise<T> {
         let attempt = 0;
-        while (true) {
+        while (attempt <= this.optimisticLockConfig.maxRetries) {
             try {
                 return await work();
             } catch (error) {
@@ -427,5 +427,18 @@ export class TrustEngine {
                 attempt += 1;
             }
         }
+        throw new Error('Optimistic retry exceeded maximum attempts');
     }
 }
+
+type AgentRow = {
+    did: string;
+    persona: PersonaType;
+    public_key: string;
+    trust_score: number;
+    trust_stage: TrustStage;
+    is_quarantined: number;
+    verifications_completed: number | null;
+    created_at: string;
+    version: number | null;
+};

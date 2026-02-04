@@ -53,7 +53,7 @@ export class LRUCache<K, V> {
       next(): IteratorResult<[K, V]> {
         const result = iterator.next();
         if (result.done) {
-          return { done: true, value: undefined as any };
+          return { done: true, value: undefined as unknown as [K, V] };
         }
         return { done: false, value: [result.value[0], result.value[1].value] };
       },

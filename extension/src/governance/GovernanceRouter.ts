@@ -91,7 +91,7 @@ export class GovernanceRouter {
 
   private async showBlockade(violation: string, remediation: string): Promise<void> {
     const choice = await vscode.window.showErrorMessage(
-      `FailSafe Blocked: ${violation}`,
+      `FailSafe Blocked: ${violation}\nRemediation: ${remediation}`,
       { modal: true }, 
       'Create Intent', 
       'View Active Intent'

@@ -39,10 +39,15 @@ export interface FeedbackSummary {
     recentFeedback: FeedbackEntry[];
 }
 
+interface FeedbackLogger {
+    info: (msg: string, data?: unknown) => void;
+    error: (msg: string, error?: unknown) => void;
+}
+
 export class FeedbackManager {
     private context: vscode.ExtensionContext;
     private feedbackDir: string;
-    private logger: any;
+    private logger: FeedbackLogger;
 
     constructor(context: vscode.ExtensionContext) {
         this.context = context;
@@ -57,8 +62,8 @@ export class FeedbackManager {
         
         // Lazy load logger to avoid circular dependency
         this.logger = {
-            info: (msg: string, data?: any) => console.log(`[FeedbackManager] ${msg}`, data || ''),
-            error: (msg: string, error?: any) => console.error(`[FeedbackManager] ${msg}`, error || '')
+            info: (msg: string, data?: unknown) => console.log(`[FeedbackManager] ${msg}`, data || ''),
+            error: (msg: string, error?: unknown) => console.error(`[FeedbackManager] ${msg}`, error || '')
         };
     }
 
@@ -104,11 +109,11 @@ export class FeedbackManager {
     async createFeedbackEntry(): Promise<FeedbackEntry | null> {
         // Step 1: Select feedback type
         const typeOptions: Array<{ label: string; value: FeedbackEntry['type'] }> = [
-            { label: '🐛 Bug Report', value: 'bug_report' },
-            { label: '✨ Feature Request', value: 'feature_request' },
-            { label: '🎨 UX Feedback', value: 'ux_feedback' },
-            { label: '⚡ Performance', value: 'performance' },
-            { label: '💬 General Feedback', value: 'general' }
+            { label: 'Bug Report', value: 'bug_report' },
+            { label: 'Feature Request', value: 'feature_request' },
+            { label: 'UX Feedback', value: 'ux_feedback' },
+            { label: 'Performance', value: 'performance' },
+            { label: 'General Feedback', value: 'general' }
         ];
 
         const selectedType = await vscode.window.showQuickPick(
@@ -120,10 +125,10 @@ export class FeedbackManager {
 
         // Step 2: Select severity
         const severityOptions: Array<{ label: string; value: FeedbackEntry['severity'] }> = [
-            { label: '🟢 Low', value: 'low' },
-            { label: '🟡 Medium', value: 'medium' },
-            { label: '🟠 High', value: 'high' },
-            { label: '🔴 Critical', value: 'critical' }
+            { label: 'Low', value: 'low' },
+            { label: 'Medium', value: 'medium' },
+            { label: 'High', value: 'high' },
+            { label: 'Critical', value: 'critical' }
         ];
 
         const selectedSeverity = await vscode.window.showQuickPick(
@@ -453,7 +458,7 @@ export class FeedbackManager {
 </head>
 <body>
     <div class="header">
-        <h1>📝 FailSafe Feedback</h1>
+        <h1>FailSafe Feedback</h1>
         <p>Community feedback loop for FailSafe development</p>
     </div>
     

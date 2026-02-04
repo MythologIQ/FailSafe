@@ -15,10 +15,7 @@ import { EventBus } from '../shared/EventBus';
 import { Logger } from '../shared/Logger';
 import {
     L3ApprovalRequest,
-    L3ApprovalState,
-    TrustScore,
     AgentIdentity,
-    LedgerEntry,
     SentinelVerdict,
     ShadowGenomeEntry,
     FailureMode

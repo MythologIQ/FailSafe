@@ -7,6 +7,7 @@
 import * as vscode from 'vscode';
 import { LedgerManager } from '../../qorelogic/ledger/LedgerManager';
 import { escapeHtml, getNonce } from '../../shared/utils/htmlSanitizer';
+import { LedgerEntry } from '../../shared/types';
 
 export class LedgerViewerPanel {
     public static currentPanel: LedgerViewerPanel | undefined;
@@ -47,7 +48,7 @@ export class LedgerViewerPanel {
         this.panel.webview.html = this.getHtmlContent(entries);
     }
 
-    private getHtmlContent(entries: any[]): string {
+    private getHtmlContent(entries: LedgerEntry[]): string {
         const nonce = getNonce();
         const cspSource = this.panel.webview.cspSource;
         

@@ -441,6 +441,7 @@ export type FailSafeEventType =
   | "sentinel.verdict"
   | "sentinel.alert"
   | "sentinel.modeChange"
+  | "sentinel.escalation_failed"
   | "qorelogic.trustUpdate"
   | "qorelogic.l3Queued"
   | "qorelogic.l3Decided"

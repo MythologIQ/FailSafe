@@ -8,18 +8,23 @@
  * - Dependency verification
  */
 
-import * as path from 'path';
-import { HeuristicPattern, HeuristicResult, PatternCategory } from '../../shared/types';
+import { HeuristicResult } from '../../shared/types';
 import { PolicyEngine } from '../../qorelogic/policies/PolicyEngine';
 import { PatternLoader } from '../PatternLoader';
+import { Logger } from '../../shared/Logger';
 
 export class HeuristicEngine {
     private policyEngine: PolicyEngine;
     private patternLoader: PatternLoader;
+    private logger: Logger;
+
+    /** Maximum content size to analyze (1MB) to prevent DoS */
+    private static readonly MAX_CONTENT_SIZE = 1024 * 1024;
 
     constructor(policyEngine: PolicyEngine, patternLoader: PatternLoader) {
         this.policyEngine = policyEngine;
         this.patternLoader = patternLoader;
+        this.logger = new Logger('HeuristicEngine');
         // Patterns are already loaded in PatternLoader constructor (defaults)
         // Custom patterns loading is async and should be called before analysis if needed
     }
@@ -31,6 +36,16 @@ export class HeuristicEngine {
         const results: HeuristicResult[] = [];
 
         if (!content) {
+            return results;
+        }
+
+        // SECURITY FIX: Limit content size to prevent DoS
+        if (content.length > HeuristicEngine.MAX_CONTENT_SIZE) {
+            this.logger.warn('Content too large for heuristic analysis', {
+                filePath,
+                size: content.length,
+                limit: HeuristicEngine.MAX_CONTENT_SIZE
+            });
             return results;
         }
 
@@ -89,7 +104,7 @@ export class HeuristicEngine {
                 }
             } catch (error) {
                 // Invalid regex, skip
-                console.warn(`Invalid pattern ${pattern.id}:`, error);
+                this.logger.warn(`Invalid pattern ${pattern.id}`, { error });
             }
         }
 

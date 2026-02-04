@@ -9,6 +9,7 @@
  */
 
 import Database from 'better-sqlite3';
+import * as crypto from 'crypto';
 
 // =============================================================================
 // TYPES
@@ -39,6 +40,14 @@ export interface MigrationResult {
     error?: string;
 }
 
+type SchemaVersionRow = {
+    id: number;
+    version: string;
+    applied_at: string;
+    checksum: string;
+    description: string;
+};
+
 // =============================================================================
 // SCHEMA VERSION TABLE DDL
 // =============================================================================
@@ -61,7 +70,7 @@ CREATE INDEX IF NOT EXISTS idx_schema_version_applied ON schema_version(applied_
 
 /**
  * DDL for the shadow_genome table (Version 1.0.0)
- * Base schema for failure archival
+ * Base schema for failure archival (security fields added in v1.1.0)
  */
 export const SHADOW_GENOME_V1_DDL = `
 CREATE TABLE IF NOT EXISTS shadow_genome (
@@ -98,11 +107,6 @@ CREATE TABLE IF NOT EXISTS shadow_genome (
     resolved_at TEXT,
     resolved_by TEXT,
     
-    -- Security fields (added in v1.1.0)
-    did_hash TEXT,
-    signature TEXT,
-    signature_timestamp TEXT,
-    
     FOREIGN KEY (ledger_ref) REFERENCES soa_ledger(id)
 );
 
@@ -110,8 +114,12 @@ CREATE INDEX IF NOT EXISTS idx_shadow_agent ON shadow_genome(agent_did);
 CREATE INDEX IF NOT EXISTS idx_shadow_failure_mode ON shadow_genome(failure_mode);
 CREATE INDEX IF NOT EXISTS idx_shadow_status ON shadow_genome(remediation_status);
 CREATE INDEX IF NOT EXISTS idx_shadow_created ON shadow_genome(created_at);
-CREATE INDEX IF NOT EXISTS idx_shadow_did_hash ON shadow_genome(did_hash);
 `;
+
+const hasColumn = (db: Database.Database, table: string, column: string): boolean => {
+    const columns = db.prepare(`PRAGMA table_info('${table}')`).all() as Array<{ name: string }>;
+    return columns.some((c) => c.name === column);
+};
 
 // =============================================================================
 // MIGRATIONS
@@ -125,7 +133,7 @@ export const MIGRATIONS: Migration[] = [
     {
         version: '1.0.0',
         description: 'Initial schema - base shadow_genome table',
-        up: (db: Database.Database) => {
+        up: (_db: Database.Database) => {
             // Base schema is created by SHADOW_GENOME_V1_DDL
             // This migration is primarily for tracking purposes
         },
@@ -138,12 +146,16 @@ export const MIGRATIONS: Migration[] = [
         version: '1.1.0',
         description: 'Add security fields (did_hash, signature, signature_timestamp)',
         up: (db: Database.Database) => {
-            db.exec(`
-                ALTER TABLE shadow_genome ADD COLUMN did_hash TEXT;
-                ALTER TABLE shadow_genome ADD COLUMN signature TEXT;
-                ALTER TABLE shadow_genome ADD COLUMN signature_timestamp TEXT;
-                CREATE INDEX IF NOT EXISTS idx_shadow_did_hash ON shadow_genome(did_hash);
-            `);
+            if (!hasColumn(db, 'shadow_genome', 'did_hash')) {
+                db.exec('ALTER TABLE shadow_genome ADD COLUMN did_hash TEXT;');
+            }
+            if (!hasColumn(db, 'shadow_genome', 'signature')) {
+                db.exec('ALTER TABLE shadow_genome ADD COLUMN signature TEXT;');
+            }
+            if (!hasColumn(db, 'shadow_genome', 'signature_timestamp')) {
+                db.exec('ALTER TABLE shadow_genome ADD COLUMN signature_timestamp TEXT;');
+            }
+            db.exec('CREATE INDEX IF NOT EXISTS idx_shadow_did_hash ON shadow_genome(did_hash);');
         },
         down: (db: Database.Database) => {
             // SQLite doesn't support DROP COLUMN directly
@@ -239,7 +251,7 @@ export class SchemaVersionManager {
     getAppliedMigrations(): SchemaVersion[] {
         const rows = this.db
             .prepare('SELECT * FROM schema_version ORDER BY id ASC')
-            .all() as any[];
+            .all() as SchemaVersionRow[];
         
         return rows.map(row => ({
             id: row.id,
@@ -492,7 +504,6 @@ export class SchemaVersionManager {
  * @returns Hex string checksum
  */
 export function computeChecksum(sql: string): string {
-    const crypto = require('crypto');
     return crypto.createHash('sha256').update(sql).digest('hex').substring(0, 12);
 }
 

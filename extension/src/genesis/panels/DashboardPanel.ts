@@ -15,6 +15,23 @@ import { SentinelDaemon } from '../../sentinel/SentinelDaemon';
 import { QoreLogicManager } from '../../qorelogic/QoreLogicManager';
 import { escapeHtml, getNonce } from '../../shared/utils/htmlSanitizer';
 
+type EvaluationMetrics = {
+    cache?: Record<string, { hits: number; misses: number }>;
+    noveltyAccuracy?: {
+        totalEvaluations: number;
+        lowCount: number;
+        mediumCount: number;
+        highCount: number;
+        averageConfidence: number;
+    };
+    cacheSizes?: { fingerprint: number; novelty: number };
+};
+
+const isEvaluationMetrics = (payload: unknown): payload is EvaluationMetrics => {
+    if (!payload || typeof payload !== 'object') return false;
+    return true;
+};
+
 export class DashboardPanel {
     public static currentPanel: DashboardPanel | undefined;
     private readonly panel: vscode.WebviewPanel;
@@ -22,17 +39,7 @@ export class DashboardPanel {
     private qorelogic: QoreLogicManager;
     private eventBus: EventBus;
     private disposables: vscode.Disposable[] = [];
-    private evaluationMetrics: {
-        cache?: Record<string, { hits: number; misses: number }>;
-        noveltyAccuracy?: {
-            totalEvaluations: number;
-            lowCount: number;
-            mediumCount: number;
-            highCount: number;
-            averageConfidence: number;
-        };
-        cacheSizes?: { fingerprint: number; novelty: number };
-    } | null = null;
+    private evaluationMetrics: EvaluationMetrics | null = null;
 
     private constructor(
         panel: vscode.WebviewPanel,
@@ -53,8 +60,10 @@ export class DashboardPanel {
             this.eventBus.on('qorelogic.trustUpdate', () => void this.update()),
             this.eventBus.on('qorelogic.l3Queued', () => void this.update()),
             this.eventBus.on('evaluation.metrics', (event) => {
-                this.evaluationMetrics = event.payload as any;
-                void this.update();
+                if (isEvaluationMetrics(event.payload)) {
+                    this.evaluationMetrics = event.payload;
+                    void this.update();
+                }
             })
         ];
         unsubscribes.forEach(unsub => this.disposables.push({ dispose: unsub }));

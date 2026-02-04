@@ -48,13 +48,13 @@ Create or edit `.failsafe/config/policies/risk_grading.json` to tune risk classi
 }
 ```
 
-**Result:** Risk grading overrides are loaded on startup when this JSON file is present. Defaults apply when it is missing.
+**Result:** Risk grading overrides are loaded on startup when this JSON file is present. Defaults apply when it is missing. Top-level sections replace defaults, so include full sections if you want to preserve them.
 
 ---
 
 ## What Is FailSafe?
 
-FailSafe is an open-source VS Code extension and governance framework designed to harmonize AI agent behavior, prevent hallucinations, and enforce strict architectural standards across distributed development environments.
+FailSafe is an open-source VS Code extension and governance framework for AI-assisted development. It adds intent-gated saves, Sentinel audits, and a ledgered audit trail so risky changes are surfaced and controlled.
 
 ---
 
@@ -103,9 +103,9 @@ FailSafe/
 
 | System | Layer | Description |
 |--------|-------|-------------|
-| Genesis | Experience | Dashboards and feedback loop |
-| QoreLogic | Governance | Policies, identity, and intent verification |
-| Sentinel | Enforcement | Audits, heuristics, and ledger logging |
+| Genesis | Experience | Dashboard, living graph, and audit stream |
+| QoreLogic | Governance | Intent gating, policies, ledger, and trust |
+| Sentinel | Enforcement | File watcher audits and verdicts |
 
 ---
 
@@ -113,7 +113,7 @@ FailSafe/
 
 | Extension | Description |
 |-----------|-------------|
-| VS Code | Real-time policy checks, audits, and dashboards |
+| VS Code | Save-time governance, audits, and dashboards |
 
 ---
 

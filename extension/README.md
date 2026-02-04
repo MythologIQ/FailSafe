@@ -15,12 +15,12 @@ AI coding assistants can generate risky code without strong guarantees. Teams ne
 FailSafe adds governance and visibility at the editor boundary:
 
 - Save-time intent gate that can block writes outside an active Intent
-- Sentinel daemon for file-change audits (heuristic by default, optional LLM-assisted and hybrid modes via local Ollama)
+- Sentinel daemon for file-change audits (heuristic, LLM-assisted, and hybrid modes)
 - SOA ledger with a built-in viewer for audit history
 - Genesis UI panels for dashboards, living graph, and stream views
 - MCP server for external tools to trigger audits and write ledger entries
 
-## Highlights (v1.0.3)
+## Highlights
 
 - Dashboard and Living Graph webviews
 - File watcher and manual audit command
@@ -48,13 +48,13 @@ Remediation: Create an Intent before modifying files.
 
 ### 1. Save-Time Governance Gate
 
-FailSafe evaluates save operations against the active Intent and can block unsafe writes.
+FailSafe evaluates save operations against the active Intent and can block writes when no active Intent exists or when a file is out of scope.
 
 ### 2. Sentinel Monitoring and Audits
 
 - File watcher queues audits for code changes
 - Manual audits via command
-- Modes: `heuristic`, `llm-assisted`, `hybrid` (LLM requires a configured local endpoint)
+- Modes: `heuristic`, `llm-assisted`, `hybrid` (LLM uses the configured endpoint)
 
 ### 3. SOA Ledger and L3 Queue
 
@@ -63,7 +63,7 @@ FailSafe evaluates save operations against the active Intent and can block unsaf
 
 ### 4. Genesis UI
 
-- Dashboard, Living Graph, Cortex Stream, Dojo, and Sentinel panels
+- Dashboard, Living Graph, Cortex Stream, Dojo, and Sentinel views
 
 ### 5. Feedback Capture
 
@@ -107,9 +107,11 @@ Open Settings and search for `FailSafe`:
 | `failsafe.qorelogic.l3SLA` | `120` | L3 response SLA (seconds) |
 | `failsafe.feedback.outputDir` | `.failsafe/feedback` | Feedback output directory |
 
+If `.failsafe/config/sentinel.yaml` exists, it overrides settings. The initializer seeds it with `mode: hybrid` unless you change it.
+
 ## Workspace Files
 
-FailSafe seeds a `.failsafe/` directory in your workspace for configuration, ledger, and feedback output. Optional policy overrides can be placed at:
+FailSafe seeds a `.failsafe/` directory in your workspace for configuration, ledger, and feedback output. The primary workspace config is `.failsafe/config/sentinel.yaml`. Optional policy overrides can be placed at:
 
 - `.failsafe/config/policies/risk_grading.json`
 - `.failsafe/config/policies/citation_policy.json`
@@ -117,7 +119,7 @@ FailSafe seeds a `.failsafe/` directory in your workspace for configuration, led
 ## Privacy
 
 - Heuristic mode runs locally
-- LLM-assisted and hybrid modes use the configured Ollama endpoint
+- LLM-assisted and hybrid modes call the configured endpoint
 
 ## Requirements
 

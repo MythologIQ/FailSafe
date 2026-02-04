@@ -2,6 +2,12 @@
 
 All notable changes to the MythologIQ FailSafe extension will be documented in this file.
 
+## [1.0.4] - 2026-02-04
+
+### Fixed
+
+- Marketplace icon now uses the packaged extension icon.
+
 ## [1.0.0] - 2026-02-04
 
 ### Added

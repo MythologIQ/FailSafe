@@ -1,5 +1,20 @@
 ﻿# Changelog
 
+## [1.0.7] - 2026-02-04
+
+### Fixed
+
+- **Node.js Version Compatibility:** Resolved NODE_MODULE_VERSION mismatch by implementing pre-built binary support for better-sqlite3. The extension now works reliably across different Node.js versions.
+
+### Added
+
+- **Node Version Pinning:** Added `.nvmrc` configuration (Node 20.18.1) to ensure consistent build environments.
+- **Binary Configuration:** Implemented pre-built binary downloads for native dependencies, eliminating version mismatches during installation.
+
+### Note
+
+Thank you to everyone who has already downloaded FailSafe. Your feedback continues to drive improvements and stability across the platform.
+
 ## [1.0.0] - 2026-01-22
 
 ### Added

@@ -3,7 +3,7 @@
   "displayName": "MythologIQ: FailSafe (feat. QoreLogic)",
   "description": "Complete AI governance for modern development. Genesis visualization + QoreLogic framework + Sentinel monitoring.",
   "icon": "icon.png",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "publisher": "MythologIQ",
   "license": "MIT",
   "repository": {
@@ -237,5 +237,12 @@
     "proper-lockfile": "^4.1.2",
     "uuid": "^9.0.0",
     "zod": "^3.25.76"
+  },
+  "binary": {
+    "module_name": "better_sqlite3",
+    "module_path": "./build/Release/",
+    "host": "https://github.com/WiseLibs/better-sqlite3/releases/download/",
+    "remote_path": "v{version}/",
+    "package_name": "{module_name}-v{version}-{node_abi}-{platform}-{arch}.tar.gz"
   }
 }

@@ -1,6 +1,6 @@
 ﻿# MythologIQ FailSafe for VS Code
 
-Part of FailSafe - Kernel-style governance for autonomous AI agents.
+Part of FailSafe - kernel-style governance for autonomous AI agents.
 
 Local-first safety for AI coding assistants.
 
@@ -8,97 +8,86 @@ Local-first safety for AI coding assistants.
 
 ## The Problem
 
-AI coding assistants can generate risky code without strong guarantees. This can surface in destructive operations, credential leakage, unsafe file access, or insecure network patterns. Teams need enforceable guardrails, not just suggestions.
+AI coding assistants can generate risky code without strong guarantees. Teams need enforceable guardrails, auditability, and clear workflows around high-risk changes.
 
 ## The Solution
 
-FailSafe wraps AI-assisted workflows with enforcement and auditing:
+FailSafe adds governance and visibility at the editor boundary:
 
-- Real-time policy enforcement to block unsafe operations before they execute
-- Structured audit trails for decisions and interventions
-- Shared policies so teams apply the same rules everywhere
-- Optional deeper review flows for higher-risk changes
+- Save-time intent gate that can block writes outside an active Intent
+- Sentinel daemon for file-change audits (heuristic by default, optional LLM-assisted and hybrid modes via local Ollama)
+- SOA ledger with a built-in viewer for audit history
+- Genesis UI panels for dashboards, living graph, and stream views
+- MCP server for external tools to trigger audits and write ledger entries
 
-## What Is New in the Current Release
+## Highlights (v1.0.3)
 
-- Policy-first workspace setup with clear defaults
-- Improved audit visibility and signal clarity
-- Streamlined onboarding for new workspaces
+- Dashboard and Living Graph webviews
+- File watcher and manual audit command
+- SOA ledger viewer and L3 approval queue
+- Feedback capture and export
+- QoreLogic propagation to detected systems
 
 ## Quick Start
 
-1. Install from the VS Code Marketplace
-2. Run `FailSafe: Getting Started` from the Command Palette
-3. Start coding - FailSafe protects you automatically
+1. Install from the VS Code Marketplace or Open VSX.
+2. Open a workspace.
+3. Run `FailSafe: Open Dashboard` or press `Ctrl+Alt+F`.
+4. Run `FailSafe: Audit Current File` to generate a verdict.
 
 ## Safety Alert
 
 ```
-Blocked: Destructive operation detected
+FailSafe Blocked: AXIOM 1 VIOLATION: No active Intent exists.
+Remediation: Create an Intent before modifying files.
 
-The AI suggested: DELETE FROM users WHERE ...
-This violates your safety policy.
-
-[Review Policy] [Allow Once] [Suggest Alternative]
+[Create Intent] [View Active Intent]
 ```
 
 ## Features
 
-### 1. Real-Time Code Safety
+### 1. Save-Time Governance Gate
 
-FailSafe analyzes code as you type or paste and blocks dangerous patterns:
+FailSafe evaluates save operations against the active Intent and can block unsafe writes.
 
-| Policy | Default | Description |
-|--------|---------|-------------|
-| Destructive SQL | On | Block DROP, DELETE, TRUNCATE |
-| File Deletes | On | Block rm -rf, unlink, rmtree |
-| Secret Exposure | On | Block hardcoded API keys and passwords |
-| Privilege Escalation | On | Block sudo, chmod 777 |
-| Unsafe Network | Off | Block non-HTTPS calls |
+### 2. Sentinel Monitoring and Audits
 
-### 2. Multi-Source Review
+- File watcher queues audits for code changes
+- Manual audits via command
+- Modes: `heuristic`, `llm-assisted`, `hybrid` (LLM requires a configured local endpoint)
 
-Request a structured review for higher-risk changes and capture the outcome in the audit log.
+### 3. SOA Ledger and L3 Queue
 
-### 3. Audit Log Sidebar
+- Append-only ledger database for audit entries
+- L3 approvals surfaced in the UI
 
-Open the FailSafe panel to see:
+### 4. Genesis UI
 
-- Recent blocks and warnings
-- Review outcomes
-- Export options for compliance
+- Dashboard, Living Graph, Cortex Stream, Dojo, and Sentinel panels
 
-### 4. Team Policies
+### 5. Feedback Capture
 
-Share policies via `.vscode/failsafe.json`:
+- Generate, view, and export feedback snapshots
 
-```json
-{
-  "policies": {
-    "blockDestructiveSQL": true,
-    "blockFileDeletes": true,
-    "blockSecretExposure": true
-  },
-  "customRules": [
-    {
-      "name": "no_console_log",
-      "pattern": "console\\.log",
-      "message": "Remove console.log before committing",
-      "severity": "low"
-    }
-  ]
-}
-```
+### 6. QoreLogic Propagation
+
+Detect and propagate governance bundles to supported systems via `FailSafe: Sync Multi-Agent Framework`.
 
 ## Commands
 
 | Command | Description |
 |---------|-------------|
-| FailSafe: Getting Started | Interactive onboarding |
 | FailSafe: Open Dashboard | Main governance dashboard |
+| FailSafe: Open Living Graph | Visualization view |
+| FailSafe: Focus Cortex Omnibar | Intent-aware omnibar |
+| FailSafe: Sentinel Status | Show monitoring status |
 | FailSafe: Audit Current File | Manual file audit |
-| FailSafe: View Audit Log | Browse audit history |
-| FailSafe: Configure Policies | Open policy configuration |
+| FailSafe: View SOA Ledger | Browse audit history |
+| FailSafe: Review L3 Queue | Review pending approvals |
+| FailSafe: Generate Feedback | Capture feedback snapshot |
+| FailSafe: View Feedback | Open feedback panel |
+| FailSafe: Export Feedback | Export feedback to JSON |
+| FailSafe: Sync Multi-Agent Framework | Propagate QoreLogic bundles |
 
 ## Configuration
 
@@ -106,29 +95,39 @@ Open Settings and search for `FailSafe`:
 
 | Setting | Default | Description |
 |---------|---------|-------------|
+| `failsafe.genesis.livingGraph` | `true` | Enable Living Graph visualization |
+| `failsafe.genesis.cortexOmnibar` | `true` | Enable Cortex Omnibar |
+| `failsafe.genesis.theme` | `starry-night` | Genesis UI theme |
 | `failsafe.sentinel.enabled` | `true` | Enable Sentinel monitoring |
-| `failsafe.sentinel.mode` | `heuristic` | Analysis mode |
+| `failsafe.sentinel.mode` | `heuristic` | Sentinel operating mode |
+| `failsafe.sentinel.localModel` | `phi3:mini` | Ollama model for LLM-assisted mode |
+| `failsafe.sentinel.ollamaEndpoint` | `http://localhost:11434` | Ollama API endpoint |
+| `failsafe.qorelogic.ledgerPath` | `.failsafe/ledger/soa_ledger.db` | Ledger database path |
 | `failsafe.qorelogic.strictMode` | `false` | Block on all warnings |
-| `failsafe.qorelogic.l3SLA` | `120` | Response SLA in seconds |
+| `failsafe.qorelogic.l3SLA` | `120` | L3 response SLA (seconds) |
+| `failsafe.feedback.outputDir` | `.failsafe/feedback` | Feedback output directory |
 
-## Pricing
+## Workspace Files
 
-FailSafe is open source and free to use.
+FailSafe seeds a `.failsafe/` directory in your workspace for configuration, ledger, and feedback output. Optional policy overrides can be placed at:
+
+- `.failsafe/config/policies/risk_grading.json`
+- `.failsafe/config/policies/citation_policy.json`
 
 ## Privacy
 
-- Local-first: core policy checks run on your machine
-- No network: standard mode never sends code anywhere
-- Opt-in reviews: external checks are always user-initiated
+- Heuristic mode runs locally
+- LLM-assisted and hybrid modes use the configured Ollama endpoint
 
 ## Requirements
 
 - VS Code 1.74.0 or later
 - Node.js 18+ (for development)
+- Ollama (optional, for LLM-assisted mode)
 
 ## Contributing
 
-We welcome contributions. See `CONTRIBUTING.md`.
+Contributions are welcome via GitHub issues and pull requests.
 
 ## Terms and Conditions (Beta)
 
@@ -143,5 +142,7 @@ MIT - See `LICENSE`.
 ## Links
 
 - GitHub: https://github.com/MythologIQ/FailSafe
-- Documentation: FAILSAFE_SPECIFICATION.md
 - Issues: https://github.com/MythologIQ/FailSafe/issues
+- VS Code Marketplace: https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe
+- Open VSX: https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe
+- Documentation: FAILSAFE_SPECIFICATION.md

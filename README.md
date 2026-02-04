@@ -35,24 +35,20 @@
 
 ## What You Will Configure in 5 Minutes
 
+Create or edit `.failsafe/config/policies/risk_grading.json` to tune risk classification:
+
 ```json
 {
-  "defaultTrust": 0.35,
-  "successDelta": 0.05,
-  "failureDelta": -0.10,
-  "violationPenalty": -0.25,
-  "probationFloor": 0.35,
-  "probationVerifications": 5,
-  "probationDays": 30,
-  "stages": {
-    "CBT": { "min": 0.0, "max": 0.5 },
-    "KBT": { "min": 0.5, "max": 0.8 },
-    "IBT": { "min": 0.8, "max": 1.0 }
+  "filePathTriggers": {
+    "L3": ["auth", "payment", "credential"]
+  },
+  "contentTriggers": {
+    "L3": ["DROP TABLE", "api_key"]
   }
 }
 ```
 
-**Result:** Trust dynamics are enforced consistently across agents and integrations using the same policy file.
+**Result:** Risk grading overrides are loaded on startup when this JSON file is present. Defaults apply when it is missing.
 
 ---
 

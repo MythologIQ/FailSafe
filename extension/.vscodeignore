@@ -1,6 +1,8 @@
 # Source files (compiled output is in /out)
 src/**
-!src/test/
+
+# Compiled test output
+out/test/**
 
 # Development files
 .vscode/

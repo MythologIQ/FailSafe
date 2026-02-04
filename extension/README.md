@@ -1,65 +1,134 @@
-﻿# MythologIQ FailSafe
+﻿# MythologIQ FailSafe for VS Code
 
-Complete AI governance for modern development. Real-time monitoring, trust verification, and audit trails for autonomous agent workflows.
+Part of FailSafe - Kernel-style governance for autonomous AI agents.
 
-> **BETA NOTICE:** FailSafe is a beta product. Expect breaking changes and rough edges. See [Terms and Conditions (Beta)](#terms-and-conditions-beta).
+Local-first safety for AI coding assistants.
 
-## Features
+![FailSafe Banner](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/icon.png)
 
-### Sentinel Monitoring
-- File-level heuristic analysis detecting security vulnerabilities and code smells
-- Optional LLM-assisted deep analysis via local Ollama models
-- Real-time file watching with intelligent event queuing
+## The Problem
 
-### Trust Engine
-- Progressive trust model based on Lewicki-Bunker research (CBT -> KBT -> IBT)
-- Agent reputation tracking with automatic trust adjustments
-- Quarantine system for policy violators
+AI coding assistants can generate risky code without strong guarantees. This can surface in destructive operations, credential leakage, unsafe file access, or insecure network patterns. Teams need enforceable guardrails, not just suggestions.
 
-### SOA Ledger
-- Merkle-chained audit trail for all governance decisions
-- Tamper-evident logging with SHA-256 verification
-- Full history of agent actions and verdicts
+## The Solution
 
-### L3 Escalation
-- Human-in-the-loop approval for security-critical paths
-- SLA tracking for response times
-- Configurable escalation policies
+FailSafe wraps AI-assisted workflows with enforcement and auditing:
+
+- Real-time policy enforcement to block unsafe operations before they execute
+- Structured audit trails for decisions and interventions
+- Shared policies so teams apply the same rules everywhere
+- Optional deeper review flows for higher-risk changes
+
+## What Is New in the Current Release
+
+- Policy-first workspace setup with clear defaults
+- Improved audit visibility and signal clarity
+- Streamlined onboarding for new workspaces
 
 ## Quick Start
 
-1. Install the extension
-2. Open any workspace
-3. Press `Ctrl+Alt+F` (Windows/Linux) or `Cmd+Alt+F` (Mac) to open Dashboard
-4. Sentinel begins monitoring automatically
+1. Install from the VS Code Marketplace
+2. Run `FailSafe: Getting Started` from the Command Palette
+3. Start coding - FailSafe protects you automatically
+
+## Safety Alert
+
+```
+Blocked: Destructive operation detected
+
+The AI suggested: DELETE FROM users WHERE ...
+This violates your safety policy.
+
+[Review Policy] [Allow Once] [Suggest Alternative]
+```
+
+## Features
+
+### 1. Real-Time Code Safety
+
+FailSafe analyzes code as you type or paste and blocks dangerous patterns:
+
+| Policy | Default | Description |
+|--------|---------|-------------|
+| Destructive SQL | On | Block DROP, DELETE, TRUNCATE |
+| File Deletes | On | Block rm -rf, unlink, rmtree |
+| Secret Exposure | On | Block hardcoded API keys and passwords |
+| Privilege Escalation | On | Block sudo, chmod 777 |
+| Unsafe Network | Off | Block non-HTTPS calls |
+
+### 2. Multi-Source Review
+
+Request a structured review for higher-risk changes and capture the outcome in the audit log.
+
+### 3. Audit Log Sidebar
+
+Open the FailSafe panel to see:
+
+- Recent blocks and warnings
+- Review outcomes
+- Export options for compliance
+
+### 4. Team Policies
+
+Share policies via `.vscode/failsafe.json`:
+
+```json
+{
+  "policies": {
+    "blockDestructiveSQL": true,
+    "blockFileDeletes": true,
+    "blockSecretExposure": true
+  },
+  "customRules": [
+    {
+      "name": "no_console_log",
+      "pattern": "console\\.log",
+      "message": "Remove console.log before committing",
+      "severity": "low"
+    }
+  ]
+}
+```
 
 ## Commands
 
-| Command | Keybinding | Description |
-|---------|------------|-------------|
-| FailSafe: Open Dashboard | `Ctrl+Alt+F` | Main governance dashboard |
-| FailSafe: Focus Cortex | `Ctrl+Alt+C` | NLP command interface |
-| FailSafe: Audit Current File | `Ctrl+Alt+A` | Manual file audit |
-| FailSafe: Sentinel Status | - | View monitoring status |
-| FailSafe: View SOA Ledger | - | Browse audit history |
-| FailSafe: Review L3 Queue | - | Approve pending escalations |
+| Command | Description |
+|---------|-------------|
+| FailSafe: Getting Started | Interactive onboarding |
+| FailSafe: Open Dashboard | Main governance dashboard |
+| FailSafe: Audit Current File | Manual file audit |
+| FailSafe: View Audit Log | Browse audit history |
+| FailSafe: Configure Policies | Open policy configuration |
 
 ## Configuration
 
-Access via **Settings > Extensions > FailSafe**
+Open Settings and search for `FailSafe`:
 
 | Setting | Default | Description |
 |---------|---------|-------------|
 | `failsafe.sentinel.enabled` | `true` | Enable Sentinel monitoring |
-| `failsafe.sentinel.mode` | `heuristic` | Analysis mode (heuristic/llm-assisted/hybrid) |
-| `failsafe.sentinel.localModel` | `phi3:mini` | Ollama model for LLM mode |
+| `failsafe.sentinel.mode` | `heuristic` | Analysis mode |
 | `failsafe.qorelogic.strictMode` | `false` | Block on all warnings |
-| `failsafe.qorelogic.l3SLA` | `120` | L3 response SLA (seconds) |
+| `failsafe.qorelogic.l3SLA` | `120` | Response SLA in seconds |
+
+## Pricing
+
+FailSafe is open source and free to use.
+
+## Privacy
+
+- Local-first: core policy checks run on your machine
+- No network: standard mode never sends code anywhere
+- Opt-in reviews: external checks are always user-initiated
 
 ## Requirements
 
-- VS Code 1.74.0 or higher
-- (Optional) Ollama for LLM-assisted mode
+- VS Code 1.74.0 or later
+- Node.js 18+ (for development)
+
+## Contributing
+
+We welcome contributions. See `CONTRIBUTING.md`.
 
 ## Terms and Conditions (Beta)
 
@@ -69,9 +138,10 @@ By using this software, you acknowledge that it is experimental and agree to use
 
 ## License
 
-MIT - See [LICENSE](LICENSE) for details.
+MIT - See `LICENSE`.
 
 ## Links
 
-- [GitHub Repository](https://github.com/MythologIQ/failsafe)
-- [Issue Tracker](https://github.com/MythologIQ/failsafe/issues)
+- GitHub: https://github.com/MythologIQ/FailSafe
+- Documentation: FAILSAFE_SPECIFICATION.md
+- Issues: https://github.com/MythologIQ/FailSafe/issues

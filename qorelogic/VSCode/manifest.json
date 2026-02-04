@@ -2,7 +2,7 @@
   "id": "vscode",
   "name": "VS Code",
   "description": "VS Code host integration for FailSafe",
-  "sourceDir": "qorelogic/VSCode",
+  "sourceDir": "qorelogic/VSCode/.failsafe/config",
   "targetDir": ".failsafe/config",
   "detection": {
     "alwaysInstalled": true
@@ -10,7 +10,7 @@
   "governancePaths": [".failsafe/config/policies"],
   "templates": [
     {
-      "source": "qorelogic/VSCode/templates/VSCODE.md.tpl",
+      "source": "qorelogic/VSCode/.failsafe/config/templates/VSCODE.md.tpl",
       "output": "VSCODE.md"
     }
   ]

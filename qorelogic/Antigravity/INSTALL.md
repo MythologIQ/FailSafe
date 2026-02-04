@@ -5,6 +5,22 @@
 - Antigravity AI platform access
 - A project workspace where you want to apply the framework
 
+## Sentinel Daemon (Optional)
+
+The Sentinel daemon ships with the FailSafe VS Code extension. To install it from this repo:
+
+PowerShell:
+
+```powershell
+.\qorelogic\Antigravity\install-daemon.ps1 -WorkspaceRoot "C:\path\to\workspace"
+```
+
+macOS/Linux:
+
+```bash
+./qorelogic/Antigravity/install-daemon.sh --workspace /path/to/workspace
+```
+
 ## Installation Methods
 
 ### Method 1: Copy to Workspace (Recommended)
@@ -15,9 +31,11 @@ cd /path/to/your/workspace
 
 # Create the QoreLogic directory
 mkdir -p .qorelogic
+mkdir -p .agent/workflows
 
 # Copy the Antigravity framework
-cp -r /path/to/Q-DNA/.qorelogic/Antigravity/* .qorelogic/
+cp -r /path/to/FailSafe/qorelogic/Antigravity/.qorelogic/* .qorelogic/
+cp -r /path/to/FailSafe/qorelogic/Antigravity/.agent/workflows/* .agent/workflows/
 ```
 
 ### Method 2: Reference from Central Location
@@ -27,8 +45,11 @@ Configure Antigravity to reference the framework from a central location:
 ```yaml
 # In your workspace configuration
 qorelogic:
-  framework_path: /path/to/Q-DNA/.qorelogic/Antigravity
+  framework_path: /path/to/FailSafe/qorelogic/Antigravity/.qorelogic
   auto_load: true
+
+# Workflows are still loaded from the workspace path
+# .agent/workflows/*
 ```
 
 ## Configuration
@@ -63,35 +84,35 @@ orbits:
 # workspace.yaml
 workflows:
   aegis-bootstrap:
-    path: .qorelogic/workflows/aegis-bootstrap.yaml
+    path: .agent/workflows/aegis-bootstrap.yaml
     command: "/aegis-bootstrap"
 
   aegis-status:
-    path: .qorelogic/workflows/aegis-status.yaml
+    path: .agent/workflows/aegis-status.yaml
     command: "/aegis-status"
 
   aegis-gate:
-    path: .qorelogic/workflows/aegis-gate.yaml
+    path: .agent/workflows/aegis-gate.yaml
     command: "/aegis-gate"
 
   aegis-implement:
-    path: .qorelogic/workflows/aegis-implement.yaml
+    path: .agent/workflows/aegis-implement.yaml
     command: "/aegis-implement"
 
   aegis-refactor:
-    path: .qorelogic/workflows/aegis-refactor.yaml
+    path: .agent/workflows/aegis-refactor.yaml
     command: "/aegis-refactor"
 
   aegis-validate:
-    path: .qorelogic/workflows/aegis-validate.yaml
+    path: .agent/workflows/aegis-validate.yaml
     command: "/aegis-validate"
 
   aegis-substantiate:
-    path: .qorelogic/workflows/aegis-substantiate.yaml
+    path: .agent/workflows/aegis-substantiate.yaml
     command: "/aegis-substantiate"
 
   aegis-triage:
-    path: .qorelogic/workflows/aegis-triage.yaml
+    path: .agent/workflows/aegis-triage.yaml
     command: "/aegis-triage"
     auto_trigger: true  # Route all requests through triage
 ```
@@ -178,46 +199,21 @@ Directive: Run /aegis-bootstrap to initialize the A.E.G.I.S. lifecycle.
 ## Directory Structure After Installation
 
 ```
-your-workspace/
-├── .qorelogic/                  # QoreLogic framework
-│   ├── orbits/                  # Agent configurations
-│   │   ├── orbit-governor.json
-│   │   ├── orbit-judge.json
-│   │   ├── orbit-specialist.json
-│   │   └── orbit-sentinel.json
-│   ├── workflows/               # Execution pipelines
-│   │   ├── aegis-bootstrap.yaml
-│   │   ├── aegis-status.yaml
-│   │   ├── aegis-gate.yaml
-│   │   ├── aegis-implement.yaml
-│   │   ├── aegis-refactor.yaml
-│   │   ├── aegis-validate.yaml
-│   │   ├── aegis-substantiate.yaml
-│   │   └── aegis-triage.yaml
-│   ├── policies/                # Rule enforcement
-│   │   ├── kiss-razor.yaml
-│   │   ├── security-gate.yaml
-│   │   ├── merkle-integrity.yaml
-│   │   ├── orphan-detection.yaml
-│   │   └── cognitive-budget.yaml
-│   ├── templates/               # Document scaffolds
-│   │   ├── CONCEPT.md
-│   │   ├── ARCHITECTURE_PLAN.md
-│   │   ├── META_LEDGER.md
-│   │   ├── SYSTEM_STATE.md
-│   │   └── SHADOW_GENOME.md
-│   └── docs/                    # Supporting docs
-│       └── MERKLE_ITERATION_GUIDE.md
-├── .agent/                      # Runtime artifacts
-│   └── staging/
-│       └── AUDIT_REPORT.md
-├── docs/                        # Project documentation
-│   ├── CONCEPT.md
-│   ├── ARCHITECTURE_PLAN.md
-│   ├── META_LEDGER.md
-│   ├── SYSTEM_STATE.md
-│   └── SHADOW_GENOME.md
-└── src/                         # Your source code
+workspace/
+|-- .qorelogic/                  # Antigravity configuration
+|   |-- README.md
+|   |-- orbits/                   # Orbit configurations
+|   |-- policies/                 # Rule enforcement
+|   |-- skills/                   # Antigravity skills
+|   |-- templates/                # Document scaffolds
+|   `-- docs/                     # Supporting docs
+|       `-- MERKLE_ITERATION_GUIDE.md
+|-- .agent/                       # Runtime artifacts
+|   |-- workflows/                # Execution pipelines
+|   `-- staging/
+|       `-- AUDIT_REPORT.md
+|-- docs/                        # Project documentation
+|-- src/                         # Your source code
 ```
 
 ## Orbit Auto-Routing
@@ -249,7 +245,7 @@ Ensure workflows are registered in your workspace configuration.
 Check the Sentinel alerts for specific policy violation details.
 
 ### "Chain integrity failure"
-Run `/aegis-validate` to identify the break point. See MERKLE_ITERATION_GUIDE.md.
+Run `/aegis-validate` to identify the break point. See `.qorelogic/docs/MERKLE_ITERATION_GUIDE.md`.
 
 ### "Orbit routing failed"
 Verify file paths match expected patterns. Check Sentinel logs.
@@ -266,7 +262,8 @@ To upgrade to a newer version:
 cp .qorelogic/workspace.yaml .qorelogic/workspace.yaml.backup
 
 # Copy new version
-cp -r /path/to/new-Q-DNA/.qorelogic/Antigravity/* .qorelogic/
+cp -r /path/to/new-FailSafe/qorelogic/Antigravity/.qorelogic/* .qorelogic/
+cp -r /path/to/new-FailSafe/qorelogic/Antigravity/.agent/workflows/* .agent/workflows/
 
 # Restore customizations
 # (manually merge if needed)
@@ -279,8 +276,8 @@ To remove QoreLogic from a workspace:
 ```bash
 # Remove framework
 rm -rf .qorelogic/orbits
-rm -rf .qorelogic/workflows
 rm -rf .qorelogic/policies
+rm -rf .agent/workflows
 
 # Optionally remove project DNA
 rm -rf docs/META_LEDGER.md docs/CONCEPT.md docs/ARCHITECTURE_PLAN.md
@@ -293,6 +290,6 @@ rm -rf .agent/
 ## Support
 
 For issues:
-1. Check [MERKLE_ITERATION_GUIDE.md](docs/MERKLE_ITERATION_GUIDE.md)
-2. Review [README.md](README.md)
+1. Check `.qorelogic/docs/MERKLE_ITERATION_GUIDE.md`
+2. Review `.qorelogic/README.md`
 3. Run `/aegis-status` for diagnostics

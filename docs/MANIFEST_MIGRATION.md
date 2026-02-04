@@ -63,7 +63,7 @@ Ensure all required fields are present:
   "id": "antigravity",
   "name": "Antigravity / Gemini",
   "description": "Antigravity Orbit-based architecture",
-  "sourceDir": "qorelogic/Antigravity"
+  "sourceDir": "qorelogic/Antigravity/.qorelogic"
 }
 ```
 
@@ -148,7 +148,7 @@ If your system depends on other systems:
   "id": "antigravity",
   "name": "Antigravity / Gemini",
   "description": "Antigravity Orbit-based architecture",
-  "sourceDir": "qorelogic/Antigravity",
+  "sourceDir": "qorelogic/Antigravity/.qorelogic",
   "targetDir": ".qorelogic",
   "detection": {
     "folderExists": [".qorelogic/orbits"],
@@ -157,13 +157,13 @@ If your system depends on other systems:
   "governancePaths": [".qorelogic/orbits"],
   "extraCopies": [
     {
-      "source": "qorelogic/Antigravity/workflows",
+      "source": "qorelogic/Antigravity/.agent/workflows",
       "target": ".agent/workflows"
     }
   ],
   "templates": [
     {
-      "source": "qorelogic/Antigravity/templates/GEMINI.md.tpl",
+      "source": "qorelogic/Antigravity/.qorelogic/templates/GEMINI.md.tpl",
       "output": "GEMINI.md"
     }
   ]
@@ -178,7 +178,7 @@ If your system depends on other systems:
   "id": "antigravity",
   "name": "Antigravity / Gemini",
   "description": "Antigravity Orbit-based architecture",
-  "sourceDir": "qorelogic/Antigravity",
+  "sourceDir": "qorelogic/Antigravity/.qorelogic",
   "targetDir": ".qorelogic",
   "detection": {
     "folderExists": [".qorelogic/orbits"],
@@ -187,13 +187,13 @@ If your system depends on other systems:
   "governancePaths": [".qorelogic/orbits"],
   "extraCopies": [
     {
-      "source": "qorelogic/Antigravity/workflows",
+      "source": "qorelogic/Antigravity/.agent/workflows",
       "target": ".agent/workflows"
     }
   ],
   "templates": [
     {
-      "source": "qorelogic/Antigravity/templates/GEMINI.md.tpl",
+      "source": "qorelogic/Antigravity/.qorelogic/templates/GEMINI.md.tpl",
       "output": "GEMINI.md"
     }
   ]
@@ -210,7 +210,7 @@ If your system depends on other systems:
   "id": "antigravity",
   "name": "Antigravity / Gemini",
   "description": "Antigravity Orbit-based architecture",
-  "sourceDir": "qorelogic/Antigravity",
+  "sourceDir": "qorelogic/Antigravity/.qorelogic",
   "targetDir": ".qorelogic",
   "detection": {
     "folderExists": [".qorelogic/orbits"],
@@ -219,13 +219,13 @@ If your system depends on other systems:
   "governancePaths": [".qorelogic/orbits"],
   "extraCopies": [
     {
-      "source": "qorelogic/Antigravity/workflows",
+      "source": "qorelogic/Antigravity/.agent/workflows",
       "target": ".agent/workflows"
     }
   ],
   "templates": [
     {
-      "source": "qorelogic/Antigravity/templates/GEMINI.md.tpl",
+      "source": "qorelogic/Antigravity/.qorelogic/templates/GEMINI.md.tpl",
       "output": "GEMINI.md"
     }
   ],

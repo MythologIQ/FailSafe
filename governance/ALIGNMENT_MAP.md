@@ -26,7 +26,7 @@ This document maps existing FailSafe documentation and implementation artifacts 
 | :---------------------------------- | :---------------- | :----------------------------------------------- |
 | `FAILSAFE_SPECIFICATION.md`         | The Dojo          | **SUPPORTED**: Enforces development cadence.     |
 | `qorelogic/orbits/orbit-judge.json` | The Judge         | **SUPPORTED**: Adversarial audit and VETO power. |
-| `qorelogic/Antigravity/README.md`   | Governance Gates  | **SUPPORTED**: L1/L2/L3 risk grading.            |
+| `qorelogic/Antigravity/.qorelogic/README.md`   | Governance Gates  | **SUPPORTED**: L1/L2/L3 risk grading.            |
 
 ## AXIOM 4: THE LAW OF PERSISTENCE (Continuity over Time)
 

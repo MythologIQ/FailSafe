@@ -56,11 +56,11 @@ $envInfo = Detect-Environment
 foreach ($nuance in $envInfo.Nuances) { &$logger.Info("Applying Nuance: $nuance") }
 
 # 1. Antigravity
-Propagate-System "Antigravity" (Join-Path $sourceDir "Antigravity") (Join-Path $workspaceRoot ".qorelogic")
-Propagate-System "Workflows" (Join-Path $sourceDir "Antigravity\workflows") (Join-Path $workspaceRoot ".agent\workflows")
+Propagate-System "Antigravity" (Join-Path $sourceDir "Antigravity\.qorelogic") (Join-Path $workspaceRoot ".qorelogic")
+Propagate-System "Workflows" (Join-Path $sourceDir "Antigravity\.agent\workflows") (Join-Path $workspaceRoot ".agent\workflows")
 
 # 2. Claude
-Propagate-System "Claude" (Join-Path $sourceDir "Claude") (Join-Path $workspaceRoot ".claude")
+Propagate-System "Claude" (Join-Path $sourceDir "Claude\\.claude") (Join-Path $workspaceRoot ".claude")
 
 # 3. Cursor (Nuanced)
 Propagate-System "Cursor" (Join-Path $sourceDir "Cursor") (Join-Path $workspaceRoot ".cursor")
@@ -72,6 +72,6 @@ Propagate-System "Codex" (Join-Path $sourceDir "Codex") (Join-Path $workspaceRoo
 Propagate-System "KiloCode" (Join-Path $sourceDir "KiloCode") (Join-Path $workspaceRoot ".kilo")
 
 # 6. VS Code (FailSafe & Copilot)
-Propagate-System "VSCode" (Join-Path $sourceDir "VSCode") (Join-Path $workspaceRoot ".failsafe\config")
+Propagate-System "VSCode" (Join-Path $sourceDir "VSCode\.failsafe\config") (Join-Path $workspaceRoot ".failsafe\config")
 
 &$logger.Succ("Universal Framework Synchronization Complete.")

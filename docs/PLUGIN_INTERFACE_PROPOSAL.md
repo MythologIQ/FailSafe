@@ -354,7 +354,7 @@ export class AntigravityPlugin implements QoreLogicSystem {
     id: "antigravity",
     name: "Antigravity / Gemini",
     description: "Antigravity Orbit-based architecture",
-    sourceDir: "qorelogic/Antigravity",
+    sourceDir: "qorelogic/Antigravity/.qorelogic",
     targetDir: ".qorelogic",
     detection: {
       folderExists: [".qorelogic/orbits"],

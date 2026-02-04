@@ -31,7 +31,7 @@
     "sourceDir": {
       "type": "string",
       "description": "Source directory containing the governance framework files (relative to workspace root)",
-      "examples": ["qorelogic/Antigravity", "qorelogic/Claude"]
+      "examples": ["qorelogic/Antigravity/.qorelogic", "qorelogic/Claude/.claude", "qorelogic/VSCode/.failsafe/config"]
     },
     "targetDir": {
       "type": ["string", "null"],
@@ -92,7 +92,7 @@
           "source": {
             "type": "string",
             "description": "Source path (relative to workspace root)",
-            "examples": ["qorelogic/Antigravity/workflows", "qorelogic/Antigravity/skills"]
+            "examples": ["qorelogic/Antigravity/.agent/workflows", "qorelogic/Antigravity/.qorelogic/skills"]
           },
           "target": {
             "type": "string",
@@ -113,7 +113,7 @@
           "source": {
             "type": "string",
             "description": "Template source file path (relative to workspace root)",
-            "examples": ["qorelogic/Antigravity/templates/GEMINI.md.tpl"]
+            "examples": ["qorelogic/Antigravity/.qorelogic/templates/GEMINI.md.tpl"]
           },
           "output": {
             "type": "string",

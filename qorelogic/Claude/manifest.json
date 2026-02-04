@@ -2,17 +2,17 @@
   "id": "claude",
   "name": "Claude CLI",
   "description": "Claude Code CLI and related Anthropic agents",
-  "sourceDir": "qorelogic/Claude",
+  "sourceDir": "qorelogic/Claude/.claude",
   "targetDir": ".claude",
   "detection": {
     "folderExists": [".claude"],
     "extensionKeywords": ["claude", "anthropic"],
     "alwaysInstalled": false
   },
-  "governancePaths": [".claude/subagents", ".claude/policies"],
+  "governancePaths": [".claude/commands/agents", ".claude/commands"],
   "templates": [
     {
-      "source": "qorelogic/Claude/templates/CLAUDE.md.tpl",
+      "source": "qorelogic/Claude/.claude/templates/CLAUDE.md.tpl",
       "output": "CLAUDE.md"
     }
   ]

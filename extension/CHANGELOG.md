@@ -2,6 +2,12 @@
 
 All notable changes to the MythologIQ FailSafe extension will be documented in this file.
 
+## [1.0.6] - 2026-02-04
+
+### Fixed
+
+- Extension icon moved to root to improve marketplace display.
+
 ## [1.0.5] - 2026-02-04
 
 ### Changed

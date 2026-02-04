@@ -1,4 +1,6 @@
-﻿# FailSafe
+﻿<div align="center">
+
+# FailSafe
 
 **A kernel architecture for governing autonomous AI agents**
 
@@ -13,78 +15,58 @@
 
 > **If this project helps you, please star it!** It helps others discover FailSafe.
 
-[Getting Started](#getting-started) | [Specification](FAILSAFE_SPECIFICATION.md) | [VS Code Extension](https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe) | [Open VSX](https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe) | [Roadmap](ROADMAP.md)
+[Quick Start](#quick-example) | [Documentation](FAILSAFE_SPECIFICATION.md) | [VS Code Extension](https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe) | [Open VSX](https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe) | [Roadmap](ROADMAP.md)
 
 <br/>
 
+*FailSafe is open source. Fork it, open issues, and submit pull requests.*
+
 > **BETA NOTICE:** FailSafe is a beta product. Expect breaking changes and rough edges. See [Terms and Conditions (Beta)](#terms-and-conditions-beta).
->
-> **OPEN SOURCE:** FailSafe is MIT licensed. Fork it, open issues, and submit pull requests.
 
-FailSafe is an open-source VS Code extension and governance framework designed to harmonize AI agent behavior, prevent hallucinations, and enforce strict architectural standards across distributed development environments. Contributions and forks are welcome.
+</div>
 
 ---
 
-## The Three Pillars of FailSafe
-
-### 1. Genesis (The Experience Layer)
-
-The visual and interactive core of FailSafe.
-
-- **Living Graph**: Real-time visualization of your project's architectural integrity and AI influence.
-- **Cortex Stream**: A neurological activity feed showing every decision made by AI agents in your workspace.
-- **Feedback Loop**: Integrated community feedback mechanism to capture and resolve AI edge cases.
-
-### 2. QoreLogic (The Governance Layer)
-
-The "Constitution" for your AI agents.
-
-- **Universal Identity Propagation**: Seamlessly sync QoreLogic identities across any supported system via `qorelogic/{system}` manifests.
-- **SOA Ledger**: A Merkle-tree backed verifiable log of all high-stakes (L2/L3) AI decisions.
-- **Intent Service**: Cryptographic locking of the workspace - no AI writes are permitted without a verified "Intent."
-
-### 3. Sentinel (The Enforcement Layer)
-
-Active monitoring that never sleeps.
-
-- **Heuristic Audit Engine**: Blazing fast, local scanning of every file write to detect complexity bloat or security risks.
-- **Existence Engine**: Ensures AI-generated code doesn't just "look right," but actually exists and adheres to the physical constraints of the project.
-- **MCP Server Federation**: Standardized Model Context Protocol (MCP) server allowing external agents to interact with FailSafe's internal auditing tools.
+<p align="center">
+  <img src="icon.png" alt="FailSafe" width="220"/>
+</p>
 
 ---
 
-## Getting Started
+## What You Will Configure in 5 Minutes
 
-### Prerequisites
+```json
+{
+  "defaultTrust": 0.35,
+  "successDelta": 0.05,
+  "failureDelta": -0.10,
+  "violationPenalty": -0.25,
+  "probationFloor": 0.35,
+  "probationVerifications": 5,
+  "probationDays": 30,
+  "stages": {
+    "CBT": { "min": 0.0, "max": 0.5 },
+    "KBT": { "min": 0.5, "max": 0.8 },
+    "IBT": { "min": 0.8, "max": 1.0 }
+  }
+}
+```
 
-- **VS Code** 1.74.0+
-- **Node.js** 18+
-- **Ollama** (Optional, for LLM-assisted Sentinel audits)
+**Result:** Trust dynamics are enforced consistently across agents and integrations using the same policy file.
 
-### Installation
+---
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/MythologIQ/FailSafe.git
-   ```
-2. Navigate to the extension directory:
-   ```bash
-   cd FailSafe/extension
-   ```
-3. Install dependencies:
-   ```bash
-   npm install
-   ```
-4. Compile the project:
-   ```bash
-   npm run compile
-   ```
+## What Is FailSafe?
 
-### Running Locally
+FailSafe is an open-source VS Code extension and governance framework designed to harmonize AI agent behavior, prevent hallucinations, and enforce strict architectural standards across distributed development environments.
 
-- Press `F5` in VS Code to launch the **Extension Development Host**.
-- Use `Ctrl+Alt+F` to open the FailSafe Dashboard.
-- Use `Ctrl+Alt+A` to trigger a manual Sentinel Audit.
+---
+
+## The Idea
+
+**Prompt-based safety** asks the LLM to follow rules. The LLM decides whether to comply.
+
+**Kernel-based safety** intercepts actions before execution. The policy engine decides, not the LLM.
 
 ---
 
@@ -107,22 +89,68 @@ graph TD
 
 ---
 
-## Governance Models
+## Directory Structure
 
-The `/qorelogic` directory contains the source-of-truth instructions for all supported systems:
-
-- Each system is defined by a `manifest.json` and its templates/policies.
-- New systems can be added without core code changes.
+```
+FailSafe/
+├── .failsafe/                # Workspace configuration and policies
+├── qorelogic/                # System manifests and templates
+├── extension/                # VS Code extension source
+├── docs/                     # Reference documentation
+├── governance/               # Governance maps and alignment
+└── FAILSAFE_SPECIFICATION.md # Source of truth
+```
 
 ---
 
-## Security and Integrity
+## Core Systems
 
-FailSafe utilizes a **Triple-Pass Verification** strategy:
+| System | Layer | Description |
+|--------|-------|-------------|
+| Genesis | Experience | Dashboards and feedback loop |
+| QoreLogic | Governance | Policies, identity, and intent verification |
+| Sentinel | Enforcement | Audits, heuristics, and ledger logging |
 
-1. **Static Heuristics** (Instant)
-2. **Contextual Peer Review** (MCP/Tribunal)
-3. **Formal Ledger Logging** (Immutable)
+---
+
+## IDE Extension
+
+| Extension | Description |
+|-----------|-------------|
+| VS Code | Real-time policy checks, audits, and dashboards |
+
+---
+
+## Install
+
+### VS Code Marketplace
+
+Install from the VS Code Marketplace:
+
+https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe
+
+### Open VSX
+
+Install from Open VSX:
+
+https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe
+
+---
+
+## Quick Example
+
+```bash
+# Run FailSafe locally
+cd extension
+npm install
+npm run compile
+```
+
+---
+
+## Status
+
+This is a beta product. Expect breaking changes and rough edges.
 
 ---
 
@@ -132,5 +160,28 @@ FailSafe is a beta product. It is provided "as is" without warranties of any kin
 
 By using this software, you acknowledge that it is experimental and agree to use it at your own risk. MythologIQ is not liable for any loss of data, downtime, or other damages arising from use of this beta release.
 
-Developed by **MythologIQ**.
-Ensuring the future of AI development is safe, transparent, and beautiful.
+---
+
+## Contributing
+
+```bash
+git clone https://github.com/MythologIQ/FailSafe.git
+cd FailSafe
+npm install
+```
+
+---
+
+## License
+
+MIT - See [LICENSE](LICENSE)
+
+---
+
+<div align="center">
+
+**Open source governance for autonomous AI agents.**
+
+[GitHub](https://github.com/MythologIQ/FailSafe) | [Docs](FAILSAFE_SPECIFICATION.md)
+
+</div>

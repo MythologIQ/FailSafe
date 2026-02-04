@@ -1,6 +1,6 @@
 ﻿# MythologIQ FailSafe for VS Code
 
-Part of FailSafe - kernel-style governance for autonomous AI agents.
+Governance for AI-assisted development in VS Code.
 
 Local-first safety for AI coding assistants.
 

@@ -62,7 +62,7 @@ FailSafe is an open-source VS Code extension and governance framework designed t
 
 **Prompt-based safety** asks the LLM to follow rules. The LLM decides whether to comply.
 
-**Kernel-based safety** intercepts actions before execution. The policy engine decides, not the LLM.
+**Kernel-style safety** evaluates actions at the editor boundary using policies, heuristics, and optional LLM analysis.
 
 ---
 

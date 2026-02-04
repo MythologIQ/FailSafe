@@ -1,6 +1,8 @@
-# MythologIQ FailSafe
+﻿# MythologIQ FailSafe
 
 Complete AI governance for modern development. Real-time monitoring, trust verification, and audit trails for autonomous agent workflows.
+
+> **BETA NOTICE:** FailSafe is a beta product. Expect breaking changes and rough edges. See [Terms and Conditions (Beta)](#terms-and-conditions-beta).
 
 ## Features
 
@@ -10,7 +12,7 @@ Complete AI governance for modern development. Real-time monitoring, trust verif
 - Real-time file watching with intelligent event queuing
 
 ### Trust Engine
-- Progressive trust model based on Lewicki-Bunker research (CBT → KBT → IBT)
+- Progressive trust model based on Lewicki-Bunker research (CBT -> KBT -> IBT)
 - Agent reputation tracking with automatic trust adjustments
 - Quarantine system for policy violators
 
@@ -58,6 +60,12 @@ Access via **Settings > Extensions > FailSafe**
 
 - VS Code 1.74.0 or higher
 - (Optional) Ollama for LLM-assisted mode
+
+## Terms and Conditions (Beta)
+
+FailSafe is a beta product. It is provided "as is" without warranties of any kind, and may contain bugs, incomplete features, or breaking changes.
+
+By using this software, you acknowledge that it is experimental and agree to use it at your own risk. MythologIQ is not liable for any loss of data, downtime, or other damages arising from use of this beta release.
 
 ## License
 

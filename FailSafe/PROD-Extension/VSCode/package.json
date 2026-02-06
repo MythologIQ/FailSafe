@@ -2,7 +2,7 @@
   "name": "mythologiq-failsafe",
   "displayName": "MythologIQ: FailSafe (feat. QoreLogic)",
   "description": "Token Efficient Governance for AI-assisted development in VSCode or Cursor",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "publisher": "MythologIQ",
   "license": "MIT",
   "repository": {

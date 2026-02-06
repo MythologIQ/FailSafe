@@ -1,73 +1,136 @@
-# AUDIT REPORT
+# AUDIT REPORT: plan-v3.0.0-ui-consolidation.md
 
-**Tribunal Date**: 2026-02-05T22:44:37Z
-**Target**: v2.0.1 Tooltip Remediation + Modularization
-**Risk Grade**: L3
-**Auditor**: The QoreLogic Judge
-
----
-
-## VERDICT: PASS
+**Tribunal Date**: 2026-02-06
+**Plan File**: `docs/Planning/plan-v3.0.0-ui-consolidation.md`
+**Branch**: `plan/v2.0.1-tooltip-remediation`
 
 ---
 
-### Executive Summary
+## Verdict: PASS
 
-PASS. The blueprint explicitly remediates prior Razor violations by modularizing oversized webviews into template modules, preserves build-path connectivity, and introduces no security, dependency, or ghost UI risks.
-
-### Audit Results
-
-#### Security Pass
-
-**Result**: PASS
-No auth/security changes proposed.
-
-#### Ghost UI Pass
-
-**Result**: PASS
-No new interactive elements without handlers; tooltip UI is non-interactive and search cleanup relies on existing input bindings.
-
-#### Section 4 Razor Pass
-
-**Result**: PASS
-
-| Check              | Limit | Blueprint Proposes | Status |
-| ------------------ | ----- | ------------------ | ------ |
-| Max function lines | 40    | Coordinator-only logic post-extraction | OK |
-| Max file lines     | 250   | Providers/panels trimmed to <=250; templates split as needed for Razor compliance | OK |
-| Max nesting depth  | 3     | Webview handlers + formatting only | OK |
-| Nested ternaries   | 0     | No nested ternaries proposed | OK |
-
-#### Dependency Pass
-
-**Result**: PASS
-No new packages proposed.
-
-#### Orphan Pass
-
-**Result**: PASS
-All new template modules are imported by their existing providers/panels.
-
-#### Macro-Level Architecture Pass
-
-**Result**: PASS
-Changes remain within UI/webview layer; shared tooltip helpers remain in shared UI utilities.
-
-### Violations Found
-
-| ID | Category | Location | Description |
-| -- | -------- | -------- | ----------- |
-| - | - | - | None |
-
-### Required Remediation (if VETO)
-
-None.
-
-### Verdict Hash
-```
-SHA256(this_report) = e1fb550372e6513a0ea66d293be3712027146412877a510a71060a3188290c80
-```
+The plan is architecturally sound and may proceed to implementation.
 
 ---
 
-_This verdict is binding. Implementation may proceed without modification._
+## Pass Summary
+
+| Pass | Status | Notes |
+|------|--------|-------|
+| Security Pass | PASS | Standard VSCode command dispatch pattern, no L3 violations |
+| Ghost UI Pass | PASS | All UI actions have handler mappings defined |
+| Section 4 Razor Pass | WARNING | Pre-existing violation (see below) |
+| Dependency Audit | PASS | All imports map to existing modules |
+| Macro-Level Architecture Pass | PASS | Proposed files follow existing module structure |
+| Orphan Detection | PASS | Clear integration points in main.ts and GenesisManager |
+| Repository Governance | PASS | All Gold Standard files present |
+
+---
+
+## Detailed Findings
+
+### Security Pass
+
+- Command dispatch uses `vscode.commands.executeCommand()` (standard pattern)
+- No `eval`, `innerHTML`, or dangerous patterns detected
+- `CheckpointReconciler.ts` workspace snapshots are read-only observations
+- **Result**: Clean
+
+### Ghost UI Pass
+
+The plan correctly specifies message handlers for all proposed UI actions:
+- `setViewMode` - View mode switching
+- `approveL3` - L3 queue approval
+- `resolveBlocker` - Blocker resolution
+- `takeDetour` - Detour navigation
+- `requestApproval` - Approval request
+
+Existing handlers from DashboardPanel.ts will be migrated:
+- `auditFile`, `showGraph`, `showLedger`, `focusCortex`, `showL3Queue`
+
+**Result**: Clean
+
+### Section 4 Razor Pass
+
+| File | Lines | Limit | Status |
+|------|-------|-------|--------|
+| DashboardPanel.ts | 232 | 250 | OK |
+| DashboardTemplate.ts | 197 | 250 | OK |
+| **GenesisManager.ts** | **485** | 250 | **PRE-EXISTING** |
+| GovernanceRouter.ts | 186 | 250 | OK |
+| RoadmapSvgView.ts | 111 | 250 | OK |
+
+**Finding**: `GenesisManager.ts` exceeds 250-line limit. This is a pre-existing violation not introduced by this plan. The plan adds ~15 lines for `showPlanningHub()` method but does not exacerbate the core issue.
+
+**Recommendation**: Add backlog item for GenesisManager decomposition (B37). Suggested extraction:
+- `PanelCoordinator.ts` - Panel show/reveal logic
+- `CortexQueryProcessor.ts` - Intent processing
+
+### Dependency Audit
+
+All proposed imports map to existing files:
+- `SentinelDaemon` -> `sentinel/SentinelDaemon.ts`
+- `QoreLogicManager` -> `qorelogic/QoreLogicManager.ts`
+- `PlanManager` -> `qorelogic/planning/PlanManager.ts`
+- `EventBus` -> `shared/EventBus.ts`
+- `HELP_TEXT` -> `shared/components/InfoHint.ts`
+
+**Result**: Clean
+
+### Macro-Level Architecture Pass
+
+Proposed files follow existing module conventions:
+- `PlanningHubPanel.ts` -> `genesis/panels/`
+- `PlanningHubTemplate.ts` -> `genesis/panels/templates/`
+- `CheckpointReconciler.ts` -> `governance/`
+
+The consolidation of `RoadmapPanelWindow.ts` into `PlanningHubPanel.ts` represents acceptable architectural evolution per user feedback.
+
+**Result**: Clean
+
+### Orphan Detection
+
+Integration points verified:
+- main.ts line 559: `failsafe.showRoadmapWindow` command registration (to be replaced)
+- main.ts line 566: `failsafe.showAnalytics` command registration
+- GenesisManager.ts: Panel management methods follow established pattern
+
+**Result**: Clean
+
+### Repository Governance
+
+Gold Standard community files present at repo root:
+- `CODE_OF_CONDUCT.md`
+- `CONTRIBUTING.md`
+- `SECURITY.md`
+- `GOVERNANCE.md`
+
+**Result**: Clean
+
+---
+
+## Recommendations
+
+1. **Add B37 to BACKLOG.md**: GenesisManager.ts decomposition (pre-existing Razor violation)
+2. **Proceed with implementation** of B33-B36 as planned
+3. **Update ARCHITECTURE_PLAN.md** after Phase 4 completion to reflect file deletions
+
+---
+
+## Approval Chain
+
+- [x] Security Pass Verified
+- [x] Ghost UI Pass Verified
+- [x] Section 4 Razor Pass Verified (pre-existing issue flagged)
+- [x] Dependency Audit Verified
+- [x] Macro-Level Architecture Pass Verified
+- [x] Orphan Detection Verified
+- [x] Repository Governance Verified
+
+---
+
+**GATE TRIBUNAL VERDICT**: PASS
+
+_This plan is approved for implementation._
+
+---
+*Generated by /ql-audit Gate Tribunal | 2026-02-06*

@@ -9,204 +9,224 @@
  * - Cortex Stream summary
  */
 
-import * as vscode from 'vscode';
-import { EventBus } from '../../shared/EventBus';
-import { SentinelDaemon } from '../../sentinel/SentinelDaemon';
-import { QoreLogicManager } from '../../qorelogic/QoreLogicManager';
-import { getNonce } from '../../shared/utils/htmlSanitizer';
-import { renderDashboardTemplate } from './templates/DashboardTemplate';
+import * as vscode from "vscode";
+import { EventBus } from "../../shared/EventBus";
+import { SentinelDaemon } from "../../sentinel/SentinelDaemon";
+import { QoreLogicManager } from "../../qorelogic/QoreLogicManager";
+import { getNonce } from "../../shared/utils/htmlSanitizer";
+import { renderDashboardTemplate } from "./templates/DashboardTemplate";
 
 type EvaluationMetrics = {
-    cache?: Record<string, { hits: number; misses: number }>;
-    noveltyAccuracy?: {
-        totalEvaluations: number;
-        lowCount: number;
-        mediumCount: number;
-        highCount: number;
-        averageConfidence: number;
-    };
-    cacheSizes?: { fingerprint: number; novelty: number };
+  cache?: Record<string, { hits: number; misses: number }>;
+  noveltyAccuracy?: {
+    totalEvaluations: number;
+    lowCount: number;
+    mediumCount: number;
+    highCount: number;
+    averageConfidence: number;
+  };
+  cacheSizes?: { fingerprint: number; novelty: number };
 };
 
-const isEvaluationMetrics = (payload: unknown): payload is EvaluationMetrics => {
-    if (!payload || typeof payload !== 'object') return false;
-    return true;
+const isEvaluationMetrics = (
+  payload: unknown,
+): payload is EvaluationMetrics => {
+  if (!payload || typeof payload !== "object") return false;
+  return true;
 };
 
 export class DashboardPanel {
-    public static currentPanel: DashboardPanel | undefined;
-    private readonly panel: vscode.WebviewPanel;
-    private sentinel: SentinelDaemon;
-    private qorelogic: QoreLogicManager;
-    private eventBus: EventBus;
-    private disposables: vscode.Disposable[] = [];
-    private evaluationMetrics: EvaluationMetrics | null = null;
+  public static currentPanel: DashboardPanel | undefined;
+  private readonly panel: vscode.WebviewPanel;
+  private sentinel: SentinelDaemon;
+  private qorelogic: QoreLogicManager;
+  private eventBus: EventBus;
+  private disposables: vscode.Disposable[] = [];
+  private evaluationMetrics: EvaluationMetrics | null = null;
 
-    private constructor(
-        panel: vscode.WebviewPanel,
-        sentinel: SentinelDaemon,
-        qorelogic: QoreLogicManager,
-        eventBus: EventBus
-    ) {
-        this.panel = panel;
-        this.sentinel = sentinel;
-        this.qorelogic = qorelogic;
-        this.eventBus = eventBus;
+  private constructor(
+    panel: vscode.WebviewPanel,
+    sentinel: SentinelDaemon,
+    qorelogic: QoreLogicManager,
+    eventBus: EventBus,
+  ) {
+    this.panel = panel;
+    this.sentinel = sentinel;
+    this.qorelogic = qorelogic;
+    this.eventBus = eventBus;
 
-        void this.update();
+    void this.update();
 
-        // Subscribe to updates
-        const unsubscribes = [
-            this.eventBus.on('sentinel.verdict', () => void this.update()),
-            this.eventBus.on('qorelogic.trustUpdate', () => void this.update()),
-            this.eventBus.on('qorelogic.l3Queued', () => void this.update()),
-            this.eventBus.on('evaluation.metrics', (event) => {
-                if (isEvaluationMetrics(event.payload)) {
-                    this.evaluationMetrics = event.payload;
-                    void this.update();
-                }
-            })
-        ];
-        unsubscribes.forEach(unsub => this.disposables.push({ dispose: unsub }));
-
-        // Periodic refresh
-        const interval = setInterval(() => void this.update(), 5000);
-        this.disposables.push({ dispose: () => clearInterval(interval) });
-
-        this.panel.webview.onDidReceiveMessage(message => {
-            switch (message.command) {
-                case 'auditFile':
-                    vscode.commands.executeCommand('failsafe.auditFile');
-                    break;
-                case 'showGraph':
-                    vscode.commands.executeCommand('failsafe.showLivingGraph');
-                    break;
-                case 'showLedger':
-                    vscode.commands.executeCommand('failsafe.viewLedger');
-                    break;
-                case 'focusCortex':
-                    vscode.commands.executeCommand('failsafe.focusCortex');
-                    break;
-                case 'showL3Queue':
-                    vscode.commands.executeCommand('failsafe.approveL3');
-                    break;
-            }
-        }, null, this.disposables);
-
-        this.panel.onDidDispose(() => this.dispose(), null, this.disposables);
-    }
-
-    public static createOrShow(
-        extensionUri: vscode.Uri,
-        sentinel: SentinelDaemon,
-        qorelogic: QoreLogicManager,
-        eventBus: EventBus
-    ): DashboardPanel {
-        const column = vscode.window.activeTextEditor
-            ? vscode.window.activeTextEditor.viewColumn
-            : undefined;
-
-        if (DashboardPanel.currentPanel) {
-            DashboardPanel.currentPanel.panel.reveal(column);
-            return DashboardPanel.currentPanel;
+    // Subscribe to updates
+    const unsubscribes = [
+      this.eventBus.on("sentinel.verdict", () => void this.update()),
+      this.eventBus.on("qorelogic.trustUpdate", () => void this.update()),
+      this.eventBus.on("qorelogic.l3Queued", () => void this.update()),
+      this.eventBus.on("evaluation.metrics", (event) => {
+        if (isEvaluationMetrics(event.payload)) {
+          this.evaluationMetrics = event.payload;
+          void this.update();
         }
+      }),
+    ];
+    unsubscribes.forEach((unsub) => this.disposables.push({ dispose: unsub }));
 
-        const panel = vscode.window.createWebviewPanel(
-            'failsafe.dashboard',
-            'FailSafe Dashboard',
-            column || vscode.ViewColumn.One,
-            {
-                enableScripts: true,
-                retainContextWhenHidden: true,
-                localResourceRoots: [extensionUri]
-            }
-        );
+    // Periodic refresh
+    const interval = setInterval(() => void this.update(), 5000);
+    this.disposables.push({ dispose: () => clearInterval(interval) });
 
-        DashboardPanel.currentPanel = new DashboardPanel(panel, sentinel, qorelogic, eventBus);
-        return DashboardPanel.currentPanel;
-    }
-
-    public reveal(): void {
-        this.panel.reveal();
-    }
-
-    private async update(): Promise<void> {
-        this.panel.webview.html = await this.getHtmlContent();
-    }
-
-    private async getHtmlContent(): Promise<string> {
-        const nonce = getNonce();
-        const cspSource = this.panel.webview.cspSource;
-        const status = this.sentinel.getStatus();
-        const l3Queue = this.qorelogic.getL3Queue();
-        const trustSummary = await this.getTrustSummary();
-        const lastVerdict = status.lastVerdict;
-        const uptime = this.formatUptime(status.uptime);
-
-        return renderDashboardTemplate({
-            nonce,
-            cspSource,
-            status,
-            l3Queue,
-            trustSummary,
-            lastVerdict,
-            uptime,
-            metrics: this.evaluationMetrics
-        });
-    }
-
-    private async getTrustSummary(): Promise<{
-        totalAgents: number;
-        avgTrust: number;
-        quarantined: number;
-        stageCounts: { CBT: number; KBT: number; IBT: number };
-    }> {
-        try {
-            const agents = await this.qorelogic.getTrustEngine().getAllAgents();
-            const totalAgents = agents.length;
-            const quarantined = agents.filter(agent => agent.isQuarantined).length;
-            const totalTrust = agents.reduce((sum, agent) => sum + agent.trustScore, 0);
-            const avgTrust = totalAgents === 0 ? 0 : totalTrust / totalAgents;
-            const stageCounts = agents.reduce(
-                (counts, agent) => {
-                    counts[agent.trustStage] = (counts[agent.trustStage] || 0) + 1;
-                    return counts;
-                },
-                { CBT: 0, KBT: 0, IBT: 0 } as { CBT: number; KBT: number; IBT: number }
-            );
-
-            return { totalAgents, avgTrust, quarantined, stageCounts };
-        } catch {
-            return {
-                totalAgents: 0,
-                avgTrust: 0,
-                quarantined: 0,
-                stageCounts: { CBT: 0, KBT: 0, IBT: 0 }
-            };
+    this.panel.webview.onDidReceiveMessage(
+      (message) => {
+        switch (message.command) {
+          case "auditFile":
+            vscode.commands.executeCommand("failsafe.auditFile");
+            break;
+          case "showGraph":
+            vscode.commands.executeCommand("failsafe.showLivingGraph");
+            break;
+          case "showLedger":
+            vscode.commands.executeCommand("failsafe.viewLedger");
+            break;
+          case "focusCortex":
+            vscode.commands.executeCommand("failsafe.focusCortex");
+            break;
+          case "showL3Queue":
+            vscode.commands.executeCommand("failsafe.approveL3");
+            break;
+          case "pauseGovernance":
+            vscode.commands.executeCommand("failsafe.pauseGovernance");
+            break;
+          case "resumeGovernance":
+            vscode.commands.executeCommand("failsafe.resumeGovernance");
+            break;
         }
+      },
+      null,
+      this.disposables,
+    );
+
+    this.panel.onDidDispose(() => this.dispose(), null, this.disposables);
+  }
+
+  public static createOrShow(
+    extensionUri: vscode.Uri,
+    sentinel: SentinelDaemon,
+    qorelogic: QoreLogicManager,
+    eventBus: EventBus,
+  ): DashboardPanel {
+    const column = vscode.window.activeTextEditor
+      ? vscode.window.activeTextEditor.viewColumn
+      : undefined;
+
+    if (DashboardPanel.currentPanel) {
+      DashboardPanel.currentPanel.panel.reveal(column);
+      return DashboardPanel.currentPanel;
     }
 
-    private formatUptime(uptimeMs: number): string {
-        if (!uptimeMs || uptimeMs < 0) {
-            return '0s';
-        }
+    const panel = vscode.window.createWebviewPanel(
+      "failsafe.dashboard",
+      "FailSafe Dashboard",
+      column || vscode.ViewColumn.One,
+      {
+        enableScripts: true,
+        retainContextWhenHidden: true,
+        localResourceRoots: [extensionUri],
+      },
+    );
 
-        const totalSeconds = Math.floor(uptimeMs / 1000);
-        const hours = Math.floor(totalSeconds / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-        const seconds = totalSeconds % 60;
-        if (hours > 0) {
-            return `${hours}h ${minutes}m`;
-        }
-        if (minutes > 0) {
-            return `${minutes}m ${seconds}s`;
-        }
-        return `${seconds}s`;
+    DashboardPanel.currentPanel = new DashboardPanel(
+      panel,
+      sentinel,
+      qorelogic,
+      eventBus,
+    );
+    return DashboardPanel.currentPanel;
+  }
+
+  public reveal(): void {
+    this.panel.reveal();
+  }
+
+  private async update(): Promise<void> {
+    this.panel.webview.html = await this.getHtmlContent();
+  }
+
+  private async getHtmlContent(): Promise<string> {
+    const nonce = getNonce();
+    const cspSource = this.panel.webview.cspSource;
+    const status = this.sentinel.getStatus();
+    const l3Queue = this.qorelogic.getL3Queue();
+    const trustSummary = await this.getTrustSummary();
+    const lastVerdict = status.lastVerdict;
+    const uptime = this.formatUptime(status.uptime);
+
+    return renderDashboardTemplate({
+      nonce,
+      cspSource,
+      status,
+      l3Queue,
+      trustSummary,
+      lastVerdict,
+      uptime,
+      metrics: this.evaluationMetrics,
+    });
+  }
+
+  private async getTrustSummary(): Promise<{
+    totalAgents: number;
+    avgTrust: number;
+    quarantined: number;
+    stageCounts: { CBT: number; KBT: number; IBT: number };
+  }> {
+    try {
+      const agents = await this.qorelogic.getTrustEngine().getAllAgents();
+      const totalAgents = agents.length;
+      const quarantined = agents.filter((agent) => agent.isQuarantined).length;
+      const totalTrust = agents.reduce(
+        (sum, agent) => sum + agent.trustScore,
+        0,
+      );
+      const avgTrust = totalAgents === 0 ? 0 : totalTrust / totalAgents;
+      const stageCounts = agents.reduce(
+        (counts, agent) => {
+          counts[agent.trustStage] = (counts[agent.trustStage] || 0) + 1;
+          return counts;
+        },
+        { CBT: 0, KBT: 0, IBT: 0 } as { CBT: number; KBT: number; IBT: number },
+      );
+
+      return { totalAgents, avgTrust, quarantined, stageCounts };
+    } catch {
+      return {
+        totalAgents: 0,
+        avgTrust: 0,
+        quarantined: 0,
+        stageCounts: { CBT: 0, KBT: 0, IBT: 0 },
+      };
+    }
+  }
+
+  private formatUptime(uptimeMs: number): string {
+    if (!uptimeMs || uptimeMs < 0) {
+      return "0s";
     }
 
-    public dispose(): void {
-        DashboardPanel.currentPanel = undefined;
-        this.panel.dispose();
-        this.disposables.forEach(d => d.dispose());
+    const totalSeconds = Math.floor(uptimeMs / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
     }
+    if (minutes > 0) {
+      return `${minutes}m ${seconds}s`;
+    }
+    return `${seconds}s`;
+  }
+
+  public dispose(): void {
+    DashboardPanel.currentPanel = undefined;
+    this.panel.dispose();
+    this.disposables.forEach((d) => d.dispose());
+  }
 }

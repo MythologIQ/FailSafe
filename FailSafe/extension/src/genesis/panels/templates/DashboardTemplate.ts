@@ -1,36 +1,43 @@
-import { L3ApprovalRequest, SentinelStatus, SentinelVerdict } from '../../../shared/types';
-import { escapeHtml } from '../../../shared/utils/htmlSanitizer';
-import { HELP_TEXT } from '../../../shared/components/InfoHint';
-import { tooltipAttrs, TOOLTIP_STYLES } from '../../../shared/components/Tooltip';
+import {
+  L3ApprovalRequest,
+  SentinelStatus,
+  SentinelVerdict,
+} from "../../../shared/types";
+import { escapeHtml } from "../../../shared/utils/htmlSanitizer";
+import { HELP_TEXT } from "../../../shared/components/InfoHint";
+import {
+  tooltipAttrs,
+  TOOLTIP_STYLES,
+} from "../../../shared/components/Tooltip";
 
 type EvaluationMetrics = {
-    cache?: Record<string, { hits: number; misses: number }>;
-    noveltyAccuracy?: {
-        totalEvaluations: number;
-        lowCount: number;
-        mediumCount: number;
-        highCount: number;
-        averageConfidence: number;
-    };
-    cacheSizes?: { fingerprint: number; novelty: number };
+  cache?: Record<string, { hits: number; misses: number }>;
+  noveltyAccuracy?: {
+    totalEvaluations: number;
+    lowCount: number;
+    mediumCount: number;
+    highCount: number;
+    averageConfidence: number;
+  };
+  cacheSizes?: { fingerprint: number; novelty: number };
 };
 
 type TrustSummary = {
-    totalAgents: number;
-    avgTrust: number;
-    quarantined: number;
-    stageCounts: { CBT: number; KBT: number; IBT: number };
+  totalAgents: number;
+  avgTrust: number;
+  quarantined: number;
+  stageCounts: { CBT: number; KBT: number; IBT: number };
 };
 
 export type DashboardViewModel = {
-    nonce: string;
-    cspSource: string;
-    status: SentinelStatus;
-    l3Queue: L3ApprovalRequest[];
-    trustSummary: TrustSummary;
-    lastVerdict: SentinelVerdict | null;
-    uptime: string;
-    metrics: EvaluationMetrics | null;
+  nonce: string;
+  cspSource: string;
+  status: SentinelStatus;
+  l3Queue: L3ApprovalRequest[];
+  trustSummary: TrustSummary;
+  lastVerdict: SentinelVerdict | null;
+  uptime: string;
+  metrics: EvaluationMetrics | null;
 };
 
 const DASHBOARD_TEMPLATE = `<!DOCTYPE html>
@@ -90,58 +97,95 @@ const DASHBOARD_TEMPLATE = `<!DOCTYPE html>
 </body>
 </html>`;
 
-const applyTemplate = (template: string, tokens: Record<string, string>): string => {
-    return Object.entries(tokens).reduce((result, [key, value]) => result.split(key).join(value), template);
+const applyTemplate = (
+  template: string,
+  tokens: Record<string, string>,
+): string => {
+  return Object.entries(tokens).reduce(
+    (result, [key, value]) => result.split(key).join(value),
+    template,
+  );
 };
 
 function renderSentinelCard(model: DashboardViewModel): string {
-    const status = model.status;
-    const lastVerdict = model.lastVerdict;
-    const verdictLabel = lastVerdict ? `${escapeHtml(lastVerdict.decision)} (${escapeHtml(lastVerdict.riskGrade)})` : 'None';
-    return `<div class="card"><div class="card-title">Sentinel Status</div><div class="metric"><span class="metric-label" ${tooltipAttrs(HELP_TEXT.sentinelMode)}>Mode</span><span class="metric-value">${escapeHtml(status.mode)}</span></div><div class="metric"><span class="metric-label" ${tooltipAttrs(HELP_TEXT.operationalMode)}>Operational Mode</span><span class="metric-value">${escapeHtml(status.operationalMode.toUpperCase())}</span></div><div class="metric"><span class="metric-label">Uptime</span><span class="metric-value">${escapeHtml(model.uptime)}</span></div><div class="metric"><span class="metric-label">Files Watched</span><span class="metric-value">${status.filesWatched}</span></div><div class="metric"><span class="metric-label">Events Processed</span><span class="metric-value">${status.eventsProcessed}</span></div><div class="metric"><span class="metric-label">Queue Depth</span><span class="metric-value">${status.queueDepth}</span></div><div class="metric"><span class="metric-label">LLM Available</span><span class="metric-value">${status.llmAvailable ? 'Yes' : 'No'}</span></div><div class="metric"><span class="metric-label" ${tooltipAttrs(HELP_TEXT.verdictDecision)}>Last Verdict</span><span class="metric-value">${verdictLabel}</span></div></div>`;
+  const status = model.status;
+  const lastVerdict = model.lastVerdict;
+  const verdictLabel = lastVerdict
+    ? `${escapeHtml(lastVerdict.decision)} (${escapeHtml(lastVerdict.riskGrade)})`
+    : "None";
+  return `<div class="card"><div class="card-title">Sentinel Status</div><div class="metric"><span class="metric-label" ${tooltipAttrs(HELP_TEXT.sentinelMode)}>Mode</span><span class="metric-value">${escapeHtml(status.mode)}</span></div><div class="metric"><span class="metric-label" ${tooltipAttrs(HELP_TEXT.operationalMode)}>Operational Mode</span><span class="metric-value">${escapeHtml(status.operationalMode.toUpperCase())}</span></div><div class="metric"><span class="metric-label">Uptime</span><span class="metric-value">${escapeHtml(model.uptime)}</span></div><div class="metric"><span class="metric-label">Files Watched</span><span class="metric-value">${status.filesWatched}</span></div><div class="metric"><span class="metric-label">Events Processed</span><span class="metric-value">${status.eventsProcessed}</span></div><div class="metric"><span class="metric-label">Queue Depth</span><span class="metric-value">${status.queueDepth}</span></div><div class="metric"><span class="metric-label">LLM Available</span><span class="metric-value">${status.llmAvailable ? "Yes" : "No"}</span></div><div class="metric"><span class="metric-label" ${tooltipAttrs(HELP_TEXT.verdictDecision)}>Last Verdict</span><span class="metric-value">${verdictLabel}</span></div></div>`;
 }
 
 function renderTrustCard(model: DashboardViewModel): string {
-    const trust = model.trustSummary;
-    const trustPercent = (trust.avgTrust * 100).toFixed(0);
-    return `<div class="card"><div class="card-title">QoreLogic Trust</div><div class="metric"><span class="metric-label">Agents</span><span class="metric-value">${trust.totalAgents}</span></div><div class="metric"><span class="metric-label" ${tooltipAttrs(HELP_TEXT.avgTrust)}>Avg trust</span><span class="metric-value">${trustPercent}%</span></div><div class="trust-bar"><div class="trust-fill" style="width: ${trustPercent}%"></div></div><div class="metric"><span class="metric-label">Quarantined</span><span class="metric-value">${trust.quarantined}</span></div><div class="metric"><span class="metric-label" ${tooltipAttrs(HELP_TEXT.trustStages)}>Stages (CBT/KBT/IBT)</span><span class="metric-value">${trust.stageCounts.CBT}/${trust.stageCounts.KBT}/${trust.stageCounts.IBT}</span></div></div>`;
+  const trust = model.trustSummary;
+  const trustPercent = (trust.avgTrust * 100).toFixed(0);
+  return `<div class="card"><div class="card-title">QoreLogic Trust</div><div class="metric"><span class="metric-label">Agents</span><span class="metric-value">${trust.totalAgents}</span></div><div class="metric"><span class="metric-label" ${tooltipAttrs(HELP_TEXT.avgTrust)}>Avg trust</span><span class="metric-value">${trustPercent}%</span></div><div class="trust-bar"><div class="trust-fill" style="width: ${trustPercent}%"></div></div><div class="metric"><span class="metric-label">Quarantined</span><span class="metric-value">${trust.quarantined}</span></div><div class="metric"><span class="metric-label" ${tooltipAttrs(HELP_TEXT.trustStages)}>Stages (CBT/KBT/IBT)</span><span class="metric-value">${trust.stageCounts.CBT}/${trust.stageCounts.KBT}/${trust.stageCounts.IBT}</span></div></div>`;
 }
 
 function renderL3Card(model: DashboardViewModel): string {
-    const queueItems = model.l3Queue.length === 0
-        ? '<div style="color: var(--vscode-descriptionForeground); font-style: italic;">No pending approvals</div>'
-        : model.l3Queue.slice(0, 5).map(item => `\n                    <div class="l3-item">\n                        <strong>${escapeHtml(item.filePath.split(/[/\\]/).pop())}</strong><br>\n                        <span style="color: var(--vscode-descriptionForeground); font-size: 10px;">\n                            Risk: ${escapeHtml(item.riskGrade)} | Agent Trust: ${(item.agentTrust * 100).toFixed(0)}%\n                        </span>\n                    </div>\n                `).join('');
-    const actionButton = model.l3Queue.length > 0 ? '<button class="action-btn" onclick="showL3Queue()">Review Queue</button>' : '';
-    return `<div class="card"><div class="card-title" ${tooltipAttrs(HELP_TEXT.l3Queue)}>L3 Approval Queue (${model.l3Queue.length})</div>${queueItems}${actionButton}</div>`;
+  const queueItems =
+    model.l3Queue.length === 0
+      ? '<div style="color: var(--vscode-descriptionForeground); font-style: italic;">No pending approvals</div>'
+      : model.l3Queue
+          .slice(0, 5)
+          .map(
+            (item) =>
+              `\n                    <div class="l3-item">\n                        <strong>${escapeHtml(item.filePath.split(/[/\\]/).pop())}</strong><br>\n                        <span style="color: var(--vscode-descriptionForeground); font-size: 10px;">\n                            Risk: ${escapeHtml(item.riskGrade)} | Agent Trust: ${(item.agentTrust * 100).toFixed(0)}%\n                        </span>\n                    </div>\n                `,
+          )
+          .join("");
+  const actionButton =
+    model.l3Queue.length > 0
+      ? '<button class="action-btn" onclick="showL3Queue()">Review Queue</button>'
+      : "";
+  return `<div class="card"><div class="card-title" ${tooltipAttrs(HELP_TEXT.l3Queue)}>L3 Approval Queue (${model.l3Queue.length})</div>${queueItems}${actionButton}</div>`;
 }
 
 function renderActionsCard(): string {
-    return `<div class="card"><div class="card-title">Quick Actions</div><button class="action-btn secondary" onclick="auditFile()">Audit Current File</button><button class="action-btn secondary" onclick="showGraph()">Open Living Graph</button><button class="action-btn secondary" onclick="showLedger()">View SOA Ledger</button><button class="action-btn secondary" onclick="focusCortex()">Cortex Query</button></div>`;
+  return `<div class="card"><div class="card-title">Quick Actions</div><button class="action-btn secondary" onclick="auditFile()">Audit Current File</button><button class="action-btn secondary" onclick="showGraph()">Open Living Graph</button><button class="action-btn secondary" onclick="showLedger()">View SOA Ledger</button><button class="action-btn secondary" onclick="focusCortex()">Cortex Query</button></div>`;
 }
 
+
 function renderMetricsCard(model: DashboardViewModel): string {
-    const novelty = model.metrics?.noveltyAccuracy;
-    const cache = model.metrics?.cache;
-    const cacheSizes = model.metrics?.cacheSizes;
-    const noveltyLabel = novelty ? `${novelty.lowCount}/${novelty.mediumCount}/${novelty.highCount}` : 'N/A';
-    const confidenceLabel = novelty ? `${(novelty.averageConfidence * 100).toFixed(0)}%` : 'N/A';
-    const cacheHits = cache ? `${cache.fingerprint?.hits ?? 0}/${cache.novelty?.hits ?? 0}` : 'N/A';
-    const cacheMisses = cache ? `${cache.fingerprint?.misses ?? 0}/${cache.novelty?.misses ?? 0}` : 'N/A';
-    const cacheSizesLabel = cacheSizes ? `${cacheSizes.fingerprint}/${cacheSizes.novelty}` : 'N/A';
-    return `<div class="card"><div class="card-title">Evaluation Metrics</div><div class="metric"><span class="metric-label" ${tooltipAttrs(HELP_TEXT.noveltyLevels)}>Novelty (L/M/H)</span><span class="metric-value">${noveltyLabel}</span></div><div class="metric"><span class="metric-label" ${tooltipAttrs(HELP_TEXT.avgConfidence)}>Avg Confidence</span><span class="metric-value">${confidenceLabel}</span></div><div class="metric"><span class="metric-label" ${tooltipAttrs(HELP_TEXT.cacheHits)}>Cache Hits (fp/novelty)</span><span class="metric-value">${cacheHits}</span></div><div class="metric"><span class="metric-label" ${tooltipAttrs(HELP_TEXT.cacheMisses)}>Cache Misses (fp/novelty)</span><span class="metric-value">${cacheMisses}</span></div><div class="metric"><span class="metric-label" ${tooltipAttrs(HELP_TEXT.cacheSizes)}>Cache Sizes (fp/novelty)</span><span class="metric-value">${cacheSizesLabel}</span></div></div>`;
+  const novelty = model.metrics?.noveltyAccuracy;
+  const cache = model.metrics?.cache;
+  const cacheSizes = model.metrics?.cacheSizes;
+  const noveltyLabel = novelty
+    ? `${novelty.lowCount}/${novelty.mediumCount}/${novelty.highCount}`
+    : "N/A";
+  const confidenceLabel = novelty
+    ? `${(novelty.averageConfidence * 100).toFixed(0)}%`
+    : "N/A";
+  const cacheHits = cache
+    ? `${cache.fingerprint?.hits ?? 0}/${cache.novelty?.hits ?? 0}`
+    : "N/A";
+  const cacheMisses = cache
+    ? `${cache.fingerprint?.misses ?? 0}/${cache.novelty?.misses ?? 0}`
+    : "N/A";
+  const cacheSizesLabel = cacheSizes
+    ? `${cacheSizes.fingerprint}/${cacheSizes.novelty}`
+    : "N/A";
+  return `<div class="card"><div class="card-title">Evaluation Metrics</div><div class="metric"><span class="metric-label" ${tooltipAttrs(HELP_TEXT.noveltyLevels)}>Novelty (L/M/H)</span><span class="metric-value">${noveltyLabel}</span></div><div class="metric"><span class="metric-label" ${tooltipAttrs(HELP_TEXT.avgConfidence)}>Avg Confidence</span><span class="metric-value">${confidenceLabel}</span></div><div class="metric"><span class="metric-label" ${tooltipAttrs(HELP_TEXT.cacheHits)}>Cache Hits (fp/novelty)</span><span class="metric-value">${cacheHits}</span></div><div class="metric"><span class="metric-label" ${tooltipAttrs(HELP_TEXT.cacheMisses)}>Cache Misses (fp/novelty)</span><span class="metric-value">${cacheMisses}</span></div><div class="metric"><span class="metric-label" ${tooltipAttrs(HELP_TEXT.cacheSizes)}>Cache Sizes (fp/novelty)</span><span class="metric-value">${cacheSizesLabel}</span></div></div>`;
 }
 
 export function renderDashboardTemplate(model: DashboardViewModel): string {
-    const statusBadgeClass = model.status.running ? 'status-active' : 'status-error';
-    const statusLabel = model.status.running ? 'ACTIVE' : 'STOPPED';
-    const cards = [renderSentinelCard(model), renderTrustCard(model), renderL3Card(model), renderActionsCard(), renderMetricsCard(model)].join('');
-    const tokens = {
-        '{{CSP_SOURCE}}': model.cspSource,
-        '{{NONCE}}': model.nonce,
-        '{{TOOLTIP_STYLES}}': TOOLTIP_STYLES,
-        '{{STATUS_BADGE_CLASS}}': statusBadgeClass,
-        '{{STATUS_LABEL}}': statusLabel,
-        '{{CARDS}}': cards
-    };
-    return applyTemplate(DASHBOARD_TEMPLATE, tokens);
+  const statusBadgeClass = model.status.running
+    ? "status-active"
+    : "status-error";
+  const statusLabel = model.status.running ? "ACTIVE" : "STOPPED";
+  const cards = [
+    renderSentinelCard(model),
+    renderTrustCard(model),
+    renderL3Card(model),
+    renderActionsCard(),
+    renderMetricsCard(model),
+  ].join("");
+  const tokens = {
+    "{{CSP_SOURCE}}": model.cspSource,
+    "{{NONCE}}": model.nonce,
+    "{{TOOLTIP_STYLES}}": TOOLTIP_STYLES,
+    "{{STATUS_BADGE_CLASS}}": statusBadgeClass,
+    "{{STATUS_LABEL}}": statusLabel,
+    "{{CARDS}}": cards,
+  };
+  return applyTemplate(DASHBOARD_TEMPLATE, tokens);
 }

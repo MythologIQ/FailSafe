@@ -1,6 +1,6 @@
 {
-  "name": "mythologiq-failsafe-copilot",
-  "displayName": "MythologIQ FailSafe for Copilot",
+  "name": "mythologiq-failsafe",
+  "displayName": "MythologIQ: FailSafe (feat. QoreLogic)",
   "description": "Token Efficient Governance for AI-assisted development in VSCode or Cursor",
   "version": "2.0.1",
   "publisher": "MythologIQ",

@@ -82,6 +82,100 @@ G:\MythologIQ\FailSafe\FailSafe\   # APP CONTAINER
 
 ---
 
+## Build & Deployment Pipeline
+
+### Three Variants, Three Destinations
+
+| Variant | Source | Artifact | Destination |
+|---------|--------|----------|-------------|
+| **Antigravity** | `FailSafe/Antigravity/` | `.vsix` | [OpenVSX](https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe-antigravity) |
+| **Claude** | `FailSafe/Claude/` | `.zip` | [GitHub Releases](https://github.com/MythologIQ/FailSafe) |
+| **VSCode** | `FailSafe/VSCode/` | `.vsix` | [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe) |
+
+### Pipeline Steps
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  1. SOURCE                    2. DEPLOY                   3. BUILD          │
+│  ────────                     ────────                    ───────           │
+│                                                                             │
+│  FailSafe/Antigravity/  ──►  PROD-Extension/Antigravity/  ──►  .vsix       │
+│  FailSafe/Claude/       ──►  PROD-Extension/Claude/       ──►  .zip        │
+│  FailSafe/VSCode/       ──►  PROD-Extension/VSCode/       ──►  .vsix       │
+│                                                                             │
+│  (Environment-specific       (Deployment-ready             (Publishable    │
+│   source code)                folder structure)             artifacts)     │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Step 1: Edit Source Files
+
+Source files organized by AI environment:
+
+```
+FailSafe/Antigravity/           # For Gemini/Cursor (Antigravity extension)
+├── Genesis/workflows/          # ql-bootstrap.md, ql-status.md, ql-help.md
+├── Genesis/agents/             # ql-governor.md, ql-judge.md, ql-specialist.md
+├── Qorelogic/workflows/        # ql-audit.md, ql-plan.md, ql-implement.md, etc.
+└── skills/                     # SKILL.md files
+
+FailSafe/Claude/                # For Claude CLI
+├── Genesis/workflows/          # Same structure, Claude format
+├── Genesis/agents/
+├── Qorelogic/workflows/
+└── commands/                   # ql-repo-*.md, agents/, references/
+
+FailSafe/VSCode/                # For VSCode Copilot
+├── prompts/                    # *.prompt.md files
+├── agents/                     # *.agent.md files
+├── instructions/               # *.instructions.md files
+└── skills/                     # SKILL.md files
+```
+
+### Step 2: Deploy to PROD-Extension
+
+```powershell
+cd FailSafe/build
+.\deploy.ps1                    # Copies sources to deployment structure
+```
+
+This transforms source files into the folder structure each environment expects:
+
+```
+PROD-Extension/Antigravity/     # .agent/workflows/, .qorelogic/orbits/
+PROD-Extension/Claude/          # .claude/commands/
+PROD-Extension/VSCode/          # .github/prompts/, .github/copilot-instructions/
+```
+
+### Step 3: Build Artifacts
+
+```powershell
+cd FailSafe/build
+.\build-release.ps1             # Creates publishable artifacts
+```
+
+Output in `FailSafe/artifacts/`:
+
+```
+mythologiq-failsafe-antigravity-X.X.X.vsix    # → OpenVSX
+failsafe-claude-vX.X.X.zip                     # → GitHub
+mythologiq-failsafe-X.X.X.vsix                 # → VSCode Marketplace
+```
+
+### Step 4: Publish
+
+```powershell
+# Antigravity → OpenVSX
+npx ovsx publish artifacts/mythologiq-failsafe-antigravity-X.X.X.vsix -p $OVSX_TOKEN
+
+# VSCode → VSCode Marketplace
+npx vsce publish --packagePath artifacts/mythologiq-failsafe-X.X.X.vsix --pat $VSCE_TOKEN
+
+# Claude → Manual upload to GitHub releases (linked in main README.md)
+```
+
+---
+
 ## Development Workflows
 
 ### Working on Extension

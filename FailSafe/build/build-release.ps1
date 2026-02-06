@@ -110,9 +110,9 @@ if (-not $SkipVsix) {
         Pop-Location
     }
 
-    # Build VSCode Copilot VSIX
+    # Build VSCode VSIX
     $vscodeDir = Join-Path $ProdExtension "VSCode"
-    Write-Log "Building VSCode Copilot VSIX..." -Level Info
+    Write-Log "Building VSCode VSIX..." -Level Info
 
     Push-Location $vscodeDir
     try {
@@ -128,12 +128,12 @@ if (-not $SkipVsix) {
 
         # Package VSIX
         Write-Log "  Packaging VSIX..." -Level Info
-        npx vsce package --out "$ArtifactsDir\mythologiq-failsafe-copilot-$version.vsix" 2>$null
+        npx vsce package --out "$ArtifactsDir\mythologiq-failsafe-$version.vsix" 2>$null
 
-        Write-Log "Created: mythologiq-failsafe-copilot-$version.vsix" -Level Success
+        Write-Log "Created: mythologiq-failsafe-$version.vsix" -Level Success
     }
     catch {
-        Write-Log "Failed to build VSCode Copilot VSIX: $_" -Level Error
+        Write-Log "Failed to build VSCode VSIX: $_" -Level Error
     }
     finally {
         Pop-Location

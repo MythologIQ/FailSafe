@@ -11,6 +11,7 @@ import * as vscode from "vscode";
 // Genesis imports
 import { GenesisManager } from "../genesis/GenesisManager";
 import { DojoViewProvider } from "../genesis/views/DojoViewProvider";
+import { SentinelViewProvider } from "../genesis/views/SentinelViewProvider";
 import { CortexStreamProvider } from "../genesis/views/CortexStreamProvider";
 import { HallucinationDecorator } from "../genesis/decorators/HallucinationDecorator";
 import { FeedbackManager } from "../genesis/FeedbackManager";
@@ -50,6 +51,7 @@ import { EvaluationRouter } from "../governance/EvaluationRouter";
 import { DetectedSystem, FrameworkSync } from "../qorelogic/FrameworkSync";
 import { FailSafeMCPServer } from "../mcp/FailSafeServer";
 import { FailSafeChatParticipant } from "../genesis/chat/FailSafeChatParticipant";
+import { WorkspaceMigration } from "../qorelogic/WorkspaceMigration";
 
 let genesisManager: GenesisManager;
 let qorelogicManager: QoreLogicManager;
@@ -84,6 +86,9 @@ export async function activate(
     if (!workspaceRoot) {
       throw new Error("FailSafe requires an open workspace.");
     }
+
+    // Initialize Workspace Migration (Hygiene Automation)
+    await WorkspaceMigration.checkAndRepair(context);
 
     // Initialize PlanManager for roadmap visualization
     planManager = new PlanManager(workspaceRoot, eventBus);
@@ -221,14 +226,21 @@ export async function activate(
     } catch (error) {
       logger.error("Failed to start Sentinel daemon", error);
       vscode.window.showWarningMessage(
-        `FailSafe: Sentinel daemon failed to start. Some monitoring features may be unavailable. Error: ${error instanceof Error ? error.message : String(error)}`
+        `FailSafe: Sentinel daemon failed to start. Some monitoring features may be unavailable. Error: ${error instanceof Error ? error.message : String(error)}`,
       );
       // Create a stub daemon to prevent downstream errors
       sentinelDaemon = {
         start: async () => {},
         stop: () => {},
-        auditFile: async () => ({ verdict: 'UNKNOWN', details: 'Sentinel not available' }),
-        getStatus: () => ({ running: false, llmAvailable: false, mode: 'OFFLINE' }),
+        auditFile: async () => ({
+          verdict: "UNKNOWN",
+          details: "Sentinel not available",
+        }),
+        getStatus: () => ({
+          running: false,
+          llmAvailable: false,
+          mode: "OFFLINE",
+        }),
       } as any;
     }
 
@@ -248,7 +260,7 @@ export async function activate(
     } catch (error) {
       logger.error("Failed to start MCP Server", error);
       vscode.window.showWarningMessage(
-        `FailSafe: MCP Server failed to start. External federation may be limited. Error: ${error instanceof Error ? error.message : String(error)}`
+        `FailSafe: MCP Server failed to start. External federation may be limited. Error: ${error instanceof Error ? error.message : String(error)}`,
       );
       // Continue activation despite MCP failure
     }
@@ -285,7 +297,10 @@ export async function activate(
         eventBus,
       );
       context.subscriptions.push(
-        vscode.window.registerWebviewViewProvider("failsafe.dojo", dojoProvider),
+        vscode.window.registerWebviewViewProvider(
+          "failsafe.dojo",
+          dojoProvider,
+        ),
       );
       logger.info("Dojo view provider registered");
 
@@ -301,20 +316,36 @@ export async function activate(
       );
       logger.info("Cortex stream provider registered");
 
+      const sentinelViewProvider = new SentinelViewProvider(
+        context.extensionUri,
+        sentinelDaemon,
+        eventBus,
+      );
+      context.subscriptions.push(
+        vscode.window.registerWebviewViewProvider(
+          "failsafe.sentinel",
+          sentinelViewProvider,
+        ),
+      );
+      logger.info("Sentinel view provider registered");
+
       // Register Roadmap view
       const roadmapViewProvider = new RoadmapViewProvider(
         context.extensionUri,
         planManager,
-        eventBus
+        eventBus,
       );
       context.subscriptions.push(
-        vscode.window.registerWebviewViewProvider('failsafe.roadmap', roadmapViewProvider)
+        vscode.window.registerWebviewViewProvider(
+          "failsafe.roadmap",
+          roadmapViewProvider,
+        ),
       );
       logger.info("Roadmap view provider registered");
     } catch (error) {
       logger.error("Failed to register view providers", error);
       vscode.window.showErrorMessage(
-        `FailSafe: Failed to register sidebar views. Error: ${error instanceof Error ? error.message : String(error)}`
+        `FailSafe: Failed to register sidebar views. Error: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
 
@@ -341,7 +372,7 @@ export async function activate(
     } catch (error) {
       logger.error("Genesis manager initialization failed", error);
       vscode.window.showWarningMessage(
-        `FailSafe: Genesis manager failed to initialize. Some visualization features may be limited. Error: ${error instanceof Error ? error.message : String(error)}`
+        `FailSafe: Genesis manager failed to initialize. Some visualization features may be limited. Error: ${error instanceof Error ? error.message : String(error)}`,
       );
       // Create a minimal stub to prevent downstream errors
       genesisManager = {
@@ -365,7 +396,7 @@ export async function activate(
       chatParticipant = new FailSafeChatParticipant(
         intentService,
         sentinelDaemon,
-        qorelogicManager
+        qorelogicManager,
       );
       context.subscriptions.push({ dispose: () => chatParticipant.dispose() });
       logger.info("Chat participant registered successfully");
@@ -518,23 +549,23 @@ function registerCommands(
 
   // V3 REMEDIATION: Register roadmap command for Dojo linkage
   context.subscriptions.push(
-    vscode.commands.registerCommand('failsafe.showRoadmap', () => {
-      vscode.commands.executeCommand('failsafe.roadmap.focus');
-    })
+    vscode.commands.registerCommand("failsafe.showRoadmap", () => {
+      vscode.commands.executeCommand("failsafe.roadmap.focus");
+    }),
   );
 
   // v3.0.0: Full-screen Planning Roadmap Window
   context.subscriptions.push(
-    vscode.commands.registerCommand('failsafe.showRoadmapWindow', () => {
+    vscode.commands.registerCommand("failsafe.showRoadmapWindow", () => {
       genesis.showRoadmapWindow();
-    })
+    }),
   );
 
   // v3.0.0: Token Analytics Dashboard
   context.subscriptions.push(
-    vscode.commands.registerCommand('failsafe.showAnalytics', () => {
+    vscode.commands.registerCommand("failsafe.showAnalytics", () => {
       genesis.showAnalyticsDashboard();
-    })
+    }),
   );
 
   // Export feedback command
@@ -557,6 +588,16 @@ function registerCommands(
           vscode.window.showErrorMessage(`Failed to export feedback: ${error}`);
         }
       }
+    }),
+  );
+
+  // Secure Workspace command (Manual Hygiene)
+  context.subscriptions.push(
+    vscode.commands.registerCommand("failsafe.secureWorkspace", async () => {
+      await WorkspaceMigration.checkAndRepair(context);
+      vscode.window.showInformationMessage(
+        "🛡️ Workspace hygiene check complete.",
+      );
     }),
   );
 }
@@ -607,9 +648,7 @@ function registerGovernanceCommands(
         vscode.commands.executeCommand("failsafe.showMenu"); // Update UI
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        vscode.window.showErrorMessage(
-          `Failed to create Intent: ${message}`,
-        );
+        vscode.window.showErrorMessage(`Failed to create Intent: ${message}`);
       }
     }),
   );
@@ -648,9 +687,7 @@ function registerGovernanceCommands(
           );
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
-          vscode.window.showErrorMessage(
-            `Failed to seal intent: ${message}`,
-          );
+          vscode.window.showErrorMessage(`Failed to seal intent: ${message}`);
         }
       }
     }),

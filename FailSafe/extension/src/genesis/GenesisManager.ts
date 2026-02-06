@@ -22,7 +22,7 @@ import { LivingGraphPanel } from './panels/LivingGraphPanel';
 import { DashboardPanel } from './panels/DashboardPanel';
 import { LedgerViewerPanel } from './panels/LedgerViewerPanel';
 import { L3ApprovalPanel } from './panels/L3ApprovalPanel';
-import { RoadmapPanelWindow } from './panels/RoadmapPanelWindow';
+import { PlanningHubPanel } from './panels/PlanningHubPanel';
 import { AnalyticsDashboardPanel } from './panels/AnalyticsDashboardPanel';
 import { IntentScout } from './cortex/IntentScout';
 import { PlanManager } from '../qorelogic/planning/PlanManager';
@@ -39,7 +39,7 @@ export class GenesisManager {
     private dashboardPanel: DashboardPanel | undefined;
     private ledgerViewerPanel: LedgerViewerPanel | undefined;
     private l3ApprovalPanel: L3ApprovalPanel | undefined;
-    private roadmapPanelWindow: RoadmapPanelWindow | undefined;
+    private planningHubPanel: PlanningHubPanel | undefined;
     private analyticsDashboardPanel: AnalyticsDashboardPanel | undefined;
 
     private intentScout: IntentScout;
@@ -132,7 +132,7 @@ export class GenesisManager {
     }
 
     /**
-     * Show the full-screen Planning Roadmap window
+     * Show the consolidated Planning Hub panel
      */
     showRoadmapWindow(): void {
         if (!this.planManager) {
@@ -140,11 +140,13 @@ export class GenesisManager {
             return;
         }
 
-        if (this.roadmapPanelWindow) {
-            this.roadmapPanelWindow.reveal();
+        if (this.planningHubPanel) {
+            this.planningHubPanel.reveal();
         } else {
-            this.roadmapPanelWindow = RoadmapPanelWindow.createOrShow(
+            this.planningHubPanel = PlanningHubPanel.createOrShow(
                 this.context.extensionUri,
+                this.sentinel,
+                this.qorelogic,
                 this.planManager,
                 this.eventBus
             );
@@ -479,7 +481,7 @@ ${verdict.actions.map(a => `- ${a.type}: ${a.details} (${a.status})`).join('\n')
         this.dashboardPanel?.dispose();
         this.ledgerViewerPanel?.dispose();
         this.l3ApprovalPanel?.dispose();
-        this.roadmapPanelWindow?.dispose();
+        this.planningHubPanel?.dispose();
         this.analyticsDashboardPanel?.dispose();
     }
 }

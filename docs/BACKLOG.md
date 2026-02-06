@@ -11,6 +11,7 @@
 - [x] [D7] V2: Razor - DojoViewProvider.ts exceeds 250 lines (from audit 2026-02-05T22:29:02Z) (v2.0.1 - Complete)
 - [x] [D8] V3: Razor - DashboardPanel.ts exceeds 250 lines (from audit 2026-02-05T22:29:02Z) (v2.0.1 - Complete)
 - [x] [D9] V4: Razor - LivingGraphProvider.ts exceeds 250 lines (from audit 2026-02-05T22:29:02Z) (v2.0.1 - Complete)
+- [ ] [D10] Razor - GenesisManager.ts exceeds 250 lines (485 lines, from audit 2026-02-06) | v3.0.1
 - [x] [D1] ArchitectureEngine.ts - Placeholder complexity ✅ Already implemented | v1.2.2
 - [x] [D2] ConfigManager.ts - Missing `architecture.contributors` config property ✅ | v1.2.2
 - [x] [D3] Orphan root tsconfig.json - Should be removed for root hygiene ✅ | v1.2.2
@@ -81,6 +82,12 @@
 **Token Analytics** ✅
 - [x] [B29] Token ROI Dashboard - "Without FailSafe" vs "With FailSafe" comparison ✅ | v3.0.0
 - [x] [B32] AnalyticsDashboardPanel.ts - Session tracking + historical data ✅ | v3.0.0
+
+**UI Consolidation** (plan-v3.0.0-ui-consolidation.md) ✅
+- [x] [B33] Phase 1: PlanningHubPanel - Consolidate all sidebar features ✅ | v3.0.0
+- [x] [B34] Phase 2: Enhanced RoadmapSvgView - Larger SVG with blockers/detours/risks ✅ | v3.0.0
+- [x] [B35] Phase 3: CheckpointReconciler - Automatic governance (remove pause/resume) ✅ | v3.0.0
+- [x] [B36] Phase 4: Cleanup - Delete RoadmapPanelWindow, update commands ✅ | v3.0.0
 
 ## Wishlist (Nice to Have)
 <!-- All wishlist items promoted to Backlog with version tags -->

@@ -206,7 +206,14 @@ export type LedgerEventType =
   | "QUARANTINE_END"
   | "DIVERGENCE_DECLARED"
   | "DIVERGENCE_RESOLVED"
-  | "SYSTEM_EVENT";
+  | "SYSTEM_EVENT"
+  // Sovereign Checkpoint Protocol events
+  | "EXTERNAL_DRIFT" // Changes detected outside QL skill sessions
+  | "USER_OVERRIDE" // User explicitly overrode a governance control
+  | "CHECKPOINT_CREATED" // Skill session started, checkpoint sealed
+  | "CHECKPOINT_RECONCILED" // Gap detected and reconciled
+  | "GOVERNANCE_PAUSED" // User explicitly paused governance
+  | "GOVERNANCE_RESUMED"; // User resumed governance
 
 export interface LedgerEntry {
   id: number;

@@ -119,6 +119,10 @@
       {
         "command": "failsafe.showAnalytics",
         "title": "FailSafe: Token Analytics"
+      },
+      {
+        "command": "failsafe.secureWorkspace",
+        "title": "FailSafe: Secure Workspace"
       }
     ],
     "keybindings": [

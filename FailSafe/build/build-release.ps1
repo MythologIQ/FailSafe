@@ -99,9 +99,9 @@ if (-not $SkipVsix) {
 
         # Package VSIX
         Write-Log "  Packaging VSIX..." -Level Info
-        npx vsce package --out "$ArtifactsDir\mythologiq-failsafe-antigravity-$version.vsix" 2>$null
+        npx vsce package --out "$ArtifactsDir\mythologiq-failsafe-$version-openvsx.vsix" 2>$null
 
-        Write-Log "Created: mythologiq-failsafe-antigravity-$version.vsix" -Level Success
+        Write-Log "Created: mythologiq-failsafe-$version-openvsx.vsix" -Level Success
     }
     catch {
         Write-Log "Failed to build Antigravity VSIX: $_" -Level Error
@@ -128,9 +128,9 @@ if (-not $SkipVsix) {
 
         # Package VSIX
         Write-Log "  Packaging VSIX..." -Level Info
-        npx vsce package --out "$ArtifactsDir\mythologiq-failsafe-$version.vsix" 2>$null
+        npx vsce package --out "$ArtifactsDir\mythologiq-failsafe-$version-vscode.vsix" 2>$null
 
-        Write-Log "Created: mythologiq-failsafe-$version.vsix" -Level Success
+        Write-Log "Created: mythologiq-failsafe-$version-vscode.vsix" -Level Success
     }
     catch {
         Write-Log "Failed to build VSCode VSIX: $_" -Level Error

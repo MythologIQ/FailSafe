@@ -88,7 +88,7 @@ G:\MythologIQ\FailSafe\FailSafe\   # APP CONTAINER
 
 | Variant | Source | Artifact | Destination |
 |---------|--------|----------|-------------|
-| **Antigravity** | `FailSafe/Antigravity/` | `.vsix` | [OpenVSX](https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe-antigravity) |
+| **Antigravity** | `FailSafe/Antigravity/` | `.vsix` | [OpenVSX](https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe) |
 | **Claude** | `FailSafe/Claude/` | `.zip` | [GitHub Releases](https://github.com/MythologIQ/FailSafe) |
 | **VSCode** | `FailSafe/VSCode/` | `.vsix` | [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe) |
 
@@ -157,19 +157,19 @@ cd FailSafe/build
 Output in `FailSafe/artifacts/`:
 
 ```
-mythologiq-failsafe-antigravity-X.X.X.vsix    # → OpenVSX
-failsafe-claude-vX.X.X.zip                     # → GitHub
-mythologiq-failsafe-X.X.X.vsix                 # → VSCode Marketplace
+mythologiq-failsafe-X.X.X-openvsx.vsix    # → OpenVSX
+failsafe-claude-vX.X.X.zip                 # → GitHub
+mythologiq-failsafe-X.X.X-vscode.vsix     # → VSCode Marketplace
 ```
 
 ### Step 4: Publish
 
 ```powershell
 # Antigravity → OpenVSX
-npx ovsx publish artifacts/mythologiq-failsafe-antigravity-X.X.X.vsix -p $OVSX_TOKEN
+npx ovsx publish artifacts/mythologiq-failsafe-X.X.X-openvsx.vsix -p $OVSX_TOKEN
 
 # VSCode → VSCode Marketplace
-npx vsce publish --packagePath artifacts/mythologiq-failsafe-X.X.X.vsix --pat $VSCE_TOKEN
+npx vsce publish --packagePath artifacts/mythologiq-failsafe-X.X.X-vscode.vsix --pat $VSCE_TOKEN
 
 # Claude → Manual upload to GitHub releases (linked in main README.md)
 ```

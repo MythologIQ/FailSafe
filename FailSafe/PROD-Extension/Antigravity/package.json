@@ -1,6 +1,6 @@
 {
-  "name": "mythologiq-failsafe-antigravity",
-  "displayName": "MythologIQ FailSafe for Antigravity",
+  "name": "mythologiq-failsafe",
+  "displayName": "MythologIQ: FailSafe (feat. QoreLogic)",
   "description": "Token Efficient Governance for AI-assisted development in Antigravity/Gemini",
   "version": "2.0.1",
   "publisher": "MythologIQ",

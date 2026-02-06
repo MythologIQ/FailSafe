@@ -21,7 +21,18 @@
 | **1.2.0** | Navigator | Roadmap View MVP (SVG road visualization) |
 | **1.3.0** | Autopilot | Governance integration (auto-progress tracking) |
 | **2.0.0** | Governance | Gold Standard skills + ambient integration (B12-B28) |
-| **3.0.0** | Horizon | Alternate views: Kanban, Timeline, Token ROI (B6-B11, B29) |
+| **3.0.0** | Horizon | Alternate views, Token ROI, Claude unified build (B6-B11, B29) |
+
+### Architecture Change (v3.0.0) - Claude Unified Build
+
+**Decision**: Claude Code is no longer a separate build. Claude-specific skills, commands, and file structures are folded into both Antigravity and VSCode extensions.
+
+| Build | Contents | Destination |
+|-------|----------|-------------|
+| **Antigravity** | Gemini workflows + Claude commands | OpenVSX |
+| **VSCode** | Copilot prompts + Claude commands | VS Code Marketplace |
+
+Both PROD-Extension folders include `.claude/commands/` for unified governance.
 
 **Planning Sources**:
 - `plan-roadmap-visualization.md` - Roadmap & accountability layer
@@ -132,12 +143,35 @@ FailSafe/extension/src/genesis/panels/
 - `DojoViewProvider.ts` - Link to Roadmap view ✅
 - `main.ts` - Wire PlanManager at activation ✅
 
-### Planned Additions (v2.0.0 Horizon - Phase D) 📋 PLANNED
+### Planned Additions (v3.0.0 Horizon - Phase D) 📋 PLANNED
 
 ```
 FailSafe/extension/src/genesis/components/    # PLANNED FOLDER
 |-- KanbanView.ts                    # Kanban column visualization
-`-- TimelineView.ts                  # Gantt-style timeline
+|-- TimelineView.ts                  # Gantt-style timeline
+|-- RoadmapSvgView.ts                # Reusable SVG roadmap component
+`-- index.ts                         # Component exports
+
+FailSafe/extension/src/genesis/panels/
+|-- RoadmapPanelWindow.ts            # Full-screen planning window
+`-- AnalyticsDashboardPanel.ts       # Token ROI dashboard
+
+FailSafe/extension/src/qorelogic/planning/
+|-- types.ts                         # + Milestone type
+`-- PlanManager.ts                   # + Milestone/risk methods
+```
+
+**Build Architecture Change**:
+```
+FailSafe/PROD-Extension/
+|-- Antigravity/                     # Gemini + Claude (unified)
+|   |-- .agent/workflows/
+|   |-- .qorelogic/orbits/
+|   `-- .claude/commands/            # NEW: Claude commands merged
+`-- VSCode/                          # Copilot + Claude (unified)
+    |-- .github/prompts/
+    |-- .github/copilot-instructions/
+    `-- .claude/commands/            # NEW: Claude commands merged
 ```
 
 ### Planned Additions (UI Clarity Enhancement) ✅ IMPLEMENTED

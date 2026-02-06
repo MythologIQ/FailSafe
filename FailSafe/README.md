@@ -7,13 +7,13 @@
 ## Structure
 
 ```
-FailSafe/                           # 🔒 APP CONTAINER
+FailSafe/                           # APP CONTAINER
 ├── Antigravity/                    # Gemini/Antigravity source
 │   ├── Genesis/                    # Bootstrap & initialization
 │   ├── Qorelogic/                  # Core governance
 │   └── Sentinel/                   # Monitoring & enforcement
 │
-├── Claude/                         # Claude CLI source
+├── Claude/                         # Claude CLI source (merged into both builds)
 │   ├── Genesis/
 │   ├── Qorelogic/
 │   └── Sentinel/
@@ -28,16 +28,17 @@ FailSafe/                           # 🔒 APP CONTAINER
 │   ├── scripts/                    # Cross-environment utilities
 │   └── schemas/                    # Shared data schemas
 │
-├── PROD-Extension/                 # Production packages
-│   ├── Antigravity/
-│   ├── Claude/
-│   └── VSCode/
+├── PROD-Extension/                 # Production packages (unified builds)
+│   ├── Antigravity/                # Gemini + Claude (→ OpenVSX)
+│   └── VSCode/                     # Copilot + Claude (→ VS Code Marketplace)
 │
 ├── build/                          # Build & validation scripts
 ├── targets/                        # Environment constraints
 └── docs/                           # App-specific documentation
 
 ```
+
+**Claude Integration (v3.0.0):** Claude Code is no longer a separate build. Both PROD-Extension folders include `.claude/commands/` alongside their native AI environment files.
 
 ---
 
@@ -84,13 +85,14 @@ G:\MythologIQ\FailSafe\FailSafe\   # APP CONTAINER
 
 ## Build & Deployment Pipeline
 
-### Three Variants, Three Destinations
+### Two Variants, Two Marketplaces (Claude Unified)
 
-| Variant | Source | Artifact | Destination |
-|---------|--------|----------|-------------|
-| **Antigravity** | `FailSafe/Antigravity/` | `.vsix` | [OpenVSX](https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe) |
-| **Claude** | `FailSafe/Claude/` | `.zip` | [GitHub Releases](https://github.com/MythologIQ/FailSafe) |
-| **VSCode** | `FailSafe/VSCode/` | `.vsix` | [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe) |
+**Architecture Change (v3.0.0):** Claude Code is no longer a separate build. Claude-specific skills, commands, and file structures are folded into both Antigravity and VSCode extensions.
+
+| Variant | Source | Artifact | Destination | Includes |
+|---------|--------|----------|-------------|----------|
+| **Antigravity** | `FailSafe/Antigravity/` + `FailSafe/Claude/` | `.vsix` | [OpenVSX](https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe) | Gemini + Claude |
+| **VSCode** | `FailSafe/VSCode/` + `FailSafe/Claude/` | `.vsix` | [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe) | Copilot + Claude |
 
 ### Pipeline Steps
 
@@ -99,12 +101,16 @@ G:\MythologIQ\FailSafe\FailSafe\   # APP CONTAINER
 │  1. SOURCE                    2. DEPLOY                   3. BUILD          │
 │  ────────                     ────────                    ───────           │
 │                                                                             │
-│  FailSafe/Antigravity/  ──►  PROD-Extension/Antigravity/  ──►  .vsix       │
-│  FailSafe/Claude/       ──►  PROD-Extension/Claude/       ──►  .zip        │
-│  FailSafe/VSCode/       ──►  PROD-Extension/VSCode/       ──►  .vsix       │
+│  FailSafe/Antigravity/  ──┐                                                 │
+│  FailSafe/Claude/       ──┼──►  PROD-Extension/Antigravity/  ──►  .vsix    │
+│                           │     (Gemini + Claude unified)                   │
 │                                                                             │
-│  (Environment-specific       (Deployment-ready             (Publishable    │
-│   source code)                folder structure)             artifacts)     │
+│  FailSafe/VSCode/       ──┐                                                 │
+│  FailSafe/Claude/       ──┼──►  PROD-Extension/VSCode/       ──►  .vsix    │
+│                           │     (Copilot + Claude unified)                  │
+│                                                                             │
+│  (Environment-specific       (Unified deployment           (Publishable    │
+│   source code)                structure)                    artifacts)     │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -119,7 +125,7 @@ FailSafe/Antigravity/           # For Gemini/Cursor (Antigravity extension)
 ├── Qorelogic/workflows/        # ql-audit.md, ql-plan.md, ql-implement.md, etc.
 └── skills/                     # SKILL.md files
 
-FailSafe/Claude/                # For Claude CLI
+FailSafe/Claude/                # Shared Claude CLI resources (merged into both)
 ├── Genesis/workflows/          # Same structure, Claude format
 ├── Genesis/agents/
 ├── Qorelogic/workflows/
@@ -139,13 +145,14 @@ cd FailSafe/build
 .\deploy.ps1                    # Copies sources to deployment structure
 ```
 
-This transforms source files into the folder structure each environment expects:
+This transforms source files into the unified folder structure:
 
 ```
-PROD-Extension/Antigravity/     # .agent/workflows/, .qorelogic/orbits/
-PROD-Extension/Claude/          # .claude/commands/
-PROD-Extension/VSCode/          # .github/prompts/, .github/copilot-instructions/
+PROD-Extension/Antigravity/     # .agent/workflows/, .qorelogic/orbits/, .claude/commands/
+PROD-Extension/VSCode/          # .github/prompts/, .github/copilot-instructions/, .claude/commands/
 ```
+
+**Key:** Both production folders now include `.claude/commands/` for Claude Code integration.
 
 ### Step 3: Build Artifacts
 
@@ -157,9 +164,8 @@ cd FailSafe/build
 Output in `FailSafe/artifacts/`:
 
 ```
-mythologiq-failsafe-X.X.X-openvsx.vsix    # → OpenVSX
-failsafe-claude-vX.X.X.zip                 # → GitHub
-mythologiq-failsafe-X.X.X-vscode.vsix     # → VSCode Marketplace
+mythologiq-failsafe-X.X.X-openvsx.vsix    # → OpenVSX (Gemini + Claude)
+mythologiq-failsafe-X.X.X-vscode.vsix     # → VSCode Marketplace (Copilot + Claude)
 ```
 
 ### Step 4: Publish
@@ -170,8 +176,6 @@ npx ovsx publish artifacts/mythologiq-failsafe-X.X.X-openvsx.vsix -p $OVSX_TOKEN
 
 # VSCode → VSCode Marketplace
 npx vsce publish --packagePath artifacts/mythologiq-failsafe-X.X.X-vscode.vsix --pat $VSCE_TOKEN
-
-# Claude → Manual upload to GitHub releases (linked in main README.md)
 ```
 
 ---

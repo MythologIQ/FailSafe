@@ -9,11 +9,18 @@ FailSafe provides a governance framework for AI coding assistants, ensuring cons
 - **QoreLogic Workflows**: Structured governance commands (`/ql-bootstrap`, `/ql-plan`, `/ql-implement`, etc.)
 - **Genesis Agents**: Specialized AI personas (Governor, Judge, Specialist) for different workflow phases
 - **Merkle-Chained Ledger**: Cryptographic audit trail for all governance decisions
-- **Multi-Environment Support**: Works with Gemini, Claude, and VSCode Copilot
+- **Unified AI Support**: Gemini/Antigravity workflows + Claude Code commands in one extension
+
+## What's Included
+
+This extension provides governance for both Gemini and Claude Code:
+
+- **Gemini/Antigravity**: `.agent/workflows/` and `.qorelogic/orbits/`
+- **Claude Code**: `.claude/commands/` for slash command integration
 
 ## Installation
 
-Install from [OpenVSX](https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe) or search "MythologIQ FailSafe" in your editor's extension marketplace.
+Install from [OpenVSX](https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe) or search "MythologIQ FailSafe" in your editor's extension marketplace (VSCodium, Gitpod, Cursor, etc.).
 
 ## Quick Start
 

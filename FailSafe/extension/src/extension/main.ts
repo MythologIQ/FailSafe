@@ -327,6 +327,7 @@ export async function activate(
         qorelogicManager,
         eventBus,
       );
+      genesisManager.setPlanManager(planManager);
       await genesisManager.initialize();
       logger.info("Genesis manager initialized");
 
@@ -519,6 +520,20 @@ function registerCommands(
   context.subscriptions.push(
     vscode.commands.registerCommand('failsafe.showRoadmap', () => {
       vscode.commands.executeCommand('failsafe.roadmap.focus');
+    })
+  );
+
+  // v3.0.0: Full-screen Planning Roadmap Window
+  context.subscriptions.push(
+    vscode.commands.registerCommand('failsafe.showRoadmapWindow', () => {
+      genesis.showRoadmapWindow();
+    })
+  );
+
+  // v3.0.0: Token Analytics Dashboard
+  context.subscriptions.push(
+    vscode.commands.registerCommand('failsafe.showAnalytics', () => {
+      genesis.showAnalyticsDashboard();
     })
   );
 

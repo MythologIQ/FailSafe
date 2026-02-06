@@ -65,19 +65,22 @@
 - [x] [B27] ql-technical-writer agent - Documentation quality ✅ | v2.0.0
 - [x] [B28] ql-ux-evaluator agent - UI/UX testing (Playwright) ✅ | v2.0.0
 
-### v3.0.0 Horizon (UI + Analytics)
-<!-- Note: May become addon extension if core extension size limits -->
+### v3.0.0 Horizon (UI + Analytics) ✅ IN PROGRESS
 
-**Alternate Views**
-- [ ] [B6] Create FailSafe/extension/src/genesis/components/ folder | v3.0.0
-- [ ] [B7] Implement KanbanView.ts - Kanban column visualization | v3.0.0
-- [ ] [B8] Implement TimelineView.ts - Gantt-style timeline | v3.0.0
-- [ ] [B9] Risk markers on roadmap visualization | v3.0.0
-- [ ] [B10] Milestone support in PlanManager | v3.0.0
+**Alternate Views** ✅
+- [x] [B6] Create FailSafe/extension/src/genesis/components/ folder ✅ | v3.0.0
+- [x] [B7] Implement KanbanView.ts - Kanban column visualization ✅ | v3.0.0
+- [x] [B8] Implement TimelineView.ts - Gantt-style timeline ✅ | v3.0.0
+- [x] [B9] Risk markers on roadmap visualization ✅ | v3.0.0
+- [x] [B10] Milestone support in PlanManager ✅ | v3.0.0
 - [ ] [B11] UI polish and theme refinements | v3.0.0
 
-**Token Analytics**
-- [ ] [B29] Token ROI Dashboard - "Without FailSafe" vs "With FailSafe" comparison | v3.0.0
+**Planning Window**
+- [x] [B31] RoadmapPanelWindow.ts - Full-screen planning window ✅ | v3.0.0
+
+**Token Analytics** ✅
+- [x] [B29] Token ROI Dashboard - "Without FailSafe" vs "With FailSafe" comparison ✅ | v3.0.0
+- [x] [B32] AnalyticsDashboardPanel.ts - Session tracking + historical data ✅ | v3.0.0
 
 ## Wishlist (Nice to Have)
 <!-- All wishlist items promoted to Backlog with version tags -->
@@ -91,11 +94,12 @@
 | v1.0.7 | Beta | ✅ RELEASED | Current marketplace |
 | v1.1.0 | Pathfinder | ✅ IMPLEMENTED | Event-sourced Plans |
 | v1.2.0 | Navigator | ✅ IMPLEMENTED | Roadmap View |
-| **v1.2.2** | **Cleanup** | ✅ **COMPLETE** | Blockers D1-D3, B1-B2 |
-| **v1.3.0** | **Autopilot** | ✅ **COMPLETE** | B3-B5 all done |
+| v1.2.2 | Cleanup | ✅ COMPLETE | Blockers D1-D3, B1-B2 |
+| v1.3.0 | Autopilot | ✅ COMPLETE | B3-B5 all done |
 | v2.0.0 | Governance | ✅ COMPLETE | Gold Standard + ambient (B12-B28) |
-| **v2.0.1** | **Tooltip Remediation** | ✅ **COMPLETE** | Template modularization + tooltips (B30) |
-| v3.0.0 | Horizon | Planned | UI + Analytics (B6-B11, B29) |
+| v2.0.1 | Tooltip Remediation | ✅ COMPLETE | Template modularization + tooltips (B30) |
+| v2.0.2 | Marketplace Fix | ✅ COMPLETE | README corrections for both marketplaces |
+| **v3.0.0** | **Horizon** | 🔄 **IN PROGRESS** | UI + Analytics (B6-B32) |
 
 ---
 

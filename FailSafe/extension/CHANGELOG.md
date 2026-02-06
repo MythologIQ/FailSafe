@@ -5,18 +5,38 @@ All notable changes to the MythologIQ FailSafe extension will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.1] - 2026-02-06
+
+### Added
+
+- New `/ql-repo-release` workflow for automated release discipline.
+- `SentinelViewProvider` registration for consistent sidebar monitoring.
+- Bootstrap modules (`bootstrapCore`, `bootstrapGovernance`, etc.) for clean extension lifecycle.
+
+### Fixed
+
+- Perpetual loading issue in Sentinel sidebar by registering missing provider.
+- TypeScript errors in `PlanningHubPanel` and `CheckpointReconciler` by hardening event types.
+
+### Changed
+
+- **Architectural Refactor**: Decomposed `main.ts` from 761 lines to ~120 lines (Section 4 Simplicity Razor compliance).
+- Flattened `DashboardPanel` constructor to improve readability and maintainability.
 
 ## [2.0.1] - 2026-02-05
 
 ### Added
+
 - Webview template modules for Cortex Stream, Dojo, Dashboard, and Living Graph (Razor compliance).
 - Shared tooltip helper with data-tooltip rendering across Genesis views.
 
 ### Fixed
+
 - Cortex Stream search overlay text removed to eliminate redundant labels.
 - Tooltips now display for advanced governance terminology and calculated metrics.
 
 ### Changed
+
 - Documentation refreshed for the 2.0.1 release.
 
 ## [1.3.0] - 2026-02-05

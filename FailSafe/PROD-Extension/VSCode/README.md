@@ -1,4 +1,4 @@
-# MythologIQ: FailSafe (feat. QoreLogic)
+# MythologIQ: FailSafe v3.0.1 (feat. QoreLogic)
 
 **Token Efficient Governance for AI-assisted development**
 
@@ -31,15 +31,15 @@ Install from [VS Code Marketplace](https://marketplace.visualstudio.com/items?it
 
 ## Commands
 
-| Command | Description |
-|---------|-------------|
-| `/ql-bootstrap` | Initialize governance in workspace |
-| `/ql-status` | Show current governance state |
-| `/ql-plan` | Create implementation plan |
-| `/ql-implement` | Execute implementation |
-| `/ql-audit` | Run governance audit |
-| `/ql-validate` | Validate Merkle chain |
-| `/ql-substantiate` | Seal session with proof |
+| Command            | Description                        |
+| ------------------ | ---------------------------------- |
+| `/ql-bootstrap`    | Initialize governance in workspace |
+| `/ql-status`       | Show current governance state      |
+| `/ql-plan`         | Create implementation plan         |
+| `/ql-implement`    | Execute implementation             |
+| `/ql-audit`        | Run governance audit               |
+| `/ql-validate`     | Validate Merkle chain              |
+| `/ql-substantiate` | Seal session with proof            |
 
 ## Documentation
 

@@ -16,7 +16,7 @@
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Commands-8B5CF6)](https://github.com/MythologIQ/FailSafe/releases)
 [![Documentation](https://img.shields.io/badge/docs-FAILSAFE_SPECIFICATION-blue)](docs/FAILSAFE_SPECIFICATION.md)
 
-**Current Release**: v2.0.1 (2026-02-05)
+**Current Release**: v3.0.1 (2026-02-06)
 
 > **If this project helps you, please star it!** It helps others discover FailSafe.
 
@@ -149,15 +149,19 @@ FailSafe provides governance for multiple AI development environments:
 Install the FailSafe extension for real-time governance, audits, and dashboards.
 
 **VS Code Marketplace:**
+
 ```
 ext install MythologIQ.mythologiq-failsafe
 ```
+
 Or: https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe
 
 **Open VSX (VSCodium, Gitpod, etc.):**
+
 ```
 ext install MythologIQ.mythologiq-failsafe
 ```
+
 Or: https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe
 
 ---
@@ -165,12 +169,15 @@ Or: https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe
 ### Antigravity Extension (Gemini + Claude Code)
 
 Install from **Open VSX** (VSCodium, Gitpod, Cursor, etc.):
+
 ```
 ext install MythologIQ.mythologiq-failsafe
 ```
+
 Or: https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe
 
 The Antigravity extension includes:
+
 - **Gemini/Antigravity workflows** (`.agent/workflows/`)
 - **Claude Code commands** (`.claude/commands/`)
 - **QoreLogic personas** (Governor, Judge, Specialist)
@@ -181,12 +188,15 @@ The Antigravity extension includes:
 ### VSCode Copilot Extension (Copilot + Claude Code)
 
 Install from **VS Code Marketplace**:
+
 ```
 ext install MythologIQ.mythologiq-failsafe
 ```
+
 Or: https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe
 
 The VSCode extension includes:
+
 - **Copilot prompt files** (`.github/prompts/`)
 - **Claude Code commands** (`.claude/commands/`)
 - **Agent personas** (`.github/copilot-instructions/`)

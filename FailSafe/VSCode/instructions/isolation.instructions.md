@@ -1,14 +1,20 @@
+# Workspace Isolation Instructions
+
+## 1. Core Principles
+
+1.  **Application Code Root**: All development work, source code, and AI packaging must be contained within the designated application container directory (as defined in `.failsafe/workspace-config.json`).
+2.  **Workspace Governance Root**: The workspace root is reserved for AI governance (`.agent/`, `.claude/`, `.qorelogic/`), documentation (`docs/`), and essential configuration.
+3.  **Prohibited Actions**: Never move application source files (e.g., code, build scripts, specific target constraints) out of the application container into the workspace root.
+4.  **No Ghost Files**: Do not create temporary or unmanaged files in the root that belong in the application source.
+
+## 2. Rationale
+
+This isolation ensures that:
+
+- AI agents assigned to governance tasks do not accidentally modify application code.
+- The repository remains clean and follows a "Containerized" development pattern.
+- Privacy is easier to enforce (e.g., ignoring the entire governance stack for public repos).
+
 ---
-name: Physical Isolation Rule
-description: Enforce the v3.0.2 separation of workspace governance and application code.
-applyTo: ["**/*"]
----
 
-# QoreLogic Isolation Rule
-
-When working in this repository, you must strictly adhere to the **Physical Isolation Boundary**:
-
-1.  **Application Code Root**: All development work, source code, and AI packaging must be contained within the `FailSafe/` directory.
-2.  **Governance Root**: The root directory is reserved for workspace operational metadata (`.agent/`, `.claude/`, `.qorelogic/`, `docs/`).
-3.  **Prohibited Actions**: Never move application source files (e.g., `.ts`, `.md` source, build scripts) out of the `FailSafe/` container into the workspace root.
-4.  **Reference**: Follow the rules defined in `docs/specs/WORKSPACE_ISOLATION_RULES.md`.
+_Enforced by /compliance isolation_

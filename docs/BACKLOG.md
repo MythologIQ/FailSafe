@@ -89,6 +89,12 @@
 - [x] [B35] Phase 3: CheckpointReconciler - Automatic governance (remove pause/resume) ✅ | v3.0.0
 - [x] [B36] Phase 4: Cleanup - Delete RoadmapPanelWindow, update commands ✅ | v3.0.0
 
+### v3.0.2 Dashboard Remediation (plan-v3.0.2-dashboard-remediation.md)
+- [ ] [B37] Phase 1: Add Roadmap Mini-View to Dashboard | v3.0.2
+- [ ] [B38] Phase 2: Enhance Tooltip Visibility | v3.0.2
+- [ ] [B39] Phase 3: Wire PlanManager to DashboardPanel | v3.0.2
+- [ ] [B40] Phase 4: Fix Quick Actions Not Working | v3.0.2
+
 ## Wishlist (Nice to Have)
 <!-- All wishlist items promoted to Backlog with version tags -->
 

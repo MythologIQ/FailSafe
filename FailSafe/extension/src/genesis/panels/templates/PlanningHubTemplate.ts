@@ -13,8 +13,16 @@ import {
 import { Plan } from "../../../qorelogic/planning/types";
 import { escapeHtml } from "../../../shared/utils/htmlSanitizer";
 import { HELP_TEXT } from "../../../shared/components/InfoHint";
-import { tooltipAttrs, TOOLTIP_STYLES } from "../../../shared/components/Tooltip";
-import { renderRoadmapSvg, renderKanbanView, renderTimelineView, COMPONENT_STYLES } from "../../components";
+import {
+  tooltipAttrs,
+  TOOLTIP_STYLES,
+} from "../../../shared/components/Tooltip";
+import {
+  renderRoadmapSvg,
+  renderKanbanView,
+  renderTimelineView,
+  COMPONENT_STYLES,
+} from "../../components";
 
 type TrustSummary = {
   totalAgents: number;
@@ -31,16 +39,18 @@ export type PlanningHubViewModel = {
   trustSummary: TrustSummary;
   l3Queue: L3ApprovalRequest[];
   recentVerdicts: SentinelVerdict[];
-  plan: Plan | null;
-  planProgress: { completed: number; total: number; blocked: boolean } | null;
+  plan: Plan | null | undefined;
+  planProgress:
+    | { completed: number; total: number; blocked: boolean }
+    | null
+    | undefined;
   uptime: string;
 };
 
 export function renderPlanningHubTemplate(m: PlanningHubViewModel): string {
-  const cards = [
-    renderVisualizationSection(m),
-    renderSidebarSection(m),
-  ].join("");
+  const cards = [renderVisualizationSection(m), renderSidebarSection(m)].join(
+    "",
+  );
 
   return `<!DOCTYPE html>
 <html><head>
@@ -61,19 +71,27 @@ export function renderPlanningHubTemplate(m: PlanningHubViewModel): string {
 
 function renderViewTabs(mode: string): string {
   const tabs = ["roadmap", "kanban", "timeline"];
-  return `<div class="view-tabs">${tabs.map((t) =>
-    `<button class="${mode === t ? "active" : ""}" onclick="setViewMode('${t}')">${t.charAt(0).toUpperCase() + t.slice(1)}</button>`
-  ).join("")}</div>`;
+  return `<div class="view-tabs">${tabs
+    .map(
+      (t) =>
+        `<button class="${mode === t ? "active" : ""}" onclick="setViewMode('${t}')">${t.charAt(0).toUpperCase() + t.slice(1)}</button>`,
+    )
+    .join("")}</div>`;
 }
 
 function renderVisualizationSection(m: PlanningHubViewModel): string {
   if (!m.plan) {
     return `<section class="viz-section"><div class="no-plan"><h2>No Active Plan</h2><p>Create a plan using <code>/ql-plan</code></p></div></section>`;
   }
-  const pct = m.planProgress ? Math.round((m.planProgress.completed / m.planProgress.total) * 100) : 0;
-  const view = m.viewMode === "kanban" ? renderKanbanView(m.plan)
-    : m.viewMode === "timeline" ? renderTimelineView(m.plan, m.plan.milestones)
-    : renderRoadmapSvg(m.plan, m.plan.risks);
+  const pct = m.planProgress
+    ? Math.round((m.planProgress.completed / m.planProgress.total) * 100)
+    : 0;
+  const view =
+    m.viewMode === "kanban"
+      ? renderKanbanView(m.plan)
+      : m.viewMode === "timeline"
+        ? renderTimelineView(m.plan, m.plan.milestones)
+        : renderRoadmapSvg(m.plan, m.plan.risks);
   const blockers = m.plan.blockers.filter((b) => !b.resolvedAt);
 
   return `<section class="viz-section">
@@ -88,7 +106,9 @@ function renderVisualizationSection(m: PlanningHubViewModel): string {
 }
 
 function renderBlockers(planId: string, blockers: Plan["blockers"]): string {
-  return `<div class="blockers"><h3>Active Blockers</h3>${blockers.map((b) => `
+  return `<div class="blockers"><h3>Active Blockers</h3>${blockers
+    .map(
+      (b) => `
     <div class="blocker-card">
       <strong>${escapeHtml(b.title)}</strong><br><small>${escapeHtml(b.reason)}</small>
       <div class="blocker-actions">
@@ -96,15 +116,21 @@ function renderBlockers(planId: string, blockers: Plan["blockers"]): string {
         ${b.detourPhaseId ? `<button onclick="cmd('takeDetour',{planId:'${planId}',blockerId:'${b.id}'})">Detour</button>` : ""}
         <button onclick="cmd('resolveBlocker',{planId:'${planId}',blockerId:'${b.id}'})">Resolved</button>
       </div>
-    </div>`).join("")}</div>`;
+    </div>`,
+    )
+    .join("")}</div>`;
 }
 
 function renderPhaseGrid(plan: Plan): string {
-  return `<div class="phase-grid">${plan.phases.map((p) => `
+  return `<div class="phase-grid">${plan.phases
+    .map(
+      (p) => `
     <div class="phase-card ${p.status}">
       <div class="phase-title">${escapeHtml(p.title)}</div>
       <div class="phase-meta"><span class="badge">${p.status}</span><span>${p.progress}%</span></div>
-    </div>`).join("")}</div>`;
+    </div>`,
+    )
+    .join("")}</div>`;
 }
 
 function renderSidebarSection(m: PlanningHubViewModel): string {
@@ -140,18 +166,32 @@ function renderTrustCard(m: PlanningHubViewModel): string {
 }
 
 function renderL3Card(m: PlanningHubViewModel): string {
-  const items = m.l3Queue.length === 0
-    ? "<div class='muted'>No pending approvals</div>"
-    : m.l3Queue.slice(0, 3).map((i) => `<div class="l3-item">${escapeHtml(i.filePath.split(/[/\\]/).pop() || "")} <small>L${i.riskGrade}</small></div>`).join("");
-  const btn = m.l3Queue.length > 0 ? `<button class="action-btn" onclick="cmd('approveL3')">Review Queue</button>` : "";
+  const items =
+    m.l3Queue.length === 0
+      ? "<div class='muted'>No pending approvals</div>"
+      : m.l3Queue
+          .slice(0, 3)
+          .map(
+            (i) =>
+              `<div class="l3-item">${escapeHtml(i.filePath.split(/[/\\]/).pop() || "")} <small>L${i.riskGrade}</small></div>`,
+          )
+          .join("");
+  const btn =
+    m.l3Queue.length > 0
+      ? `<button class="action-btn" onclick="cmd('approveL3')">Review Queue</button>`
+      : "";
   return `<div class="card"><div class="card-title" ${tooltipAttrs(HELP_TEXT.l3Queue)}>L3 Queue (${m.l3Queue.length})</div>${items}${btn}</div>`;
 }
 
 function renderVerdictsCard(m: PlanningHubViewModel): string {
   if (m.recentVerdicts.length === 0) return "";
-  const items = m.recentVerdicts.slice(0, 3).map((v) =>
-    `<div class="verdict-item ${v.decision.toLowerCase()}">${v.decision}: ${escapeHtml(v.summary.slice(0, 40))}</div>`
-  ).join("");
+  const items = m.recentVerdicts
+    .slice(0, 3)
+    .map(
+      (v) =>
+        `<div class="verdict-item ${v.decision.toLowerCase()}">${v.decision}: ${escapeHtml(v.summary.slice(0, 40))}</div>`,
+    )
+    .join("");
   return `<div class="card"><div class="card-title" ${tooltipAttrs(HELP_TEXT.verdictDecision)}>Recent Verdicts</div>${items}</div>`;
 }
 

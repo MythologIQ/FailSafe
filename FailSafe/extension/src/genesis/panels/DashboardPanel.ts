@@ -57,7 +57,14 @@ export class DashboardPanel {
 
     void this.update();
 
-    // Subscribe to updates
+    this.setupEventSubscriptions();
+    this.setupPeriodicRefresh();
+    this.setupMessageHandlers();
+
+    this.panel.onDidDispose(() => this.dispose(), null, this.disposables);
+  }
+
+  private setupEventSubscriptions(): void {
     const unsubscribes = [
       this.eventBus.on("sentinel.verdict", () => void this.update()),
       this.eventBus.on("qorelogic.trustUpdate", () => void this.update()),
@@ -70,11 +77,14 @@ export class DashboardPanel {
       }),
     ];
     unsubscribes.forEach((unsub) => this.disposables.push({ dispose: unsub }));
+  }
 
-    // Periodic refresh
+  private setupPeriodicRefresh(): void {
     const interval = setInterval(() => void this.update(), 5000);
     this.disposables.push({ dispose: () => clearInterval(interval) });
+  }
 
+  private setupMessageHandlers(): void {
     this.panel.webview.onDidReceiveMessage(
       (message) => {
         switch (message.command) {
@@ -104,8 +114,6 @@ export class DashboardPanel {
       null,
       this.disposables,
     );
-
-    this.panel.onDidDispose(() => this.dispose(), null, this.disposables);
   }
 
   public static createOrShow(

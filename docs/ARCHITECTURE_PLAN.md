@@ -10,10 +10,33 @@
 
 **Rationale**: FailSafe contains TrustEngine, EnforcementEngine, PolicyEngine, and CryptoService - all security-critical components requiring mandatory /ql-audit before any changes.
 
+---
+
+## Version Roadmap Reference
+
+| Version | Codename | Focus |
+|---------|----------|-------|
+| **1.0.x** | Foundation | Current stable: governance core, basic visualization |
+| **1.1.0** | Pathfinder | Event-sourced Plans, YAML persistence |
+| **1.2.0** | Navigator | Roadmap View MVP (SVG road visualization) |
+| **1.3.0** | Autopilot | Governance integration (auto-progress tracking) |
+| **2.0.0** | Governance | Gold Standard skills + ambient integration (B12-B28) |
+| **3.0.0** | Horizon | Alternate views: Kanban, Timeline, Token ROI (B6-B11, B29) |
+
+**Planning Sources**:
+- `plan-roadmap-visualization.md` - Roadmap & accountability layer
+- `plan-ui-clarity.md` - UI discoverability enhancements
+- `plan-beta-release.md` - Marketplace requirements
+- `Planning/plan-repo-gold-standard.md` - v2.0.0 Governance suite
+
+---
+
 ## File Tree (The Contract)
 
+### Current Structure (v3.0.2 - Physical Isolation)
+
 ```
-extension/src/
+FailSafe/extension/src/
 |-- extension/
 |   `-- main.ts                    # Extension entry point
 |-- genesis/
@@ -80,6 +103,57 @@ extension/src/
     `-- FailSafeServer.ts          # MCP server interface
 ```
 
+### Planned Additions (v1.1.0 Pathfinder - Phase A) ✅ IMPLEMENTED
+
+```
+FailSafe/extension/src/qorelogic/planning/    # IMPLEMENTED
+|-- types.ts                         # Plan, PlanPhase, Blocker, RiskMarker types
+|-- events.ts                        # Event-sourced plan events (append-only)
+|-- validation.ts                    # Dependency cycle detection, topological sort
+`-- PlanManager.ts                   # Event-sourced plan state + YAML I/O
+```
+
+**Storage**: `.failsafe/plans.yaml` (events, not state)
+
+### Planned Additions (v1.2.0 Navigator - Phase B) ✅ IMPLEMENTED
+
+```
+FailSafe/extension/src/genesis/views/
+`-- RoadmapViewProvider.ts           # IMPLEMENTED: SVG road visualization
+
+FailSafe/extension/src/genesis/panels/
+`-- RoadmapPanel.ts                  # DEFERRED: Full panel version
+```
+
+### Planned Additions (v1.3.0 Autopilot - Phase C) ✅ IMPLEMENTED
+
+**Modified files only** (governance integration):
+- `GovernanceRouter.ts` - Emit plan events on file operations ✅
+- `DojoViewProvider.ts` - Link to Roadmap view ✅
+- `main.ts` - Wire PlanManager at activation ✅
+
+### Planned Additions (v2.0.0 Horizon - Phase D) 📋 PLANNED
+
+```
+FailSafe/extension/src/genesis/components/    # PLANNED FOLDER
+|-- KanbanView.ts                    # Kanban column visualization
+`-- TimelineView.ts                  # Gantt-style timeline
+```
+
+### Planned Additions (UI Clarity Enhancement) ✅ IMPLEMENTED
+
+```
+FailSafe/extension/src/shared/
+|-- styles/
+|   `-- common.ts                    # IMPLEMENTED: Shared CSS constants
+|-- components/
+|   `-- InfoHint.ts                  # IMPLEMENTED: Reusable help tooltips
+`-- content/
+    `-- quickstart.ts                # IMPLEMENTED: Quick start guide content
+```
+
+---
+
 ## Interface Contracts
 
 ### EnforcementEngine
@@ -102,7 +176,21 @@ extension/src/
 - **Output**: Anomaly alerts, pattern matches
 - **Side Effects**: Background thread, event emissions
 
+### PlanManager (v1.1.0+)
+- **Input**: Plan events (create, phase.started, artifact.touched, blocker.added)
+- **Output**: Derived plan state (phases, progress, blockers)
+- **Side Effects**: Persists events to YAML, emits events to UI via EventBus
+
+### RoadmapViewProvider (v1.2.0+)
+- **Input**: Plan state from PlanManager
+- **Output**: SVG road visualization
+- **Side Effects**: Handles webview messages (requestApproval, takeDetour, setViewMode)
+
+---
+
 ## Data Flow
+
+### Core Governance Flow (Current)
 
 ```
 [Agent Intent] -> [IntentScout] -> [GovernanceRouter] -> [PolicyEngine]
@@ -122,18 +210,51 @@ extension/src/
                                     [Execute]            [Block]          [L3ApprovalPanel]
 ```
 
+### Plan Progress Flow (v1.3.0+)
+
+```
+[Intent Created] -> [Plan Created] -> [Roadmap Renders]
+        |
+        v
+[File Write Allowed] -> [GovernanceRouter] -> [PlanManager.recordArtifactTouch()]
+        |
+        v
+[Progress Updated] -> [EventBus.emit()] -> [RoadmapViewProvider.render()]
+        |
+        v
+[Phase Complete] -> [Next Phase Activates]
+```
+
+---
+
 ## Dependencies
 
 | Package | Justification | Vanilla Alternative |
 |---------|---------------|---------------------|
 | better-sqlite3 | High-performance SQLite for ledger | No - native SQLite critical for perf |
 | vscode | Extension API | No - required for VSCode extension |
+| js-yaml | Plan persistence (v1.1.0+) | No - standard YAML library |
+| d3 | Visualization (existing) | No - required for graphs |
+| uuid | Unique identifiers | No - standard library |
+| zod | Schema validation | No - runtime type safety |
+
+---
 
 ## Section 4 Razor Pre-Check
 
 - [x] All planned functions <= 40 lines
 - [x] All planned files <= 250 lines
 - [x] No planned nesting > 3 levels
+
+---
+
+## Simple Made Easy Checklist
+
+- [x] **Values over state**: Event-sourced design (append-only events, derived state)
+- [x] **Composable**: PlanManager, validation, events are separate modules
+- [x] **Declarative**: Plans described as data (YAML), not imperative procedures
+- [x] **No complecting**: Persistence (YAML) separate from business logic (events)
+- [x] **Fail fast**: Dependency cycle detection before plan creation
 
 ---
 *Blueprint sealed. Awaiting GATE tribunal.*

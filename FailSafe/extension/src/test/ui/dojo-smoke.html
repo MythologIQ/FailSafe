@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FailSafe Dojo Smoke</title>
+  <style>
+    body { font-family: sans-serif; padding: 16px; }
+    .section { margin-bottom: 12px; border: 1px solid #ccc; padding: 8px; }
+    .section-title { font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="section">
+    <div class="section-title">Sentinel Status</div>
+    <div class="metric">Files watched: <span data-testid="files-watched">0</span></div>
+  </div>
+  <div class="section">
+    <div class="section-title">L3 Queue</div>
+    <div data-testid="l3-queue">No pending approvals</div>
+  </div>
+  <div class="section">
+    <div class="section-title">Trust Summary</div>
+    <div data-testid="trust-summary">Agents: 0</div>
+  </div>
+  <div class="section">
+    <div class="section-title">Dojo Workflow</div>
+    <button id="reset">Reset Workflow</button>
+  </div>
+  <div class="section">
+    <div class="section-title">Protocol</div>
+    <button id="trust">I Trust The Process</button>
+  </div>
+</body>
+</html>

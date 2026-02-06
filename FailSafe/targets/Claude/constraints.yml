@@ -1,0 +1,25 @@
+# Claude CLI Target Constraints
+
+environment: claude
+output_base: PROD-Extension/Claude
+
+constraints:
+  description:
+    max_length: null # No limit
+    source_field: metadata.description.full
+
+  file_extension: .md
+
+  paths:
+    workflows: .claude/commands/
+    agents: .claude/commands/agents/
+    skills: null # Claude doesn't have skills concept (use commands)
+    policies: null # Embedded in commands
+    templates: .claude/templates/
+    instructions: CLAUDE.md
+
+format:
+  frontmatter: yaml
+  body: markdown
+  # Claude can use custom XML tags
+  preserve_xml_tags: true

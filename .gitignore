@@ -64,6 +64,19 @@ out/
 dist/
 build/
 
+# FailSafe app container build artifacts
+FailSafe/extension/.vscode-test/
+FailSafe/extension/node_modules/
+FailSafe/extension/out/
+FailSafe/extension/*.vsix
+FailSafe/PROD-Extension/**/node_modules/
+FailSafe/PROD-Extension/**/out/
+FailSafe/artifacts/
+FailSafe/_*_OLD/
+
+# Windows reserved names
+nul
+
 # ============================================
 # SECRETS & TOKENS
 # ============================================

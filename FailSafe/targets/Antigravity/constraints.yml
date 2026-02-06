@@ -1,0 +1,26 @@
+# Antigravity (Gemini) Target Constraints
+
+environment: antigravity
+output_base: PROD-Extension/Antigravity
+
+constraints:
+  description:
+    max_length: 250
+    source_field: metadata.description.short
+    fallback: truncate(metadata.description.full, 247) + "..."
+
+  file_extension: .md
+
+  paths:
+    workflows: .agent/workflows/
+    agents: .agent/agents/
+    skills: .agent/skills/
+    policies: .qorelogic/policies/
+    templates: .qorelogic/templates/
+    instructions: .qorelogic/
+
+format:
+  frontmatter: yaml
+  body: markdown
+  # Antigravity accepts the <skill> XML tags in body
+  preserve_xml_tags: true

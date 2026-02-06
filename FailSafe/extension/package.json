@@ -1,0 +1,298 @@
+{
+  "name": "mythologiq-failsafe",
+  "displayName": "MythologIQ: FailSafe (feat. QoreLogic)",
+  "description": "Complete AI governance for modern development. Genesis visualization + QoreLogic framework + Sentinel monitoring.",
+  "icon": "icon.png",
+  "version": "2.0.1",
+  "publisher": "MythologIQ",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MythologIQ/failsafe"
+  },
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other",
+    "Linters",
+    "Visualization"
+  ],
+  "keywords": [
+    "ai",
+    "governance",
+    "hallucination",
+    "verification",
+    "trust",
+    "qorelogic",
+    "sentinel"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension/main.js",
+  "contributes": {
+    "chatParticipants": [
+      {
+        "id": "failsafe.chat",
+        "fullName": "FailSafe Governance",
+        "name": "failsafe",
+        "description": "AI governance assistant for intent management, audits, and trust verification",
+        "isSticky": true,
+        "commands": [
+          {
+            "name": "intent",
+            "description": "Create or view active intent"
+          },
+          {
+            "name": "audit",
+            "description": "Audit current file for risks"
+          },
+          {
+            "name": "trust",
+            "description": "Check agent trust score"
+          },
+          {
+            "name": "status",
+            "description": "Show governance status"
+          },
+          {
+            "name": "seal",
+            "description": "Seal the active intent"
+          }
+        ]
+      }
+    ],
+    "commands": [
+      {
+        "command": "failsafe.showDashboard",
+        "title": "FailSafe: Open Dashboard"
+      },
+      {
+        "command": "failsafe.showLivingGraph",
+        "title": "FailSafe: Open Living Graph"
+      },
+      {
+        "command": "failsafe.focusCortex",
+        "title": "FailSafe: Focus Cortex Omnibar"
+      },
+      {
+        "command": "failsafe.sentinelStatus",
+        "title": "FailSafe: Sentinel Status"
+      },
+      {
+        "command": "failsafe.auditFile",
+        "title": "FailSafe: Audit Current File"
+      },
+      {
+        "command": "failsafe.viewLedger",
+        "title": "FailSafe: View SOA Ledger"
+      },
+      {
+        "command": "failsafe.approveL3",
+        "title": "FailSafe: Review L3 Queue"
+      },
+      {
+        "command": "failsafe.generateFeedback",
+        "title": "FailSafe: Generate Feedback"
+      },
+      {
+        "command": "failsafe.viewFeedback",
+        "title": "FailSafe: View Feedback"
+      },
+      {
+        "command": "failsafe.exportFeedback",
+        "title": "FailSafe: Export Feedback"
+      },
+      {
+        "command": "failsafe.syncFramework",
+        "title": "FailSafe: Sync Multi-Agent Framework"
+      },
+      {
+        "command": "failsafe.showRoadmap",
+        "title": "FailSafe: Show Roadmap"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "failsafe.showDashboard",
+        "key": "ctrl+alt+f",
+        "mac": "cmd+alt+f"
+      },
+      {
+        "command": "failsafe.focusCortex",
+        "key": "ctrl+alt+c",
+        "mac": "cmd+alt+c"
+      },
+      {
+        "command": "failsafe.auditFile",
+        "key": "ctrl+alt+a",
+        "mac": "cmd+alt+a"
+      },
+      {
+        "command": "failsafe.showRoadmap",
+        "key": "ctrl+alt+r",
+        "mac": "cmd+alt+r"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "failsafe-sidebar",
+          "title": "FailSafe",
+          "icon": "media/failsafe-icon.png"
+        }
+      ]
+    },
+    "views": {
+      "failsafe-sidebar": [
+        {
+          "id": "failsafe.dojo",
+          "name": "The Dojo",
+          "type": "webview",
+          "icon": "media/failsafe-icon.png"
+        },
+        {
+          "id": "failsafe.sentinel",
+          "name": "Sentinel",
+          "type": "webview",
+          "icon": "media/failsafe-icon.png"
+        },
+        {
+          "id": "failsafe.stream",
+          "name": "Cortex Stream",
+          "type": "webview",
+          "icon": "media/failsafe-icon.png"
+        },
+        {
+          "id": "failsafe.roadmap",
+          "name": "Roadmap",
+          "type": "webview",
+          "icon": "media/failsafe-icon.png"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "FailSafe",
+      "properties": {
+        "failsafe.genesis.livingGraph": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Living Graph visualization"
+        },
+        "failsafe.genesis.cortexOmnibar": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Cortex Omnibar NLP interface"
+        },
+        "failsafe.genesis.theme": {
+          "type": "string",
+          "enum": [
+            "starry-night",
+            "light",
+            "high-contrast"
+          ],
+          "default": "starry-night",
+          "description": "Genesis UI theme"
+        },
+        "failsafe.sentinel.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Sentinel monitoring daemon"
+        },
+        "failsafe.sentinel.mode": {
+          "type": "string",
+          "enum": [
+            "heuristic",
+            "llm-assisted",
+            "hybrid"
+          ],
+          "default": "heuristic",
+          "description": "Sentinel operating mode"
+        },
+        "failsafe.sentinel.localModel": {
+          "type": "string",
+          "default": "phi3:mini",
+          "description": "Ollama model for LLM-assisted mode"
+        },
+        "failsafe.sentinel.ollamaEndpoint": {
+          "type": "string",
+          "default": "http://localhost:11434",
+          "description": "Ollama API endpoint"
+        },
+        "failsafe.qorelogic.ledgerPath": {
+          "type": "string",
+          "default": ".failsafe/ledger/soa_ledger.db",
+          "description": "Path to SOA Ledger database"
+        },
+        "failsafe.qorelogic.strictMode": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable strict governance (block on all warnings)"
+        },
+        "failsafe.feedback.outputDir": {
+          "type": "string",
+          "default": ".failsafe/feedback",
+          "description": "Directory for storing session feedback and evaluation reports"
+        },
+        "failsafe.qorelogic.l3SLA": {
+          "type": "number",
+          "default": 120,
+          "description": "L3 first response SLA in seconds"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run patch:better-sqlite3 && npm run rebuild:vscode",
+    "patch:better-sqlite3": "node ./scripts/patch-better-sqlite3.cjs",
+    "rebuild:vscode": "node ./scripts/rebuild-vscode-electron.cjs",
+    "test": "vscode-test --extensionDevelopmentPath . --extensionTestsPath ./out/test/suite/index",
+    "test:ui": "playwright test",
+    "test:all": "npm run lint && npm test && npm run test:ui",
+    "benchmark:novelty": "node ./scripts/novelty_benchmark.js",
+    "test:novelty": "node ./scripts/novelty_smoke_test.js",
+    "lint": "eslint src --ext ts",
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.1",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/glob": "^8.1.0",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^20.10.0",
+    "@types/proper-lockfile": "^4.1.4",
+    "@types/vscode": "^1.90.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "@vscode/test-cli": "^0.0.11",
+    "@vscode/test-electron": "^2.3.8",
+    "@vscode/vsce": "^2.22.0",
+    "eslint": "^8.50.0",
+    "typescript": "^5.2.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.3",
+    "chokidar": "^3.5.3",
+    "d3": "^7.8.5",
+    "glob": "^10.5.0",
+    "js-yaml": "^4.1.1",
+    "proper-lockfile": "^4.1.2",
+    "uuid": "^9.0.0",
+    "zod": "^3.25.76"
+  },
+  "binary": {
+    "module_name": "better_sqlite3",
+    "module_path": "./build/Release/",
+    "host": "https://github.com/WiseLibs/better-sqlite3/releases/download/",
+    "remote_path": "v{version}/",
+    "package_name": "{module_name}-v{version}-{node_abi}-{platform}-{arch}.tar.gz"
+  },
+  "optionalDependencies": {
+    "better-sqlite3": "^12.6.2"
+  }
+}

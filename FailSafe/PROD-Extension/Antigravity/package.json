@@ -1,0 +1,50 @@
+{
+  "name": "mythologiq-failsafe-antigravity",
+  "displayName": "MythologIQ FailSafe for Antigravity",
+  "description": "Token Efficient Governance for AI-assisted development in Antigravity/Gemini",
+  "version": "2.0.1",
+  "publisher": "MythologIQ",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MythologIQ/FailSafe"
+  },
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other",
+    "Snippets"
+  ],
+  "keywords": [
+    "failsafe",
+    "governance",
+    "antigravity",
+    "gemini",
+    "ai",
+    "workflows"
+  ],
+  "icon": "icon.png",
+  "main": "./out/extension.js",
+  "activationEvents": [
+    "onCommand:failsafe.antigravity.scaffold"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "failsafe.antigravity.scaffold",
+        "title": "FailSafe: Scaffold Antigravity Workflows"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "@types/vscode": "^1.74.0",
+    "typescript": "^5.0.0"
+  }
+}

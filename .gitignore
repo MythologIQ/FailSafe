@@ -1,6 +1,59 @@
+# ============================================
+# AI GOVERNANCE & PROPRIETARY DIRECTORIES
+# ============================================
+# These directories contain AI agent configuration,
+# session state, and proprietary governance logic.
+# MUST be excluded from public/open-source repos.
+# ============================================
+
 .agent/
 .claude/
 .failsafe/
+.qorelogic/
+.cursor/
+.windsurf/
+.copilot/
+
+# AI instruction files (workspace-specific)
+CLAUDE.md
+GEMINI.md
+COPILOT.md
+CURSOR.md
+
+# ============================================
+# IDE & EDITOR SETTINGS (LOCAL)
+# ============================================
+# Exclude local IDE settings to prevent
+# contributor environment conflicts.
+# ============================================
+
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json.example
+
+.idea/
+*.swp
+*.swo
+*~
+
+# ============================================
+# PLANNING & GOVERNANCE DOCUMENTS
+# ============================================
+# Private planning docs, transfer files,
+# and governance records (licensing TBD).
+# ============================================
+
+plan-*.md
+plans/
+Planning/
+PMTransfer/
+docs/
+docs/Deep Review/
+
+# ============================================
+# BUILD ARTIFACTS & DEPENDENCIES
+# ============================================
+
 node_modules/
 extension/node_modules/
 extension/out/
@@ -8,22 +61,56 @@ extension/.vscode-test/
 extension/test-results/
 extension/*.vsix
 out/
+dist/
+build/
+
+# FailSafe app container build artifacts
+FailSafe/extension/.vscode-test/
+FailSafe/extension/node_modules/
+FailSafe/extension/out/
+FailSafe/extension/*.vsix
+FailSafe/PROD-Extension/**/node_modules/
+FailSafe/PROD-Extension/**/out/
+FailSafe/artifacts/
+FailSafe/_*_OLD/
+
+# Windows reserved names
+nul
+
+# ============================================
+# SECRETS & TOKENS
+# ============================================
+
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+.vsce-token
+.ovsx-token
+extension/.vsce-token
+extension/.ovsx-token
+
+# ============================================
+# LOGS & TEMPORARY FILES
+# ============================================
+
 *.log
 *.txt
+.DS_Store
+Thumbs.db
+
+# ============================================
+# EXPLICIT INCLUSIONS
+# ============================================
+# Public documentation that SHOULD be tracked.
+# ============================================
+
 !README.md
 !FAILSAFE_SPECIFICATION.md
 !GapAudit.md
 !IMPLEMENTATION_PLAN.md
 !ROADMAP.md
 !CHANGELOG.md
-!CLAUDE.md
-!GEMINI.md
-.DS_Store
-dist/
-build/
-plans/
-docs/Deep Review/
-.vsce-token
-.ovsx-token
-extension/.vsce-token
-extension/.ovsx-token
+!LICENSE
+!CONTRIBUTING.md

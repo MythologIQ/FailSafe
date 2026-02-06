@@ -1,0 +1,50 @@
+{
+  "name": "mythologiq-failsafe-copilot",
+  "displayName": "MythologIQ FailSafe for Copilot",
+  "description": "Token Efficient Governance for AI-assisted development in VSCode or Cursor",
+  "version": "2.0.1",
+  "publisher": "MythologIQ",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MythologIQ/FailSafe"
+  },
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other",
+    "Snippets"
+  ],
+  "keywords": [
+    "failsafe",
+    "governance",
+    "copilot",
+    "github",
+    "ai",
+    "prompts"
+  ],
+  "icon": "icon.png",
+  "main": "./out/extension.js",
+  "activationEvents": [
+    "onCommand:failsafe.copilot.scaffold"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "failsafe.copilot.scaffold",
+        "title": "FailSafe: Scaffold Copilot Prompts"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "@types/vscode": "^1.74.0",
+    "typescript": "^5.0.0"
+  }
+}

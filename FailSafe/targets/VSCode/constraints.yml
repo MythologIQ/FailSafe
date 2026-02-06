@@ -1,0 +1,43 @@
+# VSCode Copilot Target Constraints
+
+environment: vscode
+output_base: PROD-Extension/VSCode
+
+constraints:
+  description:
+    max_length: null # No limit
+    source_field: metadata.description.full
+
+  file_extensions:
+    workflows: .prompt.md
+    agents: .agent.md
+    skills: SKILL.md # Inside folder
+    instructions: .instructions.md
+
+  paths:
+    workflows: .github/prompts/
+    agents: .github/agents/
+    skills: .github/skills/ # Creates folders: .github/skills/{name}/SKILL.md
+    policies: .failsafe/policies/
+    templates: .failsafe/templates/
+    instructions: .github/copilot-instructions.md
+
+format:
+  frontmatter: yaml
+  body: markdown
+  # VSCode uses standard markdown, strip custom XML tags
+  preserve_xml_tags: false
+
+  # VSCode-specific frontmatter fields
+  additional_fields:
+    agent: agent
+    tools: [search, fetch, codebase]
+
+skill_structure:
+  # Skills are folders, not flat files
+  folder_per_skill: true
+  main_file: SKILL.md
+  optional_dirs:
+    - scripts/
+    - examples/
+    - resources/

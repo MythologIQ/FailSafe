@@ -13,15 +13,18 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue.svg)](https://www.typescriptlang.org)
 [![VS Code Extension](https://img.shields.io/badge/VS%20Code-Extension-007ACC?logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe)
 [![Open VSX](https://img.shields.io/badge/Open%20VSX-Extension-orange)](https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe)
-[![Documentation](https://img.shields.io/badge/docs-FAILSAFE_SPECIFICATION-blue)](FAILSAFE_SPECIFICATION.md)
+[![Claude Code](https://img.shields.io/badge/Claude%20Code-Commands-8B5CF6)](https://github.com/MythologIQ/FailSafe/releases)
+[![Documentation](https://img.shields.io/badge/docs-FAILSAFE_SPECIFICATION-blue)](docs/FAILSAFE_SPECIFICATION.md)
+
+**Current Release**: v2.0.1 (2026-02-05)
 
 > **If this project helps you, please star it!** It helps others discover FailSafe.
 
-[Quick Start](#quick-example) | [Documentation](FAILSAFE_SPECIFICATION.md) | [VS Code Extension](https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe) | [Open VSX](https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe) | [Roadmap](ROADMAP.md)
+[Quick Start](#quick-example) | [Documentation](docs/FAILSAFE_SPECIFICATION.md) | [VS Code Extension](https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe) | [Open VSX](https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe) | [Roadmap](docs/ROADMAP.md)
 
 <br/>
 
-*FailSafe is open source. Fork it, open issues, and submit pull requests.*
+_FailSafe is open source. Fork it, open issues, and submit pull requests._
 
 > **BETA NOTICE:** FailSafe is a beta product. Expect breaking changes and rough edges. See [Terms and Conditions (Beta)](#terms-and-conditions-beta).
 
@@ -89,49 +92,127 @@ graph TD
 
 ## Directory Structure
 
+FailSafe uses a **Physical Isolation** model to separate workspace governance from application development.
+
+### Workspace Root (Governance)
+
 ```
-FailSafe/
-├── .failsafe/                # Workspace configuration and policies
-├── qorelogic/                # System manifests and templates
-├── extension/                # VS Code extension source
-├── docs/                     # Reference documentation
-├── governance/               # Governance maps and alignment
-└── FAILSAFE_SPECIFICATION.md # Source of truth
+/ (root)
+├── .agent/                   # Active workspace workflows
+├── .claude/                  # Active commands + secure tokens
+├── .qorelogic/               # Workspace configuration (locked)
+├── docs/                     # Workspace governance (Ledger, State, Spec)
+└── FAILSAFE_SPECIFICATION.md -> docs/FAILSAFE_SPECIFICATION.md
+```
+
+### App Container (Extension Source)
+
+```
+/FailSafe/ (container)
+├── extension/                # VSCode Extension TypeScript Project
+├── Antigravity/              # Gemini AI workflows
+├── Claude/                   # Claude AI workflows
+├── VSCode/                   # VSCode Copilot prompts
+└── build/                    # Build & validation tooling
 ```
 
 ---
 
 ## Core Systems
 
-| System | Layer | Description |
-|--------|-------|-------------|
-| Genesis | Experience | Dashboard, living graph, and audit stream |
-| QoreLogic | Governance | Intent gating, policies, ledger, and trust |
-| Sentinel | Enforcement | File watcher audits and verdicts |
+| System    | Layer       | Description                                |
+| --------- | ----------- | ------------------------------------------ |
+| Genesis   | Experience  | Dashboard, living graph, and audit stream  |
+| QoreLogic | Governance  | Intent gating, policies, ledger, and trust |
+| Sentinel  | Enforcement | File watcher audits and verdicts           |
 
 ---
 
 ## IDE Extension
 
-| Extension | Description |
-|-----------|-------------|
-| VS Code | Save-time governance, audits, and dashboards |
+| Extension | Description                                  |
+| --------- | -------------------------------------------- |
+| VS Code   | Save-time governance, audits, and dashboards |
 
 ---
 
 ## Install
 
-### VS Code Marketplace
+FailSafe provides governance for multiple AI development environments:
 
-Install from the VS Code Marketplace:
+### VS Code Extension (Save-Time Governance)
 
-https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe
+Install the FailSafe extension for real-time governance, audits, and dashboards.
 
-### Open VSX
+**VS Code Marketplace:**
+```
+ext install MythologIQ.mythologiq-failsafe
+```
+Or: https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe
 
-Install from Open VSX:
+**Open VSX (VSCodium, Gitpod, etc.):**
+```
+ext install MythologIQ.mythologiq-failsafe
+```
+Or: https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe
 
-https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe
+---
+
+### Claude Code (Slash Commands)
+
+Download the Claude Code artifact from [Releases](https://github.com/MythologIQ/FailSafe/releases).
+
+**Installation:**
+```bash
+# Extract to your Claude commands directory
+unzip failsafe-claude-v*.zip -d ~/.claude/commands/
+
+# Verify installation
+ls ~/.claude/commands/
+```
+
+**Available Commands:**
+- `/ql-bootstrap` - Initialize workspace governance
+- `/ql-status` - Quick lifecycle check
+- `/ql-plan` - Create implementation plans
+- `/ql-audit` - Gate tribunal for plans
+- `/ql-implement` - Execute implementation
+- `/ql-substantiate` - Session seal with Merkle verification
+
+---
+
+### Antigravity / Gemini (Workflows)
+
+Download the Antigravity artifact from [Releases](https://github.com/MythologIQ/FailSafe/releases).
+
+**Installation:**
+```bash
+# Extract to your project root
+unzip failsafe-antigravity-v*.zip -d ./
+
+# This creates:
+#   .agent/workflows/     - A.E.G.I.S. workflow files
+#   .qorelogic/orbits/    - Persona files (Governor, Judge, Specialist)
+#   .qorelogic/skills/    - Skill definitions
+```
+
+---
+
+### VSCode Copilot (Prompts)
+
+Download the VSCode Copilot artifact from [Releases](https://github.com/MythologIQ/FailSafe/releases).
+
+**Installation:**
+```bash
+# Extract to your project root
+unzip failsafe-vscode-copilot-v*.zip -d ./
+
+# This creates:
+#   .github/prompts/              - Copilot prompt files
+#   .github/copilot-instructions/ - Agent personas
+#   .failsafe/config/             - Governance configuration
+#   .failsafe/skills/             - Skill definitions
+```
 
 ---
 
@@ -139,7 +220,7 @@ https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe
 
 ```bash
 # Run FailSafe locally
-cd extension
+cd FailSafe/extension
 npm install
 npm run compile
 ```

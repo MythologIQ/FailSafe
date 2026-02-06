@@ -4,7 +4,7 @@ Token Efficient Governance for AI-assisted development in VSCode or Cursor.
 
 Local-first safety for AI coding assistants.
 
-**Current Release**: v2.0.1 (2026-02-05)
+**Current Release**: v3.0.1 (2026-02-06)
 
 ![FailSafe Banner](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/icon.png)
 
@@ -77,37 +77,37 @@ Detect and propagate governance bundles to supported systems via `FailSafe: Sync
 
 ## Commands
 
-| Command | Description |
-|---------|-------------|
-| FailSafe: Open Dashboard | Main governance dashboard |
-| FailSafe: Open Living Graph | Visualization view |
-| FailSafe: Focus Cortex Omnibar | Intent-aware omnibar |
-| FailSafe: Sentinel Status | Show monitoring status |
-| FailSafe: Audit Current File | Manual file audit |
-| FailSafe: View SOA Ledger | Browse audit history |
-| FailSafe: Review L3 Queue | Review pending approvals |
-| FailSafe: Generate Feedback | Capture feedback snapshot |
-| FailSafe: View Feedback | Open feedback panel |
-| FailSafe: Export Feedback | Export feedback to JSON |
+| Command                              | Description                 |
+| ------------------------------------ | --------------------------- |
+| FailSafe: Open Dashboard             | Main governance dashboard   |
+| FailSafe: Open Living Graph          | Visualization view          |
+| FailSafe: Focus Cortex Omnibar       | Intent-aware omnibar        |
+| FailSafe: Sentinel Status            | Show monitoring status      |
+| FailSafe: Audit Current File         | Manual file audit           |
+| FailSafe: View SOA Ledger            | Browse audit history        |
+| FailSafe: Review L3 Queue            | Review pending approvals    |
+| FailSafe: Generate Feedback          | Capture feedback snapshot   |
+| FailSafe: View Feedback              | Open feedback panel         |
+| FailSafe: Export Feedback            | Export feedback to JSON     |
 | FailSafe: Sync Multi-Agent Framework | Propagate QoreLogic bundles |
 
 ## Configuration
 
 Open Settings and search for `FailSafe`:
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `failsafe.genesis.livingGraph` | `true` | Enable Living Graph visualization |
-| `failsafe.genesis.cortexOmnibar` | `true` | Enable Cortex Omnibar |
-| `failsafe.genesis.theme` | `starry-night` | Genesis UI theme |
-| `failsafe.sentinel.enabled` | `true` | Enable Sentinel monitoring |
-| `failsafe.sentinel.mode` | `heuristic` | Sentinel operating mode |
-| `failsafe.sentinel.localModel` | `phi3:mini` | Ollama model for LLM-assisted mode |
-| `failsafe.sentinel.ollamaEndpoint` | `http://localhost:11434` | Ollama API endpoint |
-| `failsafe.qorelogic.ledgerPath` | `.failsafe/ledger/soa_ledger.db` | Ledger database path |
-| `failsafe.qorelogic.strictMode` | `false` | Block on all warnings |
-| `failsafe.qorelogic.l3SLA` | `120` | L3 response SLA (seconds) |
-| `failsafe.feedback.outputDir` | `.failsafe/feedback` | Feedback output directory |
+| Setting                            | Default                          | Description                        |
+| ---------------------------------- | -------------------------------- | ---------------------------------- |
+| `failsafe.genesis.livingGraph`     | `true`                           | Enable Living Graph visualization  |
+| `failsafe.genesis.cortexOmnibar`   | `true`                           | Enable Cortex Omnibar              |
+| `failsafe.genesis.theme`           | `starry-night`                   | Genesis UI theme                   |
+| `failsafe.sentinel.enabled`        | `true`                           | Enable Sentinel monitoring         |
+| `failsafe.sentinel.mode`           | `heuristic`                      | Sentinel operating mode            |
+| `failsafe.sentinel.localModel`     | `phi3:mini`                      | Ollama model for LLM-assisted mode |
+| `failsafe.sentinel.ollamaEndpoint` | `http://localhost:11434`         | Ollama API endpoint                |
+| `failsafe.qorelogic.ledgerPath`    | `.failsafe/ledger/soa_ledger.db` | Ledger database path               |
+| `failsafe.qorelogic.strictMode`    | `false`                          | Block on all warnings              |
+| `failsafe.qorelogic.l3SLA`         | `120`                            | L3 response SLA (seconds)          |
+| `failsafe.feedback.outputDir`      | `.failsafe/feedback`             | Feedback output directory          |
 
 If `.failsafe/config/sentinel.yaml` exists, it overrides settings. The initializer seeds it with `mode: hybrid` unless you change it.
 

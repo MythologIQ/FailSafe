@@ -85,35 +85,31 @@ export class DashboardPanel {
   }
 
   private setupMessageHandlers(): void {
-    this.panel.webview.onDidReceiveMessage(
-      (message) => {
-        switch (message.command) {
-          case "auditFile":
-            vscode.commands.executeCommand("failsafe.auditFile");
-            break;
-          case "showGraph":
-            vscode.commands.executeCommand("failsafe.showLivingGraph");
-            break;
-          case "showLedger":
-            vscode.commands.executeCommand("failsafe.viewLedger");
-            break;
-          case "focusCortex":
-            vscode.commands.executeCommand("failsafe.focusCortex");
-            break;
-          case "showL3Queue":
-            vscode.commands.executeCommand("failsafe.approveL3");
-            break;
-          case "pauseGovernance":
-            vscode.commands.executeCommand("failsafe.pauseGovernance");
-            break;
-          case "resumeGovernance":
-            vscode.commands.executeCommand("failsafe.resumeGovernance");
-            break;
-        }
-      },
-      null,
-      this.disposables,
-    );
+    this.panel.webview.onDidReceiveMessage((message) => {
+      switch (message.command) {
+        case "auditFile":
+          vscode.commands.executeCommand("failsafe.auditFile");
+          break;
+        case "showGraph":
+          vscode.commands.executeCommand("failsafe.showLivingGraph");
+          break;
+        case "showLedger":
+          vscode.commands.executeCommand("failsafe.viewLedger");
+          break;
+        case "focusCortex":
+          vscode.commands.executeCommand("failsafe.focusCortex");
+          break;
+        case "showL3Queue":
+          vscode.commands.executeCommand("failsafe.approveL3");
+          break;
+        case "pauseGovernance":
+          vscode.commands.executeCommand("failsafe.pauseGovernance");
+          break;
+        case "resumeGovernance":
+          vscode.commands.executeCommand("failsafe.resumeGovernance");
+          break;
+      }
+    }, null);
   }
 
   public static createOrShow(

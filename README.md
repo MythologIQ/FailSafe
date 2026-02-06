@@ -2,7 +2,9 @@
 
 # FailSafe
 
-**A kernel architecture for governing autonomous AI agents**
+**Governance for AI-assisted development in VS Code.**
+
+*Local-first safety for AI coding assistants.*
 
 [![GitHub Stars](https://img.shields.io/github/stars/MythologIQ/FailSafe?style=social)](https://github.com/MythologIQ/FailSafe/stargazers)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)

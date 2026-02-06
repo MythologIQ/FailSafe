@@ -9,7 +9,6 @@ import * as vscode from "vscode";
 import { Logger } from "../shared/Logger";
 import { FeedbackManager } from "../genesis/FeedbackManager";
 import { FailSafeMCPServer } from "../mcp/FailSafeServer";
-import { PlanManager } from "../qorelogic/planning/PlanManager";
 import { FailSafeChatParticipant } from "../genesis/chat/FailSafeChatParticipant";
 import { WorkspaceMigration } from "../qorelogic/WorkspaceMigration";
 import { GenesisManager } from "../genesis/GenesisManager";
@@ -18,6 +17,8 @@ import { SentinelDaemon } from "../sentinel/SentinelDaemon";
 import { EventBus } from "../shared/EventBus";
 import { SessionManager } from "../governance/SessionManager";
 import { GovernanceStatusBar } from "../governance/GovernanceStatusBar";
+import { LedgerManager } from "../qorelogic/ledger/LedgerManager";
+import { ShadowGenomeManager } from "../qorelogic/shadow/ShadowGenomeManager";
 
 // Bootstrap Modules
 import { bootstrapCore } from "./bootstrapCore";
@@ -27,8 +28,6 @@ import { bootstrapSentinel } from "./bootstrapSentinel";
 import { bootstrapGenesis } from "./bootstrapGenesis";
 import { bootstrapMCP } from "./bootstrapMCP";
 import { registerCommands } from "./commands";
-import { LedgerManager } from "../qorelogic/ledger/LedgerManager";
-import { ShadowGenomeManager } from "../qorelogic/shadow/ShadowGenomeManager";
 
 let genesisManager: GenesisManager;
 let qorelogicManager: QoreLogicManager;
@@ -118,6 +117,7 @@ export async function activate(
         const choice = await vscode.window.showInformationMessage(
           `FailSafe detected ${ungoverned.length} ungoverned AI system(s).`,
           "View Details",
+          "Ignore",
         );
         if (choice === "View Details")
           vscode.commands.executeCommand("failsafe.syncFramework");

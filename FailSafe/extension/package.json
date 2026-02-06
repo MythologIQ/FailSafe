@@ -111,6 +111,14 @@
       {
         "command": "failsafe.showRoadmap",
         "title": "FailSafe: Show Roadmap"
+      },
+      {
+        "command": "failsafe.showRoadmapWindow",
+        "title": "FailSafe: Planning Window"
+      },
+      {
+        "command": "failsafe.showAnalytics",
+        "title": "FailSafe: Token Analytics"
       }
     ],
     "keybindings": [
@@ -133,6 +141,16 @@
         "command": "failsafe.showRoadmap",
         "key": "ctrl+alt+r",
         "mac": "cmd+alt+r"
+      },
+      {
+        "command": "failsafe.showRoadmapWindow",
+        "key": "ctrl+alt+p",
+        "mac": "cmd+alt+p"
+      },
+      {
+        "command": "failsafe.showAnalytics",
+        "key": "ctrl+alt+t",
+        "mac": "cmd+alt+t"
       }
     ],
     "viewsContainers": {

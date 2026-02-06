@@ -110,11 +110,15 @@ FailSafe uses a **Physical Isolation** model to separate workspace governance fr
 ```
 /FailSafe/ (container)
 ├── extension/                # VSCode Extension TypeScript Project
-├── Antigravity/              # Gemini AI workflows
-├── Claude/                   # Claude AI workflows
-├── VSCode/                   # VSCode Copilot prompts
+├── Antigravity/              # Gemini + Claude workflows (source)
+├── VSCode/                   # Copilot + Claude prompts (source)
+├── PROD-Extension/           # Production builds (includes Claude)
+│   ├── Antigravity/          # → OpenVSX (Gemini + Claude)
+│   └── VSCode/               # → VS Code Marketplace (Copilot + Claude)
 └── build/                    # Build & validation tooling
 ```
+
+**Note:** Claude Code is no longer a separate build. Claude-specific skills, commands, and file structures are folded into both Antigravity and VSCode extensions.
 
 ---
 
@@ -158,61 +162,48 @@ Or: https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe
 
 ---
 
-### Claude Code (Slash Commands)
+### Antigravity Extension (Gemini + Claude Code)
 
-Download the Claude Code artifact from [Releases](https://github.com/MythologIQ/FailSafe/releases).
-
-**Installation:**
-```bash
-# Extract to your Claude commands directory
-unzip failsafe-claude-v*.zip -d ~/.claude/commands/
-
-# Verify installation
-ls ~/.claude/commands/
+Install from **Open VSX** (VSCodium, Gitpod, Cursor, etc.):
 ```
+ext install MythologIQ.mythologiq-failsafe
+```
+Or: https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe
 
-**Available Commands:**
+The Antigravity extension includes:
+- **Gemini/Antigravity workflows** (`.agent/workflows/`)
+- **Claude Code commands** (`.claude/commands/`)
+- **QoreLogic personas** (Governor, Judge, Specialist)
+- **Governance configuration** and skills
+
+---
+
+### VSCode Copilot Extension (Copilot + Claude Code)
+
+Install from **VS Code Marketplace**:
+```
+ext install MythologIQ.mythologiq-failsafe
+```
+Or: https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe
+
+The VSCode extension includes:
+- **Copilot prompt files** (`.github/prompts/`)
+- **Claude Code commands** (`.claude/commands/`)
+- **Agent personas** (`.github/copilot-instructions/`)
+- **Governance configuration** and skills
+
+---
+
+### Claude Code Commands
+
+Both extensions include Claude Code slash commands:
+
 - `/ql-bootstrap` - Initialize workspace governance
 - `/ql-status` - Quick lifecycle check
 - `/ql-plan` - Create implementation plans
 - `/ql-audit` - Gate tribunal for plans
 - `/ql-implement` - Execute implementation
 - `/ql-substantiate` - Session seal with Merkle verification
-
----
-
-### Antigravity / Gemini (Workflows)
-
-Download the Antigravity artifact from [Releases](https://github.com/MythologIQ/FailSafe/releases).
-
-**Installation:**
-```bash
-# Extract to your project root
-unzip failsafe-antigravity-v*.zip -d ./
-
-# This creates:
-#   .agent/workflows/     - A.E.G.I.S. workflow files
-#   .qorelogic/orbits/    - Persona files (Governor, Judge, Specialist)
-#   .qorelogic/skills/    - Skill definitions
-```
-
----
-
-### VSCode Copilot (Prompts)
-
-Download the VSCode Copilot artifact from [Releases](https://github.com/MythologIQ/FailSafe/releases).
-
-**Installation:**
-```bash
-# Extract to your project root
-unzip failsafe-vscode-copilot-v*.zip -d ./
-
-# This creates:
-#   .github/prompts/              - Copilot prompt files
-#   .github/copilot-instructions/ - Agent personas
-#   .failsafe/config/             - Governance configuration
-#   .failsafe/skills/             - Skill definitions
-```
 
 ---
 

@@ -22,7 +22,10 @@ import { LivingGraphPanel } from './panels/LivingGraphPanel';
 import { DashboardPanel } from './panels/DashboardPanel';
 import { LedgerViewerPanel } from './panels/LedgerViewerPanel';
 import { L3ApprovalPanel } from './panels/L3ApprovalPanel';
+import { RoadmapPanelWindow } from './panels/RoadmapPanelWindow';
+import { AnalyticsDashboardPanel } from './panels/AnalyticsDashboardPanel';
 import { IntentScout } from './cortex/IntentScout';
+import { PlanManager } from '../qorelogic/planning/PlanManager';
 
 export class GenesisManager {
     private context: vscode.ExtensionContext;
@@ -36,9 +39,13 @@ export class GenesisManager {
     private dashboardPanel: DashboardPanel | undefined;
     private ledgerViewerPanel: LedgerViewerPanel | undefined;
     private l3ApprovalPanel: L3ApprovalPanel | undefined;
+    private roadmapPanelWindow: RoadmapPanelWindow | undefined;
+    private analyticsDashboardPanel: AnalyticsDashboardPanel | undefined;
 
     private intentScout: IntentScout;
     private graphData: LivingGraphData | undefined;
+    private planManager: PlanManager | undefined;
+    private workspaceRoot: string;
 
     constructor(
         context: vscode.ExtensionContext,
@@ -54,6 +61,7 @@ export class GenesisManager {
         this.eventBus = eventBus;
         this.logger = new Logger('Genesis');
         this.intentScout = new IntentScout();
+        this.workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
     }
 
     async initialize(): Promise<void> {
@@ -112,6 +120,53 @@ export class GenesisManager {
                 this.context.extensionUri,
                 this.graphData,
                 this.eventBus
+            );
+        }
+    }
+
+    /**
+     * Set the PlanManager instance for roadmap visualization
+     */
+    setPlanManager(planManager: PlanManager): void {
+        this.planManager = planManager;
+    }
+
+    /**
+     * Show the full-screen Planning Roadmap window
+     */
+    showRoadmapWindow(): void {
+        if (!this.planManager) {
+            vscode.window.showWarningMessage('Planning system not initialized');
+            return;
+        }
+
+        if (this.roadmapPanelWindow) {
+            this.roadmapPanelWindow.reveal();
+        } else {
+            this.roadmapPanelWindow = RoadmapPanelWindow.createOrShow(
+                this.context.extensionUri,
+                this.planManager,
+                this.eventBus
+            );
+        }
+    }
+
+    /**
+     * Show the Token Analytics Dashboard (v3.0.0)
+     */
+    showAnalyticsDashboard(): void {
+        if (!this.workspaceRoot) {
+            vscode.window.showWarningMessage('No workspace folder open');
+            return;
+        }
+
+        if (this.analyticsDashboardPanel) {
+            this.analyticsDashboardPanel.reveal();
+        } else {
+            this.analyticsDashboardPanel = AnalyticsDashboardPanel.createOrShow(
+                this.context.extensionUri,
+                this.eventBus,
+                this.workspaceRoot
             );
         }
     }
@@ -424,5 +479,7 @@ ${verdict.actions.map(a => `- ${a.type}: ${a.details} (${a.status})`).join('\n')
         this.dashboardPanel?.dispose();
         this.ledgerViewerPanel?.dispose();
         this.l3ApprovalPanel?.dispose();
+        this.roadmapPanelWindow?.dispose();
+        this.analyticsDashboardPanel?.dispose();
     }
 }

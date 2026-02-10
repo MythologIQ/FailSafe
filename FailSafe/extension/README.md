@@ -150,3 +150,17 @@ MIT - See `LICENSE`.
 - VS Code Marketplace: https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe
 - Open VSX: https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe
 - Documentation: FAILSAFE_SPECIFICATION.md
+
+## Publishing
+
+To publish a new version of FailSafe, use the automated Python script which handles staging, artifact generation, and multi-marketplace upload:
+
+```bash
+# From workspace root
+python FailSafe/build/publish.py
+```
+
+**Prerequisites:**
+
+- `deploy.ps1` and `build-release.ps1` must be present in `FailSafe/build/`.
+- Valid tokens must be present in `.claude/.vsce-token` and `.claude/.ovsx-token`.

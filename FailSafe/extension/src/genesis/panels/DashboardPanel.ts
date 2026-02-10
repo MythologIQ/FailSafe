@@ -13,6 +13,7 @@ import * as vscode from "vscode";
 import { EventBus } from "../../shared/EventBus";
 import { SentinelDaemon } from "../../sentinel/SentinelDaemon";
 import { QoreLogicManager } from "../../qorelogic/QoreLogicManager";
+import { PlanManager } from "../../qorelogic/planning/PlanManager";
 import { getNonce } from "../../shared/utils/htmlSanitizer";
 import { renderDashboardTemplate } from "./templates/DashboardTemplate";
 
@@ -41,6 +42,7 @@ export class DashboardPanel {
   private sentinel: SentinelDaemon;
   private qorelogic: QoreLogicManager;
   private eventBus: EventBus;
+  private planManager?: PlanManager;
   private disposables: vscode.Disposable[] = [];
   private evaluationMetrics: EvaluationMetrics | null = null;
 
@@ -102,11 +104,11 @@ export class DashboardPanel {
         case "showL3Queue":
           vscode.commands.executeCommand("failsafe.approveL3");
           break;
-        case "pauseGovernance":
-          vscode.commands.executeCommand("failsafe.pauseGovernance");
+        case "showPlanningHub":
+          vscode.commands.executeCommand("failsafe.showRoadmapWindow");
           break;
-        case "resumeGovernance":
-          vscode.commands.executeCommand("failsafe.resumeGovernance");
+        case "openRoadmap":
+          vscode.commands.executeCommand("failsafe.openRoadmap");
           break;
       }
     }, null);
@@ -151,6 +153,11 @@ export class DashboardPanel {
     this.panel.reveal();
   }
 
+  public setPlanManager(pm: PlanManager): void {
+    this.planManager = pm;
+    void this.update();
+  }
+
   private async update(): Promise<void> {
     this.panel.webview.html = await this.getHtmlContent();
   }
@@ -164,6 +171,10 @@ export class DashboardPanel {
     const lastVerdict = status.lastVerdict;
     const uptime = this.formatUptime(status.uptime);
 
+    // Get plan data if PlanManager is available
+    const plan = this.planManager?.getActivePlan() ?? null;
+    const planProgress = plan ? this.planManager?.getPlanProgress(plan.id) ?? null : null;
+
     return renderDashboardTemplate({
       nonce,
       cspSource,
@@ -173,6 +184,8 @@ export class DashboardPanel {
       lastVerdict,
       uptime,
       metrics: this.evaluationMetrics,
+      plan,
+      planProgress,
     });
   }
 

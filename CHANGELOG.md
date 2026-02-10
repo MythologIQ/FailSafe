@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- v3.1.0 Roadmap: (Next Phase)
+- v3.2.0 Reliability Hardening: D10 Razor decomposition, UI polish/theme refinements, Gold Standard validation script.
 
 ---
 

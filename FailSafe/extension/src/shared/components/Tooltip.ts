@@ -21,42 +21,42 @@ export const TOOLTIP_STYLES = `
     [data-tooltip] {
         position: relative;
         cursor: help;
+        border-bottom: 1px dotted var(--vscode-descriptionForeground);
     }
     [data-tooltip]::after,
     [data-tooltip]::before {
         position: absolute;
         opacity: 0;
         pointer-events: none;
-        transition: opacity 0.12s ease-out, transform 0.12s ease-out;
         z-index: 1000;
     }
     [data-tooltip]::after {
         content: attr(data-tooltip);
         bottom: calc(100% + 8px);
         left: 50%;
-        transform: translateX(-50%) translateY(2px);
+        transform: translateX(-50%) translateY(4px);
         display: inline-block;
-        background: var(--vscode-editorWidget-background);
-        color: var(--vscode-foreground);
-        border: 1px solid var(--vscode-editorWidget-border);
-        border-radius: 4px;
-        padding: 6px 8px;
-        font-size: 10px;
-        max-width: 240px;
+        background: var(--vscode-editorHoverWidget-background);
+        color: var(--vscode-editorHoverWidget-foreground);
+        border: 1px solid var(--vscode-editorHoverWidget-border);
+        border-radius: 6px;
+        padding: 8px 12px;
+        font-size: 12px;
+        max-width: 300px;
         white-space: normal;
         text-align: left;
         word-break: break-word;
-        line-height: 1.3;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        line-height: 1.4;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     }
     [data-tooltip]::before {
         content: '';
-        bottom: calc(100% + 3px);
+        bottom: calc(100% + 4px);
         left: 50%;
-        transform: translateX(-50%) translateY(2px);
-        border-width: 5px;
+        transform: translateX(-50%) translateY(4px);
+        border-width: 6px;
         border-style: solid;
-        border-color: var(--vscode-editorWidget-background) transparent transparent transparent;
+        border-color: var(--vscode-editorHoverWidget-border) transparent transparent transparent;
     }
     [data-tooltip]:hover::after,
     [data-tooltip]:hover::before,
@@ -64,5 +64,10 @@ export const TOOLTIP_STYLES = `
     [data-tooltip]:focus::before {
         opacity: 1;
         transform: translateX(-50%) translateY(0);
+        animation: tooltipFade 0.15s ease-out;
+    }
+    @keyframes tooltipFade {
+        from { opacity: 0; transform: translateX(-50%) translateY(4px); }
+        to { opacity: 1; transform: translateX(-50%) translateY(0); }
     }
 `;

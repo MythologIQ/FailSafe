@@ -19,6 +19,7 @@ import { SessionManager } from "../governance/SessionManager";
 import { GovernanceStatusBar } from "../governance/GovernanceStatusBar";
 import { LedgerManager } from "../qorelogic/ledger/LedgerManager";
 import { ShadowGenomeManager } from "../qorelogic/shadow/ShadowGenomeManager";
+import { RoadmapServer } from "../roadmap";
 
 // Bootstrap Modules
 import { bootstrapCore } from "./bootstrapCore";
@@ -40,6 +41,7 @@ let governanceStatusBar: GovernanceStatusBar;
 let ledgerManager: LedgerManager;
 let shadowGenomeManager: ShadowGenomeManager;
 let mcpServer: FailSafeMCPServer | undefined;
+let roadmapServer: RoadmapServer | undefined;
 
 export async function activate(
   context: vscode.ExtensionContext,
@@ -104,7 +106,19 @@ export async function activate(
       feedbackManager,
     );
 
-    // 9. Startup Checks
+    // 9. Roadmap Server (external browser)
+    roadmapServer = new RoadmapServer(core.planManager, eventBus);
+    roadmapServer.start();
+    context.subscriptions.push({ dispose: () => roadmapServer?.stop() });
+
+    // Register openRoadmap command
+    context.subscriptions.push(
+      vscode.commands.registerCommand('failsafe.openRoadmap', () => {
+        vscode.env.openExternal(vscode.Uri.parse('http://localhost:9376'));
+      })
+    );
+
+    // 10. Startup Checks
     setTimeout(async () => {
       // Re-initialize for startup check scope
       const { FrameworkSync } = await import("../qorelogic/FrameworkSync");
@@ -144,6 +158,7 @@ export async function activate(
 
 export async function deactivate(): Promise<void> {
   logger?.info("Deactivating FailSafe...");
+  roadmapServer?.stop();
   ledgerManager?.close();
   shadowGenomeManager?.close();
   sentinelDaemon?.stop();

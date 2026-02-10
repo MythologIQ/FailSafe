@@ -1,0 +1,340 @@
+/* FailSafe Roadmap - Dark Theme */
+:root {
+  --bg-primary: #1e1e1e;
+  --bg-secondary: #252526;
+  --bg-tertiary: #2d2d2d;
+  --text-primary: #cccccc;
+  --text-secondary: #9d9d9d;
+  --accent-blue: #569cd6;
+  --accent-green: #4ec9b0;
+  --accent-yellow: #dcdcaa;
+  --accent-red: #f14c4c;
+  --accent-orange: #ce9178;
+  --border-color: #3c3c3c;
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Header */
+#header {
+  background-color: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  padding: 16px 24px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+#header h1 {
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: var(--accent-yellow);
+  animation: pulse 1.5s infinite;
+}
+
+.status-dot.connected {
+  background-color: var(--accent-green);
+  animation: none;
+}
+
+.status-dot.disconnected {
+  background-color: var(--accent-red);
+  animation: none;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.status-text {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+/* Main Content */
+#main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
+  gap: 16px;
+  padding: 16px 24px;
+  max-width: 1600px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+@media (max-width: 1200px) {
+  #main {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Panels */
+.panel {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+
+.panel h2 {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* Sprint Timeline */
+#timeline-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sprint-card {
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 12px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.sprint-card:hover {
+  border-color: var(--accent-blue);
+}
+
+.sprint-card.active {
+  border-color: var(--accent-green);
+  border-width: 2px;
+}
+
+.sprint-card.archived {
+  opacity: 0.6;
+}
+
+.sprint-name {
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.sprint-meta {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+/* Current Sprint */
+.sprint-header {
+  margin-bottom: 16px;
+}
+
+.roadmap-container {
+  background-color: var(--bg-tertiary);
+  border-radius: 4px;
+  padding: 16px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+}
+
+.roadmap-container svg {
+  width: 100%;
+  height: auto;
+  min-height: 120px;
+}
+
+/* Phase Grid */
+.phase-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.phase-card {
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 12px;
+}
+
+.phase-card.pending { border-left: 3px solid var(--text-secondary); }
+.phase-card.active { border-left: 3px solid var(--accent-blue); }
+.phase-card.completed { border-left: 3px solid var(--accent-green); }
+.phase-card.blocked { border-left: 3px solid var(--accent-red); }
+.phase-card.skipped { border-left: 3px solid var(--accent-orange); }
+
+.phase-title {
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.phase-status {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.phase-progress {
+  margin-top: 8px;
+  height: 4px;
+  background-color: var(--bg-primary);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.phase-progress-bar {
+  height: 100%;
+  background-color: var(--accent-green);
+  transition: width 0.3s;
+}
+
+/* Blockers Panel */
+.blockers-panel {
+  margin-top: 16px;
+}
+
+.blocker-item {
+  background-color: rgba(241, 76, 76, 0.1);
+  border: 1px solid var(--accent-red);
+  border-radius: 4px;
+  padding: 12px;
+  margin-bottom: 8px;
+}
+
+.blocker-title {
+  font-weight: 500;
+  color: var(--accent-red);
+  margin-bottom: 4px;
+}
+
+.blocker-reason {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+/* Event Stream */
+.event-stream {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.event-item {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.875rem;
+}
+
+.event-item:last-child {
+  border-bottom: none;
+}
+
+.event-time {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  margin-right: 8px;
+}
+
+.event-type {
+  font-weight: 500;
+  margin-right: 8px;
+}
+
+.event-type.verdict { color: var(--accent-blue); }
+.event-type.plan { color: var(--accent-green); }
+.event-type.blocker { color: var(--accent-red); }
+.event-type.sprint { color: var(--accent-yellow); }
+
+/* Footer */
+#footer {
+  background-color: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+  padding: 12px 24px;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+/* Empty States */
+.empty-state {
+  text-align: center;
+  padding: 24px;
+  color: var(--text-secondary);
+}
+
+.empty-state-icon {
+  font-size: 2rem;
+  margin-bottom: 8px;
+}
+
+/* Flash Animations */
+.flash-pass {
+  animation: flashGreen 0.5s ease-out;
+}
+
+.flash-warn {
+  animation: flashYellow 0.5s ease-out;
+}
+
+.flash-block {
+  animation: flashRed 0.5s ease-out;
+}
+
+@keyframes flashGreen {
+  0% { background-color: rgba(78, 201, 176, 0.3); }
+  100% { background-color: transparent; }
+}
+
+@keyframes flashYellow {
+  0% { background-color: rgba(220, 220, 170, 0.3); }
+  100% { background-color: transparent; }
+}
+
+@keyframes flashRed {
+  0% { background-color: rgba(241, 76, 76, 0.3); }
+  100% { background-color: transparent; }
+}

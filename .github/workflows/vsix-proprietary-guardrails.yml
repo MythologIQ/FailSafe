@@ -1,0 +1,45 @@
+name: VSIX Proprietary Guardrails
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  verify-vsix-guardrails:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: |
+            FailSafe/PROD-Extension/VSCode/package-lock.json
+            FailSafe/PROD-Extension/Antigravity/package-lock.json
+
+      - name: Install VSCode PROD dependencies
+        run: npm ci
+        working-directory: FailSafe/PROD-Extension/VSCode
+
+      - name: Install Antigravity PROD dependencies
+        run: npm ci
+        working-directory: FailSafe/PROD-Extension/Antigravity
+
+      - name: Compile VSCode PROD extension
+        run: npm run compile
+        working-directory: FailSafe/PROD-Extension/VSCode
+
+      - name: Compile Antigravity PROD extension
+        run: npm run compile
+        working-directory: FailSafe/PROD-Extension/Antigravity
+
+      - name: Verify VSIX proprietary guardrails
+        run: node FailSafe/PROD-Extension/scripts/verify-vsix-proprietary-guardrails.mjs

@@ -1,0 +1,170 @@
+<#
+.SYNOPSIS
+  Repository-level Gold Standard validation entrypoint.
+.DESCRIPTION
+  Validates required governance/community artifacts and then runs the
+  existing FailSafe container validation script for platform constraints.
+#>
+
+param(
+  [switch]$SkipContainerValidation,
+  [switch]$SkipReliabilityValidation
+)
+
+$ErrorActionPreference = "Stop"
+$RepoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+$violations = @()
+
+function Write-Log {
+  param([string]$Message, [string]$Level = "Info")
+  $colors = @{ Info = "Cyan"; Success = "Green"; Warning = "Yellow"; Error = "Red" }
+  Write-Host "[$Level] $Message" -ForegroundColor $colors[$Level]
+}
+
+function Assert-PathExists {
+  param([string]$RelativePath, [string]$Rule)
+  $path = Join-Path $RepoRoot $RelativePath
+  if (Test-Path $path) {
+    Write-Log "PASS: $RelativePath" -Level Success
+  } else {
+    $script:violations += @{ File = $RelativePath; Rule = $Rule }
+    Write-Log "FAIL: $RelativePath ($Rule)" -Level Error
+  }
+}
+
+function Validate-GoldStandardArtifacts {
+  Write-Log "Validating Gold Standard repository artifacts..."
+
+  $requiredRootFiles = @(
+    @{ Path = "README.md"; Rule = "Missing core project README" },
+    @{ Path = "LICENSE"; Rule = "Missing open-source license file" },
+    @{ Path = "CHANGELOG.md"; Rule = "Missing changelog for release discipline" },
+    @{ Path = "CODE_OF_CONDUCT.md"; Rule = "Missing community conduct policy" },
+    @{ Path = "CONTRIBUTING.md"; Rule = "Missing contribution guide" },
+    @{ Path = "SECURITY.md"; Rule = "Missing security policy" },
+    @{ Path = "GOVERNANCE.md"; Rule = "Missing governance charter" }
+  )
+
+  foreach ($item in $requiredRootFiles) {
+    Assert-PathExists -RelativePath $item.Path -Rule $item.Rule
+  }
+
+  $requiredGithubArtifacts = @(
+    @{ Path = ".github/PULL_REQUEST_TEMPLATE.md"; Rule = "Missing pull request template" },
+    @{ Path = ".github/ISSUE_TEMPLATE/config.yml"; Rule = "Missing issue template config" }
+  )
+
+  foreach ($item in $requiredGithubArtifacts) {
+    Assert-PathExists -RelativePath $item.Path -Rule $item.Rule
+  }
+}
+
+function Validate-ContainerChecks {
+  if ($SkipContainerValidation) {
+    Write-Log "Skipping container validation by request." -Level Warning
+    return
+  }
+
+  $containerValidator = Join-Path $RepoRoot "FailSafe/build/validate.ps1"
+  if (!(Test-Path $containerValidator)) {
+    $script:violations += @{ File = "FailSafe/build/validate.ps1"; Rule = "Missing container validation script" }
+    Write-Log "FAIL: Missing FailSafe/build/validate.ps1" -Level Error
+    return
+  }
+
+  Write-Log "Running FailSafe/build/validate.ps1..."
+  & $containerValidator
+  if ($LASTEXITCODE -ne 0) {
+    $script:violations += @{ File = "FailSafe/build/validate.ps1"; Rule = "Container validation failed with exit code $LASTEXITCODE" }
+  }
+}
+
+function Assert-FileContains {
+  param(
+    [string]$RelativePath,
+    [string]$Pattern,
+    [string]$Rule
+  )
+  $path = Join-Path $RepoRoot $RelativePath
+  if (!(Test-Path $path)) {
+    $script:violations += @{ File = $RelativePath; Rule = "Missing file for pattern check: $Rule" }
+    Write-Log "FAIL: Missing $RelativePath" -Level Error
+    return
+  }
+  $content = Get-Content $path -Raw
+  if ($content -match $Pattern) {
+    Write-Log "PASS: $RelativePath contains required pattern" -Level Success
+  } else {
+    $script:violations += @{ File = $RelativePath; Rule = $Rule }
+    Write-Log "FAIL: $RelativePath ($Rule)" -Level Error
+  }
+}
+
+function Validate-ReliabilityHardening {
+  if ($SkipReliabilityValidation) {
+    Write-Log "Skipping reliability validation by request." -Level Warning
+    return
+  }
+
+  Write-Log "Validating v3.2 reliability hardening artifacts..."
+
+  $requiredReliabilityFiles = @(
+    @{ Path = "tools/reliability/init-reliability-run.ps1"; Rule = "Missing reliability run initializer" },
+    @{ Path = "tools/reliability/validate-intent-gate.ps1"; Rule = "Missing intent gate validator" },
+    @{ Path = "tools/reliability/validate-reliability-run.ps1"; Rule = "Missing reliability run validator" },
+    @{ Path = "tools/reliability/admit-skill.ps1"; Rule = "Missing skill admission pipeline" },
+    @{ Path = "tools/reliability/validate-skill-admission.ps1"; Rule = "Missing skill admission validator" },
+    @{ Path = "tools/reliability/gate-skill-matrix.json"; Rule = "Missing gate-to-skill matrix definition" },
+    @{ Path = "tools/reliability/validate-gate-skill-matrix.ps1"; Rule = "Missing gate-to-skill matrix validator" }
+  )
+
+  foreach ($item in $requiredReliabilityFiles) {
+    Assert-PathExists -RelativePath $item.Path -Rule $item.Rule
+  }
+
+  Assert-FileContains `
+    -RelativePath ".agent/workflows/ql-implement.md" `
+    -Pattern "Step 5\.6: Intent Lock Interdiction \(B51\)" `
+    -Rule "ql-implement missing B51 interdiction"
+
+  Assert-FileContains `
+    -RelativePath ".agent/workflows/ql-implement.md" `
+    -Pattern "Step 5\.7: Skill Admission Interdiction \(B49\)" `
+    -Rule "ql-implement missing B49 interdiction"
+
+  Assert-FileContains `
+    -RelativePath ".agent/workflows/ql-implement.md" `
+    -Pattern "Step 5\.8: Gate-to-Skill Matrix Interdiction \(B50\)" `
+    -Rule "ql-implement missing B50 interdiction"
+
+  Assert-FileContains `
+    -RelativePath ".agent/workflows/ql-substantiate.md" `
+    -Pattern "validate-reliability-run\.ps1" `
+    -Rule "ql-substantiate missing reliability-run validator gate"
+
+  Assert-FileContains `
+    -RelativePath ".agent/workflows/ql-substantiate.md" `
+    -Pattern "Step 4\.6: Skill Admission Evidence Check \(B49\)" `
+    -Rule "ql-substantiate missing B49 evidence check"
+
+  Assert-FileContains `
+    -RelativePath ".agent/workflows/ql-substantiate.md" `
+    -Pattern "Step 4\.7: Gate-to-Skill Matrix Evidence Check \(B50\)" `
+    -Rule "ql-substantiate missing B50 evidence check"
+}
+
+Write-Log "Repository Validation (Gold Standard + Container)" -Level Info
+Validate-GoldStandardArtifacts
+Validate-ReliabilityHardening
+Validate-ContainerChecks
+
+if ($violations.Count -gt 0) {
+  Write-Log "VALIDATION FAILED: $($violations.Count) violation(s)" -Level Error
+  $violations | ForEach-Object {
+    Write-Host "  - $($_.File): $($_.Rule)" -ForegroundColor Red
+  }
+  exit 1
+}
+
+Write-Log "VALIDATION PASSED" -Level Success
+exit 0

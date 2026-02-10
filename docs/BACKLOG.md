@@ -11,7 +11,7 @@
 - [x] [D7] V2: Razor - DojoViewProvider.ts exceeds 250 lines (from audit 2026-02-05T22:29:02Z) (v2.0.1 - Complete)
 - [x] [D8] V3: Razor - DashboardPanel.ts exceeds 250 lines (from audit 2026-02-05T22:29:02Z) (v2.0.1 - Complete)
 - [x] [D9] V4: Razor - LivingGraphProvider.ts exceeds 250 lines (from audit 2026-02-05T22:29:02Z) (v2.0.1 - Complete)
-- [ ] [D10] Razor - GenesisManager.ts exceeds 250 lines (495 lines, re-verified 2026-02-10) | v3.2.0
+- [x] [D10] Razor - GenesisManager.ts exceeds 250 lines (remediated in v3.2.0; 206 lines verified) | v3.2.0
 - [x] [D11] V1: Ghost Path - getSprint() method called but not defined ✅ Remediated in plan | v3.1.0
 - [x] [D12] V2: Ghost Path - broadcast() method called but not defined ✅ Remediated in plan | v3.1.0
 - [x] [D13] V3: Ghost Path - appendSprintEvent() method called but not defined ✅ Remediated in plan | v3.1.0
@@ -58,7 +58,7 @@
 
 **Phase 4: Template Library** ✅
 - [x] [B21] Template library (CODE_OF_CONDUCT, CONTRIBUTING, SECURITY, GOVERNANCE) ✅ | v2.0.0
-- [ ] [B25] validate.ps1 - Add Gold Standard checks | v3.2.0
+- [x] [B25] validate.ps1 - Add Gold Standard checks (delivered via B47 in v3.2.0) | v3.2.0
 
 **Phase 5: Self-Application (FailSafe)** ✅
 - [x] [B22] FailSafe repo community files + .github/ templates ✅ | v2.0.0
@@ -79,7 +79,7 @@
 - [x] [B8] Implement TimelineView.ts - Gantt-style timeline ✅ | v3.0.0
 - [x] [B9] Risk markers on roadmap visualization ✅ | v3.0.0
 - [x] [B10] Milestone support in PlanManager ✅ | v3.0.0
-- [ ] [B11] UI polish and theme refinements | v3.2.0
+- [ ] [B11] UI polish and theme refinements (deferred to v3.2.5 with B46) | v3.2.5
 
 **Planning Window**
 - [x] [B31] RoadmapPanelWindow.ts - Full-screen planning window ✅ | v3.0.0
@@ -106,10 +106,17 @@
 - [x] [B43] Phase 3: Roadmap Browser UI (timeline, planning hub, dynamic feedback) ✅ | v3.1.0
 - [x] [B44] Phase 4: Wire Commands (failsafe.openRoadmap, Ctrl+Alt+Shift+R) ✅ | v3.1.0
 
-### v3.2.0 Reliability Hardening - Substantiated Carryforward (IN PROGRESS)
-- [ ] [B45] D10 Razor remediation - decompose GenesisManager.ts under 250-line cap | v3.2.0
-- [ ] [B46] UI polish and theme refinements (carryforward from B11) | v3.2.0
-- [ ] [B47] Add `validate.ps1` Gold Standard checks (carryforward from B25) | v3.2.0
+
+### v3.2.0 Reliability Hardening - SEALED
+- [x] [B51] Implement User Intent Gate (clarification, pause points, safety pushback, intent lock) | v3.2.0
+- [x] [B45] D10 Razor remediation - decompose GenesisManager.ts under 250-line cap | v3.2.0
+- [x] [B47] Add `validate.ps1` Gold Standard checks (carryforward from B25) | v3.2.0
+- [x] [B48] Operationalize Autonomous Reliability Manifest into concrete sprint artifacts and workflow gates | v3.2.0
+- [x] [B49] Build Skill Admission Gate for external and user-imported skills (standard + protocol compliance) | v3.2.0
+- [x] [B50] Enforce Gate-to-Skill requirements matrix across reliability workflow stages | v3.2.0
+
+### v3.2.5 Follow-On Hardening (PLANNED)
+- [ ] [B46] UI polish and theme refinements (deferred by user on 2026-02-10) | v3.2.5
 
 ## Wishlist (Nice to Have)
 <!-- All wishlist items promoted to Backlog with version tags -->
@@ -131,9 +138,11 @@
 | v3.0.0 | Horizon | ✅ COMPLETE | UI + Analytics (B6-B36) |
 | v3.0.2 | Dashboard Remediation | ✅ COMPLETE | Roadmap card, tooltips, wiring (B37-B40) |
 | **v3.1.0** | **Orchestration** | **SEALED** | Cumulative Roadmap, External Browser (B41-B44) |
-| **v3.2.0** | **Reliability Hardening** | **IN PROGRESS** | D10+B11+B25 carryforward (B45-B47) |
+| **v3.2.0** | **Reliability Hardening** | **SEALED** | B45/B47/B48/B49/B50/B51 substantiated with executable gate evidence |
+| **v3.2.5** | **Follow-On Hardening** | **PLANNED** | Deferred UI/theme refinement scope (B46) |
 
 ---
 
 _Updated by /ql-* commands automatically_
+
 

@@ -1,0 +1,67 @@
+{
+  "Freeze": {
+    "required": [
+      "reproducibility capture",
+      "environment introspection"
+    ],
+    "suggested": [
+      "command wrappers",
+      "snapshot tooling"
+    ]
+  },
+  "Shrink": {
+    "required": [
+      "reducer support",
+      "minimal repro extraction"
+    ],
+    "suggested": [
+      "ast-aware minimizers"
+    ]
+  },
+  "Isolate": {
+    "required": [
+      "dependency/path isolation",
+      "bisect-friendly traces"
+    ],
+    "suggested": [
+      "symbolic analysis helpers"
+    ]
+  },
+  "Hypothesize": {
+    "required": [
+      "structured hypothesis logging",
+      "budget attribution"
+    ],
+    "suggested": [
+      "ranking heuristics"
+    ]
+  },
+  "Proof": {
+    "required": [
+      "deterministic verification",
+      "test/invariant execution"
+    ],
+    "suggested": [
+      "replay automation"
+    ]
+  },
+  "Commit": {
+    "required": [
+      "transaction logging",
+      "diff rationale capture"
+    ],
+    "suggested": [
+      "risk annotation"
+    ]
+  },
+  "Rollback": {
+    "required": [
+      "restoration steps",
+      "integrity verification"
+    ],
+    "suggested": [
+      "recurrence signature helpers"
+    ]
+  }
+}
+

@@ -1,6 +1,6 @@
 ---
 name: ql-organize
-description: Adaptive workspace organization with isolation enforcement. Reads .qorelogic/workspace.json to enforce protected paths, isolation boundaries, and locked structures before proposing changes. Supports software repos, monorepos, and custom workspace architectures.
+description: Adaptive workspace organization with isolation enforcement. Reads .qorelogic/workspace.json for protected paths, locked structures, and isolation boundaries before proposing changes. Supports repos, monorepos, and custom workspace architectures.
 ---
 
 # /ql-organize - Adaptive Workspace Organization

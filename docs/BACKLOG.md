@@ -116,7 +116,13 @@
 - [x] [B50] Enforce Gate-to-Skill requirements matrix across reliability workflow stages | v3.2.0
 
 ### v3.2.5 Follow-On Hardening (PLANNED)
-- [ ] [B46] UI polish and theme refinements (deferred by user on 2026-02-10) | v3.2.5
+- [ ] [B46] FailSafe Console UI overhaul and refinement (deferred by user on 2026-02-10, expanded via console spec packet) | v3.2.5
+- [ ] [B52] Enforce GitHub branch/PR standards in FailSafe and team workflow tooling (branch taxonomy, PR-first merges, policy checks) | v3.2.5
+- [ ] [B53] Implement Console route shell + profile-based IA (`/home`, `/run/:runId`, `/workflows`, `/skills`, `/genome`, `/reports`, `/settings`) | v3.2.5
+- [ ] [B54] Implement configuration profiles and precedence (`run > workspace > user > defaults`) with visibility flags | v3.2.5
+- [ ] [B55] Align workflow run/evidence model contracts (run/stage/gate/claim/evidence/attempt/export bundle parity) | v3.2.5
+- [ ] [B56] Implement security and skill-registry enforcement surfaces (permission scopes, pinning, redaction, invocation audit) | v3.2.5
+- [ ] [B57] Build journey-based acceptance and adversarial E2E suite for P1-P5 from console spec | v3.2.5
 
 ## Wishlist (Nice to Have)
 <!-- All wishlist items promoted to Backlog with version tags -->
@@ -139,7 +145,7 @@
 | v3.0.2 | Dashboard Remediation | ✅ COMPLETE | Roadmap card, tooltips, wiring (B37-B40) |
 | **v3.1.0** | **Orchestration** | **SEALED** | Cumulative Roadmap, External Browser (B41-B44) |
 | **v3.2.0** | **Reliability Hardening** | **SEALED** | B45/B47/B48/B49/B50/B51 substantiated with executable gate evidence |
-| **v3.2.5** | **Follow-On Hardening** | **PLANNED** | Deferred UI/theme refinement scope (B46) |
+| **v3.2.5** | **Console Overhaul** | **PLANNED** | UI overhaul + GitHub standards enforcement + evidence-model integration (B46/B52-B57) |
 
 ---
 

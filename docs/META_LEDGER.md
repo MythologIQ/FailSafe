@@ -2207,3 +2207,34 @@ _Version: v3.1.0 Cumulative Roadmap (SUBSTANTIATED) -> v3.2.0 Reliability Harden
 - Existing `console.log` statements remain in legacy extension files outside v3.2.0 reliability-hardening scope; not introduced by this sprint.
 
 **Decision**: Session sealed. v3.2.0 Reliability Hardening is substantiated. Deferred UI/theme refinement continues under v3.2.5 (`B46`).
+
+---
+
+### Entry #56: PLANNING - v3.2.5 FailSafe Console Overhaul + GitHub Standards
+
+**Timestamp**: 2026-02-10T01:20:00-05:00
+**Phase**: PLAN
+**Author**: Governor
+**Risk Grade**: L2
+
+**Plan Artifacts**:
+
+- `docs/Planning/plan-v3.2.5-failsafe-console-overhaul.md`
+- `docs/Planning/sprints/sprint-v3.2.5-failsafe-console-overhaul.md`
+
+**Scope Expansion**:
+
+- v3.2.5 is no longer a narrow UI polish defer bucket.
+- v3.2.5 now targets full FailSafe Console overhaul per spec packet and embeds GitHub standards enforcement in product/tooling.
+
+**Backlog Alignment**:
+
+- B46 refined as console-overhaul umbrella.
+- Added B52-B57 for branch/PR governance, profile-based IA, run/evidence contracts, security/skill registry enforcement, and journey acceptance testing.
+
+**Intent Gate Evidence**:
+
+- Run ID: `v3.2.5-plan-001`
+- `tools/reliability/validate-intent-gate.ps1 -RunId v3.2.5-plan-001` -> PASS
+
+**Decision**: v3.2.5 planning accepted. Implementation should proceed using the new phased plan and sprint contract.

@@ -13,7 +13,7 @@
 - v3.1.0 Cumulative Roadmap is now substantively sealed in governance docs.
 - v3.2.0 execution explicitly started by user directive ("Proceed"), and implementation scope is now complete.
 - B51 User Intent Gate is implemented and validated via run artifacts and validator script.
-- B46 remains deferred and assigned to v3.2.5 follow-on scope.
+- v3.2.5 scope is opened for FailSafe Console overhaul, with B46 expanded into a spec-driven program.
 - B49 Skill Admission Gate is implemented with deterministic intake, trust-tier decisioning, and registry validation.
 - B50 Gate-to-Skill matrix enforcement is implemented for reliability gates with validator interdictions.
 - B48 manifest operationalization is now enforceable with reliability-run coherence validator and dry-run proof.
@@ -208,7 +208,7 @@ Step 9.6: Merge Options
 | v3.0.2     | Dashboard Remediation | SEALED        | Roadmap card, tooltips, wiring (B37-B40) |
 | v3.1.0     | Orchestration       | SEALED          | Cumulative Roadmap, External Browser (B41-B44) |
 | **v3.2.0** | **Reliability Hardening** | **SEALED** | **B45/B47/B48/B49/B50/B51 substantiated with executable evidence** |
-| **v3.2.5** | **Follow-On Hardening** | **PLANNED** | **Deferred B46 UI/theme refinement scope** |
+| **v3.2.5** | **Console Overhaul** | **PLANNED** | **UI overhaul + GitHub standards enforcement + evidence-model integration** |
 
 ---
 

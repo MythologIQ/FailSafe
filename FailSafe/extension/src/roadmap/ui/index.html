@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FailSafe Roadmap</title>
+  <link rel="stylesheet" href="roadmap.css">
+</head>
+<body>
+  <div id="app">
+    <header id="header">
+      <div class="header-content">
+        <h1>Project Roadmap</h1>
+        <div id="connection-status" class="status-indicator">
+          <span class="status-dot"></span>
+          <span class="status-text">Connecting...</span>
+        </div>
+      </div>
+    </header>
+
+    <main id="main">
+      <!-- Sprint Timeline - Cumulative visualization -->
+      <section id="sprint-timeline" class="panel">
+        <h2>Sprint History</h2>
+        <div id="timeline-container"></div>
+      </section>
+
+      <!-- Current Sprint Detail - The "Planning Hub" -->
+      <section id="current-sprint" class="panel">
+        <h2>Active Sprint</h2>
+        <div id="sprint-info" class="sprint-header"></div>
+        <div id="roadmap-svg" class="roadmap-container"></div>
+        <div id="phase-grid" class="phase-grid"></div>
+        <div id="blockers" class="blockers-panel"></div>
+      </section>
+
+      <!-- Dynamic Feedback - Real-time events -->
+      <section id="feedback-panel" class="panel">
+        <h2>Live Activity</h2>
+        <div id="event-stream" class="event-stream"></div>
+      </section>
+    </main>
+
+    <footer id="footer">
+      <span>FailSafe v3.1.0 - Cumulative Roadmap</span>
+    </footer>
+  </div>
+
+  <script src="roadmap.js"></script>
+</body>
+</html>

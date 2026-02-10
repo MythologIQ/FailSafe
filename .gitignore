@@ -115,3 +115,8 @@ Thumbs.db
 !CHANGELOG.md
 !LICENSE
 !CONTRIBUTING.md
+
+# Allow CI guardrail workflow while keeping other .github content policy intact
+!.github/
+!.github/workflows/
+!.github/workflows/vsix-proprietary-guardrails.yml

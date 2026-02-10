@@ -3,12 +3,14 @@ import {
   SentinelStatus,
   SentinelVerdict,
 } from "../../../shared/types";
+import { Plan } from "../../../qorelogic/planning/types";
 import { escapeHtml } from "../../../shared/utils/htmlSanitizer";
 import { HELP_TEXT } from "../../../shared/components/InfoHint";
 import {
   tooltipAttrs,
   TOOLTIP_STYLES,
 } from "../../../shared/components/Tooltip";
+import { renderRoadmapCard } from "./DashboardRoadmapCard";
 
 type EvaluationMetrics = {
   cache?: Record<string, { hits: number; misses: number }>;
@@ -38,6 +40,8 @@ export type DashboardViewModel = {
   lastVerdict: SentinelVerdict | null;
   uptime: string;
   metrics: EvaluationMetrics | null;
+  plan: Plan | null;
+  planProgress: { completed: number; total: number; blocked: boolean } | null;
 };
 
 const DASHBOARD_TEMPLATE = `<!DOCTYPE html>
@@ -93,6 +97,8 @@ const DASHBOARD_TEMPLATE = `<!DOCTYPE html>
         function showLedger() { vscode.postMessage({ command: 'showLedger' }); }
         function focusCortex() { vscode.postMessage({ command: 'focusCortex' }); }
         function showL3Queue() { vscode.postMessage({ command: 'showL3Queue' }); }
+        function showPlanningHub() { vscode.postMessage({ command: 'showPlanningHub' }); }
+        function openRoadmap() { vscode.postMessage({ command: 'openRoadmap' }); }
     </script>
 </body>
 </html>`;
@@ -113,13 +119,13 @@ function renderSentinelCard(model: DashboardViewModel): string {
   const verdictLabel = lastVerdict
     ? `${escapeHtml(lastVerdict.decision)} (${escapeHtml(lastVerdict.riskGrade)})`
     : "None";
-  return `<div class="card"><div class="card-title">Sentinel Status</div><div class="metric"><span class="metric-label" ${tooltipAttrs(HELP_TEXT.sentinelMode)}>Mode</span><span class="metric-value">${escapeHtml(status.mode)}</span></div><div class="metric"><span class="metric-label" ${tooltipAttrs(HELP_TEXT.operationalMode)}>Operational Mode</span><span class="metric-value">${escapeHtml(status.operationalMode.toUpperCase())}</span></div><div class="metric"><span class="metric-label">Uptime</span><span class="metric-value">${escapeHtml(model.uptime)}</span></div><div class="metric"><span class="metric-label">Files Watched</span><span class="metric-value">${status.filesWatched}</span></div><div class="metric"><span class="metric-label">Events Processed</span><span class="metric-value">${status.eventsProcessed}</span></div><div class="metric"><span class="metric-label">Queue Depth</span><span class="metric-value">${status.queueDepth}</span></div><div class="metric"><span class="metric-label">LLM Available</span><span class="metric-value">${status.llmAvailable ? "Yes" : "No"}</span></div><div class="metric"><span class="metric-label" ${tooltipAttrs(HELP_TEXT.verdictDecision)}>Last Verdict</span><span class="metric-value">${verdictLabel}</span></div></div>`;
+  return `<div class="card"><div class="card-title">Sentinel Status</div><div class="metric"><span class="metric-label" ${tooltipAttrs(HELP_TEXT.sentinelMode)}>Mode</span><span class="metric-value">${escapeHtml(status.mode)}</span></div><div class="metric"><span class="metric-label" ${tooltipAttrs(HELP_TEXT.operationalMode)}>Operational Mode</span><span class="metric-value">${escapeHtml(status.operationalMode.toUpperCase())}</span></div><div class="metric"><span class="metric-label" ${tooltipAttrs(HELP_TEXT.uptime)}>Uptime</span><span class="metric-value">${escapeHtml(model.uptime)}</span></div><div class="metric"><span class="metric-label" ${tooltipAttrs(HELP_TEXT.filesWatched)}>Files Watched</span><span class="metric-value">${status.filesWatched}</span></div><div class="metric"><span class="metric-label" ${tooltipAttrs(HELP_TEXT.eventsProcessed)}>Events Processed</span><span class="metric-value">${status.eventsProcessed}</span></div><div class="metric"><span class="metric-label" ${tooltipAttrs(HELP_TEXT.queueDepth)}>Queue Depth</span><span class="metric-value">${status.queueDepth}</span></div><div class="metric"><span class="metric-label">LLM Available</span><span class="metric-value">${status.llmAvailable ? "Yes" : "No"}</span></div><div class="metric"><span class="metric-label" ${tooltipAttrs(HELP_TEXT.verdictDecision)}>Last Verdict</span><span class="metric-value">${verdictLabel}</span></div></div>`;
 }
 
 function renderTrustCard(model: DashboardViewModel): string {
   const trust = model.trustSummary;
   const trustPercent = (trust.avgTrust * 100).toFixed(0);
-  return `<div class="card"><div class="card-title">QoreLogic Trust</div><div class="metric"><span class="metric-label">Agents</span><span class="metric-value">${trust.totalAgents}</span></div><div class="metric"><span class="metric-label" ${tooltipAttrs(HELP_TEXT.avgTrust)}>Avg trust</span><span class="metric-value">${trustPercent}%</span></div><div class="trust-bar"><div class="trust-fill" style="width: ${trustPercent}%"></div></div><div class="metric"><span class="metric-label">Quarantined</span><span class="metric-value">${trust.quarantined}</span></div><div class="metric"><span class="metric-label" ${tooltipAttrs(HELP_TEXT.trustStages)}>Stages (CBT/KBT/IBT)</span><span class="metric-value">${trust.stageCounts.CBT}/${trust.stageCounts.KBT}/${trust.stageCounts.IBT}</span></div></div>`;
+  return `<div class="card"><div class="card-title">QoreLogic Trust</div><div class="metric"><span class="metric-label">Agents</span><span class="metric-value">${trust.totalAgents}</span></div><div class="metric"><span class="metric-label" ${tooltipAttrs(HELP_TEXT.avgTrust)}>Avg trust</span><span class="metric-value">${trustPercent}%</span></div><div class="trust-bar"><div class="trust-fill" style="width: ${trustPercent}%"></div></div><div class="metric"><span class="metric-label" ${tooltipAttrs(HELP_TEXT.quarantined)}>Quarantined</span><span class="metric-value">${trust.quarantined}</span></div><div class="metric"><span class="metric-label" ${tooltipAttrs(HELP_TEXT.trustStages)}>Stages (CBT/KBT/IBT)</span><span class="metric-value">${trust.stageCounts.CBT}/${trust.stageCounts.KBT}/${trust.stageCounts.IBT}</span></div></div>`;
 }
 
 function renderL3Card(model: DashboardViewModel): string {
@@ -175,6 +181,7 @@ export function renderDashboardTemplate(model: DashboardViewModel): string {
   const cards = [
     renderSentinelCard(model),
     renderTrustCard(model),
+    renderRoadmapCard(model.plan, model.planProgress),
     renderL3Card(model),
     renderActionsCard(),
     renderMetricsCard(model),

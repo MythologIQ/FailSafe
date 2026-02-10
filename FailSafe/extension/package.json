@@ -3,7 +3,7 @@
   "displayName": "MythologIQ: FailSafe (feat. QoreLogic)",
   "description": "Complete AI governance for modern development. Genesis visualization + QoreLogic framework + Sentinel monitoring.",
   "icon": "icon.png",
-  "version": "2.0.1",
+  "version": "3.0.1",
   "publisher": "MythologIQ",
   "license": "MIT",
   "repository": {
@@ -123,6 +123,10 @@
       {
         "command": "failsafe.secureWorkspace",
         "title": "FailSafe: Secure Workspace"
+      },
+      {
+        "command": "failsafe.openRoadmap",
+        "title": "FailSafe: Open Roadmap (Browser)"
       }
     ],
     "keybindings": [
@@ -155,6 +159,11 @@
         "command": "failsafe.showAnalytics",
         "key": "ctrl+alt+t",
         "mac": "cmd+alt+t"
+      },
+      {
+        "command": "failsafe.openRoadmap",
+        "key": "ctrl+alt+shift+r",
+        "mac": "cmd+alt+shift+r"
       }
     ],
     "viewsContainers": {
@@ -284,11 +293,13 @@
   "devDependencies": {
     "@playwright/test": "^1.49.1",
     "@types/better-sqlite3": "^7.6.13",
+    "@types/express": "^5.0.6",
     "@types/glob": "^8.1.0",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.10.0",
     "@types/proper-lockfile": "^4.1.4",
     "@types/vscode": "^1.90.0",
+    "@types/ws": "^8.18.1",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
     "@vscode/test-cli": "^0.0.11",
@@ -301,10 +312,12 @@
     "@modelcontextprotocol/sdk": "^1.25.3",
     "chokidar": "^3.5.3",
     "d3": "^7.8.5",
+    "express": "^5.2.1",
     "glob": "^10.5.0",
     "js-yaml": "^4.1.1",
     "proper-lockfile": "^4.1.2",
     "uuid": "^9.0.0",
+    "ws": "^8.19.0",
     "zod": "^3.25.76"
   },
   "binary": {

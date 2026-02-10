@@ -106,6 +106,10 @@ export class GenesisManager {
                 this.qorelogic,
                 this.eventBus
             );
+            // Wire up PlanManager if available
+            if (this.planManager) {
+                this.dashboardPanel.setPlanManager(this.planManager);
+            }
         }
     }
 
@@ -129,6 +133,10 @@ export class GenesisManager {
      */
     setPlanManager(planManager: PlanManager): void {
         this.planManager = planManager;
+        // Update existing dashboard if open
+        if (this.dashboardPanel) {
+            this.dashboardPanel.setPlanManager(planManager);
+        }
     }
 
     /**

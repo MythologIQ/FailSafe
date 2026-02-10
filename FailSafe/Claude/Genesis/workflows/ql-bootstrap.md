@@ -1,4 +1,4 @@
----
+﻿---
 name: ql-bootstrap
 description: Initialize QoreLogic A.E.G.I.S. DNA for a new project by creating CONCEPT, ARCHITECTURE_PLAN, and META_LEDGER with genesis hash. Use when: (1) Starting a new project, (2) First-time QoreLogic setup, or (3) Re-initializing after project reset.
 ---
@@ -129,6 +129,23 @@ will verify paths against gitignore before writing in public repos.
 
 To modify privacy settings later, use `/ql-organize`.
 ```
+
+### Step 3.6: Artifact Ownership and Stability Guardrails
+
+Classify artifacts before writing files:
+
+| Class | Scope | Ownership | Commit Policy |
+| ----- | ----- | --------- | ------------- |
+| Core Artifacts | Shared bootstrap assets required in every workspace | FailSafe System | Distributed by scaffold command |
+| Generated Custom Artifacts | Workspace-specific outputs generated from prompts/workflows | Workspace owner | Stored in workspace only |
+| Proprietary System Artifacts | Internal FailSafe implementation assets and private system internals | FailSafe maintainers | MUST NOT be scaffolded into user workspaces |
+
+Deterministic guardrails:
+
+1. **Structure Stability**: Never remove or rename core sections without a compatibility migration note.
+2. **No Silent Deletion**: Any major content reduction requires explicit rationale and replacement mapping.
+3. **Artifact Boundary Enforcement**: Keep generated custom artifacts out of packaged core templates.
+4. **Proprietary Isolation**: Proprietary artifacts must remain in dedicated proprietary paths and be excluded from VSIX payloads.
 
 ### Step 4: ALIGN (The "Why")
 
@@ -313,6 +330,9 @@ _DNA Seeded. Dataset Locked. Auto-Router Active._
 - **NEVER** assign L1 to anything touching security/auth
 - **ALWAYS** calculate and record genesis hash
 - **ALWAYS** require /ql-audit for L2/L3 before implementation
+- **ALWAYS** classify artifacts as Core, Generated Custom, or Proprietary before writing
+- **ALWAYS** preserve structural compatibility when modifying bootstrap templates
+- **NEVER** package proprietary system artifacts inside distributable VSIX payloads
 
 ## Success Criteria
 
@@ -338,3 +358,4 @@ This skill implements:
 ---
 
 **Remember**: Genesis is the foundation of the entire A.E.G.I.S. lifecycle. A weak genesis compromises the entire chain. Ensure the "Why" is clear and the architecture is sound before proceeding.
+

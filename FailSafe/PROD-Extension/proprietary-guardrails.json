@@ -1,0 +1,47 @@
+{
+  "blockedPathSegments": [
+    "proprietary",
+    ".proprietary",
+    "internal",
+    ".internal",
+    "private",
+    ".private"
+  ],
+  "blockedPathPrefixes": [
+    ".agent/staging/"
+  ],
+  "targets": [
+    {
+      "name": "prod-vscode",
+      "path": "FailSafe/PROD-Extension/VSCode",
+      "requiredIgnoreGlobs": [
+        ".failsafe/**/proprietary/**",
+        ".failsafe/**/.proprietary/**",
+        ".failsafe/**/internal/**",
+        ".failsafe/**/.internal/**",
+        ".failsafe/**/private/**",
+        ".failsafe/**/.private/**",
+        ".agent/staging/**"
+      ]
+    },
+    {
+      "name": "prod-antigravity",
+      "path": "FailSafe/PROD-Extension/Antigravity",
+      "requiredIgnoreGlobs": [
+        ".agent/**/proprietary/**",
+        ".agent/**/.proprietary/**",
+        ".agent/**/internal/**",
+        ".agent/**/.internal/**",
+        ".agent/**/private/**",
+        ".agent/**/.private/**",
+        ".agent/staging/**",
+        ".qorelogic/**/proprietary/**",
+        ".qorelogic/**/.proprietary/**",
+        ".qorelogic/**/internal/**",
+        ".qorelogic/**/.internal/**",
+        ".qorelogic/**/private/**",
+        ".qorelogic/**/.private/**"
+      ]
+    }
+  ]
+}

@@ -13,6 +13,7 @@ import * as vscode from "vscode";
 import { EventBus } from "../../shared/EventBus";
 import { SentinelDaemon } from "../../sentinel/SentinelDaemon";
 import { QoreLogicManager } from "../../qorelogic/QoreLogicManager";
+import { PlanManager } from "../../qorelogic/planning/PlanManager";
 import { getNonce } from "../../shared/utils/htmlSanitizer";
 import { renderDashboardTemplate } from "./templates/DashboardTemplate";
 
@@ -41,6 +42,7 @@ export class DashboardPanel {
   private sentinel: SentinelDaemon;
   private qorelogic: QoreLogicManager;
   private eventBus: EventBus;
+  private planManager?: PlanManager;
   private disposables: vscode.Disposable[] = [];
   private evaluationMetrics: EvaluationMetrics | null = null;
 
@@ -57,7 +59,14 @@ export class DashboardPanel {
 
     void this.update();
 
-    // Subscribe to updates
+    this.setupEventSubscriptions();
+    this.setupPeriodicRefresh();
+    this.setupMessageHandlers();
+
+    this.panel.onDidDispose(() => this.dispose(), null, this.disposables);
+  }
+
+  private setupEventSubscriptions(): void {
     const unsubscribes = [
       this.eventBus.on("sentinel.verdict", () => void this.update()),
       this.eventBus.on("qorelogic.trustUpdate", () => void this.update()),
@@ -70,42 +79,39 @@ export class DashboardPanel {
       }),
     ];
     unsubscribes.forEach((unsub) => this.disposables.push({ dispose: unsub }));
+  }
 
-    // Periodic refresh
+  private setupPeriodicRefresh(): void {
     const interval = setInterval(() => void this.update(), 5000);
     this.disposables.push({ dispose: () => clearInterval(interval) });
+  }
 
-    this.panel.webview.onDidReceiveMessage(
-      (message) => {
-        switch (message.command) {
-          case "auditFile":
-            vscode.commands.executeCommand("failsafe.auditFile");
-            break;
-          case "showGraph":
-            vscode.commands.executeCommand("failsafe.showLivingGraph");
-            break;
-          case "showLedger":
-            vscode.commands.executeCommand("failsafe.viewLedger");
-            break;
-          case "focusCortex":
-            vscode.commands.executeCommand("failsafe.focusCortex");
-            break;
-          case "showL3Queue":
-            vscode.commands.executeCommand("failsafe.approveL3");
-            break;
-          case "pauseGovernance":
-            vscode.commands.executeCommand("failsafe.pauseGovernance");
-            break;
-          case "resumeGovernance":
-            vscode.commands.executeCommand("failsafe.resumeGovernance");
-            break;
-        }
-      },
-      null,
-      this.disposables,
-    );
-
-    this.panel.onDidDispose(() => this.dispose(), null, this.disposables);
+  private setupMessageHandlers(): void {
+    this.panel.webview.onDidReceiveMessage((message) => {
+      switch (message.command) {
+        case "auditFile":
+          vscode.commands.executeCommand("failsafe.auditFile");
+          break;
+        case "showGraph":
+          vscode.commands.executeCommand("failsafe.showLivingGraph");
+          break;
+        case "showLedger":
+          vscode.commands.executeCommand("failsafe.viewLedger");
+          break;
+        case "focusCortex":
+          vscode.commands.executeCommand("failsafe.focusCortex");
+          break;
+        case "showL3Queue":
+          vscode.commands.executeCommand("failsafe.approveL3");
+          break;
+        case "showPlanningHub":
+          vscode.commands.executeCommand("failsafe.showRoadmapWindow");
+          break;
+        case "openRoadmap":
+          vscode.commands.executeCommand("failsafe.openRoadmap");
+          break;
+      }
+    }, null);
   }
 
   public static createOrShow(
@@ -147,6 +153,11 @@ export class DashboardPanel {
     this.panel.reveal();
   }
 
+  public setPlanManager(pm: PlanManager): void {
+    this.planManager = pm;
+    void this.update();
+  }
+
   private async update(): Promise<void> {
     this.panel.webview.html = await this.getHtmlContent();
   }
@@ -160,6 +171,10 @@ export class DashboardPanel {
     const lastVerdict = status.lastVerdict;
     const uptime = this.formatUptime(status.uptime);
 
+    // Get plan data if PlanManager is available
+    const plan = this.planManager?.getActivePlan() ?? null;
+    const planProgress = plan ? this.planManager?.getPlanProgress(plan.id) ?? null : null;
+
     return renderDashboardTemplate({
       nonce,
       cspSource,
@@ -169,6 +184,8 @@ export class DashboardPanel {
       lastVerdict,
       uptime,
       metrics: this.evaluationMetrics,
+      plan,
+      planProgress,
     });
   }
 

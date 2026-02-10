@@ -2,6 +2,15 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 
+const PROPRIETARY_SEGMENTS = new Set([
+    'proprietary',
+    '.proprietary',
+    'internal',
+    '.internal',
+    'private',
+    '.private'
+]);
+
 export function activate(context: vscode.ExtensionContext) {
     const scaffoldCommand = vscode.commands.registerCommand(
         'failsafe.antigravity.scaffold',
@@ -44,7 +53,18 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(scaffoldCommand);
 }
 
-async function copyDirectory(src: string, dest: string): Promise<void> {
+function isProprietaryRelativePath(relativePath: string): boolean {
+    const normalized = relativePath.replace(/\\/g, '/');
+    const segments = normalized.split('/').filter(Boolean);
+    return segments.some(segment => PROPRIETARY_SEGMENTS.has(segment.toLowerCase()));
+}
+
+async function copyDirectory(src: string, dest: string, rootSrc: string = src): Promise<void> {
+    const relative = path.relative(rootSrc, src);
+    if (relative && isProprietaryRelativePath(relative)) {
+        return;
+    }
+
     if (!fs.existsSync(dest)) {
         fs.mkdirSync(dest, { recursive: true });
     }
@@ -56,9 +76,12 @@ async function copyDirectory(src: string, dest: string): Promise<void> {
         const destPath = path.join(dest, entry.name);
 
         if (entry.isDirectory()) {
-            await copyDirectory(srcPath, destPath);
+            await copyDirectory(srcPath, destPath, rootSrc);
         } else {
-            fs.copyFileSync(srcPath, destPath);
+            const fileRelative = path.relative(rootSrc, srcPath);
+            if (!isProprietaryRelativePath(fileRelative)) {
+                fs.copyFileSync(srcPath, destPath);
+            }
         }
     }
 }

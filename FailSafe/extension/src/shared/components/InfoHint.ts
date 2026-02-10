@@ -60,10 +60,14 @@ export const HELP_TEXT = {
     "Operational mode controls monitoring intensity: NORMAL, LEAN, SURGE, or SAFE.",
   filesWatched: "Number of files actively monitored for changes by Sentinel.",
   queueDepth: "Pending file audits waiting to be processed.",
+  eventsProcessed: "Total file change events processed since Sentinel started.",
+  uptime: "Time elapsed since Sentinel daemon was activated.",
   trustStages:
     "CBT: Calculus-Based (0-50%). KBT: Knowledge-Based (50-80%). IBT: Identification-Based (80-100%).",
   l3Queue: "High-risk changes requiring human review before proceeding.",
   avgTrust: "Average trust score across all registered AI agents.",
+  quarantined:
+    "Agents isolated due to trust violations or suspicious behavior.",
   verdictDecision:
     "Sentinel decision outcome: PASS, WARN, BLOCK, ESCALATE, or QUARANTINE.",
   riskGrade: "Risk grade classification. L1: low, L2: moderate, L3: critical.",
@@ -78,4 +82,6 @@ export const HELP_TEXT = {
     "Trust score ranges 0.0 to 1.0 and influences verification weight.",
   checkpointGovernance:
     "Pause governance before using third-party skills. Resume to reconcile drift and restore tracking.",
+  planProgress:
+    "Percentage of plan phases completed. Blocked phases are excluded from count.",
 } as const;

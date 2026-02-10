@@ -6,3 +6,16 @@ src/**
 node_modules/**
 .gitignore
 tsconfig.json
+.agent/**/proprietary/**
+.agent/**/.proprietary/**
+.agent/**/internal/**
+.agent/**/.internal/**
+.agent/**/private/**
+.agent/**/.private/**
+.agent/staging/**
+.qorelogic/**/proprietary/**
+.qorelogic/**/.proprietary/**
+.qorelogic/**/internal/**
+.qorelogic/**/.internal/**
+.qorelogic/**/private/**
+.qorelogic/**/.private/**

@@ -46,3 +46,11 @@ Thumbs.db
 *.token
 .env
 .env.*
+
+# Proprietary/system-internal artifacts
+**/proprietary/**
+**/.proprietary/**
+**/internal/**
+**/.internal/**
+**/private/**
+**/.private/**

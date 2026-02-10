@@ -455,7 +455,9 @@ export type FailSafeEventType =
   | "qorelogic.ledgerEntry"
   | "genesis.graphUpdate"
   | "genesis.conceptCreated"
-  | "genesis.streamEvent";
+  | "genesis.streamEvent"
+  | "governance.checkpointCreated"
+  | "governance.driftDetected";
 
 export interface FailSafeEvent<T = unknown> {
   type: FailSafeEventType;

@@ -42,6 +42,28 @@ For significant changes:
 
 All contributions follow the process in [CONTRIBUTING.md](CONTRIBUTING.md).
 
+## Branch and Merge Standards
+
+FailSafe enforces branch-first and PR-first development:
+
+- Allowed branch taxonomy:
+  - `plan/*`
+  - `feat/*`
+  - `fix/*`
+  - `release/*`
+  - `hotfix/*`
+- Protected branch rule:
+  - `main` is protected and should not receive direct implementation commits in normal flow.
+- Merge rule:
+  - changes to protected branches must go through pull requests with required checks.
+- Evidence rule:
+  - PRs must include reliability and validation evidence when applicable.
+
+Validation entrypoints:
+
+- `powershell -File tools/reliability/validate-branch-policy.ps1`
+- `powershell -File validate.ps1 -SkipContainerValidation`
+
 ## QoreLogic A.E.G.I.S. Governance
 
 This project uses QoreLogic A.E.G.I.S. for AI-assisted development governance:

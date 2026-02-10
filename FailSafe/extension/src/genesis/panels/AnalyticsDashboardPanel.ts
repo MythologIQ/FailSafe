@@ -58,8 +58,8 @@ export class AnalyticsDashboardPanel {
                 this.currentSession.governanceEvents++;
                 void this.update();
             }),
-            this.eventBus.on('genesis.streamEvent', (event) => {
-                this.trackStreamEvent(event);
+            this.eventBus.on('genesis.streamEvent', () => {
+                this.trackStreamEvent();
                 void this.update();
             })
         ];
@@ -160,7 +160,7 @@ export class AnalyticsDashboardPanel {
         this.currentSession.governanceEvents++;
     }
 
-    private trackStreamEvent(event: unknown): void {
+    private trackStreamEvent(): void {
         // Track Genesis planning stream events
         this.currentSession.governanceEvents++;
     }

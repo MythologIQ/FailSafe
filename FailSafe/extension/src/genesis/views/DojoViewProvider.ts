@@ -72,7 +72,7 @@ export class DojoViewProvider implements vscode.WebviewViewProvider {
                     this.refresh();
                     break;
                 case 'showRoadmap':
-                    vscode.commands.executeCommand('failsafe.showRoadmap');
+                    vscode.commands.executeCommand('failsafe.openRoadmap');
                     break;
             }
         });

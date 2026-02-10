@@ -3,7 +3,7 @@
  * Renders plan phases as a vertical timeline with milestones.
  */
 
-import { Plan, PlanPhase, PhaseStatus } from '../../qorelogic/planning/types';
+import { Plan, PlanPhase } from '../../qorelogic/planning/types';
 import { escapeHtml } from '../../shared/utils/htmlSanitizer';
 
 /** Milestone type for timeline markers */
@@ -15,15 +15,6 @@ export interface Milestone {
     completedAt?: string;
     icon?: string;
 }
-
-/** Status to color mapping */
-const STATUS_COLORS: Record<PhaseStatus, string> = {
-    completed: 'var(--vscode-charts-green)',
-    active: 'var(--vscode-charts-blue)',
-    blocked: 'var(--vscode-charts-red)',
-    pending: 'var(--vscode-disabledForeground)',
-    skipped: 'var(--vscode-charts-orange)'
-};
 
 export const TIMELINE_STYLES = `
 .timeline {

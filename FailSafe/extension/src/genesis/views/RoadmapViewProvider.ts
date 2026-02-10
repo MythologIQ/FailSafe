@@ -6,10 +6,13 @@
 import * as vscode from 'vscode';
 import { EventBus } from '../../shared/EventBus';
 import { PlanManager } from '../../qorelogic/planning/PlanManager';
-import { Plan, PlanPhase, Blocker } from '../../qorelogic/planning/types';
+import { Plan, Blocker } from '../../qorelogic/planning/types';
 import { escapeHtml, getNonce } from '../../shared/utils/htmlSanitizer';
 
 type ViewMode = 'roadmap' | 'kanban' | 'timeline';
+type RoadmapViewMessage = { command: string; payload?: unknown };
+type BlockerPayload = { planId: string; blockerId: string };
+type ViewModePayload = { mode: ViewMode };
 
 export class RoadmapViewProvider implements vscode.WebviewViewProvider {
     private view?: vscode.WebviewView;
@@ -23,7 +26,7 @@ export class RoadmapViewProvider implements vscode.WebviewViewProvider {
         this.planManager = planManager;
         this.eventBus = eventBus;
 
-        this.eventBus.on('genesis.streamEvent' as any, () => this.refresh());
+        this.eventBus.on('genesis.streamEvent' as never, () => this.refresh());
     }
 
     setViewMode(mode: ViewMode): void {
@@ -45,20 +48,29 @@ export class RoadmapViewProvider implements vscode.WebviewViewProvider {
         webviewView.webview.onDidReceiveMessage(msg => this.handleMessage(msg));
     }
 
-    private handleMessage(message: { command: string; payload?: any }): void {
+    private handleMessage(message: RoadmapViewMessage): void {
         const p = message.payload;
         switch (message.command) {
             case 'requestApproval':
-                this.planManager.requestBlockerApproval(p.planId, p.blockerId);
+                this.planManager.requestBlockerApproval(
+                    (p as BlockerPayload).planId,
+                    (p as BlockerPayload).blockerId,
+                );
                 break;
             case 'takeDetour':
-                this.planManager.takeDetour(p.planId, p.blockerId);
+                this.planManager.takeDetour(
+                    (p as BlockerPayload).planId,
+                    (p as BlockerPayload).blockerId,
+                );
                 break;
             case 'markResolved':
-                this.planManager.resolveBlocker(p.planId, p.blockerId);
+                this.planManager.resolveBlocker(
+                    (p as BlockerPayload).planId,
+                    (p as BlockerPayload).blockerId,
+                );
                 break;
             case 'setViewMode':
-                this.setViewMode(p.mode);
+                this.setViewMode((p as ViewModePayload).mode);
                 break;
         }
     }

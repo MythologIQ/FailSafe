@@ -1,7 +1,6 @@
 import { SentinelStatus, SentinelVerdict } from "../../../shared/types";
 import { escapeHtml } from "../../../shared/utils/htmlSanitizer";
 import {
-  infoHint,
   INFO_HINT_STYLES,
   HELP_TEXT,
 } from "../../../shared/components/InfoHint";
@@ -9,6 +8,7 @@ import {
   tooltipAttrs,
   TOOLTIP_STYLES,
 } from "../../../shared/components/Tooltip";
+import { ENGAGEMENT_COPY } from "../../../shared/content/engagementCopy";
 
 export type SentinelViewModel = {
   nonce: string;
@@ -25,12 +25,12 @@ const SENTINEL_TEMPLATE = `<!DOCTYPE html>
     <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src {{CSP_SOURCE}} 'nonce-{{NONCE}}'; script-src 'nonce-{{NONCE}}';">
     <title>Sentinel</title>
     <style nonce="{{NONCE}}">
-        body { font-family: var(--vscode-font-family); font-size: var(--vscode-font-size); color: var(--vscode-foreground); background-color: var(--vscode-sideBar-background); padding: 10px; margin: 0; }
-        .section { margin-bottom: 20px; padding: 14px; background: var(--vscode-editor-background); border-radius: 4px; border: 1px solid var(--vscode-panel-border); }
-        .section-title { font-weight: bold; font-size: 11px; text-transform: uppercase; color: var(--vscode-descriptionForeground); margin-bottom: 12px; letter-spacing: 0.5px; }
+        body { font-family: var(--vscode-font-family); font-size: var(--vscode-font-size); color: var(--vscode-foreground); background-color: var(--vscode-editor-background); padding: 12px; margin: 0; }
+        .section { margin-bottom: 14px; padding: 14px; background: var(--vscode-editorWidget-background); border-radius: 8px; border: 1px solid var(--vscode-panel-border); }
+        .section-title { font-weight: 600; font-size: 12px; color: var(--vscode-foreground); margin-bottom: 10px; }
         .status-indicator { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
         .status-active { background: var(--vscode-charts-green); } 
-        .status-error { background: var(--vscode-charts-red); }
+        .status-idle { background: var(--vscode-descriptionForeground); }
         .metric { display: flex; justify-content: space-between; margin: 6px 0; font-size: 12px; }
         .metric-label { color: var(--vscode-descriptionForeground); } .metric-value { font-weight: 500; }
         .verdict-item { padding: 8px; margin: 6px 0; background: var(--vscode-input-background); border: 1px solid var(--vscode-panel-border); border-radius: 3px; font-size: 11px; }
@@ -46,6 +46,13 @@ const SENTINEL_TEMPLATE = `<!DOCTYPE html>
     </style>
 </head>
 <body>
+    <div class="section">
+        <div class="section-title">${ENGAGEMENT_COPY.nextStepTitle}</div>
+        <div class="metric">
+            <span class="metric-label">{{NEXT_ACTION}}</span>
+        </div>
+    </div>
+
     <div class="section">
         <div class="section-title">Sentinel Status</div>
         <div class="metric">
@@ -109,8 +116,11 @@ export function renderSentinelTemplate(model: SentinelViewModel): string {
     "{{CSP_SOURCE}}": model.cspSource,
     "{{NONCE}}": model.nonce,
     "{{STYLES}}": styles,
-    "{{STATUS_CLASS}}": status.running ? "status-active" : "status-error",
-    "{{STATUS_LABEL}}": status.running ? "Monitoring" : "Offline",
+    "{{STATUS_CLASS}}": status.running ? "status-active" : "status-idle",
+    "{{STATUS_LABEL}}": status.running ? "Monitoring" : "Idle",
+    "{{NEXT_ACTION}}": status.running
+      ? ENGAGEMENT_COPY.sentinelMonitorAction
+      : ENGAGEMENT_COPY.sentinelIdleAction,
     "{{MODE}}": escapeHtml(status.mode),
     "{{FILES_WATCHED}}": status.filesWatched.toString(),
     "{{QUEUE_DEPTH}}": status.queueDepth.toString(),

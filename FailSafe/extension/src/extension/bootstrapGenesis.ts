@@ -84,10 +84,11 @@ export async function bootstrapGenesis(
     return genesisManager;
   } catch (error) {
     logger.error("Genesis manager initialization failed", error);
-    return {
+    const stubManager = {
       initialize: async () => {},
       updateGraph: () => {},
       dispose: () => {},
-    } as any;
+    };
+    return stubManager as unknown as GenesisManager;
   }
 }

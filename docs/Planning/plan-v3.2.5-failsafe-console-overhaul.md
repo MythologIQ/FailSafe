@@ -92,12 +92,26 @@ Plan fails if any of the following are true:
 - Build profile presets (`guided`, `standard`, `expert`) with complexity/transparency defaults.
 - Add progressive disclosure rules and component visibility matrix.
 - Preserve single-source state model for profile/config resolution (`run > workspace > user > default`).
+- Add explicit Home/Quick Action CTA: `Prep Workspace (Bootstrap)` that runs required workspace injection/hygiene flow before first run.
+- Map `Prep Workspace (Bootstrap)` to existing secure-workspace pipeline and extension artifact injection orchestration path.
+- Add explicit Run View safety controls:
+  - `Panic` button (`Stop/Cancel Run`) to hard-abort active execution paths.
+  - `Undo Last Attempt` to trigger bounded rollback flow from latest attempt transaction.
+- Add empty-state UX contracts for:
+  - no workspace open
+  - no detected failure signals
+  - no admitted skills
+  - no existing runs
 
 ### Unit Tests
 
 - `FailSafe/extension/src/test/console/ProfileDefaults.test.ts` - verifies default matrix per profile.
 - `FailSafe/extension/src/test/console/VisibilityRules.test.ts` - ensures component flag behavior by profile/complexity.
 - `FailSafe/extension/src/test/console/ConfigPrecedence.test.ts` - validates override priority semantics.
+- `FailSafe/extension/src/test/console/WorkspacePrepAction.test.ts` - validates bootstrap CTA wiring and success/failure user messaging.
+- `FailSafe/extension/src/test/console/RunPanicAction.test.ts` - validates panic stop behavior and run-state transition.
+- `FailSafe/extension/src/test/console/UndoLastAttemptAction.test.ts` - validates rollback action wiring and integrity checks.
+- `FailSafe/extension/src/test/console/EmptyStates.test.ts` - validates all required empty-state messages and next actions.
 
 ## Phase 3: Workflow Run, Evidence, and Claim Model Integration
 
@@ -140,12 +154,14 @@ Plan fails if any of the following are true:
 - Deny `shell.exec` and `network.http` by default in policy model unless explicit grant.
 - Require version pin for runnable skills; unpinned skills blocked or forced conditional mode with explicit consent.
 - Add redaction guarantees for export outputs by default.
+- Add first-run permission preflight summary dialog for requested scopes and default denials.
 
 ### Unit Tests
 
 - `FailSafe/extension/src/test/security/PermissionDefaults.test.ts` - verifies deny-by-default for sensitive scopes.
 - `FailSafe/extension/src/test/security/SkillPinPolicy.test.ts` - blocks unpinned skill execution.
 - `FailSafe/extension/src/test/security/ExportRedaction.test.ts` - ensures secret patterns are redacted in exports.
+- `FailSafe/extension/src/test/security/PermissionPreflight.test.ts` - validates consent and denial handling for first-run scope grants.
 
 ## Phase 5: Acceptance and Adversarial Validation
 
@@ -163,6 +179,9 @@ Plan fails if any of the following are true:
 - Add adversarial checks as first-class pass/fail conditions.
 - Add CI compatibility report output for PR annotation artifacts.
 - Ensure deterministic replay criteria for CI runs with same inputs/environment.
+- Add accessibility baseline gates for keyboard navigation, focus management, and labeled controls.
+- Add PR evidence checklist update to `.github/PULL_REQUEST_TEMPLATE.md`.
+- Add branch-protection parity checks (required checks/PR requirement/signature policy) to governance validation.
 
 ### Unit Tests
 
@@ -171,6 +190,8 @@ Plan fails if any of the following are true:
 - `tests/e2e/console-security-permission-denial.spec.ts`
 - `tests/e2e/console-ci-parity.spec.ts`
 - `tests/e2e/console-workflow-authoring-sandbox.spec.ts`
+- `tests/e2e/console-panic-stop-and-recovery.spec.ts`
+- `tests/e2e/console-accessibility-baseline.spec.ts`
 
 ## Adversarial Review of Plan
 

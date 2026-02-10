@@ -14,6 +14,9 @@
 - v3.2.0 execution explicitly started by user directive ("Proceed"), and implementation scope is now complete.
 - B51 User Intent Gate is implemented and validated via run artifacts and validator script.
 - v3.2.5 scope is opened for FailSafe Console overhaul, with B46 expanded into a spec-driven program.
+- v3.2.5 execution has started on branch `plan/v3.2.5-failsafe-console-overhaul`.
+- B52 branch/PR standards enforcement is implemented via validator, PR template requirements, and CI workflow gate.
+- B58 `Prep Workspace (Bootstrap)` quick action is implemented in Planning Hub and mapped to `failsafe.secureWorkspace`.
 - B49 Skill Admission Gate is implemented with deterministic intake, trust-tier decisioning, and registry validation.
 - B50 Gate-to-Skill matrix enforcement is implemented for reliability gates with validator interdictions.
 - B48 manifest operationalization is now enforceable with reliability-run coherence validator and dry-run proof.
@@ -208,7 +211,7 @@ Step 9.6: Merge Options
 | v3.0.2     | Dashboard Remediation | SEALED        | Roadmap card, tooltips, wiring (B37-B40) |
 | v3.1.0     | Orchestration       | SEALED          | Cumulative Roadmap, External Browser (B41-B44) |
 | **v3.2.0** | **Reliability Hardening** | **SEALED** | **B45/B47/B48/B49/B50/B51 substantiated with executable evidence** |
-| **v3.2.5** | **Console Overhaul** | **PLANNED** | **UI overhaul + GitHub standards enforcement + evidence-model integration** |
+| **v3.2.5** | **Console Overhaul** | **IN PROGRESS** | **GitHub standards + prep bootstrap action implemented; remaining console scope pending** |
 
 ---
 

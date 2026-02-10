@@ -15,7 +15,6 @@ import { GenesisManager } from "../genesis/GenesisManager";
 import { QoreLogicManager } from "../qorelogic/QoreLogicManager";
 import { SentinelDaemon } from "../sentinel/SentinelDaemon";
 import { EventBus } from "../shared/EventBus";
-import { SessionManager } from "../governance/SessionManager";
 import { GovernanceStatusBar } from "../governance/GovernanceStatusBar";
 import { LedgerManager } from "../qorelogic/ledger/LedgerManager";
 import { ShadowGenomeManager } from "../qorelogic/shadow/ShadowGenomeManager";
@@ -36,7 +35,6 @@ let sentinelDaemon: SentinelDaemon;
 let eventBus: EventBus;
 let logger: Logger;
 let feedbackManager: FeedbackManager;
-let sessionManager: SessionManager;
 let governanceStatusBar: GovernanceStatusBar;
 let ledgerManager: LedgerManager;
 let shadowGenomeManager: ShadowGenomeManager;
@@ -59,7 +57,6 @@ export async function activate(
 
     // 2. Governance
     const gov = await bootstrapGovernance(context, core, logger);
-    sessionManager = gov.sessionManager;
     governanceStatusBar = gov.governanceStatusBar;
 
     // 3. QoreLogic
@@ -110,13 +107,6 @@ export async function activate(
     roadmapServer = new RoadmapServer(core.planManager, eventBus);
     roadmapServer.start();
     context.subscriptions.push({ dispose: () => roadmapServer?.stop() });
-
-    // Register openRoadmap command
-    context.subscriptions.push(
-      vscode.commands.registerCommand('failsafe.openRoadmap', () => {
-        vscode.env.openExternal(vscode.Uri.parse('http://localhost:9376'));
-      })
-    );
 
     // 10. Startup Checks
     setTimeout(async () => {

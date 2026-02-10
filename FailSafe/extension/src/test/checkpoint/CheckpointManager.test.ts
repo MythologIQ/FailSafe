@@ -10,11 +10,6 @@ import * as yaml from "js-yaml";
  * Tests for the Sovereign Checkpoint Protocol implementation.
  */
 
-// Mock ConfigManager for tests
-const mockConfigManager = {
-  getWorkspaceRoot: () => path.resolve(__dirname, "test-workspace"),
-};
-
 // Test workspace setup
 const testWorkspace = path.resolve(__dirname, "test-workspace");
 const checkpointDir = path.join(testWorkspace, ".agent", "checkpoints");

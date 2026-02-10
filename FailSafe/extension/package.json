@@ -125,8 +125,28 @@
         "title": "FailSafe: Secure Workspace"
       },
       {
+        "command": "failsafe.panicStop",
+        "title": "FailSafe: Panic Stop"
+      },
+      {
+        "command": "failsafe.resumeMonitoring",
+        "title": "FailSafe: Resume Monitoring"
+      },
+      {
         "command": "failsafe.openRoadmap",
         "title": "FailSafe: Open Roadmap (Browser)"
+      },
+      {
+        "command": "failsafe.openRoadmapTimeline",
+        "title": "FailSafe: Open Roadmap Timeline (Browser)"
+      },
+      {
+        "command": "failsafe.openRoadmapActiveSprint",
+        "title": "FailSafe: Open Active Sprint (Browser)"
+      },
+      {
+        "command": "failsafe.openRoadmapLiveActivity",
+        "title": "FailSafe: Open Live Activity (Browser)"
       }
     ],
     "keybindings": [

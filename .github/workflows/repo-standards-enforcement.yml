@@ -1,0 +1,50 @@
+name: Repo Standards Enforcement
+
+on:
+  pull_request:
+    branches:
+      - main
+      - "release/**"
+  push:
+    branches:
+      - "plan/**"
+      - "feat/**"
+      - "fix/**"
+      - "release/**"
+      - "hotfix/**"
+
+jobs:
+  standards:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        working-directory: FailSafe/extension
+        run: npm ci
+
+      - name: Branch policy
+        shell: pwsh
+        run: |
+          pwsh -File tools/reliability/validate-branch-policy.ps1
+
+      - name: Lint
+        working-directory: FailSafe/extension
+        run: npm run lint
+
+      - name: Compile
+        working-directory: FailSafe/extension
+        run: npm run compile
+
+      - name: Repository validation
+        shell: pwsh
+        run: |
+          pwsh -File validate.ps1 -SkipContainerValidation
+

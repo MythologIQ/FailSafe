@@ -9,7 +9,6 @@
  * Creates checkpoints after governance commands and reconciles drift before next command.
  */
 
-import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
 import { EventBus } from "../shared/EventBus";

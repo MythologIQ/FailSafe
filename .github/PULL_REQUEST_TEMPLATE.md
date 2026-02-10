@@ -29,6 +29,24 @@
 - [ ] Section 4 Razor applied (<=40 lines/function, <=250 lines/file)
 - [ ] No console.log statements in production code
 
+## Branch and Merge Policy
+
+- [ ] Branch follows taxonomy (`plan/*`, `feat/*`, `fix/*`, `release/*`, `hotfix/*`)
+- [ ] PR-first flow used (no direct merge/push to protected branches unless explicitly approved)
+- [ ] Required checks are green before merge
+
+## Reliability Gates
+
+- [ ] Intent gate validated (`validate-intent-gate.ps1`) when run artifacts are in scope
+- [ ] Reliability run validated (`validate-reliability-run.ps1`) when implementation touches reliability workflow
+- [ ] Skill admission and gate-skill matrix checks passed when imported skills are used
+
+## Evidence Checklist
+
+- [ ] Linked run ID(s) and artifact paths included in PR description
+- [ ] Validation commands and outcomes documented
+- [ ] Backlog, ledger, and system-state updates are consistent
+
 ## Testing
 
 <!-- Describe how you tested these changes -->

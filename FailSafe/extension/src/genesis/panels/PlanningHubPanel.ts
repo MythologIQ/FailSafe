@@ -23,6 +23,9 @@ import {
 import { SentinelVerdict } from "../../shared/types";
 
 type ViewMode = "roadmap" | "kanban" | "timeline";
+type PlanningHubMessage = { command: string; payload?: unknown };
+type BlockerPayload = { planId: string; blockerId: string };
+type ViewModePayload = { mode: ViewMode };
 
 export class PlanningHubPanel {
   public static currentPanel: PlanningHubPanel | undefined;
@@ -52,7 +55,7 @@ export class PlanningHubPanel {
 
     const panel = vscode.window.createWebviewPanel(
       "failsafe.planningHub",
-      "FailSafe Planning Hub",
+      "FailSafe Planning Console",
       column,
       {
         enableScripts: true,
@@ -107,7 +110,7 @@ export class PlanningHubPanel {
       }),
       this.eventBus.on("qorelogic.trustUpdate", () => void this.update()),
       this.eventBus.on("qorelogic.l3Queued", () => void this.update()),
-      this.eventBus.on("plan.updated" as any, () => void this.update()),
+      this.eventBus.on("plan.updated" as never, () => void this.update()),
     ];
     subs.forEach((unsub) => this.disposables.push({ dispose: unsub }));
   }
@@ -116,11 +119,11 @@ export class PlanningHubPanel {
     this.panel.reveal();
   }
 
-  private handleMessage(message: { command: string; payload?: any }): void {
+  private handleMessage(message: PlanningHubMessage): void {
     const p = message.payload;
     switch (message.command) {
       case "setViewMode":
-        this.currentMode = p.mode;
+        this.currentMode = (p as ViewModePayload).mode;
         void this.update();
         break;
       case "auditFile":
@@ -135,17 +138,47 @@ export class PlanningHubPanel {
       case "focusCortex":
         vscode.commands.executeCommand("failsafe.focusCortex");
         break;
+      case "prepWorkspace":
+        vscode.commands.executeCommand("failsafe.secureWorkspace");
+        break;
+      case "panicStop":
+        vscode.commands.executeCommand("failsafe.panicStop");
+        break;
+      case "resumeMonitoring":
+        vscode.commands.executeCommand("failsafe.resumeMonitoring");
+        break;
+      case "openConsoleHome":
+        vscode.commands.executeCommand("failsafe.openRoadmap");
+        break;
+      case "openConsoleTimeline":
+        vscode.commands.executeCommand("failsafe.openRoadmapTimeline");
+        break;
+      case "openConsoleActiveSprint":
+        vscode.commands.executeCommand("failsafe.openRoadmapActiveSprint");
+        break;
+      case "openConsoleLiveActivity":
+        vscode.commands.executeCommand("failsafe.openRoadmapLiveActivity");
+        break;
       case "approveL3":
         vscode.commands.executeCommand("failsafe.approveL3");
         break;
       case "requestApproval":
-        this.planManager.requestBlockerApproval(p.planId, p.blockerId);
+        this.planManager.requestBlockerApproval(
+          (p as BlockerPayload).planId,
+          (p as BlockerPayload).blockerId,
+        );
         break;
       case "takeDetour":
-        this.planManager.takeDetour(p.planId, p.blockerId);
+        this.planManager.takeDetour(
+          (p as BlockerPayload).planId,
+          (p as BlockerPayload).blockerId,
+        );
         break;
       case "resolveBlocker":
-        this.planManager.resolveBlocker(p.planId, p.blockerId);
+        this.planManager.resolveBlocker(
+          (p as BlockerPayload).planId,
+          (p as BlockerPayload).blockerId,
+        );
         void this.update();
         break;
     }

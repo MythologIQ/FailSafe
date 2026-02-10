@@ -83,12 +83,12 @@ export class RoadmapServer {
 
   private subscribeToEvents(): void {
     // Stream plan events to connected clients
-    this.eventBus.on('genesis.streamEvent' as any, (event: unknown) => {
+    this.eventBus.on('genesis.streamEvent' as never, (event: unknown) => {
       this.broadcast({ type: 'event', payload: event });
     });
 
     // Stream sentinel verdicts
-    this.eventBus.on('sentinel.verdict' as any, (event: { payload: unknown }) => {
+    this.eventBus.on('sentinel.verdict' as never, (event: { payload: unknown }) => {
       this.broadcast({ type: 'verdict', payload: event.payload });
     });
   }

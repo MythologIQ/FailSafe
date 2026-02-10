@@ -8,7 +8,9 @@
 
 param(
   [switch]$SkipContainerValidation,
-  [switch]$SkipReliabilityValidation
+  [switch]$SkipReliabilityValidation,
+  [switch]$SkipGitHubStandardsValidation,
+  [switch]$AllowMainBranch
 )
 
 $ErrorActionPreference = "Stop"
@@ -153,9 +155,48 @@ function Validate-ReliabilityHardening {
     -Rule "ql-substantiate missing B50 evidence check"
 }
 
+function Validate-GitHubStandards {
+  if ($SkipGitHubStandardsValidation) {
+    Write-Log "Skipping GitHub standards validation by request." -Level Warning
+    return
+  }
+
+  Write-Log "Validating GitHub standards and branch policy..."
+
+  Assert-PathExists -RelativePath "tools/reliability/validate-branch-policy.ps1" -Rule "Missing branch policy validator"
+
+  $branchValidator = Join-Path $RepoRoot "tools/reliability/validate-branch-policy.ps1"
+  if (Test-Path $branchValidator) {
+    $allowMainArg = if ($AllowMainBranch) { "-AllowMain" } else { "" }
+    $cmd = "powershell -File `"$branchValidator`" $allowMainArg"
+    Invoke-Expression $cmd | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+      $script:violations += @{ File = "git-branch-policy"; Rule = "Branch policy validation failed" }
+    } else {
+      Write-Log "PASS: branch naming/protected-branch policy" -Level Success
+    }
+  }
+
+  Assert-FileContains `
+    -RelativePath ".github/PULL_REQUEST_TEMPLATE.md" `
+    -Pattern "Evidence Checklist" `
+    -Rule "PR template missing evidence checklist section"
+
+  Assert-FileContains `
+    -RelativePath ".github/PULL_REQUEST_TEMPLATE.md" `
+    -Pattern "Reliability Gates" `
+    -Rule "PR template missing reliability gate checklist"
+
+  Assert-FileContains `
+    -RelativePath ".github/PULL_REQUEST_TEMPLATE.md" `
+    -Pattern "Branch and Merge Policy" `
+    -Rule "PR template missing branch/merge policy checklist"
+}
+
 Write-Log "Repository Validation (Gold Standard + Container)" -Level Info
 Validate-GoldStandardArtifacts
 Validate-ReliabilityHardening
+Validate-GitHubStandards
 Validate-ContainerChecks
 
 if ($violations.Count -gt 0) {

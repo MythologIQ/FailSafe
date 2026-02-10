@@ -39,11 +39,17 @@ Implement the FailSafe Console overhaul with profile-based UX, enforceable workf
 ## Gate Checklist
 
 - [ ] GitHub governance checks fail invalid branch/merge paths.
+- [ ] Home/Quick Action includes `Prep Workspace (Bootstrap)` and executes required workspace injection/hygiene flow.
+- [ ] Run view includes a visible `Panic` (`Stop/Cancel Run`) control with logged abort reason and safe state transition.
+- [ ] Run view supports `Undo Last Attempt` rollback action with integrity verification feedback.
+- [ ] Required empty states are implemented with actionable next steps.
 - [ ] Guided profile produces first-win lane with minimal friction.
 - [ ] Verified claims require evidence refs.
 - [ ] Permission defaults deny `shell.exec` and `network.http`.
+- [ ] First-run permission preflight summary is required before elevated scopes are granted.
 - [ ] Unpinned skill execution is blocked or explicit conditional consent path is logged.
 - [ ] Headless parity for gate outcomes is demonstrated.
+- [ ] Accessibility baseline checks pass for keyboard/focus/labels on core routes.
 
 ## PASS Criteria
 

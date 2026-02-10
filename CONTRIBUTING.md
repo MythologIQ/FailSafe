@@ -13,11 +13,18 @@ Thank you for your interest in contributing to FailSafe!
 ### Pull Requests
 
 1. Fork the repository
-2. Create a feature branch: `git checkout -b feat/your-feature`
+2. Create a policy-compliant branch:
+   - planning: `plan/<slug>`
+   - implementation: `feat/<slug>` or `fix/<slug>`
+   - release: `release/<version>`
 3. Make your changes
-4. Run tests: `npm test`
+4. Run required checks:
+   - `npm run lint` (warnings allowed, errors are blocking)
+   - `npm run compile`
+   - `powershell -File validate.ps1 -SkipContainerValidation`
 5. Commit with conventional commits: `git commit -m "feat: add feature"`
 6. Push and create a PR
+7. Complete PR evidence checklist in `.github/PULL_REQUEST_TEMPLATE.md`
 
 ### Commit Convention
 
@@ -41,6 +48,7 @@ We use [Conventional Commits](https://www.conventionalcommits.org/):
 1. All PRs require at least one review
 2. CI checks must pass
 3. No merge conflicts with main
+4. Branch policy must pass (`validate-branch-policy.ps1`)
 
 ## Development Setup
 

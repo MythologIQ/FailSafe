@@ -8,6 +8,15 @@ import { IntentType } from "../governance/types/IntentTypes";
 import { DetectedSystem, FrameworkSync } from "../qorelogic/FrameworkSync";
 import { WorkspaceMigration } from "../qorelogic/WorkspaceMigration";
 
+const ROADMAP_BASE_URL = "http://localhost:9376";
+
+function openRoadmapExternal(view?: string): Thenable<boolean> {
+  const target = view
+    ? `${ROADMAP_BASE_URL}/?view=${encodeURIComponent(view)}`
+    : ROADMAP_BASE_URL;
+  return vscode.env.openExternal(vscode.Uri.parse(target));
+}
+
 export function registerCommands(
   context: vscode.ExtensionContext,
   genesis: GenesisManager,
@@ -123,6 +132,28 @@ export function registerCommands(
     }),
   );
 
+  // External popout console actions.
+  context.subscriptions.push(
+    vscode.commands.registerCommand("failsafe.openRoadmap", () => {
+      return openRoadmapExternal();
+    }),
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand("failsafe.openRoadmapTimeline", () => {
+      return openRoadmapExternal("timeline");
+    }),
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand("failsafe.openRoadmapActiveSprint", () => {
+      return openRoadmapExternal("current-sprint");
+    }),
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand("failsafe.openRoadmapLiveActivity", () => {
+      return openRoadmapExternal("live-activity");
+    }),
+  );
+
   // v3.0.0: Full-screen Planning Roadmap Window
   context.subscriptions.push(
     vscode.commands.registerCommand("failsafe.showRoadmapWindow", () => {
@@ -169,7 +200,42 @@ export function registerCommands(
       );
     }),
   );
+  // Panic stop command (B59): immediate stop of active monitoring loop.
+  context.subscriptions.push(
+    vscode.commands.registerCommand("failsafe.panicStop", async () => {
+      const choice = await vscode.window.showWarningMessage(
+        "Panic Stop will halt active FailSafe monitoring for this session. Continue?",
+        { modal: true },
+        "Stop Now",
+      );
+      if (choice !== "Stop Now") {
+        return;
+      }
+
+      sentinel.stop();
+      vscode.window.showWarningMessage(
+        "FailSafe Panic Stop executed. Sentinel daemon halted. Re-run activation to resume monitoring.",
+      );
+    }),
+  );
+
+  // Resume monitoring command: restart Sentinel after panic stop.
+  context.subscriptions.push(
+    vscode.commands.registerCommand("failsafe.resumeMonitoring", async () => {
+      if (sentinel.isRunning()) {
+        vscode.window.showInformationMessage(
+          "FailSafe monitoring is already running.",
+        );
+        return;
+      }
+      await sentinel.start();
+      vscode.window.showInformationMessage(
+        "FailSafe monitoring resumed successfully.",
+      );
+    }),
+  );
 }
+
 
 export function registerGovernanceCommands(
   context: vscode.ExtensionContext,

@@ -2238,3 +2238,36 @@ _Version: v3.1.0 Cumulative Roadmap (SUBSTANTIATED) -> v3.2.0 Reliability Harden
 - `tools/reliability/validate-intent-gate.ps1 -RunId v3.2.5-plan-001` -> PASS
 
 **Decision**: v3.2.5 planning accepted. Implementation should proceed using the new phased plan and sprint contract.
+
+Addendum (planning detail hardening):
+- Added explicit bootstrap-prep UI action requirement so workspace injection/hygiene is first-class and not implicit.
+- Backlog task `B58` added for `Prep Workspace (Bootstrap)` action wiring and validation.
+
+Addendum (simple-obvious gap closure):
+- Added backlog tasks `B59-B65` for panic stop control, undo-last-attempt, empty-state UX, permission preflight, accessibility baseline, branch-protection parity checks, and bootstrap idempotency.
+- These requirements are now explicit in both the v3.2.5 plan and sprint gate checklist to prevent silent scope loss.
+
+---
+
+### Entry #57: IMPLEMENTATION - v3.2.5 Initial Enforcement Slice (B52/B58)
+
+**Timestamp**: 2026-02-10T01:40:00-05:00
+**Phase**: IMPLEMENT
+**Author**: Specialist
+**Risk Grade**: L2
+
+**Implementation Summary**:
+
+| Task | Result | Evidence |
+|------|--------|----------|
+| B52 branch/PR standards enforcement | COMPLETE | `tools/reliability/validate-branch-policy.ps1`, `validate.ps1`, `.github/workflows/repo-standards-enforcement.yml`, `.github/PULL_REQUEST_TEMPLATE.md`, `GOVERNANCE.md`, `CONTRIBUTING.md` |
+| B58 prep bootstrap quick action | COMPLETE | `PlanningHubTemplate.ts` + `PlanningHubPanel.ts` wired to `failsafe.secureWorkspace` |
+| B59 panic stop groundwork | IN PROGRESS | `failsafe.panicStop` command and Planning Hub button wiring added |
+
+**Verification**:
+- `powershell -File tools/reliability/validate-branch-policy.ps1 -RequirePlanOrFeature` -> PASS
+- `npm run lint` -> PASS (warnings only, 0 errors)
+- `npm run compile` -> PASS
+- `powershell -File validate.ps1 -SkipContainerValidation` -> PASS
+
+**Decision**: v3.2.5 implementation has started with enforcement-first execution. Continue with remaining console overhaul tasks (`B46`, `B53-B57`, `B59-B65`).

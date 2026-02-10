@@ -115,14 +115,22 @@
 - [x] [B49] Build Skill Admission Gate for external and user-imported skills (standard + protocol compliance) | v3.2.0
 - [x] [B50] Enforce Gate-to-Skill requirements matrix across reliability workflow stages | v3.2.0
 
-### v3.2.5 Follow-On Hardening (PLANNED)
+### v3.2.5 Follow-On Hardening (IN PROGRESS)
 - [ ] [B46] FailSafe Console UI overhaul and refinement (deferred by user on 2026-02-10, expanded via console spec packet) | v3.2.5
-- [ ] [B52] Enforce GitHub branch/PR standards in FailSafe and team workflow tooling (branch taxonomy, PR-first merges, policy checks) | v3.2.5
+- [x] [B52] Enforce GitHub branch/PR standards in FailSafe and team workflow tooling (branch taxonomy, PR-first merges, policy checks) | v3.2.5
 - [ ] [B53] Implement Console route shell + profile-based IA (`/home`, `/run/:runId`, `/workflows`, `/skills`, `/genome`, `/reports`, `/settings`) | v3.2.5
 - [ ] [B54] Implement configuration profiles and precedence (`run > workspace > user > defaults`) with visibility flags | v3.2.5
 - [ ] [B55] Align workflow run/evidence model contracts (run/stage/gate/claim/evidence/attempt/export bundle parity) | v3.2.5
 - [ ] [B56] Implement security and skill-registry enforcement surfaces (permission scopes, pinning, redaction, invocation audit) | v3.2.5
 - [ ] [B57] Build journey-based acceptance and adversarial E2E suite for P1-P5 from console spec | v3.2.5
+- [x] [B58] Add explicit `Prep Workspace (Bootstrap)` UI action to inject required extension/workspace files and run hygiene checks | v3.2.5
+- [ ] [B59] Add run-level `Panic` (`Stop/Cancel Run`) button with hard abort semantics and ledgered reason capture | v3.2.5
+- [ ] [B60] Add `Undo Last Attempt` UI action with rollback integrity verification and user feedback | v3.2.5
+- [ ] [B61] Implement required empty-state UX flows (no workspace, no failures, no skills, no runs) | v3.2.5
+- [ ] [B62] Add first-run permission preflight summary for scope grants and deny-by-default transparency | v3.2.5
+- [ ] [B63] Enforce accessibility baseline (keyboard nav, focus order, labels) on core console routes | v3.2.5
+- [ ] [B64] Add branch-protection parity checks and PR evidence checklist enforcement in repo standards | v3.2.5
+- [ ] [B65] Enforce `Prep Workspace (Bootstrap)` idempotency and duplicate-injection prevention | v3.2.5
 
 ## Wishlist (Nice to Have)
 <!-- All wishlist items promoted to Backlog with version tags -->
@@ -145,7 +153,7 @@
 | v3.0.2 | Dashboard Remediation | ✅ COMPLETE | Roadmap card, tooltips, wiring (B37-B40) |
 | **v3.1.0** | **Orchestration** | **SEALED** | Cumulative Roadmap, External Browser (B41-B44) |
 | **v3.2.0** | **Reliability Hardening** | **SEALED** | B45/B47/B48/B49/B50/B51 substantiated with executable gate evidence |
-| **v3.2.5** | **Console Overhaul** | **PLANNED** | UI overhaul + GitHub standards enforcement + evidence-model integration (B46/B52-B57) |
+| **v3.2.5** | **Console Overhaul** | **IN PROGRESS** | UI overhaul + GitHub standards + safety/accessibility hardening (B46/B52-B65) |
 
 ---
 

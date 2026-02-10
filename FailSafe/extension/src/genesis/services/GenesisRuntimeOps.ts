@@ -3,7 +3,7 @@ import { ArchitectureEngine } from '../../sentinel/engines/ArchitectureEngine';
 import { QoreLogicManager } from '../../qorelogic/QoreLogicManager';
 import { EventBus } from '../../shared/EventBus';
 import { SentinelDaemon } from '../../sentinel/SentinelDaemon';
-import { SentinelVerdict } from '../../shared/types';
+import { LivingGraphData, SentinelVerdict } from '../../shared/types';
 import { applyVerdictToGraph, createInitialGraphData } from './GenesisGraphService';
 import { showGenesisHelp, showVerdictDetails } from './GenesisNotificationService';
 
@@ -21,7 +21,7 @@ export class GenesisRuntimeOps {
     return graphData;
   }
 
-  async updateGraphNode(graphData: any, verdict: SentinelVerdict) {
+  async updateGraphNode(graphData: LivingGraphData | undefined, verdict: SentinelVerdict) {
     const updated = applyVerdictToGraph(graphData, verdict);
     if (updated) {
       this.eventBus.emit('genesis.graphUpdate', updated);

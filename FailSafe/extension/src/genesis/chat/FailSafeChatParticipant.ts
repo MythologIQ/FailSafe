@@ -34,9 +34,9 @@ export class FailSafeChatParticipant {
 
   private async handleRequest(
     request: vscode.ChatRequest,
-    context: vscode.ChatContext,
+    _context: vscode.ChatContext,
     stream: vscode.ChatResponseStream,
-    token: vscode.CancellationToken
+    _token: vscode.CancellationToken
   ): Promise<vscode.ChatResult> {
     const command = request.command;
 

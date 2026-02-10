@@ -86,8 +86,11 @@ export async function bootstrapSentinel(
         queueDepth: 0,
         eventsProcessed: 0,
       }),
-    } as any;
+    };
 
-    return { sentinelDaemon: stubDaemon, architectureEngine };
+    return {
+      sentinelDaemon: stubDaemon as unknown as SentinelDaemon,
+      architectureEngine,
+    };
   }
 }

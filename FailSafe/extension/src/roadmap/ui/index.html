@@ -3,22 +3,27 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FailSafe Roadmap</title>
+  <title>FailSafe Planning Console</title>
   <link rel="stylesheet" href="roadmap.css">
 </head>
 <body>
   <div id="app">
     <header id="header">
       <div class="header-content">
-        <h1>Project Roadmap</h1>
-        <div id="connection-status" class="status-indicator">
-          <span class="status-dot"></span>
-          <span class="status-text">Connecting...</span>
+        <h1>FailSafe Planning Console</h1>
+        <div class="header-controls">
+          <div id="resume-summary" class="resume-summary">Loading session...</div>
+          <button id="focus-toggle" class="focus-toggle" type="button" aria-pressed="false">Focus Mode: Off</button>
+          <div id="connection-status" class="status-indicator">
+            <span class="status-dot"></span>
+            <span class="status-text">Connecting...</span>
+          </div>
         </div>
       </div>
     </header>
 
     <main id="main">
+      <section id="global-error" class="error-banner hidden" aria-live="polite"></section>
       <!-- Sprint Timeline - Cumulative visualization -->
       <section id="sprint-timeline" class="panel">
         <h2>Sprint History</h2>
@@ -42,7 +47,7 @@
     </main>
 
     <footer id="footer">
-      <span>FailSafe v3.1.0 - Cumulative Roadmap</span>
+      <span>FailSafe v3.2.5 - Cumulative Roadmap</span>
     </footer>
   </div>
 

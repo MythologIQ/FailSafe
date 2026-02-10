@@ -31,7 +31,7 @@ export class WorkspaceMigration {
    * Checks if the current workspace needs a proprietary configuration repair or alignment.
    */
   public static async checkAndRepair(
-    context: vscode.ExtensionContext,
+    _context: vscode.ExtensionContext,
   ): Promise<void> {
     const workspaceFolders = vscode.workspace.workspaceFolders;
     if (!workspaceFolders) return;
@@ -52,8 +52,9 @@ export class WorkspaceMigration {
     );
   }
 
-  private static calculateHash(config: any): string {
-    const { configHash, detectedAt, ...hashableData } = config;
+  private static calculateHash(config: Record<string, unknown>): string {
+    const { configHash: _configHash, detectedAt: _detectedAt, ...hashableData } =
+      config;
     const data = JSON.stringify(hashableData);
     return crypto.createHash("sha256").update(data).digest("hex");
   }
@@ -66,34 +67,42 @@ export class WorkspaceMigration {
       fs.mkdirSync(configDir, { recursive: true });
     }
 
-    let existingConfig: any = null;
     let isMisaligned = false;
     let isTampered = false;
 
     if (fs.existsSync(configFile)) {
       try {
         const content = fs.readFileSync(configFile, "utf8");
-        existingConfig = JSON.parse(content);
+        const parsedConfig = JSON.parse(content) as Record<string, unknown>;
+        const existingExclusions = Array.isArray(
+          parsedConfig.organizationExclusions,
+        )
+          ? parsedConfig.organizationExclusions
+          : [];
+        const existingWorkspaceType =
+          typeof parsedConfig.workspaceType === "string"
+            ? parsedConfig.workspaceType
+            : "";
+        const existingConfigHash =
+          typeof parsedConfig.configHash === "string"
+            ? parsedConfig.configHash
+            : null;
 
         // 1. Check for integrity (tampering check)
-        const computedHash = this.calculateHash(existingConfig);
-        if (
-          existingConfig.configHash &&
-          existingConfig.configHash !== computedHash
-        ) {
+        const computedHash = this.calculateHash(parsedConfig);
+        if (existingConfigHash && existingConfigHash !== computedHash) {
           isTampered = true;
         }
 
         // 2. Check for alignment (structural check against canonical config)
         if (
-          JSON.stringify(existingConfig.organizationExclusions) !==
+          JSON.stringify(existingExclusions) !==
             JSON.stringify(this.FAILSAFE_DEV_CONFIG.organizationExclusions) ||
-          existingConfig.workspaceType !==
-            this.FAILSAFE_DEV_CONFIG.workspaceType
+          existingWorkspaceType !== this.FAILSAFE_DEV_CONFIG.workspaceType
         ) {
           isMisaligned = true;
         }
-      } catch (e) {
+      } catch (_error) {
         isMisaligned = true; // Corrupt config
       }
     } else {
@@ -114,7 +123,7 @@ export class WorkspaceMigration {
       );
 
       if (selection === action) {
-        const finalConfig: any = {
+        const finalConfig: Record<string, unknown> = {
           ...this.FAILSAFE_DEV_CONFIG,
           detectedAt: new Date().toISOString(),
         };

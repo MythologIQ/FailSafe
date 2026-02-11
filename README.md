@@ -1,4 +1,4 @@
-<div align="center">
+ï»¿<div align="center">
 
 # FailSafe
 
@@ -67,7 +67,7 @@ Primary UI surfaces in the current release:
 
 ### Sidebar UI (v3.5.5)
 
-![FailSafe Sidebar UI v3.5.5](FailSafe/docs/images/sidebar-ui-3.5.5.png)
+![FailSafe Sidebar UI v3.5.5](FailSafe/extension/media/sidebar-ui-3.5.5.png)
 
 ---
 
@@ -121,8 +121,8 @@ FailSafe uses a **Physical Isolation** model to separate workspace governance fr
 +-- Antigravity/              # Gemini + Claude workflows (source)
 +-- VSCode/                   # Copilot + Claude prompts (source)
 +-- PROD-Extension/           # Production builds (includes Claude)
-¦   +-- Antigravity/          # ? OpenVSX (Gemini + Claude)
-¦   +-- VSCode/               # ? VS Code Marketplace (Copilot + Claude)
+Â¦   +-- Antigravity/          # ? OpenVSX (Gemini + Claude)
+Â¦   +-- VSCode/               # ? VS Code Marketplace (Copilot + Claude)
 +-- build/                    # Build & validation tooling
 ```
 
@@ -273,3 +273,4 @@ MIT - See [LICENSE](LICENSE)
 [GitHub](https://github.com/MythologIQ/FailSafe) | [Docs](FAILSAFE_SPECIFICATION.md)
 
 </div>
+

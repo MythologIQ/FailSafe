@@ -9,17 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- Post-3.5.2 scope to be scheduled.
+- Post-3.5.5 scope to be scheduled.
 
-## [3.5.2] - 2026-02-11
+## [3.5.5] - 2026-02-11
 
 ### Fixed
 
-- Marketplace sidebar screenshot now renders from packaged extension assets (`media/sidebar-ui-3.5.2.png`) instead of repo-relative documentation paths.
+- Marketplace sidebar screenshot now renders from packaged extension assets (`media/sidebar-ui-3.5.5.png`) instead of repo-relative documentation paths.
 
 ### Changed
 
-- Release metadata/version bump to 3.5.2 across extension and distribution manifests.
+- Release metadata/version bump to 3.5.5 across extension and distribution manifests.
 
 ## [3.5.1] - 2026-02-11
 

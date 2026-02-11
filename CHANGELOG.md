@@ -9,11 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- Post-3.5.2 scope to be scheduled.
+- Post-3.5.5 scope to be scheduled.
 
 ---
 
-## [3.5.2] - 2026-02-11
+## [3.5.5] - 2026-02-11
 
 ### Fixed
 
@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Release metadata/version bump to 3.5.2 across extension and distribution manifests.
+- Release metadata/version bump to 3.5.5 across extension and distribution manifests.
 
 ---
 

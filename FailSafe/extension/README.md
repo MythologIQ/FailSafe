@@ -4,7 +4,7 @@ Token Efficient Governance for AI-assisted development in VSCode or Cursor.
 
 Local-first safety for AI coding assistants.
 
-**Current Release**: v3.5.2 (2026-02-11)
+**Current Release**: v3.5.5 (2026-02-11)
 
 ![FailSafe Banner](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/icon.png)
 
@@ -70,9 +70,9 @@ FailSafe evaluates save operations against the active Intent and can block write
 - FailSafe Operations Hub (extended popout/editor view)
 - Skills view now includes `Recommended`, `All Relevant`, `All Installed`, and `Other Available` to keep full skill visibility.
 
-### Sidebar UI (v3.5.2)
+### Sidebar UI (v3.5.5)
 
-![FailSafe Sidebar UI v3.5.2](media/sidebar-ui-3.5.2.png)
+![FailSafe Sidebar UI v3.5.5](media/sidebar-ui-3.5.5.png)
 
 ### 5. Operations Hub UX (UI-02 + Extended Popout)
 

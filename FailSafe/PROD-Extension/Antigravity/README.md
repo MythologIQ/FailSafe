@@ -1,4 +1,4 @@
-# MythologIQ: FailSafe v3.5.1 (OpenVSX Package)
+# MythologIQ: FailSafe v3.5.5 (OpenVSX Package)
 
 Token Efficient Governance for AI-assisted development in Antigravity-compatible editors.
 
@@ -7,7 +7,7 @@ Token Efficient Governance for AI-assisted development in Antigravity-compatible
 - `FailSafe Sidebar` (compact)
 - `FailSafe Operations Hub` (extended popout/editor)
 
-![FailSafe Sidebar UI v3.5.1](../../docs/images/sidebar-ui-3.5.1.png)
+![FailSafe Sidebar UI v3.5.5](https://open-vsx.org/api/MythologIQ/mythologiq-failsafe/3.5.5/file/media/sidebar-ui-3.5.5.png)
 
 ## Current Functionality
 

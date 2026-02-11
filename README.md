@@ -16,7 +16,7 @@
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Commands-8B5CF6)](https://github.com/MythologIQ/FailSafe/releases)
 [![Documentation](https://img.shields.io/badge/docs-FAILSAFE_SPECIFICATION-blue)](docs/FAILSAFE_SPECIFICATION.md)
 
-**Current Release**: v3.5.2 (2026-02-11)
+**Current Release**: v3.5.5 (2026-02-11)
 
 > **If this project helps you, please star it!** It helps others discover FailSafe.
 
@@ -65,9 +65,9 @@ Primary UI surfaces in the current release:
 - `FailSafe Sidebar` (compact)
 - `FailSafe Operations Hub` (extended)
 
-### Sidebar UI (v3.5.2)
+### Sidebar UI (v3.5.5)
 
-![FailSafe Sidebar UI v3.5.2](FailSafe/docs/images/sidebar-ui-3.5.2.png)
+![FailSafe Sidebar UI v3.5.5](FailSafe/docs/images/sidebar-ui-3.5.5.png)
 
 ---
 

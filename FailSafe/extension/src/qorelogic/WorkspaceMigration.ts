@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
 import * as crypto from "crypto";
+import { ensureFailsafeGitignoreEntry } from "../shared/gitignore";
 
 export class WorkspaceMigration {
   private static readonly PROPRIETARY_INDICATORS = [
@@ -66,6 +67,7 @@ export class WorkspaceMigration {
     if (!fs.existsSync(configDir)) {
       fs.mkdirSync(configDir, { recursive: true });
     }
+    this.ensureGitignoreExclusion(rootPath);
 
     let isMisaligned = false;
     let isTampered = false;
@@ -143,6 +145,14 @@ export class WorkspaceMigration {
           "User override: Keeping custom workspace structure. Integrity checks may show warnings.",
         );
       }
+    }
+  }
+
+  private static ensureGitignoreExclusion(rootPath: string): void {
+    try {
+      ensureFailsafeGitignoreEntry(rootPath);
+    } catch {
+      // Non-fatal: workspace alignment should continue even if .gitignore cannot be updated.
     }
   }
 }

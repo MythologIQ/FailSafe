@@ -2271,3 +2271,276 @@ Addendum (simple-obvious gap closure):
 - `powershell -File validate.ps1 -SkipContainerValidation` -> PASS
 
 **Decision**: v3.2.5 implementation has started with enforcement-first execution. Continue with remaining console overhaul tasks (`B46`, `B53-B57`, `B59-B65`).
+
+---
+
+### Entry #58: GATE TRIBUNAL - v3.4.0 Light Closure
+
+**Timestamp**: 2026-02-10T21:41:04.2191544-05:00
+**Phase**: GATE
+**Author**: Judge
+**Risk Grade**: L1
+
+**Verdict**: PASS
+
+**Content Hash**:
+
+`
+SHA256(AUDIT_REPORT.md)
+= 0edb46b84156fdeea936996229780fda134a966038222ee423f7a8f7ee7d8bd9
+`
+
+**Previous Hash**: b55a30b81d2ec566a5fae206f7ab9a60e6d8cc5d7417f422653c7999b0fcb0ab
+
+**Chain Hash**:
+
+`
+SHA256(content_hash + previous_hash)
+= 924904628103ba041edd24369f2b13374e923d30033b167a60024e38be0c00cd
+`
+
+**Decision**: Gate cleared for low-risk closure scope (documentation alignment + validation only). Implementation may proceed.
+
+---
+
+### Entry #59: IMPLEMENTATION - v3.4.0 Light Closure (Docs + Validation)
+
+**Timestamp**: 2026-02-10T21:41:47.7682783-05:00
+**Phase**: IMPLEMENT
+**Author**: Specialist
+**Risk Grade**: L1
+
+**Files Modified**:
+
+- FailSafe/extension/README.md
+- FailSafe/extension/CHANGELOG.md
+
+**Validation**:
+- 
+pm run compile (in FailSafe/extension) -> PASS
+- 
+px playwright test src/test/ui/popout-ui.spec.ts -> PASS
+
+**Content Hash**:
+
+`
+SHA256(README.md hash + CHANGELOG.md hash)
+= cec5208792aa463f159afdee153b40125d86aecccec662927a26b0176ad45afb
+`
+
+**Previous Hash**: 924904628103ba041edd24369f2b13374e923d30033b167a60024e38be0c00cd
+
+**Chain Hash**:
+
+`
+SHA256(content_hash + previous_hash)
+= 81f68282e52bb7c6aeb24410906b9c52b61a456329017ba94ec99ae8ddcf3ec3
+`
+
+**Decision**: PASS-gated light closure implemented. UI documentation alignment complete and targeted popout validation passed.
+
+---
+
+### Entry #60: GATE TRIBUNAL - v3.4.0 Blocker Closure
+
+**Timestamp**: 2026-02-10T21:44:25.0345145-05:00
+**Phase**: GATE
+**Author**: Judge
+**Risk Grade**: L1
+
+**Verdict**: PASS
+
+**Content Hash**:
+
+`
+SHA256(AUDIT_REPORT.md)
+= de471b53ab12c5e1d49a6c612a03ae282b9ee9cb566a3f814a6e98abdc96a956
+`
+
+**Previous Hash**: 81f68282e52bb7c6aeb24410906b9c52b61a456329017ba94ec99ae8ddcf3ec3
+
+**Chain Hash**:
+
+`
+SHA256(content_hash + previous_hash)
+= 40ba0369523f510aee2bf109ece77835f86a735bd4f5bacc8cc5ebf7f9e3fd42
+`
+
+**Decision**: Gate cleared for validation and scope-isolation closure work.
+
+---
+
+### Entry #61: IMPLEMENTATION - v3.4.0 Blocker Closure (Scope + Validation)
+
+**Timestamp**: 2026-02-10T21:45:18.4669222-05:00
+**Phase**: IMPLEMENT
+**Author**: Specialist
+**Risk Grade**: L1
+
+**Files Added**:
+
+- FailSafe/extension/RELEASE_SCOPE_REPORT.md
+
+**Validation**:
+- powershell -File tools/reliability/validate-skill-metadata.ps1 -> PASS
+- 
+pm run compile (in FailSafe/extension) -> PASS
+- 
+px playwright test src/test/ui/popout-ui.spec.ts -> PASS
+- powershell -File validate.ps1 -SkipContainerValidation -> PASS
+
+**Content Hash**:
+
+`
+SHA256(RELEASE_SCOPE_REPORT.md)
+= 2283ed9c69bac866ae8d271765d1added149654130a8854848a69a7af04f7e76
+`
+
+**Previous Hash**: 40ba0369523f510aee2bf109ece77835f86a735bd4f5bacc8cc5ebf7f9e3fd42
+
+**Chain Hash**:
+
+`
+SHA256(content_hash + previous_hash)
+= 867b1081bf894b76d8c3a2f03b0d453f8712a704a195ef9797691dedf686baa0
+`
+
+**Decision**: PASS-gated blocker closure complete for scope isolation evidence and validation gate execution.
+
+---
+
+### Entry #62: GATE TRIBUNAL - v3.4.0 Unblocked Final Closure
+
+**Timestamp**: 2026-02-10T21:47:18.3891222-05:00
+**Phase**: GATE
+**Author**: Judge
+**Risk Grade**: L1
+
+**Verdict**: PASS
+
+**Content Hash**:
+
+`
+SHA256(AUDIT_REPORT.md)
+= f4807cb97048773340aea789b5c654f1d92bc197d10cb80482b7469baafa1fca
+`
+
+**Previous Hash**: 867b1081bf894b76d8c3a2f03b0d453f8712a704a195ef9797691dedf686baa0
+
+**Chain Hash**:
+
+`
+SHA256(content_hash + previous_hash)
+= 2cc0435c637d07b22d0302deda1786a0d3f238d0c0a31ae33957cfdf780be1e0
+`
+
+**Decision**: Gate cleared for final unblocked closure artifacts.
+
+---
+
+### Entry #63: IMPLEMENTATION - v3.4.0 Unblocked Final Closure
+
+**Timestamp**: 2026-02-10T21:47:53.9694942-05:00
+**Phase**: IMPLEMENT
+**Author**: Specialist
+**Risk Grade**: L1
+
+**Files Modified**:
+
+- FailSafe/extension/README.md
+- FailSafe/extension/RELEASE_SCOPE_REPORT.md
+
+**Validation**:
+- 
+pm run compile (in FailSafe/extension) -> PASS
+- powershell -File validate.ps1 -SkipContainerValidation -> PASS
+
+**Content Hash**:
+
+`
+SHA256(README.md hash + RELEASE_SCOPE_REPORT.md hash)
+= c76ab57ac8095588c3266c34a9e350e5c138915cfb5b630976d5ecf825e5fdd2
+`
+
+**Previous Hash**: 2cc0435c637d07b22d0302deda1786a0d3f238d0c0a31ae33957cfdf780be1e0
+
+**Chain Hash**:
+
+`
+SHA256(content_hash + previous_hash)
+= 2af5aff16f6b89cd530b4e86729a80f2cf4ab4852cf607a03b81be8486ee5b86
+`
+
+**Decision**: Final unblocked closure complete. No additional unblocked tasks remain in current gated slice.
+
+---
+
+### Entry #64: GATE TRIBUNAL - v3.5.0 Release Cut + E2E
+
+**Timestamp**: 2026-02-10T21:54:53.0349699-05:00
+**Phase**: GATE
+**Author**: Judge
+**Risk Grade**: L1
+
+**Verdict**: PASS
+
+**Content Hash**:
+
+`
+SHA256(AUDIT_REPORT.md)
+= ef514055bbe162cb2d4eb2b01d93240bedb1b22de4f5bff57cd0744e0bc82d28
+`
+
+**Previous Hash**: 2af5aff16f6b89cd530b4e86729a80f2cf4ab4852cf607a03b81be8486ee5b86
+
+**Chain Hash**:
+
+`
+SHA256(content_hash + previous_hash)
+= 67eef0976d96b3391e5e328e91dae0d0d83c77d419c2be2dccaa3284b00228d3
+`
+
+**Decision**: Gate cleared for v3.5.0 release metadata cut and end-to-end validation.
+
+---
+
+### Entry #65: IMPLEMENTATION - v3.5.0 Release Cut + E2E
+
+**Timestamp**: 2026-02-10T21:56:12.3333523-05:00
+**Phase**: IMPLEMENT
+**Author**: Specialist
+**Risk Grade**: L1
+
+**Files Modified**:
+
+- FailSafe/extension/package.json
+- FailSafe/extension/package-lock.json
+- FailSafe/extension/CHANGELOG.md
+- FailSafe/extension/README.md
+- FailSafe/extension/RELEASE_SCOPE_REPORT.md
+- README.md
+
+**Validation**:
+- 
+pm run compile (in FailSafe/extension) -> PASS
+- 
+pm run test:ui (in FailSafe/extension) -> PASS
+- powershell -File validate.ps1 -SkipContainerValidation -> PASS
+
+**Content Hash**:
+
+`
+SHA256(package.json + package-lock.json + CHANGELOG.md + extension README.md + root README.md hashes)
+= 79368241c3b107d2d11d466dd3a9aa8185e76aa882fc3748a0fe6db8a2f23903
+`
+
+**Previous Hash**: 67eef0976d96b3391e5e328e91dae0d0d83c77d419c2be2dccaa3284b00228d3
+
+**Chain Hash**:
+
+`
+SHA256(content_hash + previous_hash)
+= ac92fb523045916add604c304a2417df33912348c4d3ab19b02a53c8205a157d
+`
+
+**Decision**: v3.5.0 release metadata cut complete and E2E validation passed.

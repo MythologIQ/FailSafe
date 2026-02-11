@@ -2,7 +2,7 @@
  * Common Style Constants for Genesis UI Components
  *
  * Provides consistent spacing, typography, and color tokens
- * across all view providers (Dojo, CortexStream, Roadmap).
+ * across all view providers (CortexStream, Roadmap, Sentinel).
  */
 
 export const SPACING = {

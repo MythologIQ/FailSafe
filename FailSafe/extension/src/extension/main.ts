@@ -19,6 +19,7 @@ import { GovernanceStatusBar } from "../governance/GovernanceStatusBar";
 import { LedgerManager } from "../qorelogic/ledger/LedgerManager";
 import { ShadowGenomeManager } from "../qorelogic/shadow/ShadowGenomeManager";
 import { RoadmapServer } from "../roadmap";
+import { FailSafeSidebarProvider } from "../roadmap/FailSafeSidebarProvider";
 
 // Bootstrap Modules
 import { bootstrapCore } from "./bootstrapCore";
@@ -94,7 +95,23 @@ export async function activate(
       logger.error("Failed to register chat participant", e);
     }
 
-    // 8. Commands
+    // 8. Roadmap Server (external browser)
+    roadmapServer = new RoadmapServer(
+      core.planManager,
+      qorelogicManager,
+      sentinelDaemon,
+      eventBus,
+    );
+    roadmapServer.start();
+    context.subscriptions.push({ dispose: () => roadmapServer?.stop() });
+    context.subscriptions.push(
+      vscode.window.registerWebviewViewProvider(
+        FailSafeSidebarProvider.viewType,
+        new FailSafeSidebarProvider(),
+      ),
+    );
+
+    // 9. Commands
     registerCommands(
       context,
       genesisManager,
@@ -102,11 +119,6 @@ export async function activate(
       sentinelDaemon,
       feedbackManager,
     );
-
-    // 9. Roadmap Server (external browser)
-    roadmapServer = new RoadmapServer(core.planManager, eventBus);
-    roadmapServer.start();
-    context.subscriptions.push({ dispose: () => roadmapServer?.stop() });
 
     // 10. Startup Checks
     setTimeout(async () => {

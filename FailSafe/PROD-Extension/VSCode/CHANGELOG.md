@@ -5,6 +5,29 @@ All notable changes to the FailSafe VSCode Copilot extension will be documented 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.5.2] - 2026-02-11
+
+### Fixed
+
+- Packaged README screenshot path now resolves from extension-local media assets for marketplace rendering.
+
+### Changed
+
+- Release metadata/version bump to 3.5.2.
+
+## [3.5.1] - 2026-02-11
+
+### Added
+
+- Operations Hub skills view now includes `All Installed` in addition to phase-ranked groupings.
+- Updated release documentation/screenshots for streamlined sidebar shell and compact governance surface.
+
+### Changed
+
+- First-party proprietary skills standardized to `qore-*` naming and synchronized with FailSafe workspace roots.
+- Skill source labeling now reflects location-oriented tags (for example `Qore Workspace`) for clearer provenance at runtime.
+- Release documentation aligned to current command surface and UI behavior.
+
 ## [3.0.1] - 2026-02-06
 
 ### Changed

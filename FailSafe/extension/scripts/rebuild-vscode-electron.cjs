@@ -11,7 +11,23 @@ async function resolveAppRoot() {
       (entry) => entry.isDirectory() && entry.name.startsWith('vscode-')
     );
     if (vscodeDir) {
-      return path.join(localTestDir, vscodeDir.name, 'resources', 'app');
+      const directRoot = path.join(localTestDir, vscodeDir.name, 'resources', 'app');
+      if (fs.existsSync(path.join(directRoot, 'package.json'))) {
+        return directRoot;
+      }
+
+      // VS Code archives may include a nested commit directory
+      // (for example, vscode-.../<commit>/resources/app).
+      const nestedEntries = fs.readdirSync(path.join(localTestDir, vscodeDir.name), { withFileTypes: true });
+      for (const nested of nestedEntries) {
+        if (!nested.isDirectory()) {
+          continue;
+        }
+        const candidate = path.join(localTestDir, vscodeDir.name, nested.name, 'resources', 'app');
+        if (fs.existsSync(path.join(candidate, 'package.json'))) {
+          return candidate;
+        }
+      }
     }
   }
 

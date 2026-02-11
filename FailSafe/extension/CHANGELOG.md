@@ -9,7 +9,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- v3.2.0 Reliability Hardening: D10 Razor decomposition, UI polish/theme refinements, Gold Standard validation script.
+- Post-3.5.2 scope to be scheduled.
+
+## [3.5.2] - 2026-02-11
+
+### Fixed
+
+- Marketplace sidebar screenshot now renders from packaged extension assets (`media/sidebar-ui-3.5.2.png`) instead of repo-relative documentation paths.
+
+### Changed
+
+- Release metadata/version bump to 3.5.2 across extension and distribution manifests.
+
+## [3.5.1] - 2026-02-11
+
+### Added
+
+- Skills panel now includes an `All Installed` lane so phase relevance no longer hides available skills.
+- Streamlined sidebar UI screenshot asset added for release documentation (`FailSafe/docs/images/sidebar-ui-3.5.1.png`).
+
+### Changed
+
+- Release metadata/version bump to 3.5.1 across extension manifests and README surfaces.
+- Skill source tags now reflect location labels and first-party patterning (`Qore Workspace` for MythologIQ-owned skills).
+- FailSafe skill discovery now uses deterministic extension-anchored roots to avoid false "No skills installed" states.
+- First-party skill naming standardized to `qore-*` convention and aligned across `FailSafe/VSCode/skills` and `.agent/skills`.
+
+## [3.5.0] - 2026-02-11
+
+### Added
+
+- UI-02 compact sidebar shell for the Operations Hub with FailSafe branding, favicon support, and standardized legal footer.
+- Extended popout hub workflow coverage validated by Playwright smoke test (`Home`, `Run`, `Skills`, `Reports` baseline checks).
+- Skill provenance ingestion via `SOURCE.yml` (creator/source repo/source path/source type/source priority/admission state).
+- Phase-aware skill relevance APIs (`/api/skills`, `/api/skills/relevance`).
+- SQLite-backed checkpoint ledger table (`failsafe_checkpoints`) with chain verification and summary APIs.
+
+### Changed
+
+- Compact sidebar feature counters now track `Recently Completed`, `Backlog`, `Wishlist`, and `Critical Features`.
+- Operations Hub open action routes to external popout context from webpanel and command flows.
+- VS Code Electron rebuild script now resolves nested archive layouts under `.vscode-test` to keep native module rebuilds deterministic during test runs.
+
+### Documentation
+
+- Added release documentation subtask pack for README/CHANGELOG integration with claim-to-source mapping (`FailSafe/extension/RELEASE_DOCS_SUBTASK.md`).
+- Updated extension README command and quick-start sections to match currently contributed Operations Hub command surfaces.
+
+### Validation
+
+- End-to-end UI suite executed via `npm run test:ui` (Playwright).
+- Build verification executed via `npm run compile`.
+- Full extension quality gate executed via `npm run test:all` (lint + extension tests + Playwright UI tests).
 
 ## [3.0.1] - 2026-02-06
 

@@ -1,55 +1,94 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FailSafe Planning Console</title>
+  <title>FailSafe Operations Hub</title>
+  <link rel="icon" type="image/png" href="/failsafe-icon.png">
   <link rel="stylesheet" href="roadmap.css">
 </head>
 <body>
-  <div id="app">
-    <header id="header">
-      <div class="header-content">
-        <h1>FailSafe Planning Console</h1>
-        <div class="header-controls">
-          <div id="resume-summary" class="resume-summary">Loading session...</div>
-          <button id="focus-toggle" class="focus-toggle" type="button" aria-pressed="false">Focus Mode: Off</button>
-          <div id="connection-status" class="status-indicator">
-            <span class="status-dot"></span>
-            <span class="status-text">Connecting...</span>
+  <main class="shell">
+    <div class="stack">
+      <header class="brand">
+        <div class="brand-left">
+          <img src="/failsafe-icon.png" alt="FailSafe icon" class="brand-icon">
+          <div class="brand-text">
+            <div class="brand-title">FailSafe Operations Hub</div>
+            <div class="brand-subtitle">Unified Governance Dashboard</div>
           </div>
         </div>
-      </div>
-    </header>
+        <div id="status-line" class="status-line">Connecting...</div>
+      </header>
 
-    <main id="main">
-      <section id="global-error" class="error-banner hidden" aria-live="polite"></section>
-      <!-- Sprint Timeline - Cumulative visualization -->
-      <section id="sprint-timeline" class="panel">
-        <h2>Sprint History</h2>
-        <div id="timeline-container"></div>
+      <section class="card" id="phase-card">
+        <header class="card-head">
+          <span class="eyebrow">Active Build Step</span>
+          <span id="phase-title" class="phase-title">Current Phase: PLAN</span>
+        </header>
+
+        <div id="phase-track" class="phase-track"></div>
+
+        <div id="recent-line" class="muted-line">Recently completed: none yet</div>
+
+        <div class="divider"></div>
+        <div class="eyebrow">Recommended Next Step</div>
+        <div id="next-step" class="next-step">Continue the active build phase.</div>
       </section>
 
-      <!-- Current Sprint Detail - The "Planning Hub" -->
-      <section id="current-sprint" class="panel">
-        <h2>Active Sprint</h2>
-        <div id="sprint-info" class="sprint-header"></div>
-        <div id="roadmap-svg" class="roadmap-container"></div>
-        <div id="phase-grid" class="phase-grid"></div>
-        <div id="blockers" class="blockers-panel"></div>
+      <section class="card">
+        <header class="card-head">
+          <span class="eyebrow">Sentinel Status</span>
+        </header>
+        <div class="sentinel-body">
+          <div id="sentinel-orb" class="sentinel-orb monitoring"></div>
+          <div id="sentinel-label" class="sentinel-label">Monitoring</div>
+          <div class="queue-wrap">
+            <div class="queue-title">Queue</div>
+            <div id="queue-value" class="queue-value">0</div>
+          </div>
+        </div>
+        <div id="sentinel-alert" class="sentinel-alert hidden"></div>
       </section>
 
-      <!-- Dynamic Feedback - Real-time events -->
-      <section id="feedback-panel" class="panel">
-        <h2>Live Activity</h2>
-        <div id="event-stream" class="event-stream"></div>
-      </section>
-    </main>
+      <section class="card">
+        <header class="card-head">
+          <span class="eyebrow">Workspace Health</span>
+        </header>
+        <div class="health-grid">
+          <article class="health-item">
+            <div class="health-label">Critical Blockers</div>
+            <div id="health-blockers" class="health-number">0</div>
+            <div class="rainbow-bar"><span id="blocker-bar"></span></div>
+          </article>
 
-    <footer id="footer">
-      <span>FailSafe v3.2.5 - Cumulative Roadmap</span>
-    </footer>
-  </div>
+          <article class="health-item">
+            <div class="health-label">Unverified Changes</div>
+            <div class="bucket-wrap">
+              <div class="bucket-shell"><div id="bucket-fill" class="bucket-fill" style="height:0%"></div></div>
+            </div>
+            <div id="bucket-text" class="tiny">0% Full</div>
+          </article>
+
+          <article class="health-item">
+            <div class="health-label">Error Budget Burn</div>
+            <div class="gauge-wrap"><svg viewBox="0 0 100 55" class="gauge"><path d="M 10 50 A 40 40 0 0 1 90 50" class="gauge-bg"></path><path id="gauge-value" d="M 10 50 A 40 40 0 0 1 90 50" class="gauge-value"></path></svg></div>
+            <div id="error-budget" class="health-number small">0%</div>
+          </article>
+
+          <article class="health-item">
+            <div class="health-label">Policy Trend</div>
+            <div class="slider"><div id="trend-fill" class="slider-fill"></div><div id="trend-thumb" class="slider-thumb"></div></div>
+            <div id="policy-trend" class="health-number small">0%</div>
+          </article>
+        </div>
+      </section>
+
+      <footer class="legal">
+        FailSafe is an open source project by MythologIQ Labs, LLC, provided \"as is\" without warranty of any kind.
+      </footer>
+    </div>
+  </main>
 
   <script src="roadmap.js"></script>
 </body>

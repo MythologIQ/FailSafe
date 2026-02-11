@@ -5,6 +5,29 @@ All notable changes to the FailSafe Claude CLI extension will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.5.2] - 2026-02-11
+
+### Fixed
+
+- Packaged README screenshot path now resolves from extension-local media assets for marketplace rendering.
+
+### Changed
+
+- Release metadata/version bump to 3.5.2.
+
+## [3.5.1] - 2026-02-11
+
+### Added
+
+- Operations Hub skills surface includes an explicit `All Installed` lane for full catalog visibility.
+- Updated release documentation bundle with streamlined sidebar UI imagery and current command references.
+
+### Changed
+
+- First-party proprietary skill naming standardized to `qore-*` convention.
+- Skill provenance labels updated to location-oriented descriptors with first-party emphasis (`Qore Workspace`).
+- Release notes synchronized with active 3.5.2 behavior and package metadata.
+
 ## [3.0.1] - 2026-02-06
 
 ### Added

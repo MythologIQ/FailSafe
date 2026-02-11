@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FailSafe Operations Console</title>
+  <link rel="icon" type="image/png" href="/failsafe-icon.png">
+  <link rel="stylesheet" href="legacy-roadmap.css">
+</head>
+<body>
+  <div id="app">
+    <div class="bg-layer-logo"></div>
+    <div class="bg-layer-overlay"></div>
+    <header id="header">
+      <div class="header-content">
+        <div class="brand-left">
+          <img src="/failsafe-icon.png" alt="FailSafe" class="brand-icon">
+          <div>
+            <h1>FailSafe Operations Console</h1>
+            <div class="brand-subtitle">Unified Governance Dashboard</div>
+          </div>
+        </div>
+        <div class="header-controls">
+          <label class="profile-control" for="profile-select">Profile</label>
+          <select id="profile-select" aria-label="Experience profile">
+            <option value="guided">Guided</option>
+            <option value="standard" selected>Standard</option>
+            <option value="expert">Expert</option>
+          </select>
+          <div id="resume-summary" class="resume-summary">Loading session...</div>
+          <div id="connection-status" class="status-indicator" aria-live="polite">
+            <span class="status-dot"></span>
+            <span class="status-text">Connecting...</span>
+          </div>
+        </div>
+      </div>
+      <nav id="tabs" class="tabs" aria-label="FailSafe Sections">
+        <button class="tab active" data-route="home" type="button">Home</button>
+        <button class="tab" data-route="run" type="button">Run</button>
+        <button class="tab" data-route="skills" type="button">Skills</button>
+        <button class="tab" data-route="governance" type="button">Governance</button>
+        <button class="tab" data-route="activity" type="button">Activity</button>
+        <button class="tab" data-route="reports" type="button">Reports</button>
+        <button class="tab" data-route="settings" type="button">Settings</button>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section id="global-error" class="error-banner hidden" aria-live="polite"></section>
+
+      <section id="panel-home" class="panel route-panel active-panel" data-route="home">
+        <h2>At a Glance</h2>
+        <div id="home-kpis" class="overview-cards"></div>
+        <section id="home-next-step" class="callout"></section>
+        <section class="split-grid">
+          <article class="card" id="home-operational"></article>
+          <article class="card" id="home-forensic" data-min-profile="expert"></article>
+        </section>
+      </section>
+
+      <section id="panel-run" class="panel route-panel" data-route="run">
+        <h2>Run</h2>
+        <div id="hub-actions" class="hub-actions"></div>
+        <details open>
+          <summary>Workspace Health</summary>
+          <div id="workspace-health" class="details-body"></div>
+        </details>
+        <details open>
+          <summary>Active Sprint and Plan</summary>
+          <div id="sprint-info" class="details-body"></div>
+          <div id="roadmap-svg" class="roadmap-container"></div>
+          <div id="phase-grid" class="phase-grid"></div>
+          <div id="blockers" class="blockers-panel"></div>
+        </details>
+      </section>
+
+      <section id="panel-skills" class="panel route-panel" data-route="skills">
+        <h2>Skills</h2>
+        <div id="skill-phase-label" class="skill-context-title"></div>
+        <div class="skills-layout">
+          <section class="skill-group">
+            <div class="skill-group-title">Recommended</div>
+            <div id="skill-recommended" class="skill-list"></div>
+          </section>
+          <section class="skill-group">
+            <div class="skill-group-title">All Relevant</div>
+            <div id="skill-all-relevant" class="skill-list"></div>
+          </section>
+          <section class="skill-group">
+            <div class="skill-group-title">All Installed</div>
+            <div id="skill-all-installed" class="skill-list"></div>
+          </section>
+          <section class="skill-group">
+            <div class="skill-group-title">Other Available</div>
+            <div id="skill-other" class="skill-list"></div>
+          </section>
+        </div>
+
+        <details open>
+          <summary>Intent Assistant</summary>
+          <div class="details-body">
+            <div id="intent-context" class="intent-context"></div>
+            <label class="intent-label" for="intent-input">What do you want to do?</label>
+            <textarea id="intent-input" class="intent-input" rows="4" placeholder="Example: implement a checkpoint schema and verify chain integrity"></textarea>
+            <div class="intent-actions">
+              <button id="intent-generate" class="hub-action-btn primary" type="button">Draft Action Package</button>
+              <button id="intent-copy" class="hub-action-btn" type="button">Copy</button>
+            </div>
+            <pre id="intent-output" class="intent-output">Enter intent and generate a structured package.</pre>
+          </div>
+        </details>
+      </section>
+
+      <section id="panel-governance" class="panel route-panel" data-route="governance">
+        <h2>Governance</h2>
+        <section class="split-grid">
+          <article class="card"><h3>Sentinel Status</h3><div id="sentinel-status"></div></article>
+          <article class="card"><h3>L3 Queue</h3><div id="l3-queue"></div></article>
+          <article class="card"><h3>Trust Summary</h3><div id="trust-summary"></div></article>
+          <article class="card"><h3>Sentinel Alerts</h3><div id="sentinel-alerts"></div></article>
+        </section>
+      </section>
+
+      <section id="panel-activity" class="panel route-panel" data-route="activity">
+        <h2>Activity</h2>
+        <button id="focus-toggle" class="focus-toggle" type="button" aria-pressed="false">Focus Mode: Off</button>
+        <div id="event-stream" class="event-stream"></div>
+      </section>
+
+      <section id="panel-reports" class="panel route-panel" data-route="reports" data-min-profile="standard">
+        <h2>Reports</h2>
+        <section class="split-grid">
+          <article class="card" id="reports-summary"></article>
+          <article class="card" id="reports-evidence" data-min-profile="expert"></article>
+        </section>
+      </section>
+
+      <section id="panel-settings" class="panel route-panel" data-route="settings">
+        <h2>Settings</h2>
+        <div class="metric-list">
+          <div class="metric-row"><span>Theme</span><strong id="setting-theme">Auto</strong></div>
+          <div class="metric-row"><span>Profile</span><strong id="setting-profile">Standard</strong></div>
+          <div class="metric-row"><span>Connection</span><strong id="setting-connection">Connecting...</strong></div>
+        </div>
+      </section>
+    </main>
+
+    <footer id="footer">
+      <span>FailSafe is an open source project by MythologIQ Labs, LLC, provided "as is" without warranty of any kind.</span>
+    </footer>
+  </div>
+
+  <script type="module" src="legacy/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+source:
+  type: internal
+  system: FailSafe
+  repository: MythologIQ/FailSafe
+creator:
+  name: MythologIQ Labs, LLC
+skill_family:
+  namespace: /ql
+  classification: meta-governance
+license:
+  file: ../../../LICENSE
+maintainer:
+  team: QoreLogic Governance
+imported:
+  bundled_with_failsafe: true
+  date: 2026-02-10
+notes:
+  - First-party /ql skill.

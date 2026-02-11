@@ -61,7 +61,7 @@ export function renderPlanningHubTemplate(m: PlanningHubViewModel): string {
 </head><body>
 <div class="hub-container">
   <header class="hub-header">
-    <div><h1>FailSafe Planning Console</h1><span class="subtitle">Unified Governance Dashboard</span></div>
+    <div><h1>FailSafe Planning Console</h1><span class="subtitle">Unified Governance Dashboard | UI-04 Editor Planning Panel</span></div>
     ${renderViewTabs(m.viewMode)}
   </header>
   <main class="hub-grid">${cards}</main>

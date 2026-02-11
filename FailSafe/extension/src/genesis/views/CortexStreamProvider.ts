@@ -168,7 +168,9 @@ export class CortexStreamProvider implements vscode.WebviewViewProvider {
 
         // Handle messages from webview
         webviewView.webview.onDidReceiveMessage(message => {
-            if (message.command === 'executeAction') {
+            if (message.command === 'openFailSafeUi') {
+                void this.openFailSafeUi();
+            } else if (message.command === 'executeAction') {
                 vscode.commands.executeCommand(message.action, ...(message.args || []));
             } else if (message.command === 'openFile') {
                 vscode.workspace.openTextDocument(message.file).then(doc => {
@@ -230,5 +232,17 @@ export class CortexStreamProvider implements vscode.WebviewViewProvider {
             second: '2-digit',
             hour12: false
         });
+    }
+
+    private async openFailSafeUi(): Promise<void> {
+        try {
+            await vscode.commands.executeCommand('failsafe.openPlannerHub');
+        } catch {
+            try {
+                await vscode.commands.executeCommand('failsafe.showRoadmapWindow');
+            } catch {
+                vscode.window.showErrorMessage('Unable to open FailSafe UI. Run "FailSafe: Open FailSafe UI" from Command Palette.');
+            }
+        }
     }
 }

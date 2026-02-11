@@ -1,0 +1,4 @@
+interface:
+  display_name: "Technical Writing Narrative"
+  short_description: "Concise technical writing with narrative depth"
+  default_prompt: "Write precise, concise technical docs with an accurate narrative arc (conception, development, life beyond). Validate claims against provided sources."

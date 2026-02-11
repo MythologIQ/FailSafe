@@ -7,14 +7,105 @@ import { IntentService } from "../governance/IntentService";
 import { IntentType } from "../governance/types/IntentTypes";
 import { DetectedSystem, FrameworkSync } from "../qorelogic/FrameworkSync";
 import { WorkspaceMigration } from "../qorelogic/WorkspaceMigration";
+import * as http from "http";
 
 const ROADMAP_BASE_URL = "http://localhost:9376";
 
-function openRoadmapExternal(view?: string): Thenable<boolean> {
-  const target = view
-    ? `${ROADMAP_BASE_URL}/?view=${encodeURIComponent(view)}`
-    : ROADMAP_BASE_URL;
-  return vscode.env.openExternal(vscode.Uri.parse(target));
+function checkRoadmapServerReady(timeoutMs = 1200): Promise<boolean> {
+  return new Promise((resolve) => {
+    const req = http.get(`${ROADMAP_BASE_URL}/health`, (res) => {
+      res.resume();
+      resolve((res.statusCode || 500) >= 200 && (res.statusCode || 500) < 400);
+    });
+
+    req.setTimeout(timeoutMs, () => {
+      req.destroy();
+      resolve(false);
+    });
+
+    req.on("error", () => resolve(false));
+  });
+}
+
+async function waitForRoadmapServerReady(
+  attempts = 6,
+  delayMs = 250,
+): Promise<boolean> {
+  for (let i = 0; i < attempts; i += 1) {
+    // eslint-disable-next-line no-await-in-loop
+    const ready = await checkRoadmapServerReady(900);
+    if (ready) return true;
+    // eslint-disable-next-line no-await-in-loop
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+  }
+  return false;
+}
+
+async function openRoadmapExternal(view?: string): Promise<void> {
+  const targetUrl = new URL(ROADMAP_BASE_URL);
+  // Popout should always open the extensive console shell.
+  targetUrl.searchParams.set("ui", "console");
+  if (view) {
+    targetUrl.searchParams.set("view", view);
+  }
+
+  const themeKind = vscode.window.activeColorTheme.kind;
+  const themeParam =
+    themeKind === vscode.ColorThemeKind.Light ||
+    themeKind === vscode.ColorThemeKind.HighContrastLight
+      ? "light"
+      : themeKind === vscode.ColorThemeKind.HighContrast
+        ? "high-contrast"
+        : "dark";
+  targetUrl.searchParams.set("theme", themeParam);
+
+  const target = targetUrl.toString();
+  const ready = await waitForRoadmapServerReady();
+  if (!ready) {
+    vscode.window.showWarningMessage(
+      "FailSafe Operations Hub is starting. Opening browser now; refresh in a moment if needed.",
+    );
+  }
+  try {
+    const opened = await vscode.env.openExternal(vscode.Uri.parse(target));
+    if (!opened) {
+      throw new Error("openExternal returned false");
+    }
+  } catch {
+    vscode.window.showErrorMessage(
+      "Could not open FailSafe Operations Hub in browser. Check your system browser configuration.",
+    );
+  }
+}
+
+async function openRoadmapCompactEditor(): Promise<void> {
+  const targetUrl = new URL(ROADMAP_BASE_URL);
+  targetUrl.searchParams.set("ui", "compact");
+
+  const themeKind = vscode.window.activeColorTheme.kind;
+  const themeParam =
+    themeKind === vscode.ColorThemeKind.Light ||
+    themeKind === vscode.ColorThemeKind.HighContrastLight
+      ? "light"
+      : themeKind === vscode.ColorThemeKind.HighContrast
+        ? "high-contrast"
+        : "dark";
+  targetUrl.searchParams.set("theme", themeParam);
+
+  const ready = await waitForRoadmapServerReady();
+  if (!ready) {
+    vscode.window.showWarningMessage(
+      "FailSafe webpanel is starting. Opened compact hub in editor; refresh shortly if needed.",
+    );
+  }
+
+  const target = targetUrl.toString();
+  try {
+    await vscode.commands.executeCommand("simpleBrowser.show", target);
+  } catch {
+    // Fallback to external browser if Simple Browser is unavailable.
+    await vscode.env.openExternal(vscode.Uri.parse(target));
+  }
 }
 
 export function registerCommands(
@@ -24,24 +115,33 @@ export function registerCommands(
   sentinel: SentinelDaemon,
   feedback: FeedbackManager,
 ): void {
-  // Dashboard command
+  context.subscriptions.push(
+    vscode.commands.registerCommand("failsafe.openSidebar", async () => {
+      await vscode.commands.executeCommand(
+        "workbench.view.extension.failsafe-sidebar-container",
+      );
+      try {
+        await vscode.commands.executeCommand("failsafe.sidebarView.focus");
+      } catch {
+        // Best-effort focus; container open is the primary action.
+      }
+    }),
+  );
+
+  // Legacy UI command shims: keep command ids valid, route to compact hub.
   context.subscriptions.push(
     vscode.commands.registerCommand("failsafe.showDashboard", () => {
-      genesis.showDashboard();
+      return openRoadmapCompactEditor();
     }),
   );
-
-  // Living Graph command
   context.subscriptions.push(
     vscode.commands.registerCommand("failsafe.showLivingGraph", () => {
-      genesis.showLivingGraph();
+      return openRoadmapCompactEditor();
     }),
   );
-
-  // Cortex Omnibar command
   context.subscriptions.push(
     vscode.commands.registerCommand("failsafe.focusCortex", () => {
-      genesis.focusCortexOmnibar();
+      return openRoadmapCompactEditor();
     }),
   );
 
@@ -80,17 +180,17 @@ export function registerCommands(
     }),
   );
 
-  // View ledger command
+  // Legacy UI command shim.
   context.subscriptions.push(
     vscode.commands.registerCommand("failsafe.viewLedger", () => {
-      genesis.showLedgerViewer();
+      return openRoadmapCompactEditor();
     }),
   );
 
-  // L3 approval queue command
+  // Legacy UI command shim.
   context.subscriptions.push(
     vscode.commands.registerCommand("failsafe.approveL3", () => {
-      genesis.showL3ApprovalQueue();
+      return openRoadmapCompactEditor();
     }),
   );
 
@@ -118,14 +218,14 @@ export function registerCommands(
     }),
   );
 
-  // View feedback command
+  // Legacy UI command shim.
   context.subscriptions.push(
     vscode.commands.registerCommand("failsafe.viewFeedback", () => {
-      feedback.showFeedbackPanel();
+      return openRoadmapCompactEditor();
     }),
   );
 
-  // V3 REMEDIATION: Register roadmap command for Dojo linkage
+  // V3 REMEDIATION: Register roadmap focus command
   context.subscriptions.push(
     vscode.commands.registerCommand("failsafe.showRoadmap", () => {
       vscode.commands.executeCommand("failsafe.roadmap.focus");
@@ -134,8 +234,25 @@ export function registerCommands(
 
   // External popout console actions.
   context.subscriptions.push(
-    vscode.commands.registerCommand("failsafe.openRoadmap", () => {
+    vscode.commands.registerCommand("failsafe.openPlannerHub", () => {
       return openRoadmapExternal();
+    }),
+  );
+  // Compatibility alias for previously misspelled command id observed in some hosts.
+  context.subscriptions.push(
+    vscode.commands.registerCommand("failsafe.openPlannnerHub", () => {
+      return openRoadmapExternal();
+    }),
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand("failsafe.openRoadmap", () => {
+      return vscode.commands.executeCommand("failsafe.openPlannerHub");
+    }),
+  );
+  // Explicit in-editor tab variant of the Operations Hub.
+  context.subscriptions.push(
+    vscode.commands.registerCommand("failsafe.openPlannerHubEditor", () => {
+      return openRoadmapCompactEditor();
     }),
   );
   context.subscriptions.push(
@@ -157,14 +274,14 @@ export function registerCommands(
   // v3.0.0: Full-screen Planning Roadmap Window
   context.subscriptions.push(
     vscode.commands.registerCommand("failsafe.showRoadmapWindow", () => {
-      genesis.showRoadmapWindow();
+      return openRoadmapCompactEditor();
     }),
   );
 
-  // v3.0.0: Token Analytics Dashboard
+  // Legacy UI command shim.
   context.subscriptions.push(
     vscode.commands.registerCommand("failsafe.showAnalytics", () => {
-      genesis.showAnalyticsDashboard();
+      return openRoadmapCompactEditor();
     }),
   );
 

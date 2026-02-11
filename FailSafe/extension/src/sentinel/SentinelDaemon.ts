@@ -24,6 +24,7 @@ import {
 } from '../shared/types';
 import { VerdictArbiter } from './VerdictArbiter';
 import { VerdictRouter } from './VerdictRouter';
+import { SentinelRagStore } from './SentinelRagStore';
 
 export class SentinelDaemon {
     private context: vscode.ExtensionContext;
@@ -53,6 +54,7 @@ export class SentinelDaemon {
 
     private startTime: number = 0;
     private processInterval: NodeJS.Timeout | undefined;
+    private ragStore: SentinelRagStore | undefined;
 
     constructor(
         context: vscode.ExtensionContext,
@@ -84,6 +86,7 @@ export class SentinelDaemon {
         this.logger.info('Starting Sentinel daemon...');
         this.startTime = Date.now();
         this.status.running = true;
+        this.initializeRagStore();
 
         // Initialize file watcher
         await this.initializeWatcher();
@@ -129,6 +132,8 @@ export class SentinelDaemon {
             clearInterval(this.processInterval);
             this.processInterval = undefined;
         }
+        this.ragStore?.dispose();
+        this.ragStore = undefined;
 
         this.logger.info('Sentinel daemon stopped');
     }
@@ -325,8 +330,36 @@ export class SentinelDaemon {
 
         // 3. Route (Act on Verdict)
         await this.router.route(verdict, event);
+        await this.recordToRag(event, verdict);
 
         return verdict;
+    }
+
+    private initializeRagStore(): void {
+        const enabled = vscode.workspace
+            .getConfiguration('failsafe')
+            .get<boolean>('sentinel.ragEnabled', true);
+        if (!enabled) {
+            this.ragStore = undefined;
+            return;
+        }
+        const workspaceRoot = this.configManager.getWorkspaceRoot();
+        if (!workspaceRoot) {
+            return;
+        }
+        this.ragStore = new SentinelRagStore(workspaceRoot, this.logger.child('RAG'));
+        this.ragStore.initialize();
+    }
+
+    private async recordToRag(event: SentinelEvent, verdict: SentinelVerdict): Promise<void> {
+        if (!this.ragStore) {
+            return;
+        }
+        try {
+            await this.ragStore.recordEvent(event, verdict);
+        } catch (error) {
+            this.logger.warn('Failed to persist Sentinel observation to RAG store', error);
+        }
     }
 
     /**

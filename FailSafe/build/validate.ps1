@@ -150,6 +150,9 @@ function Validate-Skills {
             if (Test-Path $skillsDir) {
                 $skillFolders = Get-ChildItem -Path $skillsDir -Directory
                 foreach ($folder in $skillFolders) {
+                    if ($folder.Name.StartsWith("_")) {
+                        continue
+                    }
                     $skillMd = Join-Path $folder.FullName "SKILL.md"
                     if (!(Test-Path $skillMd)) {
                         $script:violations += @{ File = $folder.FullName; Rule = "Skill folder missing SKILL.md" }

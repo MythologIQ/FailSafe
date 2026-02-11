@@ -1,0 +1,18 @@
+source:
+  type: github
+  repo: elevenlabs/skills
+  url: https://github.com/elevenlabs/skills/tree/21a3e2fcd68448e3c1620b26a0a2cc3b4601b7d7/music
+  commit: 21a3e2fcd68448e3c1620b26a0a2cc3b4601b7d7
+creator:
+  name: ElevenLabs
+author:
+  name: ElevenLabs
+  copyright: "Copyright (c) 2024 ElevenLabs"
+license:
+  spdx: MIT
+  file: ../LICENSE.elevenlabs.txt
+imported:
+  by: FailSafe migration
+  date: 2026-02-10
+notes:
+  - Verbatim import of upstream skill directory files.

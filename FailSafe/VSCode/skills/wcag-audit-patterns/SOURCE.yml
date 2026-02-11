@@ -1,0 +1,18 @@
+source:
+  type: github
+  repo: wshobson/agents
+  url: https://github.com/wshobson/agents/tree/5d65aa10638bcc1b390738e11f9bff213f61955a/plugins/accessibility-compliance/skills/wcag-audit-patterns
+  commit: 5d65aa10638bcc1b390738e11f9bff213f61955a
+creator:
+  name: Seth Hobson
+author:
+  name: Seth Hobson
+  copyright: "Copyright (c) 2024 Seth Hobson"
+license:
+  spdx: MIT
+  file: ../LICENSE.wshobson-agents.txt
+imported:
+  by: FailSafe migration
+  date: 2026-02-10
+notes:
+  - Verbatim import of upstream skill directory files.

@@ -70,6 +70,9 @@ ovsx package        # Creates .vsix for Open VSX
 ## Full Release Build
 
 ```powershell
+# 0. Validate release gates (includes version coherence)
+powershell -File ..\validate.ps1
+
 # 1. Deploy source files
 .\deploy.ps1
 
@@ -79,6 +82,17 @@ ovsx package        # Creates .vsix for Open VSX
 # 3. Build extension VSIX
 cd extension && vsce package
 ```
+
+## Release Version Gate
+
+Release packaging and publish now enforce version coherence across:
+
+- `FailSafe/extension/package.json`
+- `docs/SYSTEM_STATE.md` (`**Version:** vX.Y.Z`)
+- `FailSafe/PROD-Extension/VSCode/package.json`
+- `FailSafe/PROD-Extension/Antigravity/package.json`
+
+Validator: `tools/reliability/validate-release-version.ps1`
 
 ## Directory Structure
 

@@ -10,8 +10,8 @@ export const ENGAGEMENT_COPY = {
     "Sentinel is idle. Resume monitoring before high-risk edits.",
   sentinelMonitorAction:
     "Continue monitoring and audit files with elevated risk.",
-  dojoContinueAction:
-    "Continue the Dojo workflow from scan to reflect, then finalize the ledger entry.",
+  workflowContinueAction:
+    "Continue the governance workflow from scan to reflect, then finalize the ledger entry.",
   workflowStepLogged: (
     title: string,
     completed: number,
@@ -24,4 +24,3 @@ export const ENGAGEMENT_COPY = {
   controlsNote:
     "Use these only when immediate intervention is required.",
 } as const;
-

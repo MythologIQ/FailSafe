@@ -1,5 +1,12 @@
 # Plan: v3.2.5 FailSafe Console Overhaul + GitHub Standards Enforcement
 
+## Execution Precedence Override (2026-02-11)
+
+UI work is now hard-gated as first priority. Non-UI implementation is blocked until popout UI completion criteria are met.
+
+Active execution checklist:
+- `docs/Planning/plan-v3.2.5-ui-first-execution-checklist.md`
+
 ## Open Questions
 
 - Should branch protection require signed commits on all branches or only protected branches (`main`, `release/*`)?

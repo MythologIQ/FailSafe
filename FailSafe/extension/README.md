@@ -1,10 +1,10 @@
-﻿# MythologIQ FailSafe for VS Code
+# MythologIQ FailSafe for VS Code
 
 Token Efficient Governance for AI-assisted development in VSCode or Cursor.
 
 Local-first safety for AI coding assistants.
 
-**Current Release**: v3.0.1 (2026-02-06)
+**Current Release**: v3.5.2 (2026-02-11)
 
 ![FailSafe Banner](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/icon.png)
 
@@ -19,12 +19,13 @@ FailSafe adds governance and visibility at the editor boundary:
 - Save-time intent gate that can block writes outside an active Intent
 - Sentinel daemon for file-change audits (heuristic, LLM-assisted, and hybrid modes)
 - SOA ledger with a built-in viewer for audit history
-- Genesis UI panels for dashboards, living graph, and stream views
+- Two primary UI screens: `FailSafe Sidebar` and `FailSafe Operations Hub`
 - MCP server for external tools to trigger audits and write ledger entries
 
 ## Highlights
 
-- Dashboard and Living Graph webviews
+- FailSafe Sidebar for compact governance at-a-glance context
+- FailSafe Operations Hub for extended workflow and planning operations
 - File watcher and manual audit command
 - SOA ledger viewer and L3 approval queue
 - Feedback capture and export
@@ -34,7 +35,7 @@ FailSafe adds governance and visibility at the editor boundary:
 
 1. Install from the VS Code Marketplace or Open VSX.
 2. Open a workspace.
-3. Run `FailSafe: Open Dashboard` or press `Ctrl+Alt+F`.
+3. Run `FailSafe: Open Operations Hub (Browser Popout)` or press `Ctrl+Alt+F`.
 4. Run `FailSafe: Audit Current File` to generate a verdict.
 
 ## Safety Alert
@@ -63,33 +64,53 @@ FailSafe evaluates save operations against the active Intent and can block write
 - Append-only ledger database for audit entries
 - L3 approvals surfaced in the UI
 
-### 4. Genesis UI
+### 4. UI Screens
 
-- Dashboard, Living Graph, Cortex Stream, Dojo, and Sentinel views
+- FailSafe Sidebar (compact view)
+- FailSafe Operations Hub (extended popout/editor view)
+- Skills view now includes `Recommended`, `All Relevant`, `All Installed`, and `Other Available` to keep full skill visibility.
 
-### 5. Feedback Capture
+### Sidebar UI (v3.5.2)
+
+![FailSafe Sidebar UI v3.5.2](media/sidebar-ui-3.5.2.png)
+
+### 5. Operations Hub UX (UI-02 + Extended Popout)
+
+- Compact sidebar webpanel (`UI-02`) provides phase status, prioritized feature counters, Sentinel state, and workspace health at-a-glance.
+- `Open FailSafe Operations Hub` opens the extended popout console for deeper workflow views (Home, Run, Skills, Governance, Activity, Reports, Settings).
+- Branding is consistent across shell surfaces, including FailSafe icon usage in header and favicon contexts.
+
+### 6. Skill Governance and Provenance
+
+- Installed skills are discovered from FailSafe workspace roots (`FailSafe/VSCode/skills`, `.agent/skills`, `.github/skills`) with project-first precedence.
+- Phase-aware relevance ranking returns `recommended`, `allRelevant`, and `otherAvailable` groupings.
+- Skill metadata includes provenance fields (creator, source repo/path, source type/priority, admission state, trust tier, version pin).
+- `SOURCE.yml` metadata is ingested to preserve attribution and authorship for bundled and imported skills.
+
+### 7. Checkpoint Reliability Backbone
+
+- Checkpoint events are stored in a local SQLite ledger (`failsafe_checkpoints`) with typed events and parent-chain integrity checks.
+- Hub APIs expose checkpoint summaries and recent checkpoint history for UI transparency.
+
+### 8. Feedback Capture
 
 - Generate, view, and export feedback snapshots
 
-### 6. QoreLogic Propagation
+### 9. QoreLogic Propagation
 
-Detect and propagate governance bundles to supported systems via `FailSafe: Sync Multi-Agent Framework`.
+Supported via internal sync flows when enabled by workspace governance configuration.
 
 ## Commands
 
 | Command                              | Description                 |
 | ------------------------------------ | --------------------------- |
-| FailSafe: Open Dashboard             | Main governance dashboard   |
-| FailSafe: Open Living Graph          | Visualization view          |
-| FailSafe: Focus Cortex Omnibar       | Intent-aware omnibar        |
-| FailSafe: Sentinel Status            | Show monitoring status      |
+| FailSafe: Open Operations Hub (Browser Popout) | Main governance popout |
+| FailSafe: Open Operations Hub (Browser) | Browser launch alias |
+| FailSafe: Open Operations Hub (Editor Tab) | Compact hub in editor |
 | FailSafe: Audit Current File         | Manual file audit           |
-| FailSafe: View SOA Ledger            | Browse audit history        |
-| FailSafe: Review L3 Queue            | Review pending approvals    |
-| FailSafe: Generate Feedback          | Capture feedback snapshot   |
-| FailSafe: View Feedback              | Open feedback panel         |
-| FailSafe: Export Feedback            | Export feedback to JSON     |
-| FailSafe: Sync Multi-Agent Framework | Propagate QoreLogic bundles |
+| FailSafe: Secure Workspace           | Apply workspace hardening baseline |
+| FailSafe: Panic Stop                 | Stop active monitoring and guard actions |
+| FailSafe: Resume Monitoring          | Resume Sentinel monitoring |
 
 ## Configuration
 
@@ -104,9 +125,11 @@ Open Settings and search for `FailSafe`:
 | `failsafe.sentinel.mode`           | `heuristic`                      | Sentinel operating mode            |
 | `failsafe.sentinel.localModel`     | `phi3:mini`                      | Ollama model for LLM-assisted mode |
 | `failsafe.sentinel.ollamaEndpoint` | `http://localhost:11434`         | Ollama API endpoint                |
+| `failsafe.sentinel.ragEnabled`     | `true`                           | Persist Sentinel observations to local RAG store |
 | `failsafe.qorelogic.ledgerPath`    | `.failsafe/ledger/soa_ledger.db` | Ledger database path               |
 | `failsafe.qorelogic.strictMode`    | `false`                          | Block on all warnings              |
 | `failsafe.qorelogic.l3SLA`         | `120`                            | L3 response SLA (seconds)          |
+| `failsafe.bootstrap.autoInstallGit`| `true`                           | Auto-install Git (if missing) and initialize repo during bootstrap |
 | `failsafe.feedback.outputDir`      | `.failsafe/feedback`             | Feedback output directory          |
 
 If `.failsafe/config/sentinel.yaml` exists, it overrides settings. The initializer seeds it with `mode: hybrid` unless you change it.

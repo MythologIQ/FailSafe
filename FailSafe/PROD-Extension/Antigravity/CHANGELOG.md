@@ -5,6 +5,29 @@ All notable changes to the FailSafe Antigravity extension will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.5.2] - 2026-02-11
+
+### Fixed
+
+- Packaged README screenshot path now resolves from extension-local media assets for marketplace rendering.
+
+### Changed
+
+- Release metadata/version bump to 3.5.2.
+
+## [3.5.1] - 2026-02-11
+
+### Added
+
+- Operations Hub skills view includes `All Installed` to preserve full catalog visibility independent of active phase relevance.
+- Refreshed UI documentation assets for streamlined FailSafe Sidebar presentation.
+
+### Changed
+
+- Proprietary skill packs renamed to `qore-*` convention and synchronized to active skill roots.
+- Provenance/source tags in skills UI now reflect location-oriented labels with first-party highlighting.
+- Release documentation aligned with current command and UI behavior.
+
 ## [3.0.1] - 2026-02-06
 
 ### Added

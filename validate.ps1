@@ -193,10 +193,30 @@ function Validate-GitHubStandards {
     -Rule "PR template missing branch/merge policy checklist"
 }
 
+function Validate-ReleaseVersionCoherence {
+  Write-Log "Validating release version coherence..."
+
+  $versionValidator = Join-Path $RepoRoot "tools/reliability/validate-release-version.ps1"
+  if (!(Test-Path $versionValidator)) {
+    $script:violations += @{ File = "tools/reliability/validate-release-version.ps1"; Rule = "Missing release version coherence validator" }
+    Write-Log "FAIL: Missing tools/reliability/validate-release-version.ps1" -Level Error
+    return
+  }
+
+  & $versionValidator -RepoRoot $RepoRoot | Out-Null
+  if ($LASTEXITCODE -ne 0) {
+    $script:violations += @{ File = "release-version-coherence"; Rule = "Release version coherence validation failed" }
+    Write-Log "FAIL: release version coherence gate" -Level Error
+  } else {
+    Write-Log "PASS: release version coherence gate" -Level Success
+  }
+}
+
 Write-Log "Repository Validation (Gold Standard + Container)" -Level Info
 Validate-GoldStandardArtifacts
 Validate-ReliabilityHardening
 Validate-GitHubStandards
+Validate-ReleaseVersionCoherence
 Validate-ContainerChecks
 
 if ($violations.Count -gt 0) {

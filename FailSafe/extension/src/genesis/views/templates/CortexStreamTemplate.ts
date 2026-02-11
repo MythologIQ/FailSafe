@@ -35,23 +35,45 @@ const CORTEX_STREAM_TEMPLATE = `<!DOCTYPE html>
     <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src {{CSP_SOURCE}} 'nonce-{{NONCE}}'; script-src 'nonce-{{NONCE}}';">
     <title>Cortex Stream</title>
     <style nonce="{{NONCE}}">
+        :root {
+            --vscode-sideBar-background: #eaf2ff;
+            --vscode-editor-background: #f6faff;
+            --vscode-editorWidget-background: #ffffff;
+            --vscode-foreground: #16233a;
+            --vscode-descriptionForeground: #455a7c;
+            --vscode-panel-border: #c7d7f1;
+            --vscode-button-background: #2c74f2;
+            --vscode-button-foreground: #ffffff;
+            --vscode-button-hoverBackground: #1f5fd0;
+            --vscode-button-secondaryBackground: #eaf1ff;
+            --vscode-button-secondaryForeground: #274780;
+            --vscode-button-secondaryHoverBackground: #dce8ff;
+            --vscode-textLink-foreground: #2c74f2;
+            --vscode-focusBorder: #2c74f2;
+        }
         * { box-sizing: border-box; }
-        body { font-family: var(--vscode-font-family); font-size: var(--vscode-font-size); color: var(--vscode-foreground); background-color: var(--vscode-sideBar-background); padding: 0; margin: 0; overflow-x: hidden; }
+        body { font-family: "Segoe UI Variable Text", "Aptos", "Trebuchet MS", sans-serif; font-size: var(--vscode-font-size); color: var(--vscode-foreground); background:
+            radial-gradient(circle at 100% 0%, rgba(98, 193, 176, 0.16), transparent 42%),
+            radial-gradient(circle at 0% 15%, rgba(106, 177, 255, 0.2), transparent 44%),
+            linear-gradient(180deg, #f9fcff 0%, #edf4ff 100%);
+            padding: 0; margin: 0; overflow-x: hidden; }
         {{TOOLTIP_STYLES}}
         .severity-debug { border-left-color: var(--vscode-descriptionForeground); background: rgba(128,128,128,0.1); }
         .severity-info { border-left-color: var(--vscode-foreground); background: rgba(100,149,237,0.1); }
         .severity-warn { border-left-color: #ed8936; background: rgba(237,137,54,0.15); }
         .severity-error { border-left-color: #f56565; background: rgba(245,101,101,0.15); }
         .severity-critical { border-left-color: #f56565; background: rgba(220,38,38,0.2); }
-        .header { background: linear-gradient(135deg, var(--vscode-editor-background) 0%, var(--vscode-sideBar-background) 100%); border-bottom: 1px solid var(--vscode-panel-border); padding: 12px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .header { background: linear-gradient(135deg, #ffffff 0%, #eef4ff 100%); border-bottom: 1px solid var(--vscode-panel-border); padding: 12px; position: sticky; top: 0; z-index: 100; box-shadow: 0 10px 18px rgba(34, 72, 139, 0.14); }
         .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .header-title { font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .header-title { font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: #2c4f96; }
         .header-status { display: flex; align-items: center; gap: 8px; font-size: 10px; color: var(--vscode-descriptionForeground); }
         .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #48bb78; animation: pulse 2s infinite; }
         @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
         .header-actions { display: flex; gap: 8px; }
-        .header-actions button { background: none; border: 1px solid var(--vscode-panel-border); color: var(--vscode-descriptionForeground); cursor: pointer; font-size: 10px; padding: 4px 8px; border-radius: 4px; transition: all 0.2s ease; }
+        .header-actions button { background: #ffffff; border: 1px solid var(--vscode-panel-border); color: var(--vscode-descriptionForeground); cursor: pointer; font-size: 10px; padding: 4px 8px; border-radius: 6px; transition: all 0.2s ease; }
         .header-actions button:hover { color: var(--vscode-foreground); border-color: var(--vscode-foreground); }
+        .header-actions .launch-ui { background: linear-gradient(135deg, #2c74f2 0%, #4f8eff 100%); color: #fff; border-color: #2c74f2; font-weight: 600; }
+        .header-actions .launch-ui:hover { color: #fff; border-color: #1f5fd0; background: linear-gradient(135deg, #1f5fd0 0%, #3f7df0 100%); }
         .search-container { position: relative; margin-bottom: 10px; }
         .search-input { width: 100%; padding: 8px 12px; border: 1px solid var(--vscode-panel-border); border-radius: 6px; background: var(--vscode-editor-background); color: var(--vscode-foreground); font-size: 11px; transition: all 0.2s ease; }
         .search-input:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.1); }
@@ -61,8 +83,8 @@ const CORTEX_STREAM_TEMPLATE = `<!DOCTYPE html>
         .filter-btn.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; box-shadow: 0 2px 8px rgba(102,126,234,0.3); }
         .count { background: rgba(255,255,255,0.2); padding: 1px 6px; border-radius: 8px; font-size: 9px; font-weight: 600; }
         .filter-btn.active .count { background: rgba(255,255,255,0.3); }
-        .stream { padding: 8px; max-height: calc(100vh - 200px); overflow-y: auto; }
-        .event { padding: 12px 14px; margin-bottom: 12px; background: var(--vscode-editor-background); border-radius: 8px; border-left: 4px solid; font-size: 11px; transition: all 0.3s cubic-bezier(0.4,0,0.2,1); animation: slideIn 0.3s ease-out; position: relative; overflow: hidden; }
+        .stream { padding: 10px; max-height: calc(100vh - 200px); overflow-y: auto; }
+        .event { padding: 12px 14px; margin-bottom: 12px; background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%); border-radius: 14px; border: 1px solid var(--vscode-panel-border); border-left: 4px solid; font-size: 11px; transition: all 0.3s cubic-bezier(0.4,0,0.2,1); animation: slideIn 0.3s ease-out; position: relative; overflow: hidden; box-shadow: 0 8px 16px rgba(34, 72, 139, 0.09); }
         .event:hover { transform: translateX(4px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
         @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
         .event-header { display: flex; align-items: center; margin-bottom: 6px; gap: 8px; }
@@ -90,7 +112,7 @@ const CORTEX_STREAM_TEMPLATE = `<!DOCTYPE html>
 <body>
     <div class="header">
         <div class="header-top">
-            <span class="header-title">Cortex Stream</span>
+            <span class="header-title">Cortex Stream | UI-07 Event Stream</span>
             <div class="header-status">
                 <span class="status-dot"></span>
                 <span>Live</span>
@@ -98,6 +120,7 @@ const CORTEX_STREAM_TEMPLATE = `<!DOCTYPE html>
                 <span>{{EVENT_COUNT}} events</span>
             </div>
             <div class="header-actions">
+                <button class="launch-ui" onclick="openFailSafeUi()" title="Open FailSafe UI">Open FailSafe UI</button>
                 <button onclick="clearStream()" {{CLEAR_TOOLTIP}}>Clear</button>
             </div>
         </div>
@@ -123,6 +146,7 @@ const CORTEX_STREAM_TEMPLATE = `<!DOCTYPE html>
         const vscode = acquireVsCodeApi();
         let searchTimeout;
         function executeAction(command, args) { vscode.postMessage({ command: 'executeAction', action: command, args: args }); }
+        function openFailSafeUi() { vscode.postMessage({ command: 'openFailSafeUi' }); }
         function openFile(file) { vscode.postMessage({ command: 'openFile', file: file }); }
         function clearStream() { vscode.postMessage({ command: 'clearStream' }); }
         function setFilter(filter) { vscode.postMessage({ command: 'setFilter', filter: filter }); }

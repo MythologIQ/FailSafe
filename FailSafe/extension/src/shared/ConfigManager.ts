@@ -10,6 +10,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as yaml from 'js-yaml';
 import { FailSafeConfig, SentinelMode } from './types';
+import { ensureFailsafeGitignoreEntry } from './gitignore';
 
 type SentinelYamlConfig = Partial<FailSafeConfig> & Record<string, unknown>;
 
@@ -141,6 +142,14 @@ export class ConfigManager {
             for (const dir of dirs) {
                 if (!fs.existsSync(dir)) {
                     fs.mkdirSync(dir, { recursive: true });
+                }
+            }
+
+            if (this.workspaceRoot) {
+                try {
+                    ensureFailsafeGitignoreEntry(this.workspaceRoot);
+                } catch (error) {
+                    console.warn('Failed to update .gitignore with .failsafe/:', error);
                 }
             }
 

@@ -51,7 +51,7 @@ export const INFO_HINT_STYLES = `
 `;
 
 /**
- * Help text constants for Dojo metrics.
+ * Help text constants for FailSafe metrics.
  */
 export const HELP_TEXT = {
   sentinelMode:

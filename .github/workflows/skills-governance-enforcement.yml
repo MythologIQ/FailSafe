@@ -1,0 +1,35 @@
+name: Skills Governance Enforcement
+
+on:
+  pull_request:
+    paths:
+      - "FailSafe/VSCode/skills/**"
+      - ".agent/skills/**"
+      - "tools/reliability/validate-skill-metadata.ps1"
+      - "tools/skills/sync-global-codex-skills.ps1"
+      - ".github/workflows/skills-governance-enforcement.yml"
+  push:
+    branches:
+      - "main"
+      - "release/**"
+      - "feat/**"
+      - "fix/**"
+    paths:
+      - "FailSafe/VSCode/skills/**"
+      - ".agent/skills/**"
+      - "tools/reliability/validate-skill-metadata.ps1"
+      - "tools/skills/sync-global-codex-skills.ps1"
+      - ".github/workflows/skills-governance-enforcement.yml"
+
+jobs:
+  skills-governance:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate skill metadata and parity
+        shell: pwsh
+        run: |
+          pwsh -File tools/reliability/validate-skill-metadata.ps1

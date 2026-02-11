@@ -1,0 +1,20 @@
+source:
+  type: internal
+  system: FailSafe
+  repository: MythologIQ/FailSafe
+  path: FailSafe/VSCode/skills/qore-docs-technical-writing
+creator:
+  name: MythologIQ Labs, LLC
+skill_family:
+  namespace: /ql
+  classification: documentation
+license:
+  file: ../../../LICENSE
+maintainer:
+  team: FailSafe Governance
+imported:
+  bundled_with_failsafe: true
+  date: 2026-02-11
+notes:
+  - Designated as first-party FailSafe documentation skill.
+

@@ -1,0 +1,21 @@
+source:
+  type: internal
+  system: FailSafe
+  repository: MythologIQ/FailSafe
+  path: FailSafe/VSCode/skills/qore-tauri2-cicd
+creator:
+  name: MythologIQ Labs, LLC
+skill_family:
+  namespace: /ql
+  classification: tauri
+license:
+  file: ../../../LICENSE
+maintainer:
+  team: FailSafe Governance
+imported:
+  bundled_with_failsafe: true
+  date: 2026-02-11
+notes:
+  - Migrated from global Codex runtime skills into FailSafe workspace ownership.
+
+

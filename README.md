@@ -1,4 +1,4 @@
-﻿<div align="center">
+<div align="center">
 
 # FailSafe
 
@@ -16,7 +16,7 @@
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Commands-8B5CF6)](https://github.com/MythologIQ/FailSafe/releases)
 [![Documentation](https://img.shields.io/badge/docs-FAILSAFE_SPECIFICATION-blue)](docs/FAILSAFE_SPECIFICATION.md)
 
-**Current Release**: v3.0.1 (2026-02-06)
+**Current Release**: v3.5.2 (2026-02-11)
 
 > **If this project helps you, please star it!** It helps others discover FailSafe.
 
@@ -61,6 +61,14 @@ Create or edit `.failsafe/config/policies/risk_grading.json` to tune risk classi
 
 FailSafe is an open-source VS Code extension and governance framework for AI-assisted development. It adds intent-gated saves, Sentinel audits, and a ledgered audit trail so risky changes are surfaced and controlled.
 
+Primary UI surfaces in the current release:
+- `FailSafe Sidebar` (compact)
+- `FailSafe Operations Hub` (extended)
+
+### Sidebar UI (v3.5.2)
+
+![FailSafe Sidebar UI v3.5.2](FailSafe/docs/images/sidebar-ui-3.5.2.png)
+
 ---
 
 ## The Idea
@@ -84,7 +92,7 @@ graph TD
     G --> H[Sentinel Audit]
     H --> I[SOA Ledger]
 
-    I --> J[Genesis Dashboard]
+    I --> J[FailSafe Operations Hub]
     H --> J
 ```
 
@@ -98,24 +106,24 @@ FailSafe uses a **Physical Isolation** model to separate workspace governance fr
 
 ```
 / (root)
-├── .agent/                   # Active workspace workflows
-├── .claude/                  # Active commands + secure tokens
-├── .qorelogic/               # Workspace configuration (locked)
-├── docs/                     # Workspace governance (Ledger, State, Spec)
-└── FAILSAFE_SPECIFICATION.md -> docs/FAILSAFE_SPECIFICATION.md
++-- .agent/                   # Active workspace workflows
++-- .claude/                  # Active commands + secure tokens
++-- .qorelogic/               # Workspace configuration (locked)
++-- docs/                     # Workspace governance (Ledger, State, Spec)
++-- FAILSAFE_SPECIFICATION.md -> docs/FAILSAFE_SPECIFICATION.md
 ```
 
 ### App Container (Extension Source)
 
 ```
 /FailSafe/ (container)
-├── extension/                # VSCode Extension TypeScript Project
-├── Antigravity/              # Gemini + Claude workflows (source)
-├── VSCode/                   # Copilot + Claude prompts (source)
-├── PROD-Extension/           # Production builds (includes Claude)
-│   ├── Antigravity/          # → OpenVSX (Gemini + Claude)
-│   └── VSCode/               # → VS Code Marketplace (Copilot + Claude)
-└── build/                    # Build & validation tooling
++-- extension/                # VSCode Extension TypeScript Project
++-- Antigravity/              # Gemini + Claude workflows (source)
++-- VSCode/                   # Copilot + Claude prompts (source)
++-- PROD-Extension/           # Production builds (includes Claude)
+�   +-- Antigravity/          # ? OpenVSX (Gemini + Claude)
+�   +-- VSCode/               # ? VS Code Marketplace (Copilot + Claude)
++-- build/                    # Build & validation tooling
 ```
 
 **Note:** Claude Code is no longer a separate build. Claude-specific skills, commands, and file structures are folded into both Antigravity and VSCode extensions.
@@ -126,7 +134,7 @@ FailSafe uses a **Physical Isolation** model to separate workspace governance fr
 
 | System    | Layer       | Description                                |
 | --------- | ----------- | ------------------------------------------ |
-| Genesis   | Experience  | Dashboard, living graph, and audit stream  |
+| Genesis   | Experience  | FailSafe Sidebar + FailSafe Operations Hub |
 | QoreLogic | Governance  | Intent gating, policies, ledger, and trust |
 | Sentinel  | Enforcement | File watcher audits and verdicts           |
 

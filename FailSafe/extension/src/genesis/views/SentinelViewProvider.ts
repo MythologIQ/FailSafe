@@ -48,6 +48,9 @@ export class SentinelViewProvider implements vscode.WebviewViewProvider {
 
     webviewView.webview.onDidReceiveMessage((message) => {
       switch (message.command) {
+        case "openFailSafeUi":
+          void this.openFailSafeUi();
+          break;
         case "auditFile":
           vscode.commands.executeCommand("failsafe.auditFile");
           break;
@@ -79,5 +82,19 @@ export class SentinelViewProvider implements vscode.WebviewViewProvider {
       status,
       recentVerdicts: this.recentVerdicts,
     });
+  }
+
+  private async openFailSafeUi(): Promise<void> {
+    try {
+      await vscode.commands.executeCommand("failsafe.openPlannerHub");
+    } catch {
+      try {
+        await vscode.commands.executeCommand("failsafe.showRoadmapWindow");
+      } catch {
+        vscode.window.showErrorMessage(
+          'Unable to open FailSafe UI. Run "FailSafe: Open FailSafe UI" from Command Palette.',
+        );
+      }
+    }
   }
 }

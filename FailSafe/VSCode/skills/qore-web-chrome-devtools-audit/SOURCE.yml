@@ -1,0 +1,19 @@
+source:
+  type: internal
+  system: FailSafe
+  repository: MythologIQ/FailSafe
+creator:
+  name: MythologIQ Labs, LLC
+skill_family:
+  namespace: failsafe
+  classification: runtime-audit
+license:
+  file: ../../../LICENSE
+maintainer:
+  team: FailSafe UX Reliability
+imported:
+  bundled_with_failsafe: true
+  date: 2026-02-10
+notes:
+  - First-party FailSafe skill wrapper for Chrome DevTools MCP workflows.
+

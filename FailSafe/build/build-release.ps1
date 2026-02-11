@@ -28,6 +28,7 @@ param(
 $ErrorActionPreference = "Stop"
 $ScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoRoot = Split-Path -Parent $ScriptRoot
+$WorkspaceRoot = Split-Path -Parent $RepoRoot
 
 # Paths
 $ProdExtension = Join-Path $RepoRoot "PROD-Extension"
@@ -56,6 +57,18 @@ if ($Clean -and (Test-Path $ArtifactsDir)) {
 # Create artifacts directory
 if (-not (Test-Path $ArtifactsDir)) {
     New-Item -ItemType Directory -Force -Path $ArtifactsDir | Out-Null
+}
+
+# Release gate: version coherence must pass before packaging.
+$versionValidator = Join-Path $WorkspaceRoot "tools/reliability/validate-release-version.ps1"
+if (-not (Test-Path $versionValidator)) {
+    Write-Log "Missing release version validator: $versionValidator" -Level Error
+    exit 1
+}
+& $versionValidator -RepoRoot $WorkspaceRoot
+if ($LASTEXITCODE -ne 0) {
+    Write-Log "Release version coherence gate failed. Aborting artifact build." -Level Error
+    exit 1
 }
 
 # Get governance version from SYSTEM_STATE.md

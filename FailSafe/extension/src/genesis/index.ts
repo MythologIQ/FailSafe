@@ -8,7 +8,6 @@
 export { GenesisManager } from './GenesisManager';
 
 // Views (Sidebar)
-export { DojoViewProvider } from './views/DojoViewProvider';
 export { CortexStreamProvider } from './views/CortexStreamProvider';
 export { LivingGraphProvider } from './views/LivingGraphProvider';
 

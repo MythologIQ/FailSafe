@@ -1,7 +1,7 @@
 /**
  * Quick Start Guide Content
  *
- * Declarative content for the collapsible guide in The Dojo.
+ * Declarative content for the collapsible FailSafe quick-start guide.
  * Follows Simple Made Easy: data objects over imperative rendering.
  */
 

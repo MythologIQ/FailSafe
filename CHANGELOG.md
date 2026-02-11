@@ -9,7 +9,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- v3.2.0 Reliability Hardening: D10 Razor decomposition, UI polish/theme refinements, Gold Standard validation script.
+- Post-3.5.2 scope to be scheduled.
+
+---
+
+## [3.5.2] - 2026-02-11
+
+### Fixed
+
+- Marketplace/registry screenshot rendering fixed by moving sidebar image references to packaged extension media paths.
+
+### Changed
+
+- Release metadata/version bump to 3.5.2 across extension and distribution manifests.
+
+---
+
+## [3.5.1] - 2026-02-11
+
+### Added
+
+- Sidebar UI streamlining finalized (`Open Hub`, `Editor`, `Reload` shell controls + compact card alignment pass).
+- `All Installed` skills lane added to Operations Hub skills surface to prevent phase-only visibility loss.
+- Release screenshot artifact for streamlined sidebar UI added at `FailSafe/docs/images/sidebar-ui-3.5.1.png`.
+
+### Changed
+
+- First-party proprietary skill naming normalized to `qore-*` convention across FailSafe skill roots.
+- Tauri skill packs adopted into FailSafe-owned skill library with `creator: MythologIQ Labs, LLC`.
+- Skill discovery root resolution hardened to avoid false empty-catalog conditions.
+- Documentation surfaces (root, extension, VSCode/OpenVSX package READMEs) updated to reflect 3.5.1 behavior and current commands.
 
 ---
 

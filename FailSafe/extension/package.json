@@ -3,7 +3,7 @@
   "displayName": "MythologIQ: FailSafe (feat. QoreLogic)",
   "description": "Complete AI governance for modern development. Genesis visualization + QoreLogic framework + Sentinel monitoring.",
   "icon": "icon.png",
-  "version": "3.0.1",
+  "version": "3.5.2",
   "publisher": "MythologIQ",
   "license": "MIT",
   "repository": {
@@ -65,60 +65,24 @@
     ],
     "commands": [
       {
-        "command": "failsafe.showDashboard",
-        "title": "FailSafe: Open Dashboard"
+        "command": "failsafe.openSidebar",
+        "title": "FailSafe: Open Sidebar"
       },
       {
-        "command": "failsafe.showLivingGraph",
-        "title": "FailSafe: Open Living Graph"
+        "command": "failsafe.openPlannerHub",
+        "title": "FailSafe: Open Operations Hub (Browser Popout)"
       },
       {
-        "command": "failsafe.focusCortex",
-        "title": "FailSafe: Focus Cortex Omnibar"
+        "command": "failsafe.openRoadmap",
+        "title": "FailSafe: Open Operations Hub (Browser)"
       },
       {
-        "command": "failsafe.sentinelStatus",
-        "title": "FailSafe: Sentinel Status"
+        "command": "failsafe.openPlannerHubEditor",
+        "title": "FailSafe: Open Operations Hub (Editor Tab)"
       },
       {
         "command": "failsafe.auditFile",
         "title": "FailSafe: Audit Current File"
-      },
-      {
-        "command": "failsafe.viewLedger",
-        "title": "FailSafe: View SOA Ledger"
-      },
-      {
-        "command": "failsafe.approveL3",
-        "title": "FailSafe: Review L3 Queue"
-      },
-      {
-        "command": "failsafe.generateFeedback",
-        "title": "FailSafe: Generate Feedback"
-      },
-      {
-        "command": "failsafe.viewFeedback",
-        "title": "FailSafe: View Feedback"
-      },
-      {
-        "command": "failsafe.exportFeedback",
-        "title": "FailSafe: Export Feedback"
-      },
-      {
-        "command": "failsafe.syncFramework",
-        "title": "FailSafe: Sync Multi-Agent Framework"
-      },
-      {
-        "command": "failsafe.showRoadmap",
-        "title": "FailSafe: Show Roadmap"
-      },
-      {
-        "command": "failsafe.showRoadmapWindow",
-        "title": "FailSafe: Planning Window"
-      },
-      {
-        "command": "failsafe.showAnalytics",
-        "title": "FailSafe: Token Analytics"
       },
       {
         "command": "failsafe.secureWorkspace",
@@ -131,34 +95,31 @@
       {
         "command": "failsafe.resumeMonitoring",
         "title": "FailSafe: Resume Monitoring"
-      },
-      {
-        "command": "failsafe.openRoadmap",
-        "title": "FailSafe: Open Roadmap (Browser)"
-      },
-      {
-        "command": "failsafe.openRoadmapTimeline",
-        "title": "FailSafe: Open Roadmap Timeline (Browser)"
-      },
-      {
-        "command": "failsafe.openRoadmapActiveSprint",
-        "title": "FailSafe: Open Active Sprint (Browser)"
-      },
-      {
-        "command": "failsafe.openRoadmapLiveActivity",
-        "title": "FailSafe: Open Live Activity (Browser)"
       }
     ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "failsafe-sidebar-container",
+          "title": "FailSafe",
+          "icon": "media/failsafe-icon.png"
+        }
+      ]
+    },
+    "views": {
+      "failsafe-sidebar-container": [
+        {
+          "id": "failsafe.sidebarView",
+          "name": "FailSafe Sidebar",
+          "type": "webview"
+        }
+      ]
+    },
     "keybindings": [
       {
-        "command": "failsafe.showDashboard",
+        "command": "failsafe.openPlannerHub",
         "key": "ctrl+alt+f",
         "mac": "cmd+alt+f"
-      },
-      {
-        "command": "failsafe.focusCortex",
-        "key": "ctrl+alt+c",
-        "mac": "cmd+alt+c"
       },
       {
         "command": "failsafe.auditFile",
@@ -166,63 +127,11 @@
         "mac": "cmd+alt+a"
       },
       {
-        "command": "failsafe.showRoadmap",
-        "key": "ctrl+alt+r",
-        "mac": "cmd+alt+r"
-      },
-      {
-        "command": "failsafe.showRoadmapWindow",
-        "key": "ctrl+alt+p",
-        "mac": "cmd+alt+p"
-      },
-      {
-        "command": "failsafe.showAnalytics",
-        "key": "ctrl+alt+t",
-        "mac": "cmd+alt+t"
-      },
-      {
-        "command": "failsafe.openRoadmap",
+        "command": "failsafe.openPlannerHub",
         "key": "ctrl+alt+shift+r",
         "mac": "cmd+alt+shift+r"
       }
     ],
-    "viewsContainers": {
-      "activitybar": [
-        {
-          "id": "failsafe-sidebar",
-          "title": "FailSafe",
-          "icon": "media/failsafe-icon.png"
-        }
-      ]
-    },
-    "views": {
-      "failsafe-sidebar": [
-        {
-          "id": "failsafe.dojo",
-          "name": "The Dojo",
-          "type": "webview",
-          "icon": "media/failsafe-icon.png"
-        },
-        {
-          "id": "failsafe.sentinel",
-          "name": "Sentinel",
-          "type": "webview",
-          "icon": "media/failsafe-icon.png"
-        },
-        {
-          "id": "failsafe.stream",
-          "name": "Cortex Stream",
-          "type": "webview",
-          "icon": "media/failsafe-icon.png"
-        },
-        {
-          "id": "failsafe.roadmap",
-          "name": "Roadmap",
-          "type": "webview",
-          "icon": "media/failsafe-icon.png"
-        }
-      ]
-    },
     "configuration": {
       "title": "FailSafe",
       "properties": {
@@ -271,6 +180,11 @@
           "default": "http://localhost:11434",
           "description": "Ollama API endpoint"
         },
+        "failsafe.sentinel.ragEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Persist Sentinel monitored events and verdicts to local RAG store for retrieval."
+        },
         "failsafe.qorelogic.ledgerPath": {
           "type": "string",
           "default": ".failsafe/ledger/soa_ledger.db",
@@ -290,6 +204,11 @@
           "type": "number",
           "default": 120,
           "description": "L3 first response SLA in seconds"
+        },
+        "failsafe.bootstrap.autoInstallGit": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically attempt to install Git and initialize a repository at workspace bootstrap if missing."
         }
       }
     }

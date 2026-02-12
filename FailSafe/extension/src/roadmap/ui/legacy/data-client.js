@@ -82,11 +82,14 @@ export class DataClient {
   }
 
   normalizeSkill(skill) {
-    const key = String(skill.key || '').trim();
-    const label = String(skill.label || key || 'Unknown Skill').trim();
+    const id = String(skill.id || skill.key || '').trim();
+    const displayName = String(skill.displayName || skill.label || id || 'Unknown Skill').trim();
     const normalized = {
-      key,
-      label,
+      id,
+      displayName,
+      localName: String(skill.localName || '').trim(),
+      key: id,
+      label: displayName,
       desc: String(skill.desc || 'Installed skill').trim(),
       creator: String(skill.creator || skill.publisher || 'Unknown').trim(),
       sourceRepo: String(skill.sourceRepo || 'unknown').trim(),
@@ -106,13 +109,13 @@ export class DataClient {
     const dictionary = {
       'marketplace-plugin-ops': 'Manages the lifecycle of marketplace plugins, including catalog parsing, installation, and bridging to the UI.',
       'cx-ux-flow-audit': 'Audits the user experience flow for consistency, accessibility, and performance bottlenecks.',
-      'music': 'Controls background ambient audio and soundscapes for the immersive workspace environment.',
+      'elevenlabs-audio-generate-music': 'Controls background ambient audio and soundscapes for the immersive workspace environment.',
       'failsafe-core': 'Core governance and operational logic for the FailSafe system.',
       // Add more known skills here
     };
 
-    if (dictionary[skill.key] && (skill.desc === 'Installed skill' || skill.desc.length < 20)) {
-      skill.desc = dictionary[skill.key];
+    if (dictionary[skill.id] && (skill.desc === 'Installed skill' || skill.desc.length < 20)) {
+      skill.desc = dictionary[skill.id];
     }
     return skill;
   }
@@ -126,15 +129,69 @@ export class DataClient {
       const normalized = skills
         .map((skill) => this.normalizeSkill(skill))
         .filter((skill) => skill.key);
-      this.onSkills(normalized.length > 0 ? normalized : [
-        this.normalizeSkill({ key: 'general-workflow', label: 'General Workflow', desc: 'No installed skills discovered; use baseline flow.' })
-      ]);
+      this.onSkills(normalized);
     } catch (error) {
-      this.onSkills([
-        this.normalizeSkill({ key: 'general-workflow', label: 'General Workflow', desc: 'No installed skills discovered; use baseline flow.' })
-      ]);
+      this.onSkills([]);
       console.error(error);
     }
+  }
+
+  async autoIngestSkills() {
+    const res = await fetch('/api/skills/ingest/auto', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    if (!res.ok) {
+      throw new Error(`Auto ingest failed (${res.status})`);
+    }
+    const payload = await res.json();
+    if (Array.isArray(payload?.skills)) {
+      this.onSkills(payload.skills.map((skill) => this.normalizeSkill(skill)).filter((skill) => skill.key));
+    }
+    return payload;
+  }
+
+  async manualIngestFromFileList(fileList, mode) {
+    const items = await this.serializeFileList(fileList, mode);
+    if (items.length === 0) {
+      throw new Error('No files selected for manual ingest.');
+    }
+    const res = await fetch('/api/skills/ingest/manual', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode, items })
+    });
+    if (!res.ok) {
+      throw new Error(`Manual ingest failed (${res.status})`);
+    }
+    const payload = await res.json();
+    if (Array.isArray(payload?.skills)) {
+      this.onSkills(payload.skills.map((skill) => this.normalizeSkill(skill)).filter((skill) => skill.key));
+    }
+    return payload;
+  }
+
+  async serializeFileList(fileList, mode) {
+    const files = Array.from(fileList || []);
+    const filtered = files.filter((file) => {
+      const rel = String(file.webkitRelativePath || file.name || '').toLowerCase();
+      return rel.endsWith('skill.md') || rel.endsWith('.yml') || rel.endsWith('.yaml') || rel.endsWith('.md');
+    });
+    const readers = filtered.map((file) => new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const relativePath = mode === 'folder'
+          ? (file.webkitRelativePath || file.name)
+          : file.name;
+        resolve({
+          path: relativePath,
+          content: String(reader.result || '')
+        });
+      };
+      reader.onerror = () => reject(new Error(`Failed to read ${file.name}`));
+      reader.readAsText(file);
+    }));
+    return Promise.all(readers);
   }
 
   async fetchSkillRelevance(phase) {

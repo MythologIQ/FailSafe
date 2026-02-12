@@ -15,25 +15,26 @@ export class IntentAssistant {
     const phase = this.getPhase();
     const skill = this.getSelectedSkill();
     this.elements.context.textContent = skill
-      ? `Phase: ${phase.title}. Selected skill: ${skill.label}.`
-      : `Phase: ${phase.title}. Select a skill to bias the plan.`;
+      ? `Intent Buffer: ${phase.title} | ${skill.label}`
+      : `Intent Buffer: ${phase.title} | empty`;
   }
 
   generate() {
     const intent = (this.elements.input.value || '').trim();
     if (!intent) {
-      this.elements.output.textContent = 'Enter intent first.';
+      this.elements.output.textContent = 'Enter an intent goal first. Generating a package does not execute a run.';
       return;
     }
     const phase = this.getPhase();
     const selected = this.getSelectedSkill() || this.getFallbackSkill();
 
     const packageText = [
+      '# package-generated (no execution)',
       'action_package:',
       `  goal: "${intent.replace(/"/g, "'")}"`,
       `  phase: "${phase.key}"`,
       `  phase_title: "${phase.title}"`,
-      `  skill: "${selected?.key || 'general-workflow'}"`,
+      `  skill: "${selected?.key || 'failsafe-general-use-workflow'}"`,
       `  skill_label: "${selected?.label || 'General Workflow'}"`,
       '  constraints:',
       '    - "Do not bypass policy or permission checks"',

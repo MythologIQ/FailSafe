@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FailSafe Operations Hub</title>
+  <title>FailSafe Monitor</title>
   <link rel="icon" type="image/png" href="/failsafe-icon.png">
   <link rel="stylesheet" href="roadmap.css">
 </head>
@@ -14,8 +14,7 @@
         <div class="brand-left">
           <img src="/failsafe-icon.png" alt="FailSafe icon" class="brand-icon">
           <div class="brand-text">
-            <div class="brand-title">FailSafe Operations Hub</div>
-            <div class="brand-subtitle">Unified Governance Dashboard</div>
+            <div class="brand-title" data-tooltip="Real-time governance monitoring and system health">FailSafe Monitor</div>
           </div>
         </div>
         <div id="status-line" class="status-line">Connecting...</div>
@@ -24,16 +23,21 @@
       <section class="card" id="phase-card">
         <header class="card-head">
           <span class="eyebrow">Active Build Step</span>
-          <span id="phase-title" class="phase-title">Current Phase: PLAN</span>
+          <span id="phase-title" class="phase-title">PLAN</span>
         </header>
 
         <div id="phase-track" class="phase-track"></div>
 
-        <div id="recent-line" class="muted-line">Recently completed: none yet</div>
-
-        <div class="divider"></div>
-        <div class="eyebrow">Recommended Next Step</div>
-        <div id="next-step" class="next-step">Continue the active build phase.</div>
+        <div class="flow-blocks">
+          <div class="flow-block">
+            <div class="eyebrow">Recently Completed</div>
+            <div id="recent-line" class="flow-copy">None yet</div>
+          </div>
+          <div class="flow-block">
+            <div class="eyebrow">Recommended Next Step</div>
+            <div id="next-step" class="flow-copy flow-copy-action">Continue the active build phase.</div>
+          </div>
+        </div>
       </section>
 
       <section class="card">
@@ -59,33 +63,33 @@
           <article class="health-item">
             <div class="health-label">Critical Blockers</div>
             <div id="health-blockers" class="health-number">0</div>
-            <div class="rainbow-bar"><span id="blocker-bar"></span></div>
+            <div id="blockers-graphic" class="rainbow-bar" title="Critical blockers across active phases."><span id="blocker-bar"></span></div>
           </article>
 
           <article class="health-item">
             <div class="health-label">Unverified Changes</div>
             <div class="bucket-wrap">
-              <div class="bucket-shell"><div id="bucket-fill" class="bucket-fill" style="height:0%"></div></div>
+              <div id="bucket-shell" class="bucket-shell" title="Estimated backlog of unverified changes."><div id="bucket-fill" class="bucket-fill" style="height:0%"></div></div>
             </div>
             <div id="bucket-text" class="tiny">0% Full</div>
           </article>
 
           <article class="health-item">
             <div class="health-label">Error Budget Burn</div>
-            <div class="gauge-wrap"><svg viewBox="0 0 100 55" class="gauge"><path d="M 10 50 A 40 40 0 0 1 90 50" class="gauge-bg"></path><path id="gauge-value" d="M 10 50 A 40 40 0 0 1 90 50" class="gauge-value"></path></svg></div>
+            <div id="gauge-wrap" class="gauge-wrap" title="Composite burn rate from blockers, queue, and risk verdicts."><svg viewBox="0 0 100 55" class="gauge"><path d="M 10 50 A 40 40 0 0 1 90 50" class="gauge-bg"></path><path id="gauge-value" d="M 10 50 A 40 40 0 0 1 90 50" class="gauge-value"></path></svg></div>
             <div id="error-budget" class="health-number small">0%</div>
           </article>
 
           <article class="health-item">
             <div class="health-label">Policy Trend</div>
-            <div class="slider"><div id="trend-fill" class="slider-fill"></div><div id="trend-thumb" class="slider-thumb"></div></div>
+            <div id="trend-slider" class="slider" title="Recent policy-signal trend from PASS/WARN/BLOCK verdict mix."><div id="trend-fill" class="slider-fill"></div><div id="trend-thumb" class="slider-thumb"></div></div>
             <div id="policy-trend" class="health-number small">0%</div>
           </article>
         </div>
       </section>
 
       <footer class="legal">
-        FailSafe is an open source project by MythologIQ Labs, LLC, provided \"as is\" without warranty of any kind.
+        FailSafe is an open source project by <a href="https://www.MythologIQ.studio" target="_blank" rel="noopener noreferrer">MythologIQ Labs, LLC</a>, provided \"as is\" without warranty of any kind.
       </footer>
     </div>
   </main>

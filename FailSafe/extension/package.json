@@ -70,15 +70,15 @@
       },
       {
         "command": "failsafe.openPlannerHub",
-        "title": "FailSafe: Open Operations Hub (Browser Popout)"
+        "title": "FailSafe: Open Command Center (Browser Popout)"
       },
       {
         "command": "failsafe.openRoadmap",
-        "title": "FailSafe: Open Operations Hub (Browser)"
+        "title": "FailSafe: Open Command Center (Browser)"
       },
       {
         "command": "failsafe.openPlannerHubEditor",
-        "title": "FailSafe: Open Operations Hub (Editor Tab)"
+        "title": "FailSafe: Open Command Center (Editor Tab)"
       },
       {
         "command": "failsafe.auditFile",
@@ -110,7 +110,7 @@
       "failsafe-sidebar-container": [
         {
           "id": "failsafe.sidebarView",
-          "name": "FailSafe Sidebar",
+          "name": "FailSafe Monitor",
           "type": "webview"
         }
       ]

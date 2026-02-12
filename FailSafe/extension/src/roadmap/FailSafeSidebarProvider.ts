@@ -68,25 +68,28 @@ export class FailSafeSidebarProvider implements vscode.WebviewViewProvider {
   <style>
     html, body { margin: 0; padding: 0; height: 100%; background: #071539; color: #f3f7ff; font-family: "Segoe UI", sans-serif; }
     .shell { display: grid; grid-template-rows: auto 1fr; height: 100%; }
-    .toolbar { display: flex; gap: 8px; padding: 8px; border-bottom: 1px solid rgba(95, 150, 255, 0.35); background: #0a1f4a; align-items: center; }
-    .btn { border: 1px solid #3568d8; color: #eaf1ff; background: #1f4ea8; padding: 6px 10px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 700; white-space: nowrap; }
+    .toolbar { display: flex; gap: 6px; padding: 6px; border-bottom: 1px solid rgba(95, 150, 255, 0.35); background: #0a1f4a; align-items: center; }
+    .btn { border: 1px solid #3568d8; color: #eaf1ff; background: #1f4ea8; padding: 5px 8px; border-radius: 8px; cursor: pointer; font-size: 11px; font-weight: 700; white-space: nowrap; line-height: 1.15; }
     .btn.secondary { background: #10357a; border-color: #2c5bb9; }
     .btn.init { margin-left: auto; background: #ffffff; color: #3d7dff; border-color: #ffffff; box-shadow: 0 0 8px rgba(0,0,0,0.25); }
     .btn.init:hover { background: #f0f4ff; box-shadow: 0 0 12px rgba(0,0,0,0.35); }
     .frame-wrap { position: relative; min-height: 0; }
     iframe { border: 0; width: 100%; height: 100%; display: block; background: #071539; }
+    @media (max-width: 340px) {
+      .toolbar { gap: 4px; padding: 5px; }
+      .btn { font-size: 10px; padding: 4px 6px; }
+    }
   </style>
 </head>
 <body>
   <div class="shell">
     <div class="toolbar">
-      <button class="btn" id="open-popout" type="button">Open Hub</button>
-      <button class="btn secondary" id="open-editor" type="button">Editor</button>
+      <button class="btn" id="open-popout" type="button">Command Center</button>
       <button class="btn secondary" id="reload" type="button">Reload</button>
       <button class="btn init" id="init-workspace" type="button" title="Initialize Workspace">Initialize</button>
     </div>
     <div class="frame-wrap">
-      <iframe title="FailSafe Sidebar" src="${compactUrl}"></iframe>
+      <iframe title="FailSafe Monitor" src="${compactUrl}"></iframe>
     </div>
   </div>
   <script nonce="${nonce}">
@@ -101,7 +104,6 @@ export class FailSafeSidebarProvider implements vscode.WebviewViewProvider {
     }
 
     document.getElementById('open-popout')?.addEventListener('click', () => vscode.postMessage({ command: 'openPopout' }));
-    document.getElementById('open-editor')?.addEventListener('click', () => vscode.postMessage({ command: 'openEditor' }));
     document.getElementById('reload')?.addEventListener('click', () => vscode.postMessage({ command: 'reload' }));
     
     initBtn?.addEventListener('click', () => {

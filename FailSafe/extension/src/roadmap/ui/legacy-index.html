@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FailSafe Operations Console</title>
+  <title>FailSafe Command Center</title>
   <link rel="icon" type="image/png" href="/failsafe-icon.png">
-  <link rel="stylesheet" href="legacy-roadmap.css">
+  <link rel="stylesheet" href="legacy-roadmap.css?v=12">
 </head>
 <body>
   <div id="app">
@@ -16,17 +16,11 @@
         <div class="brand-left">
           <img src="/failsafe-icon.png" alt="FailSafe" class="brand-icon">
           <div>
-            <h1>FailSafe Operations Console</h1>
-            <div class="brand-subtitle">Unified Governance Dashboard</div>
+            <h1>FAILSAFE</h1>
+            <div class="brand-subtitle">Command Center</div>
           </div>
         </div>
         <div class="header-controls">
-          <label class="profile-control" for="profile-select">Profile</label>
-          <select id="profile-select" aria-label="Experience profile">
-            <option value="guided">Guided</option>
-            <option value="standard" selected>Standard</option>
-            <option value="expert">Expert</option>
-          </select>
           <div id="resume-summary" class="resume-summary">Loading session...</div>
           <div id="connection-status" class="status-indicator" aria-live="polite">
             <span class="status-dot"></span>
@@ -43,91 +37,219 @@
         <button class="tab" data-route="reports" type="button">Reports</button>
         <button class="tab" data-route="settings" type="button">Settings</button>
       </nav>
+      <div class="status-strip" aria-live="polite">
+        <div class="status-strip-left">
+          <span class="status-pill status-pill-governance" id="status-governance-pill" tabindex="0">
+            <span class="status-pill-label">Governance Protocol</span>
+            <span id="status-governance">Baseline</span>
+            <span class="governance-hover-card" id="status-governance-card" role="tooltip">
+              <span class="governance-hover-row"><span>Governance Mode</span><strong id="status-governance-mode">Baseline</strong></span>
+              <span class="governance-hover-row"><span>Policy Profile</span><strong id="status-governance-profile">Production</strong></span>
+              <span class="governance-hover-row"><span>Protocol</span><strong id="status-governance-protocol">GP-01</strong></span>
+            </span>
+          </span>
+          <span class="status-pill status-pill-sentinel">
+            <span class="status-pill-label">Sentinel</span>
+            <span id="status-sentinel">Nominal</span>
+          </span>
+        </div>
+        <div class="status-strip-right">
+          <span><span class="status-dot-mini"></span><span id="status-latency">-- ms</span></span>
+          <span><span class="status-dot-mini good"></span><span id="status-load">--</span></span>
+          <span id="status-version">v3.0.1-RC</span>
+        </div>
+      </div>
     </header>
 
     <main id="main">
       <section id="global-error" class="error-banner hidden" aria-live="polite"></section>
 
-      <section id="panel-home" class="panel route-panel active-panel" data-route="home">
-        <h2>At a Glance</h2>
+      <section id="panel-home" class="panel route-panel active-panel overview-panel" data-route="home">
+        <div class="panel-headline">
+          <div class="command-badge">Command Center Active</div>
+          <h2>System Overview</h2>
+          <p class="panel-subline">Centralized monitoring and orchestration for autonomous intelligence workflows.</p>
+        </div>
         <div id="home-kpis" class="overview-cards"></div>
-        <section id="home-next-step" class="callout"></section>
-        <section class="split-grid">
-          <article class="card" id="home-operational"></article>
-          <article class="card" id="home-forensic" data-min-profile="expert"></article>
+        <section class="home-grid">
+          <div class="home-left">
+            <article class="card home-stream-card" id="home-operational"></article>
+            <div class="home-bottom-grid">
+              <article class="card home-manual-card">
+                <h3>Manual Ingest Control</h3>
+                <button class="hub-action-btn" type="button" data-route-jump="skills">Open Skills Intake</button>
+              </article>
+              <article class="card home-resource-card" id="home-resource"></article>
+            </div>
+          </div>
+          <aside class="home-right">
+            <article class="card home-node-card" id="home-forensic"></article>
+            <article class="card home-nextgen-card" id="home-nextgen"></article>
+          </aside>
         </section>
       </section>
 
-      <section id="panel-run" class="panel route-panel" data-route="run">
-        <h2>Run</h2>
-        <div id="hub-actions" class="hub-actions"></div>
-        <details open>
-          <summary>Workspace Health</summary>
-          <div id="workspace-health" class="details-body"></div>
-        </details>
-        <details open>
-          <summary>Active Sprint and Plan</summary>
-          <div id="sprint-info" class="details-body"></div>
-          <div id="roadmap-svg" class="roadmap-container"></div>
-          <div id="phase-grid" class="phase-grid"></div>
-          <div id="blockers" class="blockers-panel"></div>
-        </details>
+      <section id="panel-run" class="panel route-panel run-panel" data-route="run">
+        <div class="panel-headline">
+          <h2>Current Deployment</h2>
+          <p class="panel-subline">Execution telemetry and mission control for active intent operations.</p>
+        </div>
+        <div class="run-layout">
+          <div class="run-main">
+            <div id="sprint-info" class="run-card"></div>
+            <div class="run-card">
+              <h3>Mission Console</h3>
+              <div id="roadmap-svg" class="roadmap-container"></div>
+            </div>
+            <div class="run-card">
+              <h3>Deployment Phases</h3>
+              <div id="phase-grid" class="phase-grid"></div>
+            </div>
+            <div class="run-card">
+              <h3>Blockers</h3>
+              <div id="blockers" class="blockers-panel"></div>
+            </div>
+          </div>
+          <aside class="run-side">
+            <div id="hub-actions" class="hub-actions run-side-actions"></div>
+            <div id="action-feedback" class="action-feedback">No recent command actions.</div>
+            <div class="run-card">
+              <h3>Performance Telemetry</h3>
+              <div id="workspace-health" class="details-body"></div>
+            </div>
+          </aside>
+        </div>
       </section>
 
-      <section id="panel-skills" class="panel route-panel" data-route="skills">
-        <h2>Skills</h2>
-        <div id="skill-phase-label" class="skill-context-title"></div>
-        <div class="skills-layout">
-          <section class="skill-group">
-            <div class="skill-group-title">Recommended</div>
-            <div id="skill-recommended" class="skill-list"></div>
-          </section>
-          <section class="skill-group">
-            <div class="skill-group-title">All Relevant</div>
-            <div id="skill-all-relevant" class="skill-list"></div>
-          </section>
-          <section class="skill-group">
-            <div class="skill-group-title">All Installed</div>
-            <div id="skill-all-installed" class="skill-list"></div>
-          </section>
-          <section class="skill-group">
-            <div class="skill-group-title">Other Available</div>
-            <div id="skill-other" class="skill-list"></div>
-          </section>
+      <section id="panel-skills" class="panel route-panel skills-panel" data-route="skills">
+        <div class="panel-headline">
+          <h2>Intent Orchestration</h2>
+          <p class="panel-subline">System command interface for autonomous skill deployment.</p>
         </div>
 
-        <details open>
-          <summary>Intent Assistant</summary>
-          <div class="details-body">
+        <section class="intent-shell">
+          <label class="intent-label" for="intent-input">Intent Goal</label>
+          <textarea id="intent-input" class="intent-input" rows="4" placeholder="Define intent goals (e.g. audit security posture and optimize execution routing)..."></textarea>
+          <div class="intent-buffer-row">
             <div id="intent-context" class="intent-context"></div>
-            <label class="intent-label" for="intent-input">What do you want to do?</label>
-            <textarea id="intent-input" class="intent-input" rows="4" placeholder="Example: implement a checkpoint schema and verify chain integrity"></textarea>
-            <div class="intent-actions">
-              <button id="intent-generate" class="hub-action-btn primary" type="button">Draft Action Package</button>
-              <button id="intent-copy" class="hub-action-btn" type="button">Copy</button>
-            </div>
-            <pre id="intent-output" class="intent-output">Enter intent and generate a structured package.</pre>
           </div>
-        </details>
+          <div class="intent-actions intent-actions-right">
+            <button id="intent-generate" class="hub-action-btn primary" type="button">Generate Package</button>
+            <button id="intent-copy" class="hub-action-btn ghost" type="button">Copy Package</button>
+          </div>
+          <p class="intent-action-note">Generate Package creates a structured action package only. It does not execute a run.</p>
+          <pre id="intent-output" class="intent-output">Package preview appears here after generation.</pre>
+        </section>
+
+        <div class="skills-command-grid">
+          <div class="skills-library-shell">
+            <div class="skills-library-head">
+              <h3>Skill Library</h3>
+              <div class="skills-library-head-right">
+                <span class="skills-buffer-inline">Buffer 14.2%</span>
+                <span class="skills-library-badge"><span id="skills-active-count">0</span> Active Modules</span>
+              </div>
+            </div>
+            <div class="skills-toolbar">
+              <div class="ingest-head" style="display:none"></div>
+              <div class="ingest-branch">
+                <button id="skill-manual-ingest" class="hub-action-btn primary ingest-main" type="button" aria-haspopup="menu" aria-expanded="false">Manual Ingest</button>
+                <div id="skill-ingest-menu" class="skill-ingest-menu" role="menu" aria-label="Manual ingest options" hidden>
+                  <button id="skill-manual-file" class="hub-action-btn ingest-option" type="button" role="menuitem">Ingest Single File</button>
+                  <button id="skill-manual-folder" class="hub-action-btn ingest-option" type="button" role="menuitem">Ingest Directory</button>
+                </div>
+              </div>
+              <button id="skill-auto-ingest" class="hub-action-btn auto-workspace" type="button">Auto Workspace</button>
+              <div id="skill-phase-label" class="skill-context-title"></div>
+              <div id="skill-ingest-status" class="skill-ingest-status">Only admitted local skills are recognized.</div>
+              <input id="skill-manual-file-input" type="file" accept=".md,.yml,.yaml,.txt" class="visually-hidden">
+              <input id="skill-manual-folder-input" type="file" webkitdirectory directory multiple class="visually-hidden">
+            </div>
+            <div class="skill-tabs" role="tablist" aria-label="Skill categories">
+              <button class="skill-tab active" type="button" role="tab" aria-selected="true" data-skill-tab="recommended">Recommended</button>
+              <button class="skill-tab" type="button" role="tab" aria-selected="false" data-skill-tab="allRelevant">All Relevant</button>
+              <button class="skill-tab" type="button" role="tab" aria-selected="false" data-skill-tab="allInstalled">All Installed</button>
+              <button class="skill-tab" type="button" role="tab" aria-selected="false" data-skill-tab="otherAvailable">Other Available</button>
+            </div>
+
+            <div class="skills-layout">
+              <section class="skill-group skill-tab-panel active" data-skill-panel="recommended">
+                <div class="skill-carousel-controls">
+                  <button class="carousel-btn" type="button" data-carousel-target="skill-recommended" data-carousel-dir="prev" aria-label="Previous recommended skills">&lt;</button>
+                  <button class="carousel-btn" type="button" data-carousel-target="skill-recommended" data-carousel-dir="next" aria-label="Next recommended skills">&gt;</button>
+                </div>
+                <div id="skill-recommended" class="skill-list"></div>
+              </section>
+              <section class="skill-group skill-tab-panel" data-skill-panel="allRelevant">
+                <div class="skill-carousel-controls">
+                  <button class="carousel-btn" type="button" data-carousel-target="skill-all-relevant" data-carousel-dir="prev" aria-label="Previous relevant skills">&lt;</button>
+                  <button class="carousel-btn" type="button" data-carousel-target="skill-all-relevant" data-carousel-dir="next" aria-label="Next relevant skills">&gt;</button>
+                </div>
+                <div id="skill-all-relevant" class="skill-list"></div>
+              </section>
+              <section class="skill-group skill-tab-panel" data-skill-panel="allInstalled">
+                <div class="skill-carousel-controls">
+                  <button class="carousel-btn" type="button" data-carousel-target="skill-all-installed" data-carousel-dir="prev" aria-label="Previous installed skills">&lt;</button>
+                  <button class="carousel-btn" type="button" data-carousel-target="skill-all-installed" data-carousel-dir="next" aria-label="Next installed skills">&gt;</button>
+                </div>
+                <div id="skill-all-installed" class="skill-list"></div>
+              </section>
+              <section class="skill-group skill-tab-panel" data-skill-panel="otherAvailable">
+                <div class="skill-carousel-controls">
+                  <button class="carousel-btn" type="button" data-carousel-target="skill-other" data-carousel-dir="prev" aria-label="Previous other skills">&lt;</button>
+                  <button class="carousel-btn" type="button" data-carousel-target="skill-other" data-carousel-dir="next" aria-label="Next other skills">&gt;</button>
+                </div>
+                <div id="skill-other" class="skill-list"></div>
+              </section>
+            </div>
+          </div>
+        </div>
       </section>
 
-      <section id="panel-governance" class="panel route-panel" data-route="governance">
-        <h2>Governance</h2>
-        <section class="split-grid">
-          <article class="card"><h3>Sentinel Status</h3><div id="sentinel-status"></div></article>
-          <article class="card"><h3>L3 Queue</h3><div id="l3-queue"></div></article>
-          <article class="card"><h3>Trust Summary</h3><div id="trust-summary"></div></article>
-          <article class="card"><h3>Sentinel Alerts</h3><div id="sentinel-alerts"></div></article>
+      <section id="panel-governance" class="panel route-panel governance-panel governance-shell" data-route="governance">
+        <div class="panel-headline">
+          <h2>System Governance</h2>
+          <p class="panel-subline">Unified oversight of protocol health and policy enforcement signals.</p>
+        </div>
+        <section class="governance-layout">
+          <div class="governance-left-col">
+            <article class="card governance-card"><h3>Sentinel Status</h3><div id="sentinel-status"></div></article>
+            <article class="card governance-card"><h3>Active Policies</h3><div id="trust-summary"></div></article>
+          </div>
+          <div class="governance-right-col">
+            <article class="card governance-card queue-card">
+              <div class="governance-card-head">
+                <h3>L3 Verification Queue</h3>
+                <button class="hub-action-btn primary small" type="button">Process All</button>
+              </div>
+              <div id="l3-queue"></div>
+            </article>
+            <article class="card governance-card audit-card">
+              <div class="governance-card-head">
+                <h3>Protocol Audit Logs</h3>
+                <span class="governance-stream-tag">RT_STREAM: STABLE</span>
+              </div>
+              <div id="sentinel-alerts"></div>
+            </article>
+          </div>
         </section>
       </section>
 
-      <section id="panel-activity" class="panel route-panel" data-route="activity">
-        <h2>Activity</h2>
-        <button id="focus-toggle" class="focus-toggle" type="button" aria-pressed="false">Focus Mode: Off</button>
+      <section id="panel-activity" class="panel route-panel activity-panel activity-shell" data-route="activity">
+        <div class="activity-head">
+          <div>
+            <h2>Activity Log</h2>
+            <p class="panel-subline">System-wide event telemetry and execution auditing.</p>
+          </div>
+          <div class="activity-controls">
+            <button id="focus-toggle" class="focus-toggle" type="button" aria-pressed="false">Focus Mode: Off</button>
+            <button id="activity-filter" class="focus-toggle" type="button" aria-pressed="false" disabled>Filter Events</button>
+          </div>
+        </div>
         <div id="event-stream" class="event-stream"></div>
       </section>
 
-      <section id="panel-reports" class="panel route-panel" data-route="reports" data-min-profile="standard">
+      <section id="panel-reports" class="panel route-panel reports-shell" data-route="reports" data-min-profile="standard">
         <h2>Reports</h2>
         <section class="split-grid">
           <article class="card" id="reports-summary"></article>
@@ -136,20 +258,44 @@
       </section>
 
       <section id="panel-settings" class="panel route-panel" data-route="settings">
-        <h2>Settings</h2>
-        <div class="metric-list">
-          <div class="metric-row"><span>Theme</span><strong id="setting-theme">Auto</strong></div>
-          <div class="metric-row"><span>Profile</span><strong id="setting-profile">Standard</strong></div>
-          <div class="metric-row"><span>Connection</span><strong id="setting-connection">Connecting...</strong></div>
+        <div class="panel-headline">
+          <h2>Control Surface</h2>
+          <p class="panel-subline">Tune runtime behavior, visuals, and operational preferences.</p>
+        </div>
+        <div class="settings-grid">
+          <section class="settings-card">
+            <h3>Visual Theme</h3>
+            <div class="settings-control-row">
+              <label class="settings-label" for="theme-select">Theme</label>
+              <select id="theme-select" aria-label="Theme selection">
+                <option value="auto">Auto</option>
+                <option value="dark">Dark</option>
+                <option value="light">Light</option>
+                <option value="high-contrast">High Contrast</option>
+                <option value="antigravity">Antigravity</option>
+              </select>
+            </div>
+            <div class="theme-quick-picks">
+              <button class="theme-chip" type="button" data-theme-choice="auto">Auto</button>
+              <button class="theme-chip" type="button" data-theme-choice="dark">Dark</button>
+              <button class="theme-chip" type="button" data-theme-choice="light">Light</button>
+              <button class="theme-chip" type="button" data-theme-choice="high-contrast">High Contrast</button>
+              <button class="theme-chip" type="button" data-theme-choice="antigravity">Antigravity</button>
+            </div>
+          </section>
+
+
         </div>
       </section>
     </main>
 
     <footer id="footer">
-      <span>FailSafe is an open source project by MythologIQ Labs, LLC, provided "as is" without warranty of any kind.</span>
+      <span>FailSafe is an open source project by <a href="https://www.MythologIQ.studio" target="_blank" rel="noopener noreferrer">MythologIQ Labs, LLC</a>, provided "as is" without warranty of any kind.</span>
     </footer>
   </div>
 
-  <script type="module" src="legacy/main.js"></script>
+  <script type="module" src="legacy/main.js?v=4"></script>
 </body>
 </html>
+
+

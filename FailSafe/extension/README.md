@@ -16,16 +16,21 @@ AI coding assistants can generate risky code without strong guarantees. Teams ne
 
 FailSafe adds governance and visibility at the editor boundary:
 
+FailSafe separates system awareness from system control.
+
+The Monitor provides real-time visibility into system health, governance posture, and operational risk. It is designed for continuous, low-effort awareness.
+
+The Command Center is the primary control surface where teams plan, execute, and govern AI workflows. All configuration, orchestration, and audits originate here.
+
+This separation reduces cognitive load and mirrors real-world operations environments: observe first, act deliberately.
+
 - Save-time intent gate that can block writes outside an active Intent
 - Sentinel daemon for file-change audits (heuristic, LLM-assisted, and hybrid modes)
 - SOA ledger with a built-in viewer for audit history
-- Two primary UI screens: `FailSafe Sidebar` and `FailSafe Operations Hub`
 - MCP server for external tools to trigger audits and write ledger entries
 
 ## Highlights
 
-- FailSafe Sidebar for compact governance at-a-glance context
-- FailSafe Operations Hub for extended workflow and planning operations
 - File watcher and manual audit command
 - SOA ledger viewer and L3 approval queue
 - Feedback capture and export
@@ -35,7 +40,7 @@ FailSafe adds governance and visibility at the editor boundary:
 
 1. Install from the VS Code Marketplace or Open VSX.
 2. Open a workspace.
-3. Run `FailSafe: Open Operations Hub (Browser Popout)` or press `Ctrl+Alt+F`.
+3. Run `FailSafe: Open Command Center (Browser Popout)` or press `Ctrl+Alt+F`.
 4. Run `FailSafe: Audit Current File` to generate a verdict.
 
 ## Safety Alert
@@ -66,19 +71,29 @@ FailSafe evaluates save operations against the active Intent and can block write
 
 ### 4. UI Screens
 
-- FailSafe Sidebar (compact view)
-- FailSafe Operations Hub (extended popout/editor view)
+- FailSafe Monitor (compact view)
+- FailSafe Command Center (extended popout/editor view)
 - Skills view now includes `Recommended`, `All Relevant`, `All Installed`, and `Other Available` to keep full skill visibility.
 
-### Sidebar UI (v3.5.2)
+### FailSafe Monitor UI (v3.5.2)
 
-![FailSafe Sidebar UI v3.5.2](media/sidebar-ui-3.5.2.png)
+![FailSafe Monitor UI v3.5.2](media/sidebar-ui-3.5.2.png)
 
-### 5. Operations Hub UX (UI-02 + Extended Popout)
+### 5. Command Center UX (UI-02 + Extended Popout)
 
-- Compact sidebar webpanel (`UI-02`) provides phase status, prioritized feature counters, Sentinel state, and workspace health at-a-glance.
-- `Open FailSafe Operations Hub` opens the extended popout console for deeper workflow views (Home, Run, Skills, Governance, Activity, Reports, Settings).
+- Compact `FailSafe Monitor` webpanel (`UI-02`) provides phase status, prioritized feature counters, Sentinel state, and workspace health at-a-glance.
+- `Open FailSafe Command Center` opens the extended popout console for deeper workflow views (Home, Run, Skills, Governance, Activity, Reports, Settings).
 - Branding is consistent across shell surfaces, including FailSafe icon usage in header and favicon contexts.
+
+### UI Positioning Model
+
+- Monitor and Command Center roles are defined in the Solution summary above; this model maps those roles to FailSafe architecture.
+- Narrative alignment:
+  - `Genesis` -> Build
+  - `QoreLogic` -> Govern
+  - `Sentinel` -> Watch
+  - `Command Center` -> Build + Govern
+  - `Monitor` -> Watch
 
 ### 6. Skill Governance and Provenance
 
@@ -104,9 +119,9 @@ Supported via internal sync flows when enabled by workspace governance configura
 
 | Command                              | Description                 |
 | ------------------------------------ | --------------------------- |
-| FailSafe: Open Operations Hub (Browser Popout) | Main governance popout |
-| FailSafe: Open Operations Hub (Browser) | Browser launch alias |
-| FailSafe: Open Operations Hub (Editor Tab) | Compact hub in editor |
+| FailSafe: Open Command Center (Browser Popout) | Main governance popout |
+| FailSafe: Open Command Center (Browser) | Browser launch alias |
+| FailSafe: Open Command Center (Editor Tab) | Compact monitor in editor |
 | FailSafe: Audit Current File         | Manual file audit           |
 | FailSafe: Secure Workspace           | Apply workspace hardening baseline |
 | FailSafe: Panic Stop                 | Stop active monitoring and guard actions |

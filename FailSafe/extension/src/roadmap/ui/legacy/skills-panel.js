@@ -4,6 +4,83 @@ export class SkillsPanel {
   constructor(options) {
     this.el = options.elements;
     this.onSelectSkill = options.onSelectSkill;
+    this.activeTab = 'recommended';
+    this.favoriteKey = 'failsafe.skillFavorites';
+    this.favorites = this.loadFavorites();
+    this.lastState = null;
+    this.bindTabEvents();
+    this.bindCarouselControls();
+  }
+
+  bindTabEvents() {
+    (this.el.tabs || []).forEach((button) => {
+      button.addEventListener('click', () => this.setActiveTab(button.getAttribute('data-skill-tab') || 'recommended'));
+    });
+    this.setActiveTab('recommended');
+  }
+
+  setActiveTab(tab) {
+    this.activeTab = tab;
+    (this.el.tabs || []).forEach((button) => {
+      const isActive = button.getAttribute('data-skill-tab') === tab;
+      button.classList.toggle('active', isActive);
+      button.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
+    (this.el.panels || []).forEach((panel) => {
+      panel.classList.toggle('active', panel.getAttribute('data-skill-panel') === tab);
+    });
+  }
+
+  bindCarouselControls() {
+    document.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-carousel-target][data-carousel-dir]');
+      if (!button) return;
+      const targetId = button.getAttribute('data-carousel-target');
+      const dir = button.getAttribute('data-carousel-dir');
+      if (!targetId || !dir) return;
+      const target = document.getElementById(targetId);
+      if (!target) return;
+      const distance = Math.max(260, Math.round(target.clientWidth * 0.7));
+      target.scrollBy({ left: dir === 'prev' ? -distance : distance, behavior: 'smooth' });
+    });
+  }
+
+  loadFavorites() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(this.favoriteKey) || '[]');
+      if (Array.isArray(parsed)) {
+        return new Set(parsed.map((item) => String(item)));
+      }
+    } catch {}
+    return new Set();
+  }
+
+  persistFavorites() {
+    localStorage.setItem(this.favoriteKey, JSON.stringify(Array.from(this.favorites)));
+  }
+
+  isFavorite(skillKey) {
+    return this.favorites.has(String(skillKey || ''));
+  }
+
+  toggleFavorite(skillKey) {
+    const key = String(skillKey || '');
+    if (!key) return;
+    if (this.favorites.has(key)) this.favorites.delete(key);
+    else this.favorites.add(key);
+    this.persistFavorites();
+  }
+
+  prioritizeFavorites(list) {
+    return list
+      .slice()
+      .sort((a, b) => {
+        const aFav = this.isFavorite(a.key) ? 1 : 0;
+        const bFav = this.isFavorite(b.key) ? 1 : 0;
+        if (aFav !== bFav) return bFav - aFav;
+        if (Number(a.score || 0) !== Number(b.score || 0)) return Number(b.score || 0) - Number(a.score || 0);
+        return String(a.label || '').localeCompare(String(b.label || ''));
+      });
   }
 
   inferPhase(activePlan) {
@@ -67,22 +144,27 @@ export class SkillsPanel {
         <div class="skill-main">
           <div class="skill-header">
             <div class="skill-title-row">
-              <span class="skill-name" title="${escapeHtml(skill.label)}">${escapeHtml(skill.label)}</span>
+              <span class="skill-title-main">
+                <button class="skill-fav-btn ${this.isFavorite(skill.key) ? 'active' : ''}" type="button" data-favorite-key="${escapeHtml(skill.key)}" aria-label="Toggle favorite for ${escapeHtml(skill.displayName || skill.label)}">${this.isFavorite(skill.key) ? '★' : '☆'}</button>
+                <span class="skill-name" title="${escapeHtml(skill.displayName || skill.label)}">${escapeHtml(skill.displayName || skill.label)}</span>
+              </span>
               <span class="skill-score-badge" title="Relevance Score">${escapeHtml(skill.score)}</span>
             </div>
+            <span class="skill-id">${escapeHtml(skill.id || skill.key)}</span>
             <div class="skill-source-row">
               <span class="skill-source-tag">${escapeHtml(sourceLabel)}</span>
             </div>
             <div class="skill-desc" title="${escapeHtml(skill.desc)}">${escapeHtml(skill.desc)}</div>
           </div>
           <div class="skill-actions">
-            <button class="hub-action-btn primary small" type="button" data-skill-key="${escapeHtml(skill.key)}" aria-label="Use ${escapeHtml(skill.label)}">Use</button>
+            <button class="hub-action-btn primary small" type="button" data-skill-key="${escapeHtml(skill.key)}" aria-label="Use ${escapeHtml(skill.displayName || skill.label)}">Use</button>
           </div>
         </div>
         <details class="skill-details">
           <summary>Details</summary>
           <div class="skill-meta-grid">
-            <div class="meta-item"><span class="meta-label">ID</span><span class="meta-value">${escapeHtml(skill.key)}</span></div>
+            <div class="meta-item"><span class="meta-label">ID</span><span class="meta-value">${escapeHtml(skill.id || skill.key)}</span></div>
+            <div class="meta-item"><span class="meta-label">Display Name</span><span class="meta-value">${escapeHtml(skill.displayName || skill.label)}</span></div>
             <div class="meta-item"><span class="meta-label">Creator</span><span class="meta-value">${escapeHtml(skill.creator)}</span></div>
             <div class="meta-item"><span class="meta-label">Tier</span><span class="meta-value">${escapeHtml(skill.trustTier)}</span></div>
             <div class="meta-item"><span class="meta-label">Admission</span><span class="meta-value">${escapeHtml(skill.admissionState || 'conditional')}</span></div>
@@ -128,6 +210,7 @@ export class SkillsPanel {
   }
 
   render(state) {
+    this.lastState = state;
     const phase = this.inferPhase(state.hub.activePlan);
     const skills = state.skills || [];
     const grouped = state.skillRelevance && state.skillRelevance.phase === phase.key
@@ -141,21 +224,35 @@ export class SkillsPanel {
         }
       : this.groupSkills(skills, phase.key);
 
+    const prioritized = {
+      recommended: this.prioritizeFavorites(grouped.recommended || []),
+      allRelevant: this.prioritizeFavorites(grouped.allRelevant || []),
+      allInstalled: this.prioritizeFavorites(grouped.allInstalled || []),
+      otherAvailable: this.prioritizeFavorites(grouped.otherAvailable || []),
+    };
+
     this.el.phaseLabel.textContent = `Detected phase: ${phase.title} (${phase.status})`;
-    this.el.recommended.innerHTML = grouped.recommended.length > 0
-      ? grouped.recommended.map((skill) => this.renderSkillCard(skill, 'recommended')).join('')
+    this.el.recommended.innerHTML = prioritized.recommended.length > 0
+      ? prioritized.recommended.map((skill) => this.renderSkillCard(skill, 'recommended')).join('')
       : '<span class="empty-state">No recommendations</span>';
-    this.el.allRelevant.innerHTML = grouped.allRelevant.length > 0
-      ? grouped.allRelevant.map((skill) => this.renderSkillCard(skill, 'relevant')).join('')
+    this.el.allRelevant.innerHTML = prioritized.allRelevant.length > 0
+      ? prioritized.allRelevant.map((skill) => this.renderSkillCard(skill, 'relevant')).join('')
       : '<span class="empty-state">No relevant skills</span>';
-    this.el.allInstalled.innerHTML = grouped.allInstalled.length > 0
-      ? grouped.allInstalled.map((skill) => this.renderSkillCard(skill, 'installed')).join('')
+    this.el.allInstalled.innerHTML = prioritized.allInstalled.length > 0
+      ? prioritized.allInstalled.map((skill) => this.renderSkillCard(skill, 'installed')).join('')
       : '<span class="empty-state">No installed skills</span>';
-    this.el.other.innerHTML = grouped.otherAvailable.length > 0
-      ? grouped.otherAvailable.map((skill) => this.renderSkillCard(skill, 'other')).join('')
+    this.el.other.innerHTML = prioritized.otherAvailable.length > 0
+      ? prioritized.otherAvailable.map((skill) => this.renderSkillCard(skill, 'other')).join('')
       : '<span class="empty-state">No additional skills</span>';
+    this.setActiveTab(this.activeTab || 'recommended');
 
     const clickHandler = (event) => {
+      const favoriteButton = event.target.closest('[data-favorite-key]');
+      if (favoriteButton) {
+        this.toggleFavorite(favoriteButton.getAttribute('data-favorite-key'));
+        if (this.lastState) this.render(this.lastState);
+        return;
+      }
       const button = event.target.closest('[data-skill-key]');
       if (!button) return;
       this.onSelectSkill(button.getAttribute('data-skill-key'), phase);
@@ -166,6 +263,6 @@ export class SkillsPanel {
     this.el.allInstalled.onclick = clickHandler;
     this.el.other.onclick = clickHandler;
 
-    return { phase, grouped };
+    return { phase, grouped: prioritized };
   }
 }

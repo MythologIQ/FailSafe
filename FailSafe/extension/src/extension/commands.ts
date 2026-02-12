@@ -63,7 +63,7 @@ async function openRoadmapExternal(view?: string): Promise<void> {
   const ready = await waitForRoadmapServerReady();
   if (!ready) {
     vscode.window.showWarningMessage(
-      "FailSafe Operations Hub is starting. Opening browser now; refresh in a moment if needed.",
+      "FailSafe Command Center is starting. Opening browser now; refresh in a moment if needed.",
     );
   }
   try {
@@ -73,7 +73,7 @@ async function openRoadmapExternal(view?: string): Promise<void> {
     }
   } catch {
     vscode.window.showErrorMessage(
-      "Could not open FailSafe Operations Hub in browser. Check your system browser configuration.",
+      "Could not open FailSafe Command Center in browser. Check your system browser configuration.",
     );
   }
 }
@@ -249,7 +249,7 @@ export function registerCommands(
       return vscode.commands.executeCommand("failsafe.openPlannerHub");
     }),
   );
-  // Explicit in-editor tab variant of the Operations Hub.
+  // Explicit in-editor tab variant of the Command Center.
   context.subscriptions.push(
     vscode.commands.registerCommand("failsafe.openPlannerHubEditor", () => {
       return openRoadmapCompactEditor();

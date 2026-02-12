@@ -57,6 +57,12 @@ export class UiStateStore {
   }
 
   emit() {
-    for (const listener of this.listeners) listener(this.state);
+    for (const listener of this.listeners) {
+      try {
+        listener(this.state);
+      } catch (err) {
+        console.error('[UiStateStore] listener error:', err);
+      }
+    }
   }
 }

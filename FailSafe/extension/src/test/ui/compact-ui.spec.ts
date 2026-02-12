@@ -36,12 +36,19 @@ test('compact webpanel renders without in-panel hub button', async ({ page }) =>
 
   try {
     await page.goto(`${base}/index.html?theme=dark`);
-    await expect(page.locator('.brand-title', { hasText: 'FailSafe Operations Hub' })).toBeVisible();
-    await expect(page.locator('.brand-subtitle', { hasText: 'Unified Governance Dashboard' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Open FailSafe Operations Hub' })).toHaveCount(0);
+    await expect(page.locator('.brand-title', { hasText: 'FailSafe Monitor' })).toBeVisible();
+    await expect(page.locator('.brand-title')).toHaveAttribute('data-tooltip', 'Real-time governance monitoring and system health');
+    await expect(page.locator('.brand-subtitle')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Open FailSafe Command Center' })).toHaveCount(0);
     await expect(page.locator('#recent-line')).toBeVisible();
     await expect(page.getByText('FailSafe is an open source project by MythologIQ Labs, LLC')).toBeVisible();
   } finally {
+    if (typeof (server as { closeAllConnections?: () => void }).closeAllConnections === 'function') {
+      (server as { closeAllConnections: () => void }).closeAllConnections();
+    }
+    if (typeof (server as { closeIdleConnections?: () => void }).closeIdleConnections === 'function') {
+      (server as { closeIdleConnections: () => void }).closeIdleConnections();
+    }
     await new Promise<void>((resolve, reject) => {
       server.close((err) => (err ? reject(err) : resolve()));
     });

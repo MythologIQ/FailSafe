@@ -20,11 +20,15 @@
       queueValue: document.getElementById('queue-value'),
       sentinelAlert: document.getElementById('sentinel-alert'),
       healthBlockers: document.getElementById('health-blockers'),
+      blockersGraphic: document.getElementById('blockers-graphic'),
       blockerBar: document.getElementById('blocker-bar'),
       bucketFill: document.getElementById('bucket-fill'),
+      bucketShell: document.getElementById('bucket-shell'),
       bucketText: document.getElementById('bucket-text'),
+      gaugeWrap: document.getElementById('gauge-wrap'),
       gaugeValue: document.getElementById('gauge-value'),
       errorBudget: document.getElementById('error-budget'),
+      trendSlider: document.getElementById('trend-slider'),
       trendFill: document.getElementById('trend-fill'),
       trendThumb: document.getElementById('trend-thumb'),
       policyTrend: document.getElementById('policy-trend'),
@@ -152,8 +156,8 @@
     const completedPhases = phases.filter((phase) => phase.status === 'completed');
     const recentlyCompleted = completedMilestones.length > 0 ? completedMilestones.length : completedPhases.length;
     const recentlyCompletedFeatures = completedMilestones.length > 0
-      ? completedMilestones.slice(0, 2).map((milestone) => milestone.title)
-      : completedPhases.slice(-2).reverse().map((phase) => phase.title);
+      ? completedMilestones.slice(0, 3).map((milestone) => milestone.title)
+      : completedPhases.slice(-3).reverse().map((phase) => phase.title);
 
     return {
       recentlyCompleted,
@@ -161,8 +165,8 @@
       wishlist: milestones.filter((milestone) => !milestone.completedAt && !milestone.targetDate).length,
       critical: blockers.filter((blocker) => blocker.severity === 'hard').length + risks.filter((risk) => risk.level === 'danger').length,
       line: recentlyCompletedFeatures.length > 0
-        ? `Recently completed: ${recentlyCompletedFeatures.join(' | ')}`
-        : 'Recently completed: none yet'
+        ? recentlyCompletedFeatures.join('\n')
+        : 'None yet'
     };
   }
 
@@ -180,7 +184,7 @@
   }
 
   renderPhase(phaseInfo) {
-    this.elements.phaseTitle.textContent = `Current Phase: ${phaseInfo.title.toUpperCase()}`;
+    this.elements.phaseTitle.textContent = phaseInfo.title.toUpperCase();
 
     const labels = ['Plan', 'Audit', 'Implement', 'Substantiate'];
     const rowOne = labels.map((label, idx) => {
@@ -253,9 +257,11 @@
 
     this.elements.healthBlockers.textContent = String(hardBlockers);
     this.elements.blockerBar.style.opacity = hardBlockers > 0 ? '1' : '0.5';
+    this.elements.blockersGraphic.title = `Critical blockers detected: ${hardBlockers}.`;
 
     this.elements.bucketFill.style.height = `${unverifiedPercent}%`;
     this.elements.bucketText.textContent = `${unverifiedPercent}% Full`;
+    this.elements.bucketShell.title = `Unverified changes estimate: ${unverified} item(s), ${unverifiedPercent}% of buffer.`;
 
     const circumference = Math.PI * 40;
     const offset = circumference - (errorBudgetBurn / 100) * circumference;
@@ -263,12 +269,14 @@
     this.elements.gaugeValue.style.strokeDashoffset = `${offset}`;
     this.elements.gaugeValue.style.stroke = this.metricColor(errorBudgetBurn);
     this.elements.errorBudget.textContent = `${errorBudgetBurn}%`;
+    this.elements.gaugeWrap.title = `Error budget burn: ${errorBudgetBurn}%. Derived from blockers, queue depth, and risk verdicts.`;
 
     this.elements.trendFill.style.width = `${trend}%`;
     this.elements.trendFill.style.background = this.metricColor(trend);
     this.elements.trendThumb.style.left = `${trend}%`;
     this.elements.trendThumb.style.background = this.metricColor(trend);
     this.elements.policyTrend.textContent = `${trend}%`;
+    this.elements.trendSlider.title = `Policy trend index: ${trend}%. Lower is healthier.`;
   }
 
   buildPolicyTrend(verdicts) {

@@ -11,6 +11,9 @@ param(
   [string[]]$DeclaredPermissions = @(),
   [Parameter(Mandatory = $false)]
   [string[]]$IntendedWorkflows = @()
+  ,
+  [Parameter(Mandatory = $false)]
+  [string]$RegistryPath = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -109,7 +112,11 @@ $skillRelPath = Get-RelativePath -Base $repoRoot -Path $skillAbsPath
 
 $admissionsDir = Join-Path $repoRoot ".failsafe\skill-admissions"
 $registryDir = Join-Path $repoRoot ".failsafe\skill-registry"
-$registryPath = Join-Path $registryDir "registry.json"
+if ([string]::IsNullOrWhiteSpace($RegistryPath)) {
+  $registryPath = Join-Path $registryDir "personal-manifest.json"
+} else {
+  $registryPath = $RegistryPath
+}
 $templatePath = Join-Path $repoRoot "docs\Planning\templates\reliability\skill-admission-record.template.md"
 
 if (-not (Test-Path $skillAbsPath)) {
@@ -119,6 +126,7 @@ if (-not (Test-Path $skillAbsPath)) {
 
 New-Item -ItemType Directory -Path $admissionsDir -Force | Out-Null
 New-Item -ItemType Directory -Path $registryDir -Force | Out-Null
+New-Item -ItemType Directory -Path (Split-Path -Parent $registryPath) -Force | Out-Null
 
 $content = Get-Content $skillAbsPath -Raw
 $lines = $content -split "`r?`n"
@@ -279,7 +287,8 @@ $record = $record.Replace("| Static Compliance | [PASS/FAIL] | [notes] |", "| St
 $record = $record.Replace("| Governance Fit | [PASS/FAIL] | [risk-tier + compatibility] |", "| Governance Fit | $(if ($stageGovernancePass) { 'PASS' } else { 'FAIL' }) | $governanceNotes |")
 $record = $record.Replace("| Sandbox Dry-Run | [PASS/FAIL] | [notes] |", "| Sandbox Dry-Run | $(if ($dryRunPass) { 'PASS' } else { 'FAIL' }) | $dryRunNotes |")
 $record = $record.Replace("| Trust Decision | [Verified/Conditional/Quarantined] | [rationale] |", "| Trust Decision | $trustTier | Deterministic stage outcomes |")
-$record = $record.Replace("| Registry Write | [PASS/FAIL] | [registry-path] |", "| Registry Write | PASS | .failsafe\\skill-registry\\registry.json |")
+$registryRelPath = Get-RelativePath -Base $repoRoot -Path $registryPath
+$record = $record.Replace("| Registry Write | [PASS/FAIL] | [registry-path] |", "| Registry Write | PASS | $registryRelPath |")
 $record = $record.Replace("- Required metadata present: [PASS/FAIL]", "- Required metadata present: $(if ($requiredMetadataPresent) { 'PASS' } else { 'FAIL' })")
 $record = $record.Replace("- Required sections present: [PASS/FAIL]", "- Required sections present: $(if ($requiredSectionsPresent) { 'PASS' } else { 'FAIL' })")
 $record = $record.Replace("- Prohibited patterns found: [PASS/FAIL]", "- Prohibited patterns found: $(if ($prohibitedPatternFree) { 'PASS' } else { 'FAIL' })")
@@ -325,7 +334,7 @@ Write-Registry -RegistryPath $registryPath -Entry $entry
 Write-Host "[OK] Skill admission complete: $skillRelPath" -ForegroundColor Green
 Write-Host ("[OK] Trust tier: " + $trustTier + " | Runtime: " + $runtimeEligibility) -ForegroundColor Green
 Write-Host ("[OK] Record: " + $recordRelPath) -ForegroundColor Green
-Write-Host ("[OK] Registry: .failsafe\skill-registry\registry.json") -ForegroundColor Green
+Write-Host ("[OK] Registry: " + $registryRelPath) -ForegroundColor Green
 
 if ($trustTier -eq "Quarantined") {
   exit 2

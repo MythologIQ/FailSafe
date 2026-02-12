@@ -7,6 +7,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import * as crypto from 'crypto';
+import { spawnSync } from 'child_process';
 import express, { Request, Response } from 'express';
 import { Server as HttpServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
@@ -19,6 +20,9 @@ import { SentinelVerdict } from '../shared/types';
 
 const PORT = 9376;
 type InstalledSkill = {
+  id: string;
+  displayName: string;
+  localName: string;
   key: string;
   label: string;
   desc: string;
@@ -63,6 +67,23 @@ type SkillRoot = {
   sourceType: string;
   sourcePriority: number;
   admissionState: string;
+};
+
+type SkillRegistryEntry = {
+  id?: string;
+  timestamp?: string;
+  skillName?: string;
+  skillPath?: string;
+  source?: string;
+  owner?: string;
+  versionPin?: string;
+  declaredVersion?: string;
+  declaredPermissions?: string[];
+  intendedWorkflows?: string[];
+  compatibilityMap?: string[];
+  riskTier?: string;
+  trustTier?: string;
+  runtimeEligibility?: string;
 };
 
 export class RoadmapServer {
@@ -133,7 +154,7 @@ export class RoadmapServer {
   }
 
   private setupRoutes(): void {
-    this.app.use(express.json());
+    this.app.use(express.json({ limit: '12mb' }));
 
     // Serve static UI assets for the Operations Hub.
     // Important: disable implicit index serving so route mode selection controls `/`.
@@ -189,6 +210,28 @@ export class RoadmapServer {
     this.app.get('/api/skills', (_req: Request, res: Response) => {
       const skills = this.getInstalledSkills();
       res.json({ skills });
+    });
+
+    // API: auto-ingest skills by scanning known workspace-local roots only.
+    this.app.post('/api/skills/ingest/auto', (_req: Request, res: Response) => {
+      try {
+        const summary = this.autoIngestWorkspaceSkills();
+        res.json(summary);
+      } catch (error) {
+        res.status(500).json({ ok: false, error: String(error) });
+      }
+    });
+
+    // API: manual ingest accepts selected file/folder payload from UI.
+    this.app.post('/api/skills/ingest/manual', (req: Request, res: Response) => {
+      try {
+        const mode = String(req.body?.mode || 'file').toLowerCase() === 'folder' ? 'folder' : 'file';
+        const items = Array.isArray(req.body?.items) ? req.body.items : [];
+        const summary = this.manualIngestSkillPayload(items, mode);
+        res.json(summary);
+      } catch (error) {
+        res.status(400).json({ ok: false, error: String(error) });
+      }
     });
 
     // API: rank installed skills for a phase with explainability payload.
@@ -509,6 +552,27 @@ export class RoadmapServer {
       { CBT: 0, KBT: 0, IBT: 0 } as { CBT: number; KBT: number; IBT: number },
     );
 
+    const nodeStatus = [
+      {
+        id: 'workspace-core',
+        label: 'Workspace Core',
+        state: sentinelStatus.running ? 'nominal' : 'paused',
+        signal: `${sentinelStatus.filesWatched || 0} files watched`,
+      },
+      {
+        id: 'verification-queue',
+        label: 'Verification Queue',
+        state: (l3Queue.length || sentinelStatus.queueDepth > 0) ? 'reviewing' : 'nominal',
+        signal: `${l3Queue.length || 0} pending approvals`,
+      },
+      {
+        id: 'trust-engine',
+        label: 'Trust Engine',
+        state: quarantined > 0 ? 'degraded' : 'nominal',
+        signal: `${Math.round(avgTrust * 100)}% avg trust`,
+      },
+    ];
+
     return {
       sprints,
       currentSprint,
@@ -522,6 +586,7 @@ export class RoadmapServer {
         quarantined,
         stageCounts,
       },
+      nodeStatus,
       checkpointSummary: this.getCheckpointSummary(),
       recentCheckpoints: this.getRecentCheckpoints(12),
       generatedAt: new Date().toISOString(),
@@ -555,17 +620,27 @@ export class RoadmapServer {
 
   private getInstalledSkills(): InstalledSkill[] {
     const discovered = new Map<string, InstalledSkill>();
+    const approvedSkillFiles = this.getApprovedSkillFileSet();
     const candidates = this.getSkillRoots();
     for (const root of candidates) {
       if (!fs.existsSync(root.root)) continue;
       const markdownFiles = this.collectSkillMarkdownFiles(root.root);
       for (const markdown of markdownFiles) {
+        const isRegistryApproved = approvedSkillFiles.has(this.toComparablePath(markdown));
+        const isSystemApproved = root.sourceType === 'project-canonical';
+        const isAutoDiscoveredLocal = root.sourceType === 'project-local';
+        if (!isRegistryApproved && !isSystemApproved && !isAutoDiscoveredLocal) continue;
         const parsed = this.parseSkillFile(markdown, root);
         if (!parsed) continue;
         const existing = discovered.get(parsed.key);
         if (!existing || this.isPreferredSkill(parsed, existing)) {
           discovered.set(parsed.key, parsed);
         }
+      }
+    }
+    if (discovered.size === 0) {
+      for (const fallbackSkill of this.getEmergencyDiscoveredSkills()) {
+        discovered.set(fallbackSkill.key, fallbackSkill);
       }
     }
     return Array.from(discovered.values()).sort((a, b) => {
@@ -575,14 +650,21 @@ export class RoadmapServer {
   }
 
   private getSkillRoots(): SkillRoot[] {
-    const bases = new Set<string>([
-      process.cwd(),
-      path.resolve(process.cwd(), '..'),
-      path.resolve(process.cwd(), '../..'),
-      path.resolve(__dirname, '../../..'),
-      path.resolve(__dirname, '../../../..'),
-      path.resolve(__dirname, '../../../../..'),
-    ]);
+    const workspaceRoot = this.getWorkspaceRoot();
+    const bases = new Set<string>();
+    const addAncestors = (start: string): void => {
+      let current = path.resolve(start);
+      for (let i = 0; i < 10; i += 1) {
+        if (bases.has(current)) break;
+        bases.add(current);
+        const parent = path.dirname(current);
+        if (parent === current) break;
+        current = parent;
+      }
+    };
+    addAncestors(workspaceRoot);
+    addAncestors(path.resolve(__dirname, '..'));
+    addAncestors(path.resolve(__dirname, '../..'));
 
     const roots: SkillRoot[] = [];
     const add = (rootPath: string, sourceType: string, sourcePriority: number, admissionState: string): void => {
@@ -595,11 +677,42 @@ export class RoadmapServer {
       add(path.join(base, 'FailSafe', 'VSCode', 'skills'), 'project-canonical', 1, 'admitted');
       add(path.join(base, 'VSCode', 'skills'), 'project-canonical', 1, 'admitted');
       add(path.join(base, '.agent', 'skills'), 'project-local', 2, 'admitted');
+      add(path.join(base, '.claude', 'skills'), 'project-local', 2, 'admitted');
+      add(path.join(base, '.codex', 'skills'), 'project-local', 2, 'admitted');
       add(path.join(base, '.github', 'skills'), 'project-local', 2, 'admitted');
-      add(path.join(base, 'docs', 'Planning', 'webpanel', '.codex', 'skills'), 'borrowed-app', 4, 'conditional');
+      add(path.join(base, '.failsafe', 'manual-skills'), 'manual-import', 3, 'conditional');
     }
 
     return roots;
+  }
+
+  private getEmergencyDiscoveredSkills(): InstalledSkill[] {
+    const workspaceRoot = this.getWorkspaceRoot();
+    const emergencyRoots = [
+      path.join(workspaceRoot, 'FailSafe', 'VSCode', 'skills'),
+      path.join(workspaceRoot, 'VSCode', 'skills'),
+      path.resolve(workspaceRoot, '..', 'VSCode', 'skills'),
+      path.resolve(workspaceRoot, '..', 'FailSafe', 'VSCode', 'skills'),
+      path.resolve(__dirname, '../../../../VSCode/skills'),
+      path.resolve(__dirname, '../../../../../FailSafe/VSCode/skills'),
+    ];
+    const unique = Array.from(new Set(emergencyRoots.map((item) => path.resolve(item))));
+    const output = new Map<string, InstalledSkill>();
+    for (const root of unique) {
+      if (!fs.existsSync(root)) continue;
+      const markdown = this.collectSkillMarkdownFiles(root);
+      for (const file of markdown) {
+        const parsed = this.parseSkillFile(file, {
+          root,
+          sourceType: 'project-canonical',
+          sourcePriority: 1,
+          admissionState: 'admitted',
+        });
+        if (!parsed) continue;
+        if (!output.has(parsed.key)) output.set(parsed.key, parsed);
+      }
+    }
+    return Array.from(output.values());
   }
 
   private collectSkillMarkdownFiles(root: string): string[] {
@@ -641,9 +754,6 @@ export class RoadmapServer {
     const frontmatterMatch = content.match(/^---\s*([\s\S]*?)\s*---/);
     const frontmatter = frontmatterMatch ? frontmatterMatch[1] : '';
     const rawName = (this.readFrontmatterValue(frontmatter, 'name') || path.basename(path.dirname(filePath))).trim();
-    const key = rawName.toLowerCase().replace(/[^a-z0-9-_]+/g, '-').replace(/^-+|-+$/g, '');
-    if (!key) return null;
-    const label = rawName;
     const desc = (this.readFrontmatterValue(frontmatter, 'description') || 'Installed skill').trim();
     const metadataAuthor = this.readFrontmatterValue(frontmatter, 'author')
       || this.readFrontmatterValue(frontmatter, 'publisher')
@@ -681,10 +791,25 @@ export class RoadmapServer {
       || this.readFrontmatterValue(frontmatter, 'source_priority');
     const sourcePriorityNum = Number.parseInt(sourcePriorityRaw, 10);
     const sourcePriority = Number.isFinite(sourcePriorityNum) ? sourcePriorityNum : rootMeta.sourcePriority;
+    const explicitSkillId = this.readFrontmatterValue(frontmatter, 'id')
+      || this.readFrontmatterValue(frontmatter, 'skill_id')
+      || this.readFrontmatterValue(frontmatter, 'qore_id');
+    const displayName = this.readFrontmatterValue(frontmatter, 'displayName')
+      || this.readFrontmatterValue(frontmatter, 'display_name')
+      || this.humanizeSkillName(rawName);
+    const resolvedId = this.resolveQoreSkillId(explicitSkillId || rawName, {
+      creator: String(creator || '').trim(),
+      sourceRepo: String(sourceRepo || '').trim(),
+      desc,
+    });
+    if (!resolvedId) return null;
 
     return {
-      key,
-      label,
+      id: resolvedId,
+      displayName: String(displayName || rawName || resolvedId).trim(),
+      localName: rawName,
+      key: resolvedId,
+      label: String(displayName || rawName || resolvedId).trim(),
       desc,
       creator: String(creator || 'Unknown').trim(),
       sourceRepo: String(sourceRepo || 'unknown').trim(),
@@ -696,6 +821,349 @@ export class RoadmapServer {
       admissionState: String(admissionState || rootMeta.admissionState).trim(),
       requiredPermissions: Array.from(new Set(requiredPermissions.map((item) => item.trim()).filter(Boolean))),
     };
+  }
+
+  private getWorkspaceRoot(): string {
+    return path.resolve(process.cwd());
+  }
+
+  private getSkillRegistryDir(): string {
+    return path.join(this.getWorkspaceRoot(), '.failsafe', 'skill-registry');
+  }
+
+  private getLegacySkillRegistryPath(): string {
+    return path.join(this.getSkillRegistryDir(), 'registry.json');
+  }
+
+  private getAppSkillManifestPath(): string {
+    return path.join(this.getSkillRegistryDir(), 'app-manifest.json');
+  }
+
+  private getPersonalSkillManifestPath(): string {
+    return path.join(this.getSkillRegistryDir(), 'personal-manifest.json');
+  }
+
+  private ensureAppSkillManifest(): void {
+    const registryDir = this.getSkillRegistryDir();
+    fs.mkdirSync(registryDir, { recursive: true });
+    const now = new Date().toISOString();
+    const entries: SkillRegistryEntry[] = [];
+    const roots = this.getSkillRoots().filter((root) => root.sourceType === 'project-canonical' && fs.existsSync(root.root));
+    for (const root of roots) {
+      const markdownFiles = this.collectSkillMarkdownFiles(root.root);
+      for (const skillFile of markdownFiles) {
+        const relPath = path.relative(this.getWorkspaceRoot(), skillFile);
+        entries.push({
+          id: crypto.createHash('sha1').update(skillFile).digest('hex').slice(0, 12),
+          timestamp: now,
+          skillName: path.basename(path.dirname(skillFile)),
+          skillPath: relPath,
+          source: 'app',
+          owner: 'FailSafe',
+          trustTier: 'verified',
+          runtimeEligibility: 'allowed',
+        });
+      }
+    }
+    try {
+      fs.writeFileSync(this.getAppSkillManifestPath(), JSON.stringify(entries, null, 2), 'utf8');
+    } catch {
+      // Non-fatal. Canonical skills are still admitted by sourceType.
+    }
+  }
+
+  private readRegistryEntries(paths: string[]): SkillRegistryEntry[] {
+    const entries: SkillRegistryEntry[] = [];
+    for (const registryPath of paths) {
+      if (!fs.existsSync(registryPath)) continue;
+      let raw = '';
+      try {
+        raw = fs.readFileSync(registryPath, 'utf8');
+      } catch {
+        continue;
+      }
+      if (!raw.trim()) continue;
+      try {
+        const parsed = JSON.parse(raw) as SkillRegistryEntry[] | SkillRegistryEntry;
+        const list = Array.isArray(parsed) ? parsed : [parsed];
+        entries.push(...list);
+      } catch {
+        continue;
+      }
+    }
+    return entries;
+  }
+
+  private toComparablePath(inputPath: string): string {
+    const normalized = path.resolve(inputPath);
+    return process.platform === 'win32'
+      ? normalized.replace(/\//g, '\\').toLowerCase()
+      : normalized;
+  }
+
+  private getApprovedSkillFileSet(): Set<string> {
+    this.ensureAppSkillManifest();
+    const parsed = this.readRegistryEntries([
+      this.getAppSkillManifestPath(),
+      this.getPersonalSkillManifestPath(),
+      this.getLegacySkillRegistryPath(),
+    ]);
+    if (parsed.length === 0) return new Set<string>();
+
+    const latestByPath = new Map<string, SkillRegistryEntry>();
+    for (const entry of parsed) {
+      const rel = String(entry?.skillPath || '').trim();
+      if (!rel) continue;
+      const abs = path.resolve(this.getWorkspaceRoot(), rel);
+      const key = this.toComparablePath(abs);
+      const existing = latestByPath.get(key);
+      const existingTs = Date.parse(String(existing?.timestamp || ''));
+      const nextTs = Date.parse(String(entry?.timestamp || ''));
+      if (!existing || (Number.isFinite(nextTs) && (!Number.isFinite(existingTs) || nextTs > existingTs))) {
+        latestByPath.set(key, entry);
+      }
+    }
+
+    const approved = new Set<string>();
+    for (const [absPath, entry] of latestByPath.entries()) {
+      const trustTier = String(entry.trustTier || '').toLowerCase();
+      const runtimeEligibility = String(entry.runtimeEligibility || '').toLowerCase();
+      const approvedTier = trustTier === 'verified' || trustTier === 'conditional';
+      const allowed = runtimeEligibility === 'allowed';
+      if (!approvedTier || !allowed) continue;
+      approved.add(this.toComparablePath(absPath));
+    }
+    return approved;
+  }
+
+  private getWorkspaceDiscoveryRoots(): string[] {
+    const base = this.getWorkspaceRoot();
+    const roots = [
+      path.join(base, '.agent', 'skills'),
+      path.join(base, '.claude', 'skills'),
+      path.join(base, '.codex', 'skills'),
+      path.join(base, '.github', 'skills'),
+      path.join(base, 'FailSafe', 'VSCode', 'skills'),
+      path.join(base, 'VSCode', 'skills'),
+      path.join(base, '.failsafe', 'manual-skills'),
+    ];
+    return Array.from(new Set(roots.map((item) => path.resolve(item))));
+  }
+
+  private autoIngestWorkspaceSkills(): Record<string, unknown> {
+    const roots = this.getWorkspaceDiscoveryRoots().filter((root) => fs.existsSync(root));
+    const skillFiles = roots.flatMap((root) => this.collectSkillMarkdownFiles(root));
+    const approved = this.getApprovedSkillFileSet();
+    const failures: Array<{ file: string; error: string }> = [];
+    let admitted = 0;
+    let skipped = 0;
+
+    for (const skillFile of skillFiles) {
+      const normalized = this.toComparablePath(skillFile);
+      if (approved.has(normalized)) {
+        skipped += 1;
+        continue;
+      }
+      const result = this.admitSkill(skillFile, 'workspace');
+      if (result.ok) {
+        admitted += 1;
+      } else {
+        failures.push({ file: skillFile, error: result.error });
+      }
+    }
+
+    return {
+      ok: true,
+      mode: 'auto',
+      rootsScanned: roots,
+      discovered: skillFiles.length,
+      admitted,
+      skipped,
+      failed: failures.length,
+      failures,
+      skills: this.getInstalledSkills(),
+    };
+  }
+
+  private manualIngestSkillPayload(items: unknown[], mode: 'file' | 'folder'): Record<string, unknown> {
+    const normalizedItems = items
+      .map((item) => ({
+        path: String((item as { path?: unknown }).path || '').trim(),
+        content: String((item as { content?: unknown }).content || ''),
+      }))
+      .filter((item) => item.path.length > 0);
+
+    if (normalizedItems.length === 0) {
+      throw new Error('No files were provided for manual ingest.');
+    }
+    if (normalizedItems.length > 300) {
+      throw new Error('Manual ingest payload is too large.');
+    }
+
+    const batchRoot = path.join(
+      this.getWorkspaceRoot(),
+      '.failsafe',
+      'manual-skills',
+      `manual-${new Date().toISOString().replace(/[:.]/g, '-')}`,
+    );
+    fs.mkdirSync(batchRoot, { recursive: true });
+
+    const writtenSkillFiles: string[] = [];
+    for (const item of normalizedItems) {
+      const safeRelative = this.sanitizeRelativePath(item.path);
+      if (!safeRelative) continue;
+      const target = path.join(batchRoot, safeRelative);
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.writeFileSync(target, item.content, 'utf8');
+      if (path.basename(target).toLowerCase() === 'skill.md') {
+        writtenSkillFiles.push(target);
+      }
+    }
+    if (writtenSkillFiles.length === 0) {
+      throw new Error('Manual ingest did not include any SKILL.md files.');
+    }
+
+    const failures: Array<{ file: string; error: string }> = [];
+    let admitted = 0;
+    for (const skillFile of writtenSkillFiles) {
+      const result = this.admitSkill(skillFile, mode === 'folder' ? 'manual-folder' : 'manual-file');
+      if (result.ok) admitted += 1;
+      else failures.push({ file: skillFile, error: result.error });
+    }
+
+    return {
+      ok: true,
+      mode: 'manual',
+      importedTo: batchRoot,
+      filesWritten: normalizedItems.length,
+      discovered: writtenSkillFiles.length,
+      admitted,
+      failed: failures.length,
+      failures,
+      skills: this.getInstalledSkills(),
+    };
+  }
+
+  private sanitizeRelativePath(relativePath: string): string {
+    const normalized = relativePath.replace(/\\/g, '/').replace(/^[A-Za-z]:/, '');
+    const segments = normalized
+      .split('/')
+      .map((segment) => segment.trim())
+      .filter((segment) => segment.length > 0 && segment !== '.' && segment !== '..');
+    return segments.join(path.sep);
+  }
+
+  private admitSkill(skillFile: string, source: string): { ok: boolean; error: string } {
+    const scriptPath = path.join(this.getWorkspaceRoot(), 'tools', 'reliability', 'admit-skill.ps1');
+    if (!fs.existsSync(scriptPath)) {
+      return { ok: false, error: `admission script not found: ${scriptPath}` };
+    }
+
+    const shell = process.platform === 'win32' ? 'powershell.exe' : 'pwsh';
+    const args = [
+      '-NoProfile',
+      '-ExecutionPolicy',
+      'Bypass',
+      '-File',
+      scriptPath,
+      '-SkillPath',
+      skillFile,
+      '-Source',
+      source,
+      '-Owner',
+      'FailSafe',
+      '-VersionPin',
+      'local-main',
+      '-RegistryPath',
+      this.getPersonalSkillManifestPath(),
+    ];
+    const result = spawnSync(shell, args, {
+      cwd: this.getWorkspaceRoot(),
+      encoding: 'utf8',
+    });
+    const ok = result.status === 0;
+    const stdErr = String(result.stderr || '').trim();
+    const stdOut = String(result.stdout || '').trim();
+    return {
+      ok,
+      error: ok ? '' : (stdErr || stdOut || `admit-skill exited with code ${String(result.status ?? 'unknown')}`),
+    };
+  }
+
+  private toSlug(value: string): string {
+    return String(value || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+
+  private humanizeSkillName(value: string): string {
+    const slug = this.toSlug(value);
+    const alias: Record<string, string> = {
+      'music': 'Generate Music',
+      'sound-effects': 'Generate Sound Effects',
+      'speech-to-text': 'Transcribe Speech',
+      'text-to-speech': 'Synthesize Speech',
+      'agents': 'Intent Assistant',
+    };
+    if (alias[slug]) return alias[slug];
+    return slug
+      .split('-')
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
+  }
+
+  private resolveQoreSkillId(base: string, context: { creator: string; sourceRepo: string; desc: string }): string {
+    const slug = this.toSlug(base);
+    if (!slug) return '';
+    const segments = slug.split('-').filter(Boolean);
+    if (segments.length >= 3) {
+      return slug;
+    }
+
+    const source = this.deriveSkillSourceToken(context);
+    const domain = this.deriveSkillDomainToken(slug, context.desc);
+    const action = this.deriveSkillActionToken(slug, domain);
+    const synthesized = `${source}-${domain}-${action}`;
+    return this.toSlug(synthesized);
+  }
+
+  private deriveSkillSourceToken(context: { creator: string; sourceRepo: string; desc: string }): string {
+    const repo = String(context.sourceRepo || '');
+    const creator = String(context.creator || '');
+    if (repo.includes('/')) {
+      const owner = this.toSlug(repo.split('/')[0] || '');
+      if (owner) return owner;
+    }
+    const creatorSlug = this.toSlug(creator);
+    if (creatorSlug) return creatorSlug;
+    return 'local';
+  }
+
+  private deriveSkillDomainToken(skillSlug: string, description: string): string {
+    const text = `${skillSlug} ${description}`.toLowerCase();
+    if (text.includes('tauri')) return 'tauri2';
+    if (text.includes('governance') || text.includes('compliance')) return 'governance';
+    if (text.includes('meta') || text.includes('ledger') || text.includes('shadow')) return 'meta';
+    if (text.includes('docs') || text.includes('writing')) return 'docs';
+    if (text.includes('web') || text.includes('wcag')) return 'web';
+    if (text.includes('audio') || text.includes('voice') || text.includes('speech') || text.includes('music') || text.includes('sound')) return 'audio';
+    return 'general';
+  }
+
+  private deriveSkillActionToken(skillSlug: string, domain: string): string {
+    const directMap: Record<string, string> = {
+      'music': 'generate-music',
+      'sound-effects': 'generate-sound-effects',
+      'speech-to-text': 'transcribe-speech',
+      'text-to-speech': 'synthesize-speech',
+      'agents': 'build-intent-assistant',
+    };
+    if (directMap[skillSlug]) return directMap[skillSlug];
+    if (domain === 'general') return `use-${skillSlug}`;
+    return skillSlug;
   }
 
   private readFrontmatterValue(frontmatter: string, key: string): string {

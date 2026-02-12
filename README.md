@@ -36,6 +36,10 @@ _FailSafe is open source. Fork it, open issues, and submit pull requests._
   <img src="icon.png" alt="FailSafe" width="220"/>
 </p>
 
+## UI Preview
+
+![FailSafe UI Preview](FailSafe/ScreenShots/UI-Preview.png)
+
 ---
 
 ## What You Will Configure in 5 Minutes
@@ -73,9 +77,24 @@ Primary UI surfaces in the current release:
 - `FailSafe Monitor` (compact)
 - `FailSafe Command Center` (extended)
 
-### FailSafe Command Center UI Preview
+## UI Screenshots
 
-![FailSafe Command Center UI Preview](docs/ScreenShots/UI-Preview.png)
+### Monitor
+
+![FailSafe Monitor](FailSafe/ScreenShots/FailSafe-Monitor.PNG)
+
+### Home
+
+![FailSafe Command Center Home](FailSafe/ScreenShots/FailSafe-CommandCenter-Home.PNG)
+
+### Skills
+
+![FailSafe Command Center Skills](FailSafe/ScreenShots/FailSafe-CommandCenter-Skills.PNG)
+
+### Governance
+
+![FailSafe Command Center Governance](FailSafe/ScreenShots/FailSafe-CommandCenter-Governance.PNG)
+
 ---
 
 ## The Idea

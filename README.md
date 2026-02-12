@@ -61,14 +61,21 @@ Create or edit `.failsafe/config/policies/risk_grading.json` to tune risk classi
 
 FailSafe is an open-source VS Code extension and governance framework for AI-assisted development. It adds intent-gated saves, Sentinel audits, and a ledgered audit trail so risky changes are surfaced and controlled.
 
+FailSafe separates system awareness from system control.
+
+The Monitor provides real-time visibility into system health, governance posture, and operational risk. It is designed for continuous, low-effort awareness.
+
+The Command Center is the primary control surface where teams plan, execute, and govern AI workflows. All configuration, orchestration, and audits originate here.
+
+This separation reduces cognitive load and mirrors real-world operations environments: observe first, act deliberately.
+
 Primary UI surfaces in the current release:
-- `FailSafe Sidebar` (compact)
-- `FailSafe Operations Hub` (extended)
+- `FailSafe Monitor` (compact)
+- `FailSafe Command Center` (extended)
 
-### Sidebar UI (v3.5.2)
+### FailSafe Command Center UI Preview
 
-![FailSafe Sidebar UI v3.5.2](FailSafe/docs/images/sidebar-ui-3.5.2.png)
-
+![FailSafe Command Center UI Preview](docs/ScreenShots/UI-Preview.png)
 ---
 
 ## The Idea
@@ -92,7 +99,7 @@ graph TD
     G --> H[Sentinel Audit]
     H --> I[SOA Ledger]
 
-    I --> J[FailSafe Operations Hub]
+    I --> J[FailSafe Command Center]
     H --> J
 ```
 
@@ -121,8 +128,8 @@ FailSafe uses a **Physical Isolation** model to separate workspace governance fr
 +-- Antigravity/              # Gemini + Claude workflows (source)
 +-- VSCode/                   # Copilot + Claude prompts (source)
 +-- PROD-Extension/           # Production builds (includes Claude)
-¦   +-- Antigravity/          # ? OpenVSX (Gemini + Claude)
-¦   +-- VSCode/               # ? VS Code Marketplace (Copilot + Claude)
+Â¦   +-- Antigravity/          # ? OpenVSX (Gemini + Claude)
+Â¦   +-- VSCode/               # ? VS Code Marketplace (Copilot + Claude)
 +-- build/                    # Build & validation tooling
 ```
 
@@ -134,7 +141,7 @@ FailSafe uses a **Physical Isolation** model to separate workspace governance fr
 
 | System    | Layer       | Description                                |
 | --------- | ----------- | ------------------------------------------ |
-| Genesis   | Experience  | FailSafe Sidebar + FailSafe Operations Hub |
+| Genesis   | Experience  | FailSafe Monitor + FailSafe Command Center |
 | QoreLogic | Governance  | Intent gating, policies, ledger, and trust |
 | Sentinel  | Enforcement | File watcher audits and verdicts           |
 

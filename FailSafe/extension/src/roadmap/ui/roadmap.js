@@ -1,11 +1,12 @@
-﻿class WebPanelClient {
+class WebPanelClient {
   constructor() {
     this.ws = null;
     this.hub = {
       activePlan: null,
       sentinelStatus: null,
       l3Queue: [],
-      recentVerdicts: []
+      recentVerdicts: [],
+      qoreRuntime: null,
     };
     this.reconnectTimer = null;
     this.reconnectAttempts = 0;
@@ -32,21 +33,21 @@
       trendFill: document.getElementById('trend-fill'),
       trendThumb: document.getElementById('trend-thumb'),
       policyTrend: document.getElementById('policy-trend'),
-      trendFill: document.getElementById('trend-fill'),
-      trendThumb: document.getElementById('trend-thumb'),
-      policyTrend: document.getElementById('policy-trend'),
       statusLine: document.getElementById('status-line'),
-      trendFill: document.getElementById('trend-fill'),
-      trendThumb: document.getElementById('trend-thumb'),
-      policyTrend: document.getElementById('policy-trend'),
-      statusLine: document.getElementById('status-line')
+      qoreState: document.getElementById('qore-runtime-state'),
+      qoreVersion: document.getElementById('qore-policy-version'),
+      qoreEndpoint: document.getElementById('qore-runtime-endpoint'),
+      qoreLatency: document.getElementById('qore-runtime-latency'),
+      qoreCheck: document.getElementById('qore-runtime-check'),
     };
 
-    this.connect();
-    this.fetchHub();
-  }
+    if (this.elements.qoreCheck) {
+      this.elements.qoreCheck.addEventListener('click', () => {
+        this.fetchHub();
+      });
+    }
 
-  connect() {
+    this.connect();
     this.fetchHub();
   }
 
@@ -110,8 +111,6 @@
     }
   }
 
-
-
   render() {
     const plan = this.hub.activePlan || { phases: [], blockers: [], milestones: [], risks: [] };
     const phases = Array.isArray(plan.phases) ? plan.phases : [];
@@ -121,14 +120,22 @@
 
     const phaseInfo = this.getPhaseInfo(plan);
     const summary = this.getFeatureSummary(phases, milestones, blockers, risks);
-    const nextStep = this.getNextStep(blockers, this.hub.l3Queue || [], this.hub.sentinelStatus || {});
+    const nextStep = this.getNextStep(
+      blockers,
+      this.hub.l3Queue || [],
+      this.hub.sentinelStatus || {},
+      this.hub.qoreRuntime || {},
+    );
 
-    this.renderPhase(phaseInfo, phases);
+    this.renderPhase(phaseInfo);
     this.renderFeatureSummary(summary);
-    this.elements.nextStep.textContent = nextStep;
+    if (this.elements.nextStep) {
+      this.elements.nextStep.textContent = nextStep;
+    }
 
     this.renderSentinel(this.hub.sentinelStatus || {}, this.hub.recentVerdicts || []);
     this.renderWorkspaceHealth(plan, blockers, risks, this.hub.recentVerdicts || []);
+    this.renderQoreRuntime(this.hub.qoreRuntime || {});
   }
 
   getPhaseInfo(plan) {
@@ -154,23 +161,25 @@
       .filter((milestone) => !!milestone.completedAt)
       .sort((a, b) => new Date(String(b.completedAt)).getTime() - new Date(String(a.completedAt)).getTime());
     const completedPhases = phases.filter((phase) => phase.status === 'completed');
-    const recentlyCompleted = completedMilestones.length > 0 ? completedMilestones.length : completedPhases.length;
     const recentlyCompletedFeatures = completedMilestones.length > 0
       ? completedMilestones.slice(0, 3).map((milestone) => milestone.title)
       : completedPhases.slice(-3).reverse().map((phase) => phase.title);
 
     return {
-      recentlyCompleted,
-      backlog: phases.filter((phase) => phase.status === 'pending').length,
-      wishlist: milestones.filter((milestone) => !milestone.completedAt && !milestone.targetDate).length,
-      critical: blockers.filter((blocker) => blocker.severity === 'hard').length + risks.filter((risk) => risk.level === 'danger').length,
       line: recentlyCompletedFeatures.length > 0
         ? recentlyCompletedFeatures.join('\n')
-        : 'None yet'
+        : 'None yet',
+      critical: blockers.filter((blocker) => blocker.severity === 'hard').length
+        + risks.filter((risk) => risk.level === 'danger').length,
+      backlog: phases.filter((phase) => phase.status === 'pending').length,
+      wishlist: milestones.filter((milestone) => !milestone.completedAt && !milestone.targetDate).length,
     };
   }
 
-  getNextStep(blockers, queue, sentinelStatus) {
+  getNextStep(blockers, queue, sentinelStatus, qoreRuntime) {
+    if (qoreRuntime.enabled && !qoreRuntime.connected) {
+      return `Qore runtime is unreachable at ${qoreRuntime.baseUrl || 'configured endpoint'}. Restore runtime connectivity first.`;
+    }
     if (blockers.length > 0) {
       return `Resolve ${blockers.length} active blocker(s) before continuing.`;
     }
@@ -184,7 +193,10 @@
   }
 
   renderPhase(phaseInfo) {
-    this.elements.phaseTitle.textContent = phaseInfo.title.toUpperCase();
+    if (this.elements.phaseTitle) {
+      this.elements.phaseTitle.textContent = phaseInfo.title.toUpperCase();
+    }
+    if (!this.elements.phaseTrack) return;
 
     const labels = ['Plan', 'Audit', 'Implement', 'Substantiate'];
     const rowOne = labels.map((label, idx) => {
@@ -195,16 +207,16 @@
 
     const debugStatus = phaseInfo.index === 3 ? 'debugging' : phaseInfo.index > 3 ? 'active' : 'pending';
     const debugLabel = phaseInfo.index === 3 ? 'Debugging...' : phaseInfo.index > 3 ? 'Debugged' : 'Debug';
-    const debugRow = `<div class="step ${debugStatus}">${debugLabel}</div>`;
-
     this.elements.phaseTrack.innerHTML = `
       <div class="phase-row">${rowOne}</div>
-      <div class="phase-row debug-row">${debugRow}</div>
+      <div class="phase-row debug-row"><div class="step ${debugStatus}">${debugLabel}</div></div>
     `;
   }
 
   renderFeatureSummary(summary) {
-    this.elements.recentLine.textContent = summary.line;
+    if (this.elements.recentLine) {
+      this.elements.recentLine.textContent = summary.line;
+    }
   }
 
   renderSentinel(status, verdicts) {
@@ -221,11 +233,12 @@
       label = 'Errors';
     }
 
-    this.elements.sentinelLabel.textContent = label;
-    this.elements.sentinelOrb.className = `sentinel-orb ${state}`;
-    this.elements.queueValue.textContent = String(queueDepth);
+    if (this.elements.sentinelLabel) this.elements.sentinelLabel.textContent = label;
+    if (this.elements.sentinelOrb) this.elements.sentinelOrb.className = `sentinel-orb ${state}`;
+    if (this.elements.queueValue) this.elements.queueValue.textContent = String(queueDepth);
 
     const alert = verdicts.find((item) => ['WARN', 'BLOCK', 'ESCALATE', 'QUARANTINE'].includes(String(item.decision || '')));
+    if (!this.elements.sentinelAlert) return;
     if (!alert) {
       this.elements.sentinelAlert.classList.add('hidden');
       this.elements.sentinelAlert.textContent = '';
@@ -252,31 +265,59 @@
 
     const errorBudgetPoints = (hardBlockers * 20) + (dangerRisks * 16) + (queueBacklog * 3) + (severeHits * 12) + (warnHits * 4);
     const errorBudgetBurn = Math.min(100, Math.round(errorBudgetPoints));
-
     const trend = this.buildPolicyTrend(verdicts);
 
-    this.elements.healthBlockers.textContent = String(hardBlockers);
-    this.elements.blockerBar.style.opacity = hardBlockers > 0 ? '1' : '0.5';
-    this.elements.blockersGraphic.title = `Critical blockers detected: ${hardBlockers}.`;
+    if (this.elements.healthBlockers) this.elements.healthBlockers.textContent = String(hardBlockers);
+    if (this.elements.blockerBar) this.elements.blockerBar.style.opacity = hardBlockers > 0 ? '1' : '0.5';
+    if (this.elements.blockersGraphic) this.elements.blockersGraphic.title = `Critical blockers detected: ${hardBlockers}.`;
 
-    this.elements.bucketFill.style.height = `${unverifiedPercent}%`;
-    this.elements.bucketText.textContent = `${unverifiedPercent}% Full`;
-    this.elements.bucketShell.title = `Unverified changes estimate: ${unverified} item(s), ${unverifiedPercent}% of buffer.`;
+    if (this.elements.bucketFill) this.elements.bucketFill.style.height = `${unverifiedPercent}%`;
+    if (this.elements.bucketText) this.elements.bucketText.textContent = `${unverifiedPercent}% Full`;
+    if (this.elements.bucketShell) this.elements.bucketShell.title = `Unverified changes estimate: ${unverified} item(s), ${unverifiedPercent}% of buffer.`;
 
     const circumference = Math.PI * 40;
     const offset = circumference - (errorBudgetBurn / 100) * circumference;
-    this.elements.gaugeValue.style.strokeDasharray = `${circumference}`;
-    this.elements.gaugeValue.style.strokeDashoffset = `${offset}`;
-    this.elements.gaugeValue.style.stroke = this.metricColor(errorBudgetBurn);
-    this.elements.errorBudget.textContent = `${errorBudgetBurn}%`;
-    this.elements.gaugeWrap.title = `Error budget burn: ${errorBudgetBurn}%. Derived from blockers, queue depth, and risk verdicts.`;
+    if (this.elements.gaugeValue) {
+      this.elements.gaugeValue.style.strokeDasharray = `${circumference}`;
+      this.elements.gaugeValue.style.strokeDashoffset = `${offset}`;
+      this.elements.gaugeValue.style.stroke = this.metricColor(errorBudgetBurn);
+    }
+    if (this.elements.errorBudget) this.elements.errorBudget.textContent = `${errorBudgetBurn}%`;
+    if (this.elements.gaugeWrap) {
+      this.elements.gaugeWrap.title = `Error budget burn: ${errorBudgetBurn}%. Derived from blockers, queue depth, and risk verdicts.`;
+    }
 
-    this.elements.trendFill.style.width = `${trend}%`;
-    this.elements.trendFill.style.background = this.metricColor(trend);
-    this.elements.trendThumb.style.left = `${trend}%`;
-    this.elements.trendThumb.style.background = this.metricColor(trend);
-    this.elements.policyTrend.textContent = `${trend}%`;
-    this.elements.trendSlider.title = `Policy trend index: ${trend}%. Lower is healthier.`;
+    if (this.elements.trendFill) {
+      this.elements.trendFill.style.width = `${trend}%`;
+      this.elements.trendFill.style.background = this.metricColor(trend);
+    }
+    if (this.elements.trendThumb) {
+      this.elements.trendThumb.style.left = `${trend}%`;
+      this.elements.trendThumb.style.background = this.metricColor(trend);
+    }
+    if (this.elements.policyTrend) this.elements.policyTrend.textContent = `${trend}%`;
+    if (this.elements.trendSlider) this.elements.trendSlider.title = `Policy trend index: ${trend}%. Lower is healthier.`;
+  }
+
+  renderQoreRuntime(qoreRuntime) {
+    if (!this.elements.qoreState) return;
+
+    if (!qoreRuntime || !qoreRuntime.enabled) {
+      this.elements.qoreState.textContent = 'Disabled';
+      if (this.elements.qoreVersion) this.elements.qoreVersion.textContent = 'n/a';
+      if (this.elements.qoreEndpoint) this.elements.qoreEndpoint.textContent = qoreRuntime?.baseUrl || 'not configured';
+      if (this.elements.qoreLatency) this.elements.qoreLatency.textContent = 'n/a';
+      return;
+    }
+
+    this.elements.qoreState.textContent = qoreRuntime.connected ? 'Connected' : 'Unreachable';
+    if (this.elements.qoreVersion) this.elements.qoreVersion.textContent = qoreRuntime.policyVersion || 'unknown';
+    if (this.elements.qoreEndpoint) this.elements.qoreEndpoint.textContent = qoreRuntime.baseUrl || 'unknown';
+    if (this.elements.qoreLatency) {
+      this.elements.qoreLatency.textContent = Number.isFinite(Number(qoreRuntime.latencyMs))
+        ? `${Math.round(Number(qoreRuntime.latencyMs))} ms`
+        : 'n/a';
+    }
   }
 
   buildPolicyTrend(verdicts) {
@@ -306,8 +347,120 @@
     div.textContent = String(value || '');
     return div.innerHTML;
   }
+
+  // Transparency Stream Methods
+  async fetchTransparency() {
+    try {
+      const res = await fetch('/api/transparency');
+      if (!res.ok) throw new Error(`Transparency request failed (${res.status})`);
+      const data = await res.json();
+      this.renderTransparency(data.events || []);
+    } catch {
+      const container = document.getElementById('transparency-events');
+      if (container) {
+        container.innerHTML = '<div class="transparency-empty">Unable to load events</div>';
+      }
+    }
+  }
+
+  renderTransparency(events) {
+    const container = document.getElementById('transparency-events');
+    if (!container) return;
+
+    if (events.length === 0) {
+      container.innerHTML = '<div class="transparency-empty">No transparency events yet</div>';
+      return;
+    }
+
+    container.innerHTML = events.slice(0, 20).map((event) => {
+      const type = String(event.type || 'unknown').replace('prompt.', '');
+      const time = event.timestamp ? new Date(event.timestamp).toLocaleTimeString() : '';
+      const details = event.intentId ? `Intent: ${event.intentId.substring(0, 8)}...` :
+                      event.tokenCount ? `Tokens: ${event.tokenCount}` :
+                      event.riskGrade ? `Risk: ${event.riskGrade}` : '';
+      return `
+        <div class="transparency-item">
+          <span class="transparency-type ${type}">${this.escapeHtml(type)}</span>
+          <span class="transparency-details">${this.escapeHtml(details)}</span>
+          <span class="transparency-time">${this.escapeHtml(time)}</span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Risk Register Methods
+  async fetchRisks() {
+    try {
+      const res = await fetch('/api/risks');
+      if (!res.ok) throw new Error(`Risks request failed (${res.status})`);
+      const data = await res.json();
+      this.renderRisks(data.risks || []);
+    } catch {
+      const container = document.getElementById('risk-items');
+      if (container) {
+        container.innerHTML = '<div class="risk-empty">Unable to load risks</div>';
+      }
+    }
+  }
+
+  renderRisks(risks) {
+    const container = document.getElementById('risk-items');
+    if (!container) return;
+
+    // Update summary counts
+    const counts = { critical: 0, high: 0, medium: 0, low: 0 };
+    risks.forEach((risk) => {
+      if (risk.status !== 'resolved' && counts[risk.severity] !== undefined) {
+        counts[risk.severity]++;
+      }
+    });
+
+    const criticalEl = document.getElementById('risk-critical');
+    const highEl = document.getElementById('risk-high');
+    const mediumEl = document.getElementById('risk-medium');
+    const lowEl = document.getElementById('risk-low');
+
+    if (criticalEl) criticalEl.textContent = counts.critical;
+    if (highEl) highEl.textContent = counts.high;
+    if (mediumEl) mediumEl.textContent = counts.medium;
+    if (lowEl) lowEl.textContent = counts.low;
+
+    // Render risk items
+    if (risks.length === 0) {
+      container.innerHTML = '<div class="risk-empty">No risks registered</div>';
+      return;
+    }
+
+    container.innerHTML = risks.slice(0, 10).map((risk) => `
+      <div class="risk-item">
+        <div class="risk-item-header">
+          <span class="risk-item-title">${this.escapeHtml(risk.title)}</span>
+          <div class="risk-item-badges">
+            <span class="risk-badge ${risk.severity}">${this.escapeHtml(risk.severity)}</span>
+            <span class="risk-badge ${risk.status}">${this.escapeHtml(risk.status)}</span>
+          </div>
+        </div>
+        <div class="risk-item-desc">${this.escapeHtml(risk.description || risk.impact || '')}</div>
+      </div>
+    `).join('');
+  }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  new WebPanelClient();
+  const client = new WebPanelClient();
+  
+  // Fetch transparency and risks on load
+  client.fetchTransparency();
+  client.fetchRisks();
+
+  // Set up refresh handlers
+  const transparencyRefresh = document.getElementById('transparency-refresh');
+  if (transparencyRefresh) {
+    transparencyRefresh.addEventListener('click', () => client.fetchTransparency());
+  }
+
+  const riskRefresh = document.getElementById('risk-refresh');
+  if (riskRefresh) {
+    riskRefresh.addEventListener('click', () => client.fetchRisks());
+  }
 });

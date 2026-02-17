@@ -3,7 +3,7 @@
   "displayName": "MythologIQ: FailSafe (feat. QoreLogic)",
   "description": "Complete AI governance for modern development. Genesis visualization + QoreLogic framework + Sentinel monitoring.",
   "icon": "icon.png",
-  "version": "3.5.2",
+  "version": "3.6.0",
   "publisher": "MythologIQ",
   "license": "MIT",
   "repository": {
@@ -14,8 +14,8 @@
     "vscode": "^1.90.0"
   },
   "categories": [
-    "Other",
-    "Linters",
+    "Machine Learning",
+    "Testing",
     "Visualization"
   ],
   "keywords": [
@@ -25,7 +25,15 @@
     "verification",
     "trust",
     "qorelogic",
-    "sentinel"
+    "sentinel",
+    "ai safety",
+    "agent governance",
+    "code audit",
+    "risk management",
+    "compliance",
+    "deterministic governance",
+    "intent management",
+    "checkpoint"
   ],
   "activationEvents": [
     "onStartupFinished"
@@ -95,6 +103,22 @@
       {
         "command": "failsafe.resumeMonitoring",
         "title": "FailSafe: Resume Monitoring"
+      },
+      {
+        "command": "failsafe.openProjectOverview",
+        "title": "FailSafe: Open Project Overview"
+      },
+      {
+        "command": "failsafe.openRiskRegister",
+        "title": "FailSafe: Open Risk Register"
+      },
+      {
+        "command": "failsafe.addRisk",
+        "title": "FailSafe: Add Risk"
+      },
+      {
+        "command": "failsafe.setGovernanceMode",
+        "title": "FailSafe: Set Governance Mode"
       }
     ],
     "viewsContainers": {
@@ -111,6 +135,17 @@
         {
           "id": "failsafe.sidebarView",
           "name": "FailSafe Monitor",
+          "type": "webview",
+          "icon": "media/failsafe-icon.png"
+        },
+        {
+          "id": "failsafe.riskRegister",
+          "name": "Risk Register",
+          "type": "webview"
+        },
+        {
+          "id": "failsafe.transparencyPanel",
+          "name": "Transparency Stream",
           "type": "webview"
         }
       ]
@@ -195,6 +230,21 @@
           "default": false,
           "description": "Enable strict governance (block on all warnings)"
         },
+        "failsafe.governance.mode": {
+          "type": "string",
+          "enum": [
+            "observe",
+            "assist",
+            "enforce"
+          ],
+          "enumDescriptions": [
+            "Observe only - No blocking, just visibility and logging. Zero friction.",
+            "Assist - Smart defaults, auto-intent creation, gentle prompts. Recommended for most users.",
+            "Enforce - Full control, intent-gated saves, L3 approvals. For compliance workflows."
+          ],
+          "default": "observe",
+          "description": "Governance mode determines how FailSafe interacts with your workflow. Start with 'observe' and increase when ready."
+        },
         "failsafe.feedback.outputDir": {
           "type": "string",
           "default": ".failsafe/feedback",
@@ -204,6 +254,33 @@
           "type": "number",
           "default": 120,
           "description": "L3 first response SLA in seconds"
+        },
+        "failsafe.qorelogic.externalRuntime.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable Qore runtime integration in Command Center monitor."
+        },
+        "failsafe.qorelogic.externalRuntime.baseUrl": {
+          "type": "string",
+          "default": "http://127.0.0.1:7777",
+          "description": "Base URL for FailSafe-Qore runtime API."
+        },
+        "failsafe.qorelogic.externalRuntime.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Optional API key for Qore runtime. Leave empty to use environment variable fallback."
+        },
+        "failsafe.qorelogic.externalRuntime.apiKeyEnvVar": {
+          "type": "string",
+          "default": "QORE_API_KEY",
+          "description": "Environment variable name used when runtime API key is not set in extension settings."
+        },
+        "failsafe.qorelogic.externalRuntime.timeoutMs": {
+          "type": "number",
+          "default": 4000,
+          "minimum": 500,
+          "maximum": 30000,
+          "description": "Timeout in milliseconds for Qore runtime API calls."
         },
         "failsafe.bootstrap.autoInstallGit": {
           "type": "boolean",

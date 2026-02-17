@@ -41,6 +41,8 @@ test('compact webpanel renders without in-panel hub button', async ({ page }) =>
     await expect(page.locator('.brand-subtitle')).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Open FailSafe Command Center' })).toHaveCount(0);
     await expect(page.locator('#recent-line')).toBeVisible();
+    await expect(page.locator('#qore-runtime-state')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Refresh Runtime Status' })).toBeVisible();
     await expect(page.getByText('FailSafe is an open source project by MythologIQ Labs, LLC')).toBeVisible();
   } finally {
     if (typeof (server as { closeAllConnections?: () => void }).closeAllConnections === 'function') {

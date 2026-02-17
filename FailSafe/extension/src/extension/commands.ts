@@ -7,6 +7,9 @@ import { IntentService } from "../governance/IntentService";
 import { IntentType } from "../governance/types/IntentTypes";
 import { DetectedSystem, FrameworkSync } from "../qorelogic/FrameworkSync";
 import { WorkspaceMigration } from "../qorelogic/WorkspaceMigration";
+import { RiskManager, RiskSeverity, RiskCategory } from "../qorelogic/risk";
+import { ProjectOverviewPanel } from "../genesis/panels/ProjectOverviewPanel";
+import { EventBus } from "../shared/EventBus";
 import * as http from "http";
 
 const ROADMAP_BASE_URL = "http://localhost:9376";
@@ -114,6 +117,9 @@ export function registerCommands(
   qorelogic: QoreLogicManager,
   sentinel: SentinelDaemon,
   feedback: FeedbackManager,
+  riskManager: RiskManager,
+  intentService: IntentService,
+  eventBus: EventBus,
 ): void {
   context.subscriptions.push(
     vscode.commands.registerCommand("failsafe.openSidebar", async () => {
@@ -125,6 +131,86 @@ export function registerCommands(
       } catch {
         // Best-effort focus; container open is the primary action.
       }
+    }),
+  );
+
+  // Project Overview Panel command
+  context.subscriptions.push(
+    vscode.commands.registerCommand("failsafe.openProjectOverview", () => {
+      ProjectOverviewPanel.createOrShow(
+        context.extensionUri,
+        sentinel,
+        qorelogic,
+        riskManager,
+        intentService,
+        eventBus,
+      );
+    }),
+  );
+
+  // Risk Register commands
+  context.subscriptions.push(
+    vscode.commands.registerCommand("failsafe.openRiskRegister", async () => {
+      await vscode.commands.executeCommand(
+        "workbench.view.extension.failsafe-sidebar-container",
+      );
+      // Focus the risk register view if available
+      try {
+        await vscode.commands.executeCommand("failsafe.riskRegister.focus");
+      } catch {
+        // Fall back to sidebar
+      }
+    }),
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("failsafe.addRisk", async () => {
+      const title = await vscode.window.showInputBox({
+        prompt: "Risk Title",
+        placeHolder: "Brief description of the risk",
+      });
+      if (!title) return;
+
+      const description = await vscode.window.showInputBox({
+        prompt: "Risk Description",
+        placeHolder: "Detailed description of the risk",
+      });
+      if (!description) return;
+
+      const severityPick = await vscode.window.showQuickPick(
+        ["critical", "high", "medium", "low"],
+        { placeHolder: "Select Risk Severity" },
+      );
+      if (!severityPick) return;
+      const severity = severityPick as RiskSeverity;
+
+      const categoryPick = await vscode.window.showQuickPick(
+        [
+          "security",
+          "performance",
+          "technical-debt",
+          "dependency",
+          "governance",
+          "compliance",
+          "operational",
+        ],
+        { placeHolder: "Select Risk Category" },
+      );
+      if (!categoryPick) return;
+      const category = categoryPick as RiskCategory;
+
+      const risk = riskManager.createRisk({
+        title,
+        description,
+        severity,
+        category,
+        impact: "",
+        mitigation: "",
+      });
+
+      vscode.window.showInformationMessage(
+        `Risk "${risk.title}" created with ID: ${risk.id}`,
+      );
     }),
   );
 
@@ -353,12 +439,58 @@ export function registerCommands(
   );
 }
 
-
 export function registerGovernanceCommands(
   context: vscode.ExtensionContext,
   intentService: IntentService,
   workspaceRoot: string,
 ) {
+  // Set Governance Mode Command
+  context.subscriptions.push(
+    vscode.commands.registerCommand("failsafe.setGovernanceMode", async () => {
+      const currentMode = vscode.workspace
+        .getConfiguration("failsafe")
+        .get<string>("governance.mode", "observe");
+
+      const modes = [
+        {
+          label: "$(eye) Observe",
+          description:
+            "No blocking, just visibility and logging. Zero friction.",
+          value: "observe",
+        },
+        {
+          label: "$(lightbulb) Assist",
+          description:
+            "Smart defaults, auto-intent creation, gentle prompts. Recommended for most users.",
+          value: "assist",
+        },
+        {
+          label: "$(lock) Enforce",
+          description:
+            "Full control, intent-gated saves, L3 approvals. For compliance workflows.",
+          value: "enforce",
+        },
+      ];
+
+      const choice = await vscode.window.showQuickPick(modes, {
+        placeHolder: `Current mode: ${currentMode}. Select a new governance mode:`,
+      });
+
+      if (choice) {
+        await vscode.workspace
+          .getConfiguration("failsafe")
+          .update(
+            "governance.mode",
+            choice.value,
+            vscode.ConfigurationTarget.Workspace,
+          );
+        vscode.window.showInformationMessage(
+          `FailSafe governance mode set to: ${choice.value}`,
+        );
+      }
+    }),
+  );
+
   // Create Intent Command
   context.subscriptions.push(
     vscode.commands.registerCommand("failsafe.createIntent", async () => {

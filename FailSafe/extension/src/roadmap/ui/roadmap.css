@@ -537,6 +537,50 @@ body {
   min-width: 78px;
 }
 
+.qore-grid {
+  display: grid;
+  gap: 6px;
+}
+
+.qore-row {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.qore-label {
+  font-size: 0.62rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-weight: 700;
+}
+
+.qore-value {
+  font-size: 0.67rem;
+  color: #d8e5ff;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.qore-check-btn {
+  margin-top: 9px;
+  width: 100%;
+  border: 1px solid #3a5785;
+  border-radius: 9px;
+  background: rgba(14, 35, 66, 0.65);
+  color: #d8e5ff;
+  font-size: 0.66rem;
+  font-weight: 700;
+  padding: 7px 10px;
+  cursor: pointer;
+}
+
+.qore-check-btn:hover {
+  filter: brightness(1.1);
+}
+
 .legal {
   margin-top: 8px;
   text-align: center;
@@ -583,3 +627,162 @@ body {
 .legal a:hover {
   color: #c8ddff;
 }
+
+/* Transparency Stream Styles */
+.card-action {
+  cursor: pointer;
+  font-size: 0.85rem;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.card-action:hover {
+  opacity: 1;
+}
+
+.transparency-list {
+  max-height: 200px;
+  overflow-y: auto;
+  font-size: 0.7rem;
+}
+
+.transparency-empty {
+  color: var(--muted);
+  font-style: italic;
+  padding: 8px;
+  text-align: center;
+}
+
+.transparency-item {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--card-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.transparency-item:last-child {
+  border-bottom: none;
+}
+
+.transparency-type {
+  font-weight: 600;
+  font-size: 0.6rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.transparency-type.build_started { background: #e3f2fd; color: #1565c0; }
+.transparency-type.build_completed { background: #e8f5e9; color: #2e7d32; }
+.transparency-type.dispatched { background: #fff3e0; color: #ef6c00; }
+.transparency-type.dispatch_blocked { background: #ffebee; color: #c62828; }
+
+.transparency-time {
+  color: var(--muted);
+  font-size: 0.6rem;
+}
+
+.transparency-details {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Risk Register Styles */
+.risk-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.risk-stat {
+  text-align: center;
+  padding: 8px;
+  background: var(--card-bg);
+  border-radius: 6px;
+  border-left: 3px solid var(--card-border);
+}
+
+.risk-stat:nth-child(1) { border-left-color: #d32f2f; }
+.risk-stat:nth-child(2) { border-left-color: #f57c00; }
+.risk-stat:nth-child(3) { border-left-color: #fbc02d; }
+.risk-stat:nth-child(4) { border-left-color: #388e3c; }
+
+.risk-stat-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.risk-stat-label {
+  font-size: 0.55rem;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.risk-list {
+  max-height: 180px;
+  overflow-y: auto;
+  font-size: 0.7rem;
+}
+
+.risk-empty {
+  color: var(--muted);
+  font-style: italic;
+  padding: 8px;
+  text-align: center;
+}
+
+.risk-item {
+  padding: 8px;
+  border-radius: 6px;
+  background: var(--card-bg);
+  margin-bottom: 6px;
+  border: 1px solid var(--card-border);
+}
+
+.risk-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.risk-item-title {
+  font-weight: 600;
+  font-size: 0.7rem;
+}
+
+.risk-item-badges {
+  display: flex;
+  gap: 4px;
+}
+
+.risk-badge {
+  font-size: 0.55rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.risk-badge.critical { background: #d32f2f; color: white; }
+.risk-badge.high { background: #f57c00; color: white; }
+.risk-badge.medium { background: #fbc02d; color: black; }
+.risk-badge.low { background: #388e3c; color: white; }
+.risk-badge.open { background: #1976d2; color: white; }
+.risk-badge.mitigating { background: #7b1fa2; color: white; }
+.risk-badge.resolved { background: #388e3c; color: white; }
+
+.risk-item-desc {
+  color: var(--muted);
+  font-size: 0.6rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+

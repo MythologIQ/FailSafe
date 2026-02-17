@@ -1,10 +1,14 @@
 # MythologIQ FailSafe for VS Code
 
+**AI Governance & Safety for AI-Assisted Development**
+
 Token Efficient Governance for AI-assisted development in VSCode or Cursor.
 
 Local-first safety for AI coding assistants.
 
-**Current Release**: v3.5.2 (2026-02-11)
+**Marketplace Categories**: Machine Learning, Testing, Visualization
+
+**Current Release**: v3.6.0 (2026-02-17)
 
 ![FailSafe Banner](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/icon.png)
 
@@ -36,6 +40,54 @@ This separation reduces cognitive load and mirrors real-world operations environ
 - Feedback capture and export
 - QoreLogic propagation to detected systems
 
+## QoreLogic: The Governance Layer
+
+QoreLogic is the deterministic governance engine that enforces safety policies at the editor boundary. It operates on a fundamental principle: **governance decisions are made by code, not by asking an LLM to follow rules.**
+
+### Prompt Guidelines vs. Deterministic Governance
+
+| Aspect             | Prompt-Based Safety                     | QoreLogic Deterministic Governance   |
+| ------------------ | --------------------------------------- | ------------------------------------ |
+| **Decision Maker** | LLM interprets rules                    | TypeScript code executes rules       |
+| **Consistency**    | Varies with context, temperature, model | Identical output for identical input |
+| **Auditability**   | Opaque reasoning chain                  | Explicit code path, logged decisions |
+| **Bypass Risk**    | LLM can ignore or reinterpret           | Code cannot be persuaded             |
+| **Speed**          | Network latency + inference             | Sub-millisecond local execution      |
+
+### How QoreLogic Works
+
+1. **Risk Classification** — Files are classified as L1 (low), L2 (medium), or L3 (high) risk based on:
+   - File path triggers (e.g., `auth/`, `payment/`, `credential` → L3)
+   - Content triggers (e.g., `DROP TABLE`, `api_key`, `private_key` → L3)
+   - Configurable via `.failsafe/config/policies/risk_grading.json`
+
+2. **Policy Evaluation** — Each risk grade has deterministic requirements:
+   - **L1**: Heuristic check, 10% sampling, auto-approve
+   - **L2**: Full Sentinel pass, no auto-approve
+   - **L3**: Formal verification + human approval required
+
+3. **Ledger Recording** — Every governance decision is recorded to an append-only SOA ledger with:
+   - Agent identity and trust score
+   - Artifact path and risk grade
+   - Timestamp and decision rationale
+
+4. **Trust Dynamics** — Agent trust scores evolve based on outcomes:
+   - Approved L3 actions → trust increase
+   - Rejected or failed actions → trust decrease
+   - Trust scores influence future routing decisions
+
+### Why Deterministic Matters
+
+When an LLM is asked to enforce safety rules, it can:
+
+- Reinterpret rules based on context
+- Produce inconsistent decisions across similar inputs
+- Be influenced by prompt engineering attacks
+
+QoreLogic avoids these risks by executing deterministic TypeScript code at the governance boundary. The policy engine uses simple string matching and path analysis—no LLM inference required for governance decisions.
+
+**Example**: A file containing `api_key` will always trigger L3 classification. No prompt can persuade the code to ignore this trigger.
+
 ## Quick Start
 
 1. Install from the VS Code Marketplace or Open VSX.
@@ -54,7 +106,22 @@ Remediation: Create an Intent before modifying files.
 
 ## Features
 
-### 1. Save-Time Governance Gate
+### 1. Governance Modes
+
+FailSafe now supports three governance modes to match your workflow needs:
+
+| Mode        | Behavior                                                           | Best For                         |
+| ----------- | ------------------------------------------------------------------ | -------------------------------- |
+| **Observe** | No blocking, just visibility and logging. Zero friction.           | New users, exploration, learning |
+| **Assist**  | Smart defaults, auto-intent creation, gentle prompts. Recommended. | Most development workflows       |
+| **Enforce** | Full control, intent-gated saves, L3 approvals.                    | Compliance, regulated industries |
+
+Switch modes via:
+
+- Command: `FailSafe: Set Governance Mode`
+- Settings: `failsafe.governance.mode`
+
+### 2. Save-Time Governance Gate
 
 FailSafe evaluates save operations against the active Intent and can block writes when no active Intent exists or when a file is out of scope.
 
@@ -77,13 +144,14 @@ FailSafe evaluates save operations against the active Intent and can block write
 
 ### FailSafe Monitor UI (v3.5.2)
 
-![FailSafe Monitor UI v3.5.2](media/sidebar-ui-3.5.2.png)
+![FailSafe Monitor UI v3.5.2](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/extension/media/sidebar-ui-3.5.2.png)
 
 ### 5. Command Center UX (UI-02 + Extended Popout)
 
 - Compact `FailSafe Monitor` webpanel (`UI-02`) provides phase status, prioritized feature counters, Sentinel state, and workspace health at-a-glance.
 - `Open FailSafe Command Center` opens the extended popout console for deeper workflow views (Home, Run, Skills, Governance, Activity, Reports, Settings).
 - Branding is consistent across shell surfaces, including FailSafe icon usage in header and favicon contexts.
+- Optional external Qore runtime integration can display live runtime state, policy version, endpoint, and latency in the compact monitor.
 
 ### UI Positioning Model
 
@@ -117,35 +185,42 @@ Supported via internal sync flows when enabled by workspace governance configura
 
 ## Commands
 
-| Command                              | Description                 |
-| ------------------------------------ | --------------------------- |
-| FailSafe: Open Command Center (Browser Popout) | Main governance popout |
-| FailSafe: Open Command Center (Browser) | Browser launch alias |
-| FailSafe: Open Command Center (Editor Tab) | Compact monitor in editor |
-| FailSafe: Audit Current File         | Manual file audit           |
-| FailSafe: Secure Workspace           | Apply workspace hardening baseline |
-| FailSafe: Panic Stop                 | Stop active monitoring and guard actions |
-| FailSafe: Resume Monitoring          | Resume Sentinel monitoring |
+| Command                                        | Description                              |
+| ---------------------------------------------- | ---------------------------------------- |
+| FailSafe: Open Command Center (Browser Popout) | Main governance popout                   |
+| FailSafe: Open Command Center (Browser)        | Browser launch alias                     |
+| FailSafe: Open Command Center (Editor Tab)     | Compact monitor in editor                |
+| FailSafe: Audit Current File                   | Manual file audit                        |
+| FailSafe: Secure Workspace                     | Apply workspace hardening baseline       |
+| FailSafe: Panic Stop                           | Stop active monitoring and guard actions |
+| FailSafe: Resume Monitoring                    | Resume Sentinel monitoring               |
+| FailSafe: Set Governance Mode                  | Switch between Observe/Assist/Enforce    |
 
 ## Configuration
 
 Open Settings and search for `FailSafe`:
 
-| Setting                            | Default                          | Description                        |
-| ---------------------------------- | -------------------------------- | ---------------------------------- |
-| `failsafe.genesis.livingGraph`     | `true`                           | Enable Living Graph visualization  |
-| `failsafe.genesis.cortexOmnibar`   | `true`                           | Enable Cortex Omnibar              |
-| `failsafe.genesis.theme`           | `starry-night`                   | Genesis UI theme                   |
-| `failsafe.sentinel.enabled`        | `true`                           | Enable Sentinel monitoring         |
-| `failsafe.sentinel.mode`           | `heuristic`                      | Sentinel operating mode            |
-| `failsafe.sentinel.localModel`     | `phi3:mini`                      | Ollama model for LLM-assisted mode |
-| `failsafe.sentinel.ollamaEndpoint` | `http://localhost:11434`         | Ollama API endpoint                |
-| `failsafe.sentinel.ragEnabled`     | `true`                           | Persist Sentinel observations to local RAG store |
-| `failsafe.qorelogic.ledgerPath`    | `.failsafe/ledger/soa_ledger.db` | Ledger database path               |
-| `failsafe.qorelogic.strictMode`    | `false`                          | Block on all warnings              |
-| `failsafe.qorelogic.l3SLA`         | `120`                            | L3 response SLA (seconds)          |
-| `failsafe.bootstrap.autoInstallGit`| `true`                           | Auto-install Git (if missing) and initialize repo during bootstrap |
-| `failsafe.feedback.outputDir`      | `.failsafe/feedback`             | Feedback output directory          |
+| Setting                                           | Default                          | Description                                                        |
+| ------------------------------------------------- | -------------------------------- | ------------------------------------------------------------------ |
+| `failsafe.governance.mode`                        | `observe`                        | Governance mode: observe, assist, or enforce                       |
+| `failsafe.genesis.livingGraph`                    | `true`                           | Enable Living Graph visualization                                  |
+| `failsafe.genesis.cortexOmnibar`                  | `true`                           | Enable Cortex Omnibar                                              |
+| `failsafe.genesis.theme`                          | `starry-night`                   | Genesis UI theme                                                   |
+| `failsafe.sentinel.enabled`                       | `true`                           | Enable Sentinel monitoring                                         |
+| `failsafe.sentinel.mode`                          | `heuristic`                      | Sentinel operating mode                                            |
+| `failsafe.sentinel.localModel`                    | `phi3:mini`                      | Ollama model for LLM-assisted mode                                 |
+| `failsafe.sentinel.ollamaEndpoint`                | `http://localhost:11434`         | Ollama API endpoint                                                |
+| `failsafe.sentinel.ragEnabled`                    | `true`                           | Persist Sentinel observations to local RAG store                   |
+| `failsafe.qorelogic.ledgerPath`                   | `.failsafe/ledger/soa_ledger.db` | Ledger database path                                               |
+| `failsafe.qorelogic.strictMode`                   | `false`                          | Block on all warnings                                              |
+| `failsafe.qorelogic.l3SLA`                        | `120`                            | L3 response SLA (seconds)                                          |
+| `failsafe.qorelogic.externalRuntime.enabled`      | `false`                          | Enable external FailSafe-Qore runtime integration in monitor       |
+| `failsafe.qorelogic.externalRuntime.baseUrl`      | `http://127.0.0.1:7777`          | Base URL for external FailSafe-Qore runtime API                    |
+| `failsafe.qorelogic.externalRuntime.apiKey`       | ``                               | Optional API key used for runtime calls                            |
+| `failsafe.qorelogic.externalRuntime.apiKeyEnvVar` | `QORE_API_KEY`                   | Environment variable fallback for runtime API key                  |
+| `failsafe.qorelogic.externalRuntime.timeoutMs`    | `4000`                           | Timeout for runtime API calls in milliseconds                      |
+| `failsafe.bootstrap.autoInstallGit`               | `true`                           | Auto-install Git (if missing) and initialize repo during bootstrap |
+| `failsafe.feedback.outputDir`                     | `.failsafe/feedback`             | Feedback output directory                                          |
 
 If `.failsafe/config/sentinel.yaml` exists, it overrides settings. The initializer seeds it with `mode: hybrid` unless you change it.
 
@@ -202,3 +277,44 @@ python FailSafe/build/publish.py
 
 - `deploy.ps1` and `build-release.ps1` must be present in `FailSafe/build/`.
 - Valid tokens must be present in `.claude/.vsce-token` and `.claude/.ovsx-token`.
+
+<!-- CHECKPOINT-DEEP-DIVE:START -->
+
+## UI Snapshot
+
+![FailSafe UI Preview](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/ScreenShots/UI-Preview.png)
+
+## Checkpoint Integrity and Local Memory
+
+FailSafe tracks more than Git state. It records governance checkpoints as signed metadata records, then stores Sentinel observations in a local retrieval store so operators can recover the _what_, _why_, and _how_ of runtime decisions.
+
+### Process Reality
+
+1. Git readiness is enforced at bootstrap (`ensureGitRepositoryReady`), including optional auto-install and `git init` when needed.
+2. Governance events are checkpointed into `failsafe_checkpoints` with run/phase/status context and deterministic hashes.
+3. Each checkpoint carries `git_hash`, `payload_hash`, `entry_hash`, and `prev_hash` so chain integrity can be recomputed.
+4. Hub and API surfaces expose both summary and recent checkpoint records for operational visibility.
+5. Sentinel writes local memory records to `.failsafe/rag/sentinel-rag.db` (or JSONL fallback), including `payload_json`, `metadata_json`, and retrieval text.
+
+### Technical Advantages
+
+- Tamper evidence via hash-chained checkpoint records.
+- Git-linked governance state for repository-correlated audit trails.
+- Local-first memory retention for security and low-latency recall.
+- Deterministic fallback paths when SQLite is unavailable.
+
+### Claim-to-Source Map
+
+| Claim                                                                                       | Status      | Source                                                                                                                                                                                                         |
+| ------------------------------------------------------------------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Checkpoints persist in `failsafe_checkpoints` with typed governance fields.                 | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts:1533-1556`                                                                                                                                                    |
+| Checkpoint records include hash-chain material (`payload_hash`, `entry_hash`, `prev_hash`). | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts:1689-1695`                                                                                                                                                    |
+| Each checkpoint captures current Git head/hash context.                                     | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts:1647`                                                                                                                                                         |
+| Checkpoint history and chain validity are exposed over API.                                 | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts:331`                                                                                                                                                          |
+| Hub snapshot includes `checkpointSummary` and `recentCheckpoints`.                          | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts:742-743`                                                                                                                                                      |
+| Sentinel local RAG persists observation payload + metadata + retrieval text.                | implemented | `FailSafe/extension/src/sentinel/SentinelRagStore.ts:60-81`                                                                                                                                                    |
+| Sentinel RAG can fall back to JSONL when SQLite is unavailable.                             | implemented | `FailSafe/extension/src/sentinel/SentinelRagStore.ts:85-91`                                                                                                                                                    |
+| RAG writes are controlled by `failsafe.sentinel.ragEnabled` (default `true`).               | implemented | `FailSafe/extension/src/sentinel/SentinelDaemon.ts:339-341`                                                                                                                                                    |
+| Checkpoint rows are directly foreign-key linked to Sentinel RAG rows.                       | unknown     | No explicit join/foreign key in `RoadmapServer` checkpoint insert (`FailSafe/extension/src/roadmap/RoadmapServer.ts:1689`) or Sentinel RAG insert (`FailSafe/extension/src/sentinel/SentinelRagStore.ts:103`). |
+
+<!-- CHECKPOINT-DEEP-DIVE:END -->

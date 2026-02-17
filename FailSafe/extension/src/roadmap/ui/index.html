@@ -88,6 +88,45 @@
         </div>
       </section>
 
+      <section class="card">
+        <header class="card-head">
+          <span class="eyebrow">Qore Runtime</span>
+        </header>
+        <div class="qore-grid">
+          <div class="qore-row"><span class="qore-label">State</span><span id="qore-runtime-state" class="qore-value">Unknown</span></div>
+          <div class="qore-row"><span class="qore-label">Policy</span><span id="qore-policy-version" class="qore-value">n/a</span></div>
+          <div class="qore-row"><span class="qore-label">Endpoint</span><span id="qore-runtime-endpoint" class="qore-value">n/a</span></div>
+          <div class="qore-row"><span class="qore-label">Latency</span><span id="qore-runtime-latency" class="qore-value">n/a</span></div>
+        </div>
+        <button id="qore-runtime-check" class="qore-check-btn" type="button">Refresh Runtime Status</button>
+      </section>
+
+      <section class="card" id="transparency-card">
+        <header class="card-head">
+          <span class="eyebrow">Transparency Stream</span>
+          <span class="card-action" id="transparency-refresh" title="Refresh events">↻</span>
+        </header>
+        <div id="transparency-events" class="transparency-list">
+          <div class="transparency-empty">Loading events...</div>
+        </div>
+      </section>
+
+      <section class="card" id="risk-card">
+        <header class="card-head">
+          <span class="eyebrow">Risk Register</span>
+          <span class="card-action" id="risk-refresh" title="Refresh risks">↻</span>
+        </header>
+        <div id="risk-summary" class="risk-summary">
+          <div class="risk-stat"><span class="risk-stat-value" id="risk-critical">0</span><span class="risk-stat-label">Critical</span></div>
+          <div class="risk-stat"><span class="risk-stat-value" id="risk-high">0</span><span class="risk-stat-label">High</span></div>
+          <div class="risk-stat"><span class="risk-stat-value" id="risk-medium">0</span><span class="risk-stat-label">Medium</span></div>
+          <div class="risk-stat"><span class="risk-stat-value" id="risk-low">0</span><span class="risk-stat-label">Low</span></div>
+        </div>
+        <div id="risk-items" class="risk-list">
+          <div class="risk-empty">Loading risks...</div>
+        </div>
+      </section>
+
       <footer class="legal">
         FailSafe is an open source project by <a href="https://www.MythologIQ.studio" target="_blank" rel="noopener noreferrer">MythologIQ Labs, LLC</a>, provided \"as is\" without warranty of any kind.
       </footer>

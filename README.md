@@ -2,9 +2,11 @@
 
 # FailSafe
 
-**Governance for AI-assisted development in VS Code.**
+**AI Governance & Safety for AI-Assisted Development**
 
-*Local-first safety for AI coding assistants.*
+_Local-first safety for AI coding assistants._
+
+**Marketplace Categories**: Machine Learning, Testing, Visualization
 
 [![GitHub Stars](https://img.shields.io/github/stars/MythologIQ/FailSafe?style=social)](https://github.com/MythologIQ/FailSafe/stargazers)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -16,7 +18,7 @@
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Commands-8B5CF6)](https://github.com/MythologIQ/FailSafe/releases)
 [![Documentation](https://img.shields.io/badge/docs-FAILSAFE_SPECIFICATION-blue)](docs/FAILSAFE_SPECIFICATION.md)
 
-**Current Release**: v3.5.2 (2026-02-11)
+**Current Release**: v3.6.0 (2026-02-17)
 
 > **If this project helps you, please star it!** It helps others discover FailSafe.
 
@@ -38,7 +40,7 @@ _FailSafe is open source. Fork it, open issues, and submit pull requests._
 
 ## UI Preview
 
-![FailSafe UI Preview](FailSafe/ScreenShots/UI-Preview.png)
+![FailSafe UI Preview](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/ScreenShots/UI-Preview.png)
 
 ---
 
@@ -74,6 +76,7 @@ The Command Center is the primary control surface where teams plan, execute, and
 This separation reduces cognitive load and mirrors real-world operations environments: observe first, act deliberately.
 
 Primary UI surfaces in the current release:
+
 - `FailSafe Monitor` (compact)
 - `FailSafe Command Center` (extended)
 
@@ -81,19 +84,19 @@ Primary UI surfaces in the current release:
 
 ### Monitor
 
-![FailSafe Monitor](FailSafe/ScreenShots/FailSafe-Monitor.PNG)
+![FailSafe Monitor](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/ScreenShots/FailSafe-Monitor.PNG)
 
 ### Home
 
-![FailSafe Command Center Home](FailSafe/ScreenShots/FailSafe-CommandCenter-Home.PNG)
+![FailSafe Command Center Home](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/ScreenShots/FailSafe-CommandCenter-Home.PNG)
 
 ### Skills
 
-![FailSafe Command Center Skills](FailSafe/ScreenShots/FailSafe-CommandCenter-Skills.PNG)
+![FailSafe Command Center Skills](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/ScreenShots/FailSafe-CommandCenter-Skills.PNG)
 
 ### Governance
 
-![FailSafe Command Center Governance](FailSafe/ScreenShots/FailSafe-CommandCenter-Governance.PNG)
+![FailSafe Command Center Governance](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/ScreenShots/FailSafe-CommandCenter-Governance.PNG)
 
 ---
 
@@ -163,6 +166,68 @@ FailSafe uses a **Physical Isolation** model to separate workspace governance fr
 | Genesis   | Experience  | FailSafe Monitor + FailSafe Command Center |
 | QoreLogic | Governance  | Intent gating, policies, ledger, and trust |
 | Sentinel  | Enforcement | File watcher audits and verdicts           |
+
+### Governance Modes
+
+FailSafe supports three governance modes to match your workflow needs:
+
+| Mode        | Behavior                                                           | Best For                         |
+| ----------- | ------------------------------------------------------------------ | -------------------------------- |
+| **Observe** | No blocking, just visibility and logging. Zero friction.           | New users, exploration, learning |
+| **Assist**  | Smart defaults, auto-intent creation, gentle prompts. Recommended. | Most development workflows       |
+| **Enforce** | Full control, intent-gated saves, L3 approvals.                    | Compliance, regulated industries |
+
+Switch modes via the `FailSafe: Set Governance Mode` command or the `failsafe.governance.mode` setting.
+
+---
+
+## QoreLogic: The Governance Layer
+
+QoreLogic is the deterministic governance engine that enforces safety policies at the editor boundary. It operates on a fundamental principle: **governance decisions are made by code, not by asking an LLM to follow rules.**
+
+### Prompt Guidelines vs. Deterministic Governance
+
+| Aspect             | Prompt-Based Safety                     | QoreLogic Deterministic Governance   |
+| ------------------ | --------------------------------------- | ------------------------------------ |
+| **Decision Maker** | LLM interprets rules                    | TypeScript code executes rules       |
+| **Consistency**    | Varies with context, temperature, model | Identical output for identical input |
+| **Auditability**   | Opaque reasoning chain                  | Explicit code path, logged decisions |
+| **Bypass Risk**    | LLM can ignore or reinterpret           | Code cannot be persuaded             |
+| **Speed**          | Network latency + inference             | Sub-millisecond local execution      |
+
+### How QoreLogic Works
+
+1. **Risk Classification** — Files are classified as L1 (low), L2 (medium), or L3 (high) risk based on:
+   - File path triggers (e.g., `auth/`, `payment/`, `credential` → L3)
+   - Content triggers (e.g., `DROP TABLE`, `api_key`, `private_key` → L3)
+   - Configurable via `.failsafe/config/policies/risk_grading.json`
+
+2. **Policy Evaluation** — Each risk grade has deterministic requirements:
+   - **L1**: Heuristic check, 10% sampling, auto-approve
+   - **L2**: Full Sentinel pass, no auto-approve
+   - **L3**: Formal verification + human approval required
+
+3. **Ledger Recording** — Every governance decision is recorded to an append-only SOA ledger with:
+   - Agent identity and trust score
+   - Artifact path and risk grade
+   - Timestamp and decision rationale
+
+4. **Trust Dynamics** — Agent trust scores evolve based on outcomes:
+   - Approved L3 actions → trust increase
+   - Rejected or failed actions → trust decrease
+   - Trust scores influence future routing decisions
+
+### Why Deterministic Matters
+
+When an LLM is asked to enforce safety rules, it can:
+
+- Reinterpret rules based on context
+- Produce inconsistent decisions across similar inputs
+- Be influenced by prompt engineering attacks
+
+QoreLogic avoids these risks by executing deterministic TypeScript code at the governance boundary. The policy engine uses simple string matching and path analysis—no LLM inference required for governance decisions.
+
+**Example**: A file containing `api_key` will always trigger L3 classification. No prompt can persuade the code to ignore this trigger.
 
 ---
 
@@ -299,3 +364,44 @@ MIT - See [LICENSE](LICENSE)
 [GitHub](https://github.com/MythologIQ/FailSafe) | [Docs](FAILSAFE_SPECIFICATION.md)
 
 </div>
+
+<!-- CHECKPOINT-DEEP-DIVE:START -->
+
+## UI Snapshot
+
+![FailSafe UI Preview](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/ScreenShots/UI-Preview.png)
+
+## Checkpoint Integrity and Local Memory
+
+FailSafe tracks more than Git state. It records governance checkpoints as signed metadata records, then stores Sentinel observations in a local retrieval store so operators can recover the _what_, _why_, and _how_ of runtime decisions.
+
+### Process Reality
+
+1. Git readiness is enforced at bootstrap (`ensureGitRepositoryReady`), including optional auto-install and `git init` when needed.
+2. Governance events are checkpointed into `failsafe_checkpoints` with run/phase/status context and deterministic hashes.
+3. Each checkpoint carries `git_hash`, `payload_hash`, `entry_hash`, and `prev_hash` so chain integrity can be recomputed.
+4. Hub and API surfaces expose both summary and recent checkpoint records for operational visibility.
+5. Sentinel writes local memory records to `.failsafe/rag/sentinel-rag.db` (or JSONL fallback), including `payload_json`, `metadata_json`, and retrieval text.
+
+### Technical Advantages
+
+- Tamper evidence via hash-chained checkpoint records.
+- Git-linked governance state for repository-correlated audit trails.
+- Local-first memory retention for security and low-latency recall.
+- Deterministic fallback paths when SQLite is unavailable.
+
+### Claim-to-Source Map
+
+| Claim                                                                                       | Status      | Source                                                                                                                                                                                                         |
+| ------------------------------------------------------------------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Checkpoints persist in `failsafe_checkpoints` with typed governance fields.                 | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts:1533-1556`                                                                                                                                                    |
+| Checkpoint records include hash-chain material (`payload_hash`, `entry_hash`, `prev_hash`). | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts:1689-1695`                                                                                                                                                    |
+| Each checkpoint captures current Git head/hash context.                                     | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts:1647`                                                                                                                                                         |
+| Checkpoint history and chain validity are exposed over API.                                 | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts:331`                                                                                                                                                          |
+| Hub snapshot includes `checkpointSummary` and `recentCheckpoints`.                          | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts:742-743`                                                                                                                                                      |
+| Sentinel local RAG persists observation payload + metadata + retrieval text.                | implemented | `FailSafe/extension/src/sentinel/SentinelRagStore.ts:60-81`                                                                                                                                                    |
+| Sentinel RAG can fall back to JSONL when SQLite is unavailable.                             | implemented | `FailSafe/extension/src/sentinel/SentinelRagStore.ts:85-91`                                                                                                                                                    |
+| RAG writes are controlled by `failsafe.sentinel.ragEnabled` (default `true`).               | implemented | `FailSafe/extension/src/sentinel/SentinelDaemon.ts:339-341`                                                                                                                                                    |
+| Checkpoint rows are directly foreign-key linked to Sentinel RAG rows.                       | unknown     | No explicit join/foreign key in `RoadmapServer` checkpoint insert (`FailSafe/extension/src/roadmap/RoadmapServer.ts:1689`) or Sentinel RAG insert (`FailSafe/extension/src/sentinel/SentinelRagStore.ts:103`). |
+
+<!-- CHECKPOINT-DEEP-DIVE:END -->

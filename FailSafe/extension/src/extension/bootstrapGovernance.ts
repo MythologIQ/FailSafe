@@ -5,6 +5,8 @@ import { GovernanceRouter } from "../governance/GovernanceRouter";
 import { GovernanceStatusBar } from "../governance/GovernanceStatusBar";
 import { EvaluationRouter } from "../governance/EvaluationRouter";
 import { SessionManager } from "../governance/SessionManager";
+import { SecurityReplayGuard } from "../governance/SecurityReplayGuard";
+import { PromptTransparency } from "../governance/PromptTransparency";
 import { CoreSubstrate } from "./bootstrapCore";
 import { Logger } from "../shared/Logger";
 import { registerGovernanceCommands } from "./commands";
@@ -14,6 +16,8 @@ export interface GovernanceSubstrate {
   intentService: IntentService;
   governanceRouter: GovernanceRouter;
   governanceStatusBar: GovernanceStatusBar;
+  replayGuard: SecurityReplayGuard;
+  transparency: PromptTransparency;
 }
 
 export async function bootstrapGovernance(
@@ -76,10 +80,17 @@ export async function bootstrapGovernance(
 
   registerGovernanceCommands(context, intentService, core.workspaceRoot);
 
+  // Initialize security and transparency services
+  const replayGuard = new SecurityReplayGuard(core.workspaceRoot);
+  const transparency = new PromptTransparency(core.eventBus);
+  context.subscriptions.push({ dispose: () => replayGuard.dispose() });
+
   return {
     sessionManager,
     intentService,
     governanceRouter,
     governanceStatusBar,
+    replayGuard,
+    transparency,
   };
 }

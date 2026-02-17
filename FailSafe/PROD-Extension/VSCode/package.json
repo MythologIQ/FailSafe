@@ -3,7 +3,7 @@
   "displayName": "MythologIQ: FailSafe (feat. QoreLogic)",
   "description": "Token Efficient Governance for AI-assisted development in VSCode or Cursor",
   "icon": "icon.png",
-  "version": "3.5.2",
+  "version": "3.6.1",
   "publisher": "MythologIQ",
   "license": "MIT",
   "repository": {
@@ -14,8 +14,8 @@
     "vscode": "^1.74.0"
   },
   "categories": [
-    "Other",
-    "Snippets"
+    "Machine Learning",
+    "Testing"
   ],
   "keywords": [
     "failsafe",
@@ -25,11 +25,9 @@
     "ai",
     "prompts"
   ],
-  "icon": "icon.png",
+
   "main": "./out/extension.js",
-  "activationEvents": [
-    "onCommand:failsafe.copilot.scaffold"
-  ],
+  "activationEvents": [],
   "contributes": {
     "commands": [
       {

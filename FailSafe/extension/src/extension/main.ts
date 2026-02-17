@@ -20,6 +20,9 @@ import { LedgerManager } from "../qorelogic/ledger/LedgerManager";
 import { ShadowGenomeManager } from "../qorelogic/shadow/ShadowGenomeManager";
 import { RoadmapServer } from "../roadmap";
 import { FailSafeSidebarProvider } from "../roadmap/FailSafeSidebarProvider";
+import { RiskManager } from "../qorelogic/risk";
+import { RiskRegisterProvider } from "../genesis/views/RiskRegisterProvider";
+import { TransparencyPanel } from "../genesis/panels/TransparencyPanel";
 
 // Bootstrap Modules
 import { bootstrapCore } from "./bootstrapCore";
@@ -96,18 +99,80 @@ export async function activate(
     }
 
     // 8. Roadmap Server (external browser)
+    const extConfig = vscode.workspace.getConfiguration("failsafe");
+    const qoreRuntimeEnabled = extConfig.get<boolean>(
+      "qorelogic.externalRuntime.enabled",
+      false,
+    );
+    const qoreRuntimeBaseUrl = extConfig.get<string>(
+      "qorelogic.externalRuntime.baseUrl",
+      "http://127.0.0.1:7777",
+    );
+    const qoreRuntimeApiKeySetting = extConfig
+      .get<string>("qorelogic.externalRuntime.apiKey", "")
+      .trim();
+    const qoreRuntimeApiKeyEnvVar = extConfig
+      .get<string>("qorelogic.externalRuntime.apiKeyEnvVar", "QORE_API_KEY")
+      .trim();
+    const qoreRuntimeTimeoutMs = extConfig.get<number>(
+      "qorelogic.externalRuntime.timeoutMs",
+      4000,
+    );
+    const qoreRuntimeApiKey =
+      qoreRuntimeApiKeySetting ||
+      (qoreRuntimeApiKeyEnvVar
+        ? process.env[qoreRuntimeApiKeyEnvVar]
+        : undefined) ||
+      process.env.QORE_API_KEY;
+    const riskManager = new RiskManager(
+      core.workspaceRoot,
+      core.workspaceRoot.split(/[/\\]/).pop() || "project",
+    );
+
     roadmapServer = new RoadmapServer(
       core.planManager,
       qorelogicManager,
       sentinelDaemon,
       eventBus,
+      {
+        qoreRuntime: {
+          enabled: qoreRuntimeEnabled,
+          baseUrl: qoreRuntimeBaseUrl,
+          apiKey: qoreRuntimeApiKey,
+          timeoutMs: qoreRuntimeTimeoutMs,
+        },
+        workspaceRoot: core.workspaceRoot,
+      },
     );
     roadmapServer.start();
     context.subscriptions.push({ dispose: () => roadmapServer?.stop() });
+    const riskRegisterProvider = new RiskRegisterProvider(
+      context.extensionUri,
+      riskManager,
+      eventBus,
+    );
+    const transparencyPanelProvider = new TransparencyPanel(
+      context.extensionUri,
+      eventBus,
+      core.workspaceRoot,
+    );
+    context.subscriptions.push(riskRegisterProvider, transparencyPanelProvider);
     context.subscriptions.push(
       vscode.window.registerWebviewViewProvider(
         FailSafeSidebarProvider.viewType,
         new FailSafeSidebarProvider(),
+      ),
+    );
+    context.subscriptions.push(
+      vscode.window.registerWebviewViewProvider(
+        RiskRegisterProvider.viewType,
+        riskRegisterProvider,
+      ),
+    );
+    context.subscriptions.push(
+      vscode.window.registerWebviewViewProvider(
+        TransparencyPanel.viewType,
+        transparencyPanelProvider,
       ),
     );
 
@@ -118,6 +183,9 @@ export async function activate(
       qorelogicManager,
       sentinelDaemon,
       feedbackManager,
+      riskManager,
+      gov.intentService,
+      eventBus,
     );
 
     // 10. Startup Checks

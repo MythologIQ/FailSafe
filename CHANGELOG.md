@@ -9,7 +9,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- Post-3.5.2 scope to be scheduled.
+- Post-3.6.0 scope to be scheduled.
+
+---
+
+## [3.6.0] - 2026-02-17
+
+### Changed
+
+- **Marketplace Categories** - Updated from `["Other", "Linters", "Visualization"]` to `["Machine Learning", "Testing", "Visualization"]` for better discoverability in the VS Code Marketplace.
+- **Keywords Expanded** - Added 8 new keywords: `ai safety`, `agent governance`, `code audit`, `risk management`, `compliance`, `deterministic governance`, `intent management`, `checkpoint`.
+- **Documentation** - Added marketplace category badges to README files for transparency.
+
+### Added
+
+- **Governance Modes** - Three modes to match workflow needs:
+  - `observe` - No blocking, just visibility and logging. Zero friction.
+  - `assist` - Smart defaults, auto-intent creation, gentle prompts. Recommended for most users.
+  - `enforce` - Full control, intent-gated saves, L3 approvals. For compliance workflows.
+- **Set Governance Mode Command** - `FailSafe: Set Governance Mode` to quickly switch between modes.
+- **Auto-Intent Creation** - In Assist mode, FailSafe automatically creates intents when missing.
+- **Default Governance Mode** - New installations default to `observe` mode for zero-friction onboarding.
+- **EnforcementEngine** - Now respects governance mode setting for all enforcement decisions.
+
+---
+
+## [3.5.6] - 2026-02-12
+
+### Changed
+
+- Release metadata/version bump to 3.5.6 to start the Command Center UI overhaul sprint.
 
 ---
 

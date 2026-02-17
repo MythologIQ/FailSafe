@@ -2,12 +2,30 @@ import { describe, it } from 'mocha';
 import * as assert from 'assert';
 import * as path from 'path';
 import * as fs from 'fs';
-import { EnforcementEngine } from '../governance/EnforcementEngine';
+import { EnforcementEngine, IntentProvider } from '../governance/EnforcementEngine';
 import { IntentHistoryLog } from '../governance/IntentHistoryLog';
+import { Intent } from '../governance/types/IntentTypes';
 
 // Mock Provider
-const mockProvider = {
-  getActiveIntent: async () => null
+const mockProvider: IntentProvider = {
+  getActiveIntent: async () => null,
+  createIntent: async (params): Promise<Intent> => ({
+    id: 'test-intent-id',
+    type: params.type as Intent['type'],
+    purpose: params.purpose,
+    scope: {
+      files: params.scope.files,
+      modules: params.scope.modules,
+      riskGrade: params.scope.riskGrade as 'L1' | 'L2' | 'L3',
+    },
+    status: 'PULSE',
+    metadata: {
+      author: params.metadata.author,
+      tags: params.metadata.tags,
+    },
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  })
 };
 
 describe('Governance Security Tests', () => {

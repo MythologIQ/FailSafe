@@ -4,6 +4,7 @@ import { LedgerManager } from "../qorelogic/ledger/LedgerManager";
 import { TrustEngine } from "../qorelogic/trust/TrustEngine";
 import { PolicyEngine } from "../qorelogic/policies/PolicyEngine";
 import { ShadowGenomeManager } from "../qorelogic/shadow/ShadowGenomeManager";
+import { GovernanceAdapter } from "../governance/GovernanceAdapter";
 import { CoreSubstrate } from "./bootstrapCore";
 import { GovernanceSubstrate } from "./bootstrapGovernance";
 import { Logger } from "../shared/Logger";
@@ -14,6 +15,7 @@ export interface QoreLogicSubstrate {
   policyEngine: PolicyEngine;
   shadowGenomeManager: ShadowGenomeManager;
   qorelogicManager: QoreLogicManager;
+  governanceAdapter: GovernanceAdapter;
 }
 
 export async function bootstrapQoreLogic(
@@ -53,11 +55,22 @@ export async function bootstrapQoreLogic(
 
   gov.governanceRouter.setQoreLogicManager(qorelogicManager);
 
+  // Create and wire GovernanceAdapter
+  const governanceAdapter = new GovernanceAdapter(
+    core.eventBus,
+    ledgerManager,
+    policyEngine,
+    gov.replayGuard,
+    gov.transparency,
+  );
+  gov.governanceRouter.setGovernanceAdapter(governanceAdapter);
+
   return {
     ledgerManager,
     trustEngine,
     policyEngine,
     shadowGenomeManager,
     qorelogicManager,
+    governanceAdapter,
   };
 }

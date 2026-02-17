@@ -19,6 +19,7 @@ import { EventBus } from '../shared/EventBus';
 import { SentinelVerdict } from '../shared/types';
 
 const PORT = 9376;
+const HOST = '127.0.0.1';
 type InstalledSkill = {
   id: string;
   displayName: string;
@@ -86,6 +87,28 @@ type SkillRegistryEntry = {
   runtimeEligibility?: string;
 };
 
+type QoreRuntimeOptions = {
+  enabled: boolean;
+  baseUrl: string;
+  apiKey?: string;
+  timeoutMs: number;
+};
+
+type RoadmapServerOptions = {
+  qoreRuntime?: Partial<QoreRuntimeOptions>;
+  workspaceRoot?: string;
+};
+
+type QoreRuntimeSnapshot = {
+  enabled: boolean;
+  connected: boolean;
+  baseUrl: string;
+  policyVersion?: string;
+  latencyMs?: number;
+  lastCheckedAt: string;
+  error?: string;
+};
+
 export class RoadmapServer {
   private app: express.Application;
   private server: HttpServer | null = null;
@@ -98,6 +121,8 @@ export class RoadmapServer {
   private uiDir: string;
   private checkpointDb: { prepare: (sql: string) => { run: (...args: unknown[]) => unknown; get: (...args: unknown[]) => unknown; all: (...args: unknown[]) => unknown } } | null = null;
   private checkpointMemory: CheckpointRecord[] = [];
+  private qoreRuntime: QoreRuntimeOptions;
+  private workspaceRoot: string;
   private sealedSubstantiateCompletions = new Set<string>();
   private checkpointTypeRegistry = new Set<string>([
     'snapshot.created',
@@ -121,12 +146,15 @@ export class RoadmapServer {
     qorelogicManager: QoreLogicManager,
     sentinelDaemon: SentinelDaemon,
     eventBus: EventBus,
+    options: RoadmapServerOptions = {},
   ) {
     this.planManager = planManager;
     this.qorelogicManager = qorelogicManager;
     this.sentinelDaemon = sentinelDaemon;
     this.eventBus = eventBus;
     this.app = express();
+    this.qoreRuntime = this.resolveQoreRuntimeOptions(options.qoreRuntime);
+    this.workspaceRoot = options.workspaceRoot || process.cwd();
     this.uiDir = this.resolveUiDir();
     this.initializeCheckpointStore();
     this.setupRoutes();
@@ -151,6 +179,16 @@ export class RoadmapServer {
 
     // Last fallback to avoid crashes; requests will still 404 if missing.
     return path.join(__dirname, 'ui');
+  }
+
+  private resolveQoreRuntimeOptions(options?: Partial<QoreRuntimeOptions>): QoreRuntimeOptions {
+    const baseUrl = String(options?.baseUrl || 'http://127.0.0.1:7777').trim().replace(/\/+$/, '');
+    return {
+      enabled: Boolean(options?.enabled),
+      baseUrl,
+      apiKey: options?.apiKey ? String(options.apiKey) : undefined,
+      timeoutMs: Math.max(500, Math.min(30000, Number(options?.timeoutMs || 4000))),
+    };
   }
 
   private setupRoutes(): void {
@@ -190,6 +228,47 @@ export class RoadmapServer {
     this.app.get('/api/hub', async (_req: Request, res: Response) => {
       const hub = await this.buildHubSnapshot();
       res.json(hub);
+    });
+
+    this.app.get('/api/qore/runtime', async (req: Request, res: Response) => {
+      if (this.rejectIfRemote(req, res)) {
+        return;
+      }
+      const snapshot = await this.fetchQoreRuntimeSnapshot();
+      res.json(snapshot);
+    });
+
+    this.app.get('/api/qore/health', async (req: Request, res: Response) => {
+      if (this.rejectIfRemote(req, res)) {
+        return;
+      }
+      if (!this.qoreRuntime.enabled) {
+        res.status(503).json({ error: 'Qore runtime integration is disabled' });
+        return;
+      }
+      const response = await this.fetchQoreJson('/health');
+      res.status(response.ok ? 200 : 502).json(response.ok ? response.body : {
+        error: response.error,
+        detail: response.detail,
+      });
+    });
+
+    this.app.post('/api/qore/evaluate', async (req: Request, res: Response) => {
+      if (this.rejectIfRemote(req, res)) {
+        return;
+      }
+      if (!this.qoreRuntime.enabled) {
+        res.status(503).json({ error: 'Qore runtime integration is disabled' });
+        return;
+      }
+      const response = await this.fetchQoreJson('/evaluate', {
+        method: 'POST',
+        body: req.body || {},
+      });
+      res.status(response.ok ? 200 : 502).json(response.ok ? response.body : {
+        error: response.error,
+        detail: response.detail,
+      });
     });
 
     // API: Get specific sprint details
@@ -262,6 +341,18 @@ export class RoadmapServer {
       });
     });
 
+    // API: Get transparency events (prompt lifecycle audit stream)
+    this.app.get('/api/transparency', (_req: Request, res: Response) => {
+      const events = this.getTransparencyEvents(50);
+      res.json({ events });
+    });
+
+    // API: Get risk register
+    this.app.get('/api/risks', (_req: Request, res: Response) => {
+      const risks = this.getRiskRegister();
+      res.json({ risks });
+    });
+
     this.app.get('/api/checkpoints', (req: Request, res: Response) => {
       const limitRaw = Number.parseInt(String(req.query.limit || '50'), 10);
       const limit = Number.isFinite(limitRaw) ? Math.max(1, Math.min(200, limitRaw)) : 50;
@@ -272,7 +363,10 @@ export class RoadmapServer {
     });
 
     // API: Action controls for Hub buttons
-    this.app.post('/api/actions/resume-monitoring', async (_req: Request, res: Response) => {
+    this.app.post('/api/actions/resume-monitoring', async (req: Request, res: Response) => {
+      if (this.rejectIfRemote(req, res)) {
+        return;
+      }
       try {
         if (!this.sentinelDaemon.isRunning()) {
           await this.sentinelDaemon.start();
@@ -293,7 +387,10 @@ export class RoadmapServer {
       }
     });
 
-    this.app.post('/api/actions/panic-stop', (_req: Request, res: Response) => {
+    this.app.post('/api/actions/panic-stop', (req: Request, res: Response) => {
+      if (this.rejectIfRemote(req, res)) {
+        return;
+      }
       try {
         this.sentinelDaemon.stop();
         this.recordCheckpoint({
@@ -355,6 +452,24 @@ export class RoadmapServer {
     const viewParam = String(req.query.view || '').toLowerCase();
     // Legacy shell still handles older specialized view links.
     return viewParam === 'timeline' || viewParam === 'current-sprint' || viewParam === 'live-activity';
+  }
+
+  private isLocalRequest(req: Request): boolean {
+    const remoteAddress = req.socket?.remoteAddress || req.ip || '';
+    const normalized = String(remoteAddress).trim();
+    return (
+      normalized === '127.0.0.1' ||
+      normalized === '::1' ||
+      normalized === '::ffff:127.0.0.1'
+    );
+  }
+
+  private rejectIfRemote(req: Request, res: Response): boolean {
+    if (this.isLocalRequest(req)) {
+      return false;
+    }
+    res.status(403).json({ error: 'Forbidden: local access only' });
+    return true;
   }
 
   private setupWebSocket(): void {
@@ -531,6 +646,81 @@ export class RoadmapServer {
     });
   }
 
+  private async fetchQoreRuntimeSnapshot(): Promise<QoreRuntimeSnapshot> {
+    const checkedAt = new Date().toISOString();
+    if (!this.qoreRuntime.enabled) {
+      return {
+        enabled: false,
+        connected: false,
+        baseUrl: this.qoreRuntime.baseUrl,
+        lastCheckedAt: checkedAt,
+        error: 'disabled',
+      };
+    }
+
+    const startedAt = Date.now();
+    const health = await this.fetchQoreJson('/health');
+    if (!health.ok) {
+      return {
+        enabled: true,
+        connected: false,
+        baseUrl: this.qoreRuntime.baseUrl,
+        latencyMs: Date.now() - startedAt,
+        lastCheckedAt: checkedAt,
+        error: health.error || 'runtime_unreachable',
+      };
+    }
+
+    const policy = await this.fetchQoreJson('/policy/version');
+    return {
+      enabled: true,
+      connected: true,
+      baseUrl: this.qoreRuntime.baseUrl,
+      policyVersion: policy.ok ? String((policy.body as { policyVersion?: string }).policyVersion || '') : undefined,
+      latencyMs: Date.now() - startedAt,
+      lastCheckedAt: checkedAt,
+    };
+  }
+
+  private async fetchQoreJson(
+    endpoint: string,
+    options?: { method?: 'GET' | 'POST'; body?: unknown },
+  ): Promise<{ ok: true; body: unknown } | { ok: false; error: string; detail?: string }> {
+    if (!this.qoreRuntime.enabled) {
+      return { ok: false, error: 'disabled' };
+    }
+
+    const timeout = this.qoreRuntime.timeoutMs;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeout);
+    const headers: Record<string, string> = { 'content-type': 'application/json' };
+    if (this.qoreRuntime.apiKey) {
+      headers['x-qore-api-key'] = this.qoreRuntime.apiKey;
+    }
+
+    try {
+      const response = await fetch(`${this.qoreRuntime.baseUrl}${endpoint}`, {
+        method: options?.method || 'GET',
+        headers,
+        body: options?.body ? JSON.stringify(options.body) : undefined,
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
+
+      if (!response.ok) {
+        const detail = await response.text();
+        return { ok: false, error: `upstream_${response.status}`, detail };
+      }
+
+      const body = await response.json();
+      return { ok: true, body };
+    } catch (error) {
+      clearTimeout(timer);
+      const detail = error instanceof Error ? error.message : String(error);
+      return { ok: false, error: 'request_failed', detail };
+    }
+  }
+
   private async buildHubSnapshot(): Promise<Record<string, unknown>> {
     const sprints = this.planManager.getAllSprints();
     const currentSprint = this.planManager.getCurrentSprint();
@@ -551,6 +741,7 @@ export class RoadmapServer {
       },
       { CBT: 0, KBT: 0, IBT: 0 } as { CBT: number; KBT: number; IBT: number },
     );
+    const qoreRuntime = await this.fetchQoreRuntimeSnapshot();
 
     const nodeStatus = [
       {
@@ -571,6 +762,16 @@ export class RoadmapServer {
         state: quarantined > 0 ? 'degraded' : 'nominal',
         signal: `${Math.round(avgTrust * 100)}% avg trust`,
       },
+      {
+        id: 'qore-runtime',
+        label: 'Qore Runtime',
+        state: !qoreRuntime.enabled ? 'paused' : qoreRuntime.connected ? 'nominal' : 'degraded',
+        signal: !qoreRuntime.enabled
+          ? 'integration disabled'
+          : qoreRuntime.connected
+            ? `connected (${qoreRuntime.policyVersion || 'unknown policy'})`
+            : `unreachable (${qoreRuntime.baseUrl})`,
+      },
     ];
 
     return {
@@ -589,12 +790,13 @@ export class RoadmapServer {
       nodeStatus,
       checkpointSummary: this.getCheckpointSummary(),
       recentCheckpoints: this.getRecentCheckpoints(12),
+      qoreRuntime,
       generatedAt: new Date().toISOString(),
     };
   }
 
   start(): void {
-    this.server = this.app.listen(PORT, () => {
+    this.server = this.app.listen(PORT, HOST, () => {
       console.log(`Roadmap server: http://localhost:${PORT}`);
     });
     this.setupWebSocket();
@@ -1688,5 +1890,54 @@ export class RoadmapServer {
       latestAt: recent?.timestamp || null,
       latestVerdict: recent?.policyVerdict || null,
     };
+  }
+
+  /**
+   * Get recent transparency events from the prompt lifecycle audit stream.
+   * These events track prompt builds, dispatches, and governance decisions.
+   */
+  private getTransparencyEvents(limit: number): Array<Record<string, unknown>> {
+    // Read from the transparency log file if it exists
+    const logPath = path.join(this.workspaceRoot, '.failsafe', 'logs', 'transparency.jsonl');
+    const events: Array<Record<string, unknown>> = [];
+    
+    try {
+      if (fs.existsSync(logPath)) {
+        const content = fs.readFileSync(logPath, 'utf-8');
+        const lines = content.trim().split('\n').filter(Boolean);
+        const recentLines = lines.slice(-limit);
+        for (const line of recentLines) {
+          try {
+            events.push(JSON.parse(line));
+          } catch {
+            // Skip malformed lines
+          }
+        }
+      }
+    } catch {
+      // Return empty array on error
+    }
+    
+    return events;
+  }
+
+  /**
+   * Get the risk register from the QoreLogic risk manager.
+   */
+  private getRiskRegister(): Array<Record<string, unknown>> {
+    // The RiskManager stores risks in .failsafe/risks/risks.json
+    const risksPath = path.join(this.workspaceRoot, '.failsafe', 'risks', 'risks.json');
+    
+    try {
+      if (fs.existsSync(risksPath)) {
+        const content = fs.readFileSync(risksPath, 'utf-8');
+        const data = JSON.parse(content);
+        return Array.isArray(data.risks) ? data.risks : [];
+      }
+    } catch {
+      // Return empty array on error
+    }
+    
+    return [];
   }
 }

@@ -9,7 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- Post-3.5.2 scope to be scheduled.
+- Post-3.6.0 scope to be scheduled.
+
+## [3.6.0] - 2026-02-17
+
+### Changed
+
+- **Marketplace Categories** - Updated from `["Other", "Linters", "Visualization"]` to `["Machine Learning", "Testing", "Visualization"]` for better discoverability in the VS Code Marketplace.
+- **Keywords Expanded** - Added 8 new keywords: `ai safety`, `agent governance`, `code audit`, `risk management`, `compliance`, `deterministic governance`, `intent management`, `checkpoint`.
+- **Documentation** - Added marketplace category badges to README files for transparency.
+
+## [3.5.6] - 2026-02-12
+
+### Changed
+
+- Release metadata/version bump to 3.5.6 to start the Command Center UI overhaul sprint.
 
 ## [3.5.2] - 2026-02-11
 

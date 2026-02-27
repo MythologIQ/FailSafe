@@ -18,7 +18,7 @@ _Local-first safety for AI coding assistants._
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Commands-8B5CF6)](https://github.com/MythologIQ/FailSafe/releases)
 [![Documentation](https://img.shields.io/badge/docs-FAILSAFE_SPECIFICATION-blue)](docs/FAILSAFE_SPECIFICATION.md)
 
-**Current Release**: v3.6.0 (2026-02-17)
+**Current Release**: v4.0.0 (2026-02-27)
 
 > **If this project helps you, please star it!** It helps others discover FailSafe.
 

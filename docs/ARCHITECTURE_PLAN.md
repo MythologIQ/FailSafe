@@ -143,7 +143,28 @@ FailSafe/extension/src/genesis/panels/
 - `DojoViewProvider.ts` - Link to Roadmap view ✅
 - `main.ts` - Wire PlanManager at activation ✅
 
-### Planned Additions (v4.0.0 Token Economics) 📋 PLANNED
+### Planned Additions (v4.1.0 Time-Travel Rollback) 📋 PLANNED
+
+```
+FailSafe/extension/src/governance/revert/    # NEW MODULE (zero vscode deps)
+|-- types.ts                                 # CheckpointRef, RevertRequest, RevertResult
+|-- GitResetService.ts                       # Git status/log/reset via spawn (with hash validation)
+`-- FailSafeRevertService.ts                 # Orchestrator: git + RAG purge + ledger seal (TOCTOU guard)
+
+FailSafe/extension/src/sentinel/
+`-- SentinelJsonlFallback.ts                 # Extracted JSONL ops (atomic write)
+
+FailSafe/extension/src/genesis/panels/
+|-- RevertPanel.ts                           # VS Code webview (confirmation + result)
+`-- templates/
+    `-- RevertTemplate.ts                    # HTML template (timeline + confirm modal + cancel handler)
+
+FailSafe/extension/src/test/governance/revert/
+|-- GitResetService.test.ts                  # Git command mocking + hash validation tests
+`-- FailSafeRevertService.test.ts            # Orchestration + partial failure + TOCTOU tests
+```
+
+### Planned Additions (v4.0.0 Token Economics) ✅ IMPLEMENTED
 
 ```
 FailSafe/extension/src/economics/          # NEW MODULE (zero vscode deps)

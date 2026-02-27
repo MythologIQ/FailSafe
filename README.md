@@ -327,9 +327,27 @@ npm run compile
 
 ---
 
+## What's New in v4.0.0
+
+- **Token Economics Dashboard**: Real-time visibility into prompt token usage, RAG savings, and cost-per-action metrics. Open via `FailSafe: Token Economics Dashboard` or `Ctrl+Alt+F` from the Command Center.
+- **Governance Modes**: Three modes to match your workflow — Observe (zero friction), Assist (smart defaults), and Enforce (full control with intent-gated saves).
+- **Chat Participant**: Use `@failsafe` in VS Code chat for governance queries — `/intent`, `/audit`, `/trust`, `/status`, `/seal`.
+- **Risk Register & Transparency Stream**: Dedicated sidebar panels for risk tracking and real-time governance event visibility.
+- **API-First Service Isolation**: Economics module built with zero VS Code dependencies, designed for future extraction to standalone runtimes.
+
+### Getting Started with Token Economics
+
+1. Install FailSafe from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe) or [Open VSX](https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe).
+2. Open the Command Palette (`Ctrl+Shift+P`) and run `FailSafe: Token Economics Dashboard`.
+3. The dashboard displays token savings, context sync ratio, and daily cost aggregates as your workspace generates governance events.
+4. Data persists locally in `.failsafe/economics/` — no external services required.
+
+> **Enjoying FailSafe?** Please consider leaving a review on the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe) or [Open VSX](https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe). Your feedback helps other developers discover FailSafe and directly shapes its roadmap.
+
+---
+
 ## Upcoming Features (On the Roadmap)
 
-- **Token Economics & ROI Dashboard**: Visual quantification of token expenditure and context-sync savings.
 - **FailSafe Revert ("Time-Travel")**: One-click remediation to revert AI code changes, reset Git head, and purge poisoned context.
 - **CI/CD Pipeline Enforcer**: Headless Judge verification validating `failsafe_checkpoints` via cryptography during PRs.
 - **Shared "Core Axioms"**: IDE startup synchronization of enterprise-level Policy and Axioms to enforce team-wide Q-DNA compliance.

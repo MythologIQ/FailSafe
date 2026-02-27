@@ -8,7 +8,7 @@ Local-first safety for AI coding assistants.
 
 **Marketplace Categories**: Machine Learning, Testing, Visualization
 
-**Current Release**: v3.6.0 (2026-02-17)
+**Current Release**: v4.0.0 (2026-02-27)
 
 ![FailSafe Banner](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/icon.png)
 
@@ -190,6 +190,7 @@ Supported via internal sync flows when enabled by workspace governance configura
 | FailSafe: Open Command Center (Browser Popout) | Main governance popout                   |
 | FailSafe: Open Command Center (Browser)        | Browser launch alias                     |
 | FailSafe: Open Command Center (Editor Tab)     | Compact monitor in editor                |
+| FailSafe: Token Economics Dashboard            | Open token economics and ROI dashboard   |
 | FailSafe: Audit Current File                   | Manual file audit                        |
 | FailSafe: Secure Workspace                     | Apply workspace hardening baseline       |
 | FailSafe: Panic Stop                           | Stop active monitoring and guard actions |
@@ -241,6 +242,8 @@ FailSafe seeds a `.failsafe/` directory in your workspace for configuration, led
 - VS Code 1.74.0 or later
 - Node.js 18+ (for development)
 - Ollama (optional, for LLM-assisted mode)
+
+> **Enjoying FailSafe?** Please consider leaving a review on the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe) or [Open VSX](https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe). Your feedback helps other developers discover FailSafe and directly shapes its roadmap.
 
 ## Contributing
 

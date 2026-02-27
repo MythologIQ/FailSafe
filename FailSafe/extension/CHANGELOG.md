@@ -9,7 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- Post-3.6.0 scope to be scheduled.
+- Post-4.0.0 scope to be scheduled.
+
+## [4.0.0] - 2026-02-27
+
+### Added
+
+- **Token Economics Dashboard** (`failsafe.showEconomics`): Real-time visibility into prompt token usage, RAG savings, and cost-per-action metrics.
+- **Economics Service Layer** (`src/economics/`): Pure TypeScript module with zero VS Code dependencies — `CostCalculator`, `EconomicsPersistence`, `TokenAggregatorService`.
+- **EventBus-Driven Telemetry**: Automatic tracking of `prompt.dispatch` and `prompt.response` events for token aggregation.
+- **Economics Webview Panel** (`EconomicsPanel`, `EconomicsTemplate`): Interactive dashboard with hero metrics, donut chart (context sync ratio), and daily bar chart.
+- **Governance Mode System**: Three modes — Observe, Assist, Enforce — selectable via `failsafe.governance.mode` setting or `FailSafe: Set Governance Mode` command.
+- **Risk Register Panel**: Dedicated webview for tracking and managing project risks.
+- **Transparency Stream Panel**: Real-time governance event stream in the sidebar.
+- **Chat Participant**: `@failsafe` chat commands for intent, audit, trust, status, and seal operations.
+- **220 Passing Tests**: Full test coverage for economics service layer (CostCalculator, EconomicsPersistence, TokenAggregatorService).
+
+### Changed
+
+- **UI Terminology**: "Operations Hub" renamed to "Command Center" across all surfaces.
+- **Command Updates**: Hub commands now reference "Command Center" (`failsafe.openPlannerHub`, `failsafe.openPlannerHubEditor`).
+- **API-First Service Isolation**: Economics module designed with zero vscode imports for future Tauri/Rust extraction readiness.
 
 ## [3.6.0] - 2026-02-17
 

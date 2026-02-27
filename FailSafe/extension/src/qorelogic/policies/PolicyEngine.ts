@@ -10,6 +10,7 @@
 
 import * as path from 'path';
 import * as fs from 'fs';
+import * as crypto from 'crypto';
 import { IConfigProvider } from '../../core/interfaces';
 import { RiskGrade, OperationalMode } from '../../shared/types';
 
@@ -237,6 +238,17 @@ export class PolicyEngine {
      */
     setOperationalMode(mode: OperationalMode): void {
         this.operationalMode = mode;
+    }
+
+    /**
+     * Gap 4: Get a hash of the current policy configuration for replay fidelity
+     */
+    getPolicyHash(): string {
+        const policyJson = JSON.stringify({
+            risk: this.riskPolicy,
+            citation: this.citationPolicy,
+        });
+        return crypto.createHash('sha256').update(policyJson).digest('hex').substring(0, 16);
     }
 
     /**

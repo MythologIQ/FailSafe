@@ -5,6 +5,7 @@ import { TrustEngine } from "../qorelogic/trust/TrustEngine";
 import { PolicyEngine } from "../qorelogic/policies/PolicyEngine";
 import { ShadowGenomeManager } from "../qorelogic/shadow/ShadowGenomeManager";
 import { GovernanceAdapter } from "../governance/GovernanceAdapter";
+import { BreakGlassProtocol } from "../governance/BreakGlassProtocol";
 import { VscodeSecretStore, VscodeStateStore } from "../core/adapters/vscode";
 import { CoreSubstrate } from "./bootstrapCore";
 import { GovernanceSubstrate } from "./bootstrapGovernance";
@@ -17,6 +18,7 @@ export interface QoreLogicSubstrate {
   shadowGenomeManager: ShadowGenomeManager;
   qorelogicManager: QoreLogicManager;
   governanceAdapter: GovernanceAdapter;
+  breakGlass: BreakGlassProtocol;
 }
 
 export async function bootstrapQoreLogic(
@@ -79,6 +81,15 @@ export async function bootstrapQoreLogic(
   );
   gov.governanceRouter.setGovernanceAdapter(governanceAdapter);
 
+  // Gap 2: Instantiate BreakGlassProtocol (after ledger exists)
+  const breakGlass = new BreakGlassProtocol(ledgerManager, core.eventBus);
+  breakGlass.setModeChangeHandler(async (mode) => {
+    await vscode.workspace
+      .getConfiguration("failsafe")
+      .update("governance.mode", mode, vscode.ConfigurationTarget.Workspace);
+  });
+  context.subscriptions.push({ dispose: () => breakGlass.dispose() });
+
   return {
     ledgerManager,
     trustEngine,
@@ -86,5 +97,6 @@ export async function bootstrapQoreLogic(
     shadowGenomeManager,
     qorelogicManager,
     governanceAdapter,
+    breakGlass,
   };
 }

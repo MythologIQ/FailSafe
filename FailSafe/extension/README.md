@@ -8,7 +8,7 @@ Local-first safety for AI coding assistants.
 
 **Marketplace Categories**: Machine Learning, Testing, Visualization
 
-**Current Release**: v4.0.0 (2026-02-27)
+**Current Release**: v4.1.0 (2026-02-27)
 
 ![FailSafe Banner](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/icon.png)
 

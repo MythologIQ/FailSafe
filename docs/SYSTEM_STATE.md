@@ -1,8 +1,8 @@
 # SYSTEM STATE
 
-**Last Updated:** 2026-02-27T14:00:00.000Z
-**Version:** v4.1.0 Time-Travel Rollback (SEALED)
-**Chain Entry:** #86 (SEALED)
+**Last Updated:** 2026-02-27T17:45:00.000Z
+**Version:** v4.1.0 Governance Gaps (SEALED)
+**Chain Entry:** #91 (SEALED)
 
 ---
 

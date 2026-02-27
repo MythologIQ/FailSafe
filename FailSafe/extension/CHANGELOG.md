@@ -9,7 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- Post-4.0.0 scope to be scheduled.
+- Post-4.1.0 scope to be scheduled.
+
+## [4.1.0] - 2026-02-27
+
+### Added
+
+- **Gap 1: Mode-Change Audit Trail** — All `governance.mode` configuration changes now recorded to SOA ledger with `USER_OVERRIDE` event type, including `previousMode` and `newMode` payload.
+- **Gap 2: Break-Glass Protocol** — Time-limited governance overrides with:
+  - `failsafe.breakGlass` command for emergency activation (10+ char justification required)
+  - `failsafe.revokeBreakGlass` command for manual revocation
+  - Configurable duration (1–480 minutes)
+  - Auto-revert on expiry
+  - Full audit trail in ledger (`break_glass.activated`, `break_glass.revoked`, `break_glass.expired`)
+  - Event bus emissions for UI integration
+- **Gap 3: Artifact Hash on Write** — SHA-256 hash of file content at save-time recorded in ledger for independent verification.
+- **Gap 4: Verdict Replay Harness** — `failsafe.replayVerdict` command reconstructs inputs and re-executes past governance decisions for audit verification, with policy hash and artifact hash comparison.
+
+### Changed
+
+- Ledger payload now includes `policyHash` for replay fidelity.
+- `LedgerManager.getEntryById()` added for verdict replay lookups.
+- `PolicyEngine.getPolicyHash()` added for policy version tracking.
 
 ## [4.0.0] - 2026-02-27
 

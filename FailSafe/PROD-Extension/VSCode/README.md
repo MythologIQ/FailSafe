@@ -1,4 +1,4 @@
-# FailSafe v4.0.0 (VS Code Marketplace Package)
+# FailSafe v4.1.0 (VS Code Marketplace Package)
 
 AI Governance & Safety for AI-assisted development in VS Code/Cursor.
 
@@ -6,6 +6,13 @@ AI Governance & Safety for AI-assisted development in VS Code/Cursor.
 
 - `FailSafe Monitor` (compact sidebar)
 - `FailSafe Command Center` (extended popout/editor)
+
+## What's New in v4.1.0
+
+- **Break-Glass Protocol**: Emergency governance overrides with time limits, justification, and auto-revert.
+- **Mode-Change Audit Trail**: All governance mode changes recorded to ledger.
+- **Artifact Hashing**: SHA-256 hash of file content at save-time for verification.
+- **Verdict Replay**: Command to replay and verify past governance decisions.
 
 ## What's New in v4.0.0
 

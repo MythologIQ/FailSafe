@@ -3,7 +3,7 @@
   "displayName": "FailSafe (feat. QoreLogic)",
   "description": "Complete AI governance for modern development. Genesis visualization + QoreLogic framework + Sentinel monitoring.",
   "icon": "icon.png",
-  "version": "4.0.0",
+  "version": "4.1.0",
   "publisher": "MythologIQ",
   "license": "MIT",
   "repository": {
@@ -129,6 +129,18 @@
       {
         "command": "failsafe.revertToCheckpoint",
         "title": "FailSafe: Revert to Checkpoint (Time-Travel)"
+      },
+      {
+        "command": "failsafe.breakGlass",
+        "title": "FailSafe: Activate Break-Glass Override"
+      },
+      {
+        "command": "failsafe.revokeBreakGlass",
+        "title": "FailSafe: Revoke Break-Glass Override"
+      },
+      {
+        "command": "failsafe.replayVerdict",
+        "title": "FailSafe: Replay Verdict (Audit)"
       }
     ],
     "viewsContainers": {

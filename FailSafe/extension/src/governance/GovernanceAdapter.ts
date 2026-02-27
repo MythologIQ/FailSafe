@@ -32,6 +32,7 @@ export interface DecisionRequest {
   agentDid: string;
   intentId?: string;
   artifactPath?: string;
+  artifactHash?: string;
   payload?: Record<string, unknown>;
   nonce?: string;
 }
@@ -197,6 +198,7 @@ export class GovernanceAdapter {
         agentDid: request.agentDid,
         agentTrustAtAction: this.trustEngine.getTrustScore(request.agentDid)?.score ?? 0.0,
         artifactPath: request.artifactPath,
+        artifactHash: request.artifactHash,
         riskGrade: policyResult.riskGrade,
         payload: {
           action: request.action,
@@ -204,6 +206,7 @@ export class GovernanceAdapter {
           nonce,
           conditions: policyResult.conditions,
           reason: policyResult.reason,
+          policyHash: this.policyEngine.getPolicyHash(),
         },
       });
       return String(entry.id);

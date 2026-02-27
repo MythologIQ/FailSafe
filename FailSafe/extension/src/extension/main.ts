@@ -76,6 +76,111 @@ export async function activate(
     ledgerManager = qore.ledgerManager;
     shadowGenomeManager = qore.shadowGenomeManager;
 
+    // 3.5 Gap 1: Mode-change audit trail
+    let lastKnownMode = vscode.workspace
+      .getConfiguration("failsafe")
+      .get<string>("governance.mode", "observe");
+    context.subscriptions.push(
+      vscode.workspace.onDidChangeConfiguration((e) => {
+        if (e.affectsConfiguration("failsafe.governance.mode")) {
+          const newMode = vscode.workspace
+            .getConfiguration("failsafe")
+            .get<string>("governance.mode", "observe");
+          if (newMode !== lastKnownMode) {
+            const previousMode = lastKnownMode;
+            lastKnownMode = newMode;
+            qore.ledgerManager
+              .appendEntry({
+                eventType: "USER_OVERRIDE",
+                agentDid: "vscode-user",
+                payload: { action: "governance_mode_changed", previousMode, newMode },
+              })
+              .catch((err) => logger.error("Failed to record mode change", err));
+          }
+        }
+      }),
+    );
+
+    // 3.6 Gap 2: Break-glass commands
+    context.subscriptions.push(
+      vscode.commands.registerCommand("failsafe.breakGlass", async () => {
+        const reason = await vscode.window.showInputBox({
+          prompt: "Break-Glass Justification (min 10 chars)",
+          validateInput: (v) => (v.length < 10 ? "Min 10 characters" : undefined),
+        });
+        if (!reason) return;
+
+        const durationStr = await vscode.window.showQuickPick(
+          ["15", "30", "60", "120", "240"],
+          { placeHolder: "Override duration (minutes)" },
+        );
+        if (!durationStr) return;
+
+        const currentMode = vscode.workspace
+          .getConfiguration("failsafe")
+          .get<string>("governance.mode", "observe") as "observe" | "assist" | "enforce";
+        try {
+          const record = await qore.breakGlass.activate(
+            { reason, durationMinutes: parseInt(durationStr, 10), requestedBy: "vscode-user" },
+            currentMode,
+          );
+          vscode.window.showWarningMessage(`Break-glass active until ${record.expiresAt}`);
+        } catch (err) {
+          vscode.window.showErrorMessage(
+            `Break-glass failed: ${err instanceof Error ? err.message : err}`,
+          );
+        }
+      }),
+    );
+
+    context.subscriptions.push(
+      vscode.commands.registerCommand("failsafe.revokeBreakGlass", async () => {
+        try {
+          const record = await qore.breakGlass.revoke("vscode-user");
+          vscode.window.showInformationMessage(
+            `Break-glass revoked. Mode restored: ${record.previousMode}`,
+          );
+        } catch (err) {
+          vscode.window.showErrorMessage(
+            `Revoke failed: ${err instanceof Error ? err.message : err}`,
+          );
+        }
+      }),
+    );
+
+    // 3.7 Gap 4: Verdict Replay command
+    context.subscriptions.push(
+      vscode.commands.registerCommand("failsafe.replayVerdict", async () => {
+        const entryIdStr = await vscode.window.showInputBox({
+          prompt: "Ledger Entry ID to replay",
+          validateInput: (v) => (/^\d+$/.test(v) ? undefined : "Must be a number"),
+        });
+        if (!entryIdStr) return;
+
+        const { VerdictReplayEngine } = await import("../governance/VerdictReplayEngine");
+        const engine = new VerdictReplayEngine(qore.ledgerManager, qore.policyEngine);
+        try {
+          const result = await engine.replay(parseInt(entryIdStr, 10));
+          if (result.match) {
+            vscode.window.showInformationMessage(
+              `Verdict replay MATCHED (Entry #${entryIdStr})`,
+            );
+          } else {
+            vscode.window.showWarningMessage(
+              `Verdict replay DIVERGED: ${result.divergenceReason}`,
+            );
+          }
+          if (result.warnings.length > 0) {
+            logger.warn("Replay warnings", { warnings: result.warnings });
+          }
+        } catch (err) {
+          vscode.window.showErrorMessage(
+            `Replay failed: ${err instanceof Error ? err.message : err}`,
+          );
+        }
+      }),
+    );
+
     // 4. Sentinel
     const sentinel = await bootstrapSentinel(context, core, qore, logger);
     sentinelDaemon = sentinel.sentinelDaemon;

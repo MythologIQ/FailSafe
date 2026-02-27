@@ -1,3 +1,5 @@
+import * as crypto from "crypto";
+import * as fs from "fs";
 import { IntentService } from "./IntentService";
 import { EnforcementEngine, CommandExecutor } from "./EnforcementEngine";
 import { GovernanceStatusBar } from "./GovernanceStatusBar";
@@ -112,11 +114,23 @@ export class GovernanceRouter {
 
     // 2. GovernanceAdapter Preflight (if available)
     if (this.governanceAdapter) {
+      // Gap 3: Compute artifact hash for ledger traceability
+      let artifactHash: string | undefined;
+      try {
+        if (fs.existsSync(fsPath)) {
+          const content = fs.readFileSync(fsPath);
+          artifactHash = crypto.createHash("sha256").update(content).digest("hex");
+        }
+      } catch {
+        // Non-fatal: proceed without hash
+      }
+
       const governanceResult = await this.governanceAdapter.evaluate({
         action: "file.write",
         agentDid: "vscode-user",
         intentId: activeIntent?.id,
         artifactPath: fsPath,
+        artifactHash,
         payload: { actionType: action.type },
       });
 

@@ -327,6 +327,15 @@ export class LedgerManager {
         return rows.map(this.mapRowToEntry);
     }
 
+    /**
+     * Gap 4: Get a single entry by ID for verdict replay
+     */
+    async getEntryById(entryId: number): Promise<LedgerEntry | null> {
+        if (!this.db) { return null; }
+        const row = this.db.prepare('SELECT * FROM soa_ledger WHERE id = ?').get(entryId) as LedgerRow | undefined;
+        return row ? this.mapRowToEntry(row) : null;
+    }
+
     private mapRowToEntry(row: LedgerRow): LedgerEntry {
         return {
             id: row.id,

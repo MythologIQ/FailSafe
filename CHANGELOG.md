@@ -9,7 +9,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- Post-3.6.0 scope to be scheduled.
+- Post-4.1.0 scope to be scheduled.
+
+---
+
+## [4.1.0] - 2026-02-27
+
+### Added
+
+- **Gap 1: Mode-Change Audit Trail** — All `governance.mode` configuration changes now recorded to SOA ledger with `USER_OVERRIDE` event type.
+- **Gap 2: Break-Glass Protocol** — Time-limited governance overrides with justification requirements, auto-revert, and full audit trail.
+- **Gap 3: Artifact Hash on Write** — SHA-256 hash of file content at save-time recorded in ledger for verification.
+- **Gap 4: Verdict Replay Harness** — `failsafe.replayVerdict` command for audit verification of past governance decisions.
+
+### Changed
+
+- Ledger payload now includes `policyHash` for replay fidelity.
+- New methods: `LedgerManager.getEntryById()`, `PolicyEngine.getPolicyHash()`.
+
+---
+
+## [4.0.0] - 2026-02-27
+
+### Added
+
+- **Token Economics Dashboard** — Real-time visibility into prompt token usage, RAG savings, and cost-per-action metrics.
+- **Economics Service Layer** — Pure TypeScript module with `CostCalculator`, `EconomicsPersistence`, `TokenAggregatorService`.
+- **Governance Mode System** — Three modes (Observe, Assist, Enforce) selectable via settings or command.
+- **Risk Register Panel** — Dedicated webview for tracking and managing project risks.
+- **Transparency Stream Panel** — Real-time governance event stream in the sidebar.
+- **Chat Participant** — `@failsafe` chat commands for intent, audit, trust, status, and seal operations.
+
+### Changed
+
+- UI terminology: "Operations Hub" renamed to "Command Center".
+- API-first service isolation for future Tauri/Rust extraction.
 
 ---
 

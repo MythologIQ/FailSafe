@@ -1,4 +1,3 @@
-import * as fs from 'fs';
 import * as crypto from 'crypto';
 import { ConfigManager } from '../shared/ConfigManager';
 import { Logger } from '../shared/Logger';
@@ -6,10 +5,12 @@ import { HeuristicResult, LLMEvaluation, SentinelEvent, SentinelVerdict, Sentine
 import { HeuristicEngine } from './engines/HeuristicEngine';
 import { VerdictEngine } from './engines/VerdictEngine';
 import { ExistenceEngine } from './engines/ExistenceEngine';
+import { readFileContentSafe } from './utils/FileReader';
+import { LLMClient } from './utils/LLMClient';
 
 /**
  * VerdictArbiter
- * 
+ *
  * Orchestrates the decision-making process for Sentinel.
  * - Coordinates Heuristics, LLM, and Existence checks.
  * - Determines when to escalate to LLM analysis.
@@ -21,6 +22,7 @@ export class VerdictArbiter {
     private heuristicEngine: HeuristicEngine;
     private verdictEngine: VerdictEngine;
     private existenceEngine: ExistenceEngine;
+    private llmClient: LLMClient;
 
     private llmAvailable: boolean = false;
     private currentMode: SentinelMode = 'heuristic';
@@ -36,6 +38,7 @@ export class VerdictArbiter {
         this.verdictEngine = verdictEngine;
         this.existenceEngine = existenceEngine;
         this.logger = new Logger('VerdictArbiter');
+        this.llmClient = new LLMClient(configManager);
 
         // Initialize mode from config
         const config = this.configManager.getConfig();
@@ -50,62 +53,13 @@ export class VerdictArbiter {
         return this.llmAvailable;
     }
 
-    /** Validate LLM endpoint URL to prevent SSRF */
-    private isValidLLMEndpoint(endpoint: string): boolean {
-        try {
-            const url = new URL(endpoint);
-            // Only allow http/https protocols
-            if (!['http:', 'https:'].includes(url.protocol)) {
-                return false;
-            }
-            // Block internal/private network addresses
-            const hostname = url.hostname.toLowerCase();
-            const blockedHosts = ['169.254.', '10.', '172.16.', '172.17.', '172.18.', '172.19.',
-                '172.20.', '172.21.', '172.22.', '172.23.', '172.24.', '172.25.', '172.26.',
-                '172.27.', '172.28.', '172.29.', '172.30.', '172.31.', '192.168.'];
-            // Allow localhost explicitly for local LLM servers
-            if (hostname === 'localhost' || hostname === '127.0.0.1') {
-                return true;
-            }
-            // Block other private ranges
-            for (const prefix of blockedHosts) {
-                if (hostname.startsWith(prefix)) {
-                    return false;
-                }
-            }
-            return true;
-        } catch {
-            return false;
-        }
-    }
-
     /**
      * Check if LLM is available and update internal state
      */
     public async checkLLMAvailability(): Promise<boolean> {
-        const config = this.configManager.getConfig();
-        const endpoint = config.sentinel.ollamaEndpoint;
+        this.llmAvailable = await this.llmClient.checkAvailability();
 
-        // SECURITY FIX: Validate endpoint before making requests
-        if (!this.isValidLLMEndpoint(endpoint)) {
-            this.logger.warn('Invalid LLM endpoint URL', { endpoint });
-            this.llmAvailable = false;
-            return false;
-        }
-
-        try {
-            const response = await fetch(`${endpoint}/api/tags`, {
-                method: 'GET',
-                signal: AbortSignal.timeout(2000)
-            });
-            this.llmAvailable = response.ok;
-        } catch {
-            this.llmAvailable = false;
-        }
-
-        if (this.llmAvailable) {
-            this.logger.info('LLM available at ' + endpoint);
-        } else {
+        if (!this.llmAvailable) {
             this.logger.info('LLM not available, forcing heuristic fallback if needed');
             if (this.currentMode === 'llm-assisted') {
                 this.currentMode = 'heuristic';
@@ -113,9 +67,6 @@ export class VerdictArbiter {
         }
         return this.llmAvailable;
     }
-
-    /** Maximum file size to read (5MB) */
-    private static readonly MAX_FILE_SIZE = 5 * 1024 * 1024;
 
     /**
      * Evaluate a Sentinel Event and produce a Verdict
@@ -141,7 +92,6 @@ export class VerdictArbiter {
 
         if (!filePath || typeof filePath !== 'string') {
             this.logger.warn('Invalid event payload: missing or invalid path', { eventId: event.id });
-            // Return a safe "unknown" verdict
             return this.verdictEngine.generateVerdict(
                 event,
                 'unknown',
@@ -153,30 +103,13 @@ export class VerdictArbiter {
         this.logger.debug('Arbitrating event', { type: event.type, path: filePath });
 
         // Read file content (if exists and within size limit)
-        // SECURITY FIX: Single atomic read to prevent TOCTOU race condition
         let content: string | undefined;
         if (event.type !== 'FILE_DELETED') {
-            try {
-                // Open file descriptor first to lock the file for this operation
-                const fd = fs.openSync(filePath, 'r');
-                try {
-                    const stats = fs.fstatSync(fd);
-                    if (stats.size > VerdictArbiter.MAX_FILE_SIZE) {
-                        this.logger.warn('File too large, skipping content read', { filePath, size: stats.size });
-                        content = undefined;
-                    } else {
-                        // Read from the same file descriptor to ensure consistency
-                        const buffer = Buffer.alloc(stats.size);
-                        fs.readSync(fd, buffer, 0, stats.size, 0);
-                        content = buffer.toString('utf-8');
-                    }
-                } finally {
-                    fs.closeSync(fd);
-                }
-            } catch {
-                // File doesn't exist or access error - content remains undefined
-                content = undefined;
+            const readResult = readFileContentSafe(filePath);
+            if (readResult.skippedReason === 'file_too_large') {
+                this.logger.warn('File too large, skipping content read', { filePath });
             }
+            content = readResult.content;
         }
 
         // Run heuristic checks
@@ -196,18 +129,16 @@ export class VerdictArbiter {
             llmEvaluation
         );
     }
-    
+
     /**
      * Validate an agent claim (Existence Check)
      */
     public async validateClaim(claim: AgentClaim): Promise<SentinelVerdict> {
-         // Logic moved from SentinelDaemon.validateClaim
          this.logger.info('Validating agent claim', { agentDid: claim.agentDid });
 
          const artifacts = claim.claimedArtifacts || [];
          const existenceResults = this.existenceEngine.validateClaim(artifacts);
-         
-         // Generate verdict via engine
+
          const verdict = await this.verdictEngine.generateVerdict(
              {
                  id: crypto.randomUUID(),
@@ -254,52 +185,42 @@ export class VerdictArbiter {
         heuristicResults: HeuristicResult[]
     ): Promise<LLMEvaluation | undefined> {
         const config = this.configManager.getConfig();
-        const endpoint = config.sentinel.ollamaEndpoint;
         const model = config.sentinel.localModel;
 
-        const prompt = `Analyze this code for security vulnerabilities, logic errors, and best practices violations.
-
-File: ${filePath}
-Heuristic Flags: ${heuristicResults.filter(r => r.matched).map(r => r.patternId).join(', ')}
-
-Code:
-\`\`\`
-${content?.substring(0, 2000) || 'File not readable'}
-\`\`\`
-
-Respond with:
-1. Risk assessment (L1/L2/L3)
-2. Issues found (if any)
-3. Confidence (0-1)`;
+        const prompt = this.llmClient.buildPrompt(filePath, content, heuristicResults);
 
         try {
-            const response = await fetch(`${endpoint}/api/generate`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    model,
-                    prompt,
-                    stream: false
-                }),
-                signal: AbortSignal.timeout(5000)
-            });
-
-            if (!response.ok) {
-                return undefined;
-            }
-
-            const result = await response.json() as { response?: string; total_duration?: number };
+            const result = await this.llmClient.callEndpoint(prompt);
             return {
                 model,
                 promptUsed: prompt,
-                response: result.response || '',
-                confidence: 0.7, // TODO: Parse from response
-                processingTime: result.total_duration || 0
+                response: result.response,
+                confidence: this.computeConfidence(heuristicResults, result.response),
+                processingTime: result.totalDuration
             };
         } catch (error) {
             this.logger.warn('LLM evaluation failed', error);
             return undefined;
         }
+    }
+
+    private computeConfidence(
+        heuristicResults: HeuristicResult[],
+        response: string,
+    ): number {
+        const matched = heuristicResults.filter(r => r.matched);
+        const allAgree = matched.length === 0
+            || matched.every(r => r.severity === matched[0].severity);
+        let confidence = allAgree ? 0.8 : 0.5;
+
+        const hasStructuredVerdict = /\b(ALLOW|DENY|ESCALATE)\b/.test(response);
+        if (hasStructuredVerdict) {
+            confidence += 0.1;
+        } else if (!response || response.trim().length < 10) {
+            confidence -= 0.2;
+        }
+
+        return Math.max(0.3, Math.min(0.9, confidence));
     }
 }
 

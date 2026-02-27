@@ -1,14 +1,6 @@
 /**
- * GovernanceAdapter - Unified preflight path for all governance decisions
- *
- * Provides a single entry point for governance evaluation:
- * 1. Generate/Validate Nonce (replay protection)
- * 2. Emit Transparency Event
- * 3. Route to Policy Engine
- * 4. Record to Ledger
- * 5. Return Decision
- *
- * This replaces fragmented governance paths with a consistent flow.
+ * GovernanceAdapter - Unified preflight path for all governance decisions.
+ * Single entry point: Nonce -> Transparency -> Policy -> Ledger -> Decision.
  */
 
 import { EventBus } from "../shared/EventBus";
@@ -21,6 +13,8 @@ import {
   processSignedRequest,
 } from "./SecurityReplayGuard";
 import { PromptTransparency } from "./PromptTransparency";
+import { PolicyEvaluator, PolicyResult } from "./PolicyEvaluator";
+import { TrustEngine } from "../qorelogic/trust/TrustEngine";
 import { SentinelVerdict } from "../shared/types";
 
 export type GovernanceAction =
@@ -73,6 +67,7 @@ const DEFAULT_CONFIG: GovernanceAdapterConfig = {
 export class GovernanceAdapter {
   private readonly logger: Logger;
   private readonly config: GovernanceAdapterConfig;
+  private readonly policyEvaluator: PolicyEvaluator;
 
   constructor(
     private readonly eventBus: EventBus,
@@ -80,10 +75,12 @@ export class GovernanceAdapter {
     private readonly policyEngine: PolicyEngine,
     private readonly replayGuard: SecurityReplayGuard,
     private readonly transparency: PromptTransparency,
+    private readonly trustEngine: TrustEngine,
     config: Partial<GovernanceAdapterConfig> = {},
   ) {
     this.logger = new Logger("GovernanceAdapter");
     this.config = { ...DEFAULT_CONFIG, ...config };
+    this.policyEvaluator = new PolicyEvaluator(policyEngine, this.logger);
   }
 
   /**
@@ -98,89 +95,23 @@ export class GovernanceAdapter {
       agentDid: request.agentDid,
     });
 
-    // Step 1: Generate or validate nonce
-    let nonce: string;
-    if (request.nonce && this.config.enableReplayGuard) {
-      const validation = processSignedRequest(this.replayGuard, {
-        nonce: request.nonce,
-        action: request.action,
-        timestamp,
-      });
-
-      if (!validation.valid) {
-        this.logger.warn("Nonce validation failed", {
-          reason: validation.reason,
-          action: request.action,
-        });
-        return {
-          allowed: false,
-          nonce: request.nonce,
-          riskGrade: "L3",
-          reason: `Nonce validation failed: ${validation.reason}`,
-          timestamp,
-        };
-      }
-      nonce = request.nonce;
-    } else {
-      nonce = this.replayGuard.generateNonce({ action: request.action });
+    const nonceResult = this.resolveNonce(request, timestamp);
+    if ("allowed" in nonceResult) {
+      return nonceResult;
     }
 
-    // Step 2: Emit transparency event
-    const transparencyBuildId = this.config.enableTransparency
-      ? this.transparency.emitBuildStarted({
-        intentId: request.intentId,
-        agentDid: request.agentDid,
-        context: request.action,
-      })
-      : undefined;
-
-    // Step 3: Route to policy engine
-    const policyResult = await this.evaluatePolicy(request);
-
-    // Step 4: Record to ledger
-    let ledgerEntryId: string | undefined;
-    if (this.config.enableLedger) {
-      try {
-        const entry = await this.ledger.appendEntry({
-          eventType: policyResult.allowed
-            ? "GOVERNANCE_RESUMED"
-            : "GOVERNANCE_PAUSED",
-          agentDid: request.agentDid,
-          agentTrustAtAction: 0.8, // TODO: Get from trust engine
-          artifactPath: request.artifactPath,
-          riskGrade: policyResult.riskGrade,
-          payload: {
-            action: request.action,
-            intentId: request.intentId,
-            nonce,
-            conditions: policyResult.conditions,
-            reason: policyResult.reason,
-          },
-        });
-        ledgerEntryId = String(entry.id);
-      } catch (error) {
-        this.logger.error("Failed to record to ledger", error);
-      }
-    }
-
-    // Step 5: Emit completion event
-    if (this.config.enableTransparency) {
-      const eventId = transparencyBuildId || nonce;
-      if (policyResult.allowed) {
-        this.transparency.emitDispatched(eventId, {
-          promptHash: nonce.substring(0, 8),
-        });
-      } else {
-        this.transparency.emitDispatchBlocked(eventId, {
-          blockedReason: policyResult.reason || "Policy denied",
-          riskGrade: policyResult.riskGrade,
-        });
-      }
-    }
+    const transparencyBuildId = this.emitTransparencyStart(request);
+    const policyResult = await this.policyEvaluator.evaluate(request);
+    const ledgerEntryId = await this.recordToLedger(
+      request, policyResult, nonceResult.nonce, timestamp,
+    );
+    this.emitTransparencyCompletion(
+      transparencyBuildId, nonceResult.nonce, policyResult,
+    );
 
     return {
       allowed: policyResult.allowed,
-      nonce,
+      nonce: nonceResult.nonce,
       riskGrade: policyResult.riskGrade,
       conditions: policyResult.conditions,
       reason: policyResult.reason,
@@ -206,76 +137,100 @@ export class GovernanceAdapter {
     };
   }
 
-  /**
-   * Evaluate policy for the request
-   */
-  private async evaluatePolicy(request: DecisionRequest): Promise<{
-    allowed: boolean;
-    riskGrade: "L1" | "L2" | "L3";
-    conditions?: string[];
-    reason?: string;
-  }> {
+  private resolveNonce(
+    request: DecisionRequest,
+    timestamp: string,
+  ): { nonce: string } | DecisionResponse {
+    if (request.nonce && this.config.enableReplayGuard) {
+      const validation = processSignedRequest(this.replayGuard, {
+        nonce: request.nonce,
+        action: request.action,
+        timestamp,
+      });
+
+      if (!validation.valid) {
+        this.logger.warn("Nonce validation failed", {
+          reason: validation.reason,
+          action: request.action,
+        });
+        return {
+          allowed: false,
+          nonce: request.nonce,
+          riskGrade: "L3",
+          reason: `Nonce validation failed: ${validation.reason}`,
+          timestamp,
+        };
+      }
+      return { nonce: request.nonce };
+    }
+
+    return { nonce: this.replayGuard.generateNonce({ action: request.action }) };
+  }
+
+  private emitTransparencyStart(
+    request: DecisionRequest,
+  ): string | undefined {
+    if (!this.config.enableTransparency) {
+      return undefined;
+    }
+    return this.transparency.emitBuildStarted({
+      intentId: request.intentId,
+      agentDid: request.agentDid,
+      context: request.action,
+    });
+  }
+
+  private async recordToLedger(
+    request: DecisionRequest,
+    policyResult: PolicyResult,
+    nonce: string,
+    timestamp: string,
+  ): Promise<string | undefined> {
+    if (!this.config.enableLedger) {
+      return undefined;
+    }
     try {
-      // Get risk grade from policy engine using classifyRisk
-      const content = request.payload?.content as string | undefined;
-      const riskGrade = this.policyEngine.classifyRisk(
-        request.artifactPath || "",
-        content,
-      );
-
-      // Get verification requirements for this risk grade
-      const requirements = this.policyEngine.getVerificationRequirements(riskGrade);
-
-      // Determine if action is allowed based on risk grade and intent
-      const hasIntent = !!request.intentId;
-      const allowed = hasIntent || requirements.autoApprove;
-
-      // Build conditions list
-      const conditions: string[] = [];
-      if (!requirements.autoApprove) {
-        conditions.push(`Requires ${requirements.approvalAuthority} approval`);
-      }
-      if (requirements.verification !== "sampling_10_percent") {
-        conditions.push(`Verification: ${requirements.verification}`);
-      }
-
-      return {
-        allowed,
-        riskGrade,
-        conditions: conditions.length > 0 ? conditions : undefined,
-        reason: allowed
-          ? undefined
-          : `Action ${request.action} requires active intent for risk level ${riskGrade}`,
-      };
+      const entry = await this.ledger.appendEntry({
+        eventType: policyResult.allowed
+          ? "GOVERNANCE_RESUMED"
+          : "GOVERNANCE_PAUSED",
+        agentDid: request.agentDid,
+        agentTrustAtAction: this.trustEngine.getTrustScore(request.agentDid)?.score ?? 0.0,
+        artifactPath: request.artifactPath,
+        riskGrade: policyResult.riskGrade,
+        payload: {
+          action: request.action,
+          intentId: request.intentId,
+          nonce,
+          conditions: policyResult.conditions,
+          reason: policyResult.reason,
+        },
+      });
+      return String(entry.id);
     } catch (error) {
-      this.logger.error("Policy evaluation failed", error);
-      // Fail safe: deny on error
-      return {
-        allowed: false,
-        riskGrade: "L3",
-        reason: "Policy evaluation failed",
-      };
+      this.logger.error("Failed to record to ledger", error);
+      return undefined;
     }
   }
 
-  /**
-   * Map policy risk to legacy L1/L2/L3 format
-   */
-  private mapRiskToLegacy(risk: string): "L1" | "L2" | "L3" {
-    switch (risk) {
-      case "R0":
-      case "R1":
-      case "low":
-        return "L1";
-      case "R2":
-      case "medium":
-        return "L2";
-      case "R3":
-      case "high":
-      case "critical":
-        return "L3";
-      default:
-        return this.config.defaultRiskGrade;
+  private emitTransparencyCompletion(
+    buildId: string | undefined,
+    nonce: string,
+    policyResult: PolicyResult,
+  ): void {
+    if (!this.config.enableTransparency) {
+      return;
+    }
+    const eventId = buildId || nonce;
+    if (policyResult.allowed) {
+      this.transparency.emitDispatched(eventId, {
+        promptHash: nonce.substring(0, 8),
+      });
+    } else {
+      this.transparency.emitDispatchBlocked(eventId, {
+        blockedReason: policyResult.reason || "Policy denied",
+        riskGrade: policyResult.riskGrade,
+      });
     }
   }
 

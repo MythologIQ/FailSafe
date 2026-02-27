@@ -5,13 +5,11 @@
  * - SOA Ledger (audit trail)
  * - Trust Engine (reputation scoring)
  * - Policy Engine (risk grading, citation rules)
- * - L3 Approval Queue
+ * - L3 Approval Queue (delegated to L3ApprovalService)
  * - Shadow Genome (failure archival)
  */
 
-import * as crypto from 'crypto';
-import { IStateStore } from '../core/interfaces';
-import { IConfigProvider } from '../core/interfaces';
+import { IStateStore, IConfigProvider } from '../core/interfaces';
 import { EventBus } from '../shared/EventBus';
 import { Logger } from '../shared/Logger';
 import {
@@ -26,18 +24,17 @@ import { TrustEngine } from './trust/TrustEngine';
 import { PolicyEngine } from './policies/PolicyEngine';
 import { ShadowGenomeManager } from './shadow/ShadowGenomeManager';
 import { CortexEvent, RoutingDecision } from '../governance/EvaluationRouter';
+import { L3ApprovalService } from './L3ApprovalService';
 
 export class QoreLogicManager {
     private stateStore: IStateStore;
-    private configProvider: IConfigProvider;
     private ledgerManager: LedgerManager;
     private trustEngine: TrustEngine;
     private policyEngine: PolicyEngine;
     private shadowGenomeManager: ShadowGenomeManager;
     private eventBus: EventBus;
     private logger: Logger;
-
-    private l3Queue: L3ApprovalRequest[] = [];
+    private l3ApprovalService: L3ApprovalService;
 
     constructor(
         stateStore: IStateStore,
@@ -46,24 +43,24 @@ export class QoreLogicManager {
         trustEngine: TrustEngine,
         policyEngine: PolicyEngine,
         shadowGenomeManager: ShadowGenomeManager,
-        eventBus: EventBus
+        eventBus: EventBus,
+        overseerId?: string,
     ) {
         this.stateStore = stateStore;
-        this.configProvider = configProvider;
         this.ledgerManager = ledgerManager;
         this.trustEngine = trustEngine;
         this.policyEngine = policyEngine;
         this.shadowGenomeManager = shadowGenomeManager;
         this.eventBus = eventBus;
         this.logger = new Logger('QoreLogic');
+        this.l3ApprovalService = new L3ApprovalService(
+            stateStore, configProvider, ledgerManager, trustEngine, eventBus, overseerId
+        );
     }
 
     async initialize(): Promise<void> {
         this.logger.info('Initializing QoreLogic manager...');
-
-        // Load persisted L3 queue
-        this.l3Queue = this.stateStore.get<L3ApprovalRequest[]>('l3Queue', []);
-
+        this.l3ApprovalService.loadQueue();
         this.logger.info('QoreLogic manager initialized');
     }
 
@@ -92,47 +89,16 @@ export class QoreLogicManager {
      * Get the L3 approval queue
      */
     getL3Queue(): L3ApprovalRequest[] {
-        return [...this.l3Queue];
+        return this.l3ApprovalService.getQueue();
     }
 
     /**
      * Add an item to the L3 approval queue
      */
-    async queueL3Approval(request: Omit<L3ApprovalRequest, 'id' | 'state' | 'queuedAt' | 'slaDeadline'>): Promise<string> {
-        const config = this.configProvider.getConfig();
-        const slaSecs = config.qorelogic.l3SLA;
-
-        const id = crypto.randomUUID();
-        const now = new Date();
-        const slaDeadline = new Date(now.getTime() + slaSecs * 1000);
-
-        const fullRequest: L3ApprovalRequest = {
-            ...request,
-            id,
-            state: 'QUEUED',
-            queuedAt: now.toISOString(),
-            slaDeadline: slaDeadline.toISOString()
-        };
-
-        this.l3Queue.push(fullRequest);
-        await this.persistL3Queue();
-
-        // Log to ledger
-        await this.ledgerManager.appendEntry({
-            eventType: 'L3_QUEUED',
-            agentDid: request.agentDid,
-            agentTrustAtAction: request.agentTrust,
-            artifactPath: request.filePath,
-            riskGrade: request.riskGrade,
-            payload: { sentinelSummary: request.sentinelSummary, flags: request.flags }
-        });
-
-        // Emit event
-        this.eventBus.emit('qorelogic.l3Queued', fullRequest);
-
-        this.logger.info('L3 approval queued', { id, filePath: request.filePath });
-
-        return id;
+    async queueL3Approval(
+        request: Omit<L3ApprovalRequest, 'id' | 'state' | 'queuedAt' | 'slaDeadline'>
+    ): Promise<string> {
+        return this.l3ApprovalService.queueL3Approval(request);
     }
 
     /**
@@ -142,41 +108,7 @@ export class QoreLogicManager {
         decision: RoutingDecision,
         event: CortexEvent
     ): Promise<void> {
-        const mappedRisk = this.mapRiskToLegacy(decision.triage.risk);
-        if (decision.writeLedger) {
-            await this.ledgerManager.appendEntry({
-                eventType: 'EVALUATION_ROUTED',
-                agentDid: (event.payload?.intentId as string) || 'system',
-                artifactPath: event.payload?.targetPath as string,
-                riskGrade: mappedRisk,
-                payload: { tier: decision.tier, triage: decision.triage }
-            });
-        }
-
-        if (decision.tier === 3) {
-            await this.queueL3Approval({
-                agentDid: (event.payload?.intentId as string) || 'system',
-                agentTrust: decision.triage.confidence === 'high' ? 0.9 : 0.7,
-                filePath: event.payload?.targetPath as string,
-                riskGrade: mappedRisk,
-                sentinelSummary: `Tier 3 evaluation: ${decision.triage.risk} risk, ${decision.triage.novelty} novelty`,
-                flags: decision.requiredActions
-            });
-        }
-    }
-
-    private mapRiskToLegacy(risk: RoutingDecision['triage']['risk']): "L1" | "L2" | "L3" {
-        switch (risk) {
-            case "R0":
-            case "R1":
-                return "L1";
-            case "R2":
-                return "L2";
-            case "R3":
-                return "L3";
-            default:
-                return "L1";
-        }
+        return this.l3ApprovalService.processEvaluationDecision(decision, event);
     }
 
     /**
@@ -187,50 +119,7 @@ export class QoreLogicManager {
         decision: 'APPROVED' | 'REJECTED',
         conditions?: string[]
     ): Promise<void> {
-        const index = this.l3Queue.findIndex(r => r.id === requestId);
-        if (index === -1) {
-            throw new Error(`L3 request not found: ${requestId}`);
-        }
-
-        const request = this.l3Queue[index];
-        const overseerDid = 'did:myth:overseer:local'; // TODO: Get actual overseer identity
-
-        // Update request state
-        request.state = decision === 'APPROVED'
-            ? (conditions?.length ? 'APPROVED_WITH_CONDITIONS' : 'APPROVED')
-            : 'REJECTED';
-        request.decidedAt = new Date().toISOString();
-        request.overseerDid = overseerDid;
-        request.decision = decision;
-        request.conditions = conditions;
-
-        // Log to ledger
-        await this.ledgerManager.appendEntry({
-            eventType: decision === 'APPROVED' ? 'L3_APPROVED' : 'L3_REJECTED',
-            agentDid: request.agentDid,
-            agentTrustAtAction: request.agentTrust,
-            artifactPath: request.filePath,
-            riskGrade: request.riskGrade,
-            overseerDid,
-            overseerDecision: decision,
-            payload: { conditions }
-        });
-
-        // Update trust score
-        if (decision === 'APPROVED') {
-            await this.trustEngine.updateTrust(request.agentDid, 'success');
-        } else {
-            await this.trustEngine.updateTrust(request.agentDid, 'failure');
-        }
-
-        // Remove from queue
-        this.l3Queue.splice(index, 1);
-        await this.persistL3Queue();
-
-        // Emit event
-        this.eventBus.emit('qorelogic.l3Decided', { request, decision });
-
-        this.logger.info('L3 decision processed', { requestId, decision });
+        return this.l3ApprovalService.processL3Decision(requestId, decision, conditions);
     }
 
     /**
@@ -247,13 +136,6 @@ export class QoreLogicManager {
         });
 
         return identity;
-    }
-
-    /**
-     * Persist L3 queue to workspace state
-     */
-    private async persistL3Queue(): Promise<void> {
-        await this.stateStore.update('l3Queue', this.l3Queue);
     }
 
     // =========================================================================

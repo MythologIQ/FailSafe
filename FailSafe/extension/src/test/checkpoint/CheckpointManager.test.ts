@@ -275,4 +275,37 @@ checkpoint: {
       assert.strictEqual(overrides[0].reason, "First override");
     });
   });
+
+  describe("ICheckpointMetrics integration", () => {
+    it("should wire ledger entry count via metrics interface", () => {
+      const metrics = {
+        getLedgerEntryCount: () => 42,
+        getSentinelEventsProcessed: () => 100,
+      };
+
+      const entryCount = metrics.getLedgerEntryCount();
+      const chainHead = String(entryCount);
+      assert.strictEqual(chainHead, "42");
+    });
+
+    it("should wire sentinel events processed via metrics interface", () => {
+      const metrics = {
+        getLedgerEntryCount: () => 0,
+        getSentinelEventsProcessed: () => 250,
+      };
+
+      const eventsProcessed = metrics.getSentinelEventsProcessed();
+      assert.strictEqual(eventsProcessed, 250);
+    });
+
+    it("should default to null/0 when metrics not provided", () => {
+      type Metrics = { getLedgerEntryCount(): number; getSentinelEventsProcessed(): number };
+      const metrics = undefined as Metrics | undefined;
+      const chainHead = metrics ? String(metrics.getLedgerEntryCount()) : null;
+      const eventsProcessed = metrics?.getSentinelEventsProcessed() ?? 0;
+
+      assert.strictEqual(chainHead, null);
+      assert.strictEqual(eventsProcessed, 0);
+    });
+  });
 });

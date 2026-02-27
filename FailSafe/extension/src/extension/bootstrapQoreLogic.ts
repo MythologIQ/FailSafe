@@ -51,6 +51,9 @@ export async function bootstrapQoreLogic(
   );
   await shadowGenomeManager.initialize();
 
+  const overseerId = vscode.workspace.getConfiguration('failsafe')
+    .get<string>('governance.overseerId', 'did:myth:overseer:local');
+
   const qorelogicManager = new QoreLogicManager(
     workspaceStateStore,
     configProvider,
@@ -59,6 +62,7 @@ export async function bootstrapQoreLogic(
     policyEngine,
     shadowGenomeManager,
     core.eventBus,
+    overseerId,
   );
   await qorelogicManager.initialize();
 
@@ -71,6 +75,7 @@ export async function bootstrapQoreLogic(
     policyEngine,
     gov.replayGuard,
     gov.transparency,
+    trustEngine,
   );
   gov.governanceRouter.setGovernanceAdapter(governanceAdapter);
 

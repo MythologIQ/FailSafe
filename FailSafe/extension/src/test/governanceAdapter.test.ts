@@ -29,12 +29,14 @@ describe('GovernanceAdapter transparency correlation', () => {
           approvalAuthority: 'sentinel',
         }),
       };
+      const trustEngine = { getTrustScore: () => ({ score: 0.8 }) };
       const adapter = new GovernanceAdapter(
         eventBus,
         ledger as never,
         policyEngine as never,
         replayGuard,
         transparency,
+        trustEngine as never,
         { enableLedger: false },
       );
 
@@ -69,12 +71,14 @@ describe('GovernanceAdapter transparency correlation', () => {
           approvalAuthority: 'overseer',
         }),
       };
+      const trustEngine = { getTrustScore: () => ({ score: 0.8 }) };
       const adapter = new GovernanceAdapter(
         eventBus,
         ledger as never,
         policyEngine as never,
         replayGuard,
         transparency,
+        trustEngine as never,
         { enableLedger: false },
       );
 
@@ -86,6 +90,104 @@ describe('GovernanceAdapter transparency correlation', () => {
 
       assert.strictEqual(response.allowed, false);
       assert.strictEqual(transparency.getActiveBuilds().length, 0);
+      replayGuard.dispose();
+      eventBus.dispose();
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('GovernanceAdapter trust score wiring', () => {
+  it('uses trust score from TrustEngine for known agent', async () => {
+    const tempRoot = mkTempDir('failsafe-gov-trust-');
+    try {
+      const eventBus = new EventBus();
+      const transparency = new PromptTransparency(eventBus);
+      const replayGuard = new SecurityReplayGuard(tempRoot);
+      let recordedTrust: number | undefined;
+      const ledger = {
+        appendEntry: async (entry: { agentTrustAtAction?: number }) => {
+          recordedTrust = entry.agentTrustAtAction;
+          return { id: 1 };
+        },
+      };
+      const policyEngine = {
+        classifyRisk: () => 'L1',
+        getVerificationRequirements: () => ({
+          minCertainty: 'heuristic',
+          verification: 'sampling_10_percent',
+          autoApprove: true,
+          approvalAuthority: 'sentinel',
+        }),
+      };
+      const trustEngine = { getTrustScore: (did: string) =>
+        did === 'known-agent' ? { score: 0.95 } : undefined,
+      };
+      const adapter = new GovernanceAdapter(
+        eventBus,
+        ledger as never,
+        policyEngine as never,
+        replayGuard,
+        transparency,
+        trustEngine as never,
+        { enableLedger: true },
+      );
+
+      await adapter.evaluate({
+        action: 'file.write',
+        agentDid: 'known-agent',
+        artifactPath: 'README.md',
+      });
+
+      assert.strictEqual(recordedTrust, 0.95);
+      replayGuard.dispose();
+      eventBus.dispose();
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('falls back to 0.0 trust score for unknown agent', async () => {
+    const tempRoot = mkTempDir('failsafe-gov-trust0-');
+    try {
+      const eventBus = new EventBus();
+      const transparency = new PromptTransparency(eventBus);
+      const replayGuard = new SecurityReplayGuard(tempRoot);
+      let recordedTrust: number | undefined;
+      const ledger = {
+        appendEntry: async (entry: { agentTrustAtAction?: number }) => {
+          recordedTrust = entry.agentTrustAtAction;
+          return { id: 1 };
+        },
+      };
+      const policyEngine = {
+        classifyRisk: () => 'L1',
+        getVerificationRequirements: () => ({
+          minCertainty: 'heuristic',
+          verification: 'sampling_10_percent',
+          autoApprove: true,
+          approvalAuthority: 'sentinel',
+        }),
+      };
+      const trustEngine = { getTrustScore: () => undefined };
+      const adapter = new GovernanceAdapter(
+        eventBus,
+        ledger as never,
+        policyEngine as never,
+        replayGuard,
+        transparency,
+        trustEngine as never,
+        { enableLedger: true },
+      );
+
+      await adapter.evaluate({
+        action: 'file.write',
+        agentDid: 'unknown-agent',
+        artifactPath: 'README.md',
+      });
+
+      assert.strictEqual(recordedTrust, 0.0);
       replayGuard.dispose();
       eventBus.dispose();
     } finally {

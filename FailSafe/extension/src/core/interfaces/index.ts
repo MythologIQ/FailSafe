@@ -12,3 +12,4 @@ export type { ILogSink, LogLevel } from './ILogSink';
 export type { INotificationService } from './INotificationService';
 export type { IFeatureGate, FeatureTier, FeatureFlag } from './IFeatureGate';
 export { FeatureGateError } from './IFeatureGate';
+export type { ICheckpointMetrics } from './ICheckpointMetrics';

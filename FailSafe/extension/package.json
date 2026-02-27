@@ -247,6 +247,11 @@
           "default": "observe",
           "description": "Governance mode determines how FailSafe interacts with your workflow. Start with 'observe' and increase when ready."
         },
+        "failsafe.governance.overseerId": {
+          "type": "string",
+          "default": "did:myth:overseer:local",
+          "description": "DID identity for the governance overseer."
+        },
         "failsafe.feedback.outputDir": {
           "type": "string",
           "default": ".failsafe/feedback",

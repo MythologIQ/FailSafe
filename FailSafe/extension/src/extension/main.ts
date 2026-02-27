@@ -26,6 +26,8 @@ import { RiskRegisterProvider } from "../genesis/views/RiskRegisterProvider";
 import { TransparencyPanel } from "../genesis/panels/TransparencyPanel";
 import { FailSafeApiServer } from "../api";
 import { createVscodeFeatureGate } from "../core/adapters/vscode/VscodeFeatureGate";
+import { CheckpointManager } from "../qorelogic/checkpoint/CheckpointManager";
+import type { ICheckpointMetrics } from "../core/interfaces";
 
 // Bootstrap Modules
 import { bootstrapCore } from "./bootstrapCore";
@@ -77,6 +79,18 @@ export async function activate(
     // 4. Sentinel
     const sentinel = await bootstrapSentinel(context, core, qore, logger);
     sentinelDaemon = sentinel.sentinelDaemon;
+
+    // 4.5. Checkpoint (bridges qore + sentinel substrates)
+    const checkpointMetrics: ICheckpointMetrics = {
+      getLedgerEntryCount: () => qore.ledgerManager.getEntryCount(),
+      getSentinelEventsProcessed: () =>
+        sentinel.sentinelDaemon.getStatus().eventsProcessed,
+    };
+    const checkpointManager = new CheckpointManager(
+      core.configManager,
+      qore.ledgerManager,
+      checkpointMetrics,
+    );
 
     // 5. MCP Server
     mcpServer = await bootstrapMCP(context, sentinel, qore, gov, logger);

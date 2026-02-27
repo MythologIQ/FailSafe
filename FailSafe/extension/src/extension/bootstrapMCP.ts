@@ -19,6 +19,7 @@ export async function bootstrapMCP(
       sentinel.sentinelDaemon,
       qore.ledgerManager,
       gov.intentService,
+      gov.sessionManager,
     );
     await mcpServer.start();
     return mcpServer;

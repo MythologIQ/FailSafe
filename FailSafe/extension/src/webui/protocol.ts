@@ -26,7 +26,8 @@ export class VscodeHostBridge implements HostBridge {
         // acquireVsCodeApi is available in VS Code webview context
         this.vscodeApi = (globalThis as any).acquireVsCodeApi();
         this.messageHandler = (e: MessageEvent) => this.handleMessage(e.data);
-        globalThis.addEventListener('message', this.messageHandler);
+        const g = globalThis as any; // webview browser context
+        g.addEventListener('message', this.messageHandler);
     }
 
     async executeCommand(command: string, ...args: unknown[]): Promise<unknown> {
@@ -57,7 +58,8 @@ export class VscodeHostBridge implements HostBridge {
     }
 
     dispose(): void {
-        globalThis.removeEventListener('message', this.messageHandler);
+        const g = globalThis as any; // webview browser context
+        g.removeEventListener('message', this.messageHandler);
         this.pendingRequests.clear();
         this.eventListeners.clear();
     }

@@ -1,22 +1,21 @@
-/**
- * FailSafeApiServer - REST + SSE API server for FailSafe governance services
- *
- * Exposes all FailSafe governance services over REST + SSE on localhost:7777.
- * Modeled on RoadmapServer.ts but purpose-built for programmatic API access.
- * Binds to 127.0.0.1 only for security.
- */
-
 import express, { Request, Response } from 'express';
 import * as path from 'path';
 import * as fs from 'fs';
 import { Server as HttpServer } from 'http';
 import { IConfigProvider } from '../core/interfaces/IConfigProvider';
-import { IFeatureGate, FeatureFlag } from '../core/interfaces/IFeatureGate';
-import { FEATURE_TIER_MAP } from '../core/FeatureGateService';
+import { IFeatureGate } from '../core/interfaces/IFeatureGate';
 import { EventBus } from '../shared/EventBus';
 import { Logger } from '../shared/Logger';
 import { EventStreamBridge } from './EventStreamBridge';
 import { createAuthMiddleware } from './middleware/auth';
+
+import { registerGovernanceRoutes } from './routes/governanceRoutes';
+import { registerSentinelRoutes } from './routes/sentinelRoutes';
+import { registerLedgerRoutes } from './routes/ledgerRoutes';
+import { registerTrustRoutes } from './routes/trustRoutes';
+import { registerRiskRoutes } from './routes/riskRoutes';
+import { registerFeatureRoutes } from './routes/featureRoutes';
+import type { RouteDeps } from './routes/types';
 
 // Lazy service references - wired in after construction via setServices()
 import type { EnforcementEngine, GovernanceMode } from '../governance/EnforcementEngine';
@@ -103,10 +102,6 @@ export class FailSafeApiServer {
         this.setupRoutes();
     }
 
-    /**
-     * Wire service instances after construction.
-     * Called from main.ts bootstrap where these services are available.
-     */
     setServices(services: FailSafeApiServices): void {
         this.enforcementEngine = services.enforcementEngine;
         this.intentService = services.intentService;
@@ -117,9 +112,6 @@ export class FailSafeApiServer {
         this.onModeChangeRequest = services.onModeChangeRequest;
     }
 
-    /**
-     * Start the API server
-     */
     start(): void {
         const port = this.resolvePort();
         this.startTime = Date.now();
@@ -139,9 +131,6 @@ export class FailSafeApiServer {
         this.eventStreamBridge.start();
     }
 
-    /**
-     * Stop the API server
-     */
     stop(): void {
         this.eventStreamBridge.stop();
         this.server?.close();
@@ -149,9 +138,6 @@ export class FailSafeApiServer {
         this.logger.info('FailSafe API server stopped');
     }
 
-    /**
-     * Resolve the port from configuration, defaulting to 7777
-     */
     private resolvePort(): number {
         try {
             const config = this.configProvider.getConfig();
@@ -169,10 +155,6 @@ export class FailSafeApiServer {
     }
 
     private setupRoutes(): void {
-        // =====================================================================
-        // Health & Status
-        // =====================================================================
-
         this.app.get('/api/v1/health', (_req: Request, res: Response) => {
             res.json({
                 status: 'ok',
@@ -202,298 +184,28 @@ export class FailSafeApiServer {
             });
         });
 
-        // =====================================================================
-        // Governance
-        // =====================================================================
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
+        const self = this;
+        const deps: RouteDeps = {
+            get enforcementEngine() { return self.enforcementEngine; },
+            get intentService() { return self.intentService; },
+            get sentinelDaemon() { return self.sentinelDaemon; },
+            get qorelogicManager() { return self.qorelogicManager; },
+            get ledgerManager() { return self.ledgerManager; },
+            get riskManager() { return self.riskManager; },
+            get featureGate() { return self.featureGate; },
+            get eventBus() { return self.eventBus; },
+            get onModeChangeRequest() { return self.onModeChangeRequest; },
+        };
 
-        this.app.get('/api/v1/governance/mode', (_req: Request, res: Response) => {
-            if (!this.enforcementEngine) {
-                res.status(503).json({ error: 'EnforcementEngine not available' });
-                return;
-            }
-            res.json({ mode: this.enforcementEngine.getGovernanceMode() });
-        });
-
-        this.app.put('/api/v1/governance/mode', async (req: Request, res: Response) => {
-            const { mode } = req.body;
-            const validModes: GovernanceMode[] = ['observe', 'assist', 'enforce'];
-            if (!mode || !validModes.includes(mode)) {
-                res.status(400).json({
-                    error: 'Invalid mode',
-                    message: `mode must be one of: ${validModes.join(', ')}`,
-                });
-                return;
-            }
-
-            const previousMode = this.enforcementEngine?.getGovernanceMode() ?? 'observe';
-
-            // Persist via onModeChangeRequest callback (wired to vscode config update in bootstrap)
-            if (this.onModeChangeRequest) {
-                try {
-                    await this.onModeChangeRequest(mode);
-                } catch (err) {
-                    res.status(500).json({ error: 'Failed to persist governance mode' });
-                    return;
-                }
-            }
-
-            this.eventBus.emit('sentinel.modeChange', {
-                previousMode,
-                newMode: mode,
-                source: 'api',
-                timestamp: new Date().toISOString(),
-            });
-
-            res.json({ mode, applied: true });
-        });
-
-        this.app.get('/api/v1/governance/intent', async (_req: Request, res: Response) => {
-            if (!this.intentService) {
-                res.status(503).json({ error: 'IntentService not available' });
-                return;
-            }
-            try {
-                const intent = await this.intentService.getActiveIntent();
-                if (!intent) {
-                    res.json({ active: false, intent: null });
-                    return;
-                }
-                res.json({ active: true, intent });
-            } catch (err) {
-                res.status(500).json({ error: 'Failed to retrieve active intent' });
-            }
-        });
-
-        this.app.post('/api/v1/governance/intent/seal', async (req: Request, res: Response) => {
-            if (!this.intentService) {
-                res.status(503).json({ error: 'IntentService not available' });
-                return;
-            }
-            try {
-                const actor = req.body?.actor || 'api';
-                await this.intentService.sealIntent(actor);
-                res.json({ sealed: true });
-            } catch (err) {
-                const message = err instanceof Error ? err.message : 'Failed to seal intent';
-                res.status(400).json({ error: message });
-            }
-        });
-
-        // =====================================================================
-        // Sentinel
-        // =====================================================================
-
-        this.app.get('/api/v1/sentinel/status', (_req: Request, res: Response) => {
-            if (!this.sentinelDaemon) {
-                res.status(503).json({ error: 'SentinelDaemon not available' });
-                return;
-            }
-            res.json(this.sentinelDaemon.getStatus());
-        });
-
-        this.app.get('/api/v1/sentinel/verdicts', (req: Request, res: Response) => {
-            const limit = Math.min(
-                parseInt(req_query(req, 'limit') || '50', 10),
-                200,
-            );
-            const verdicts = this.eventBus.getHistory('sentinel.verdict', limit);
-            res.json({
-                verdicts: verdicts.map(v => v.payload),
-                count: verdicts.length,
-            });
-        });
-
-        this.app.post('/api/v1/sentinel/audit', async (req: Request, res: Response) => {
-            if (!this.sentinelDaemon) {
-                res.status(503).json({ error: 'SentinelDaemon not available' });
-                return;
-            }
-            const { filePath } = req.body;
-            if (!filePath || typeof filePath !== 'string') {
-                res.status(400).json({ error: 'filePath is required' });
-                return;
-            }
-            try {
-                const verdict = await this.sentinelDaemon.auditFile(filePath);
-                res.json(verdict);
-            } catch (err) {
-                const message = err instanceof Error ? err.message : 'Audit failed';
-                res.status(500).json({ error: message });
-            }
-        });
-
-        // =====================================================================
-        // Ledger
-        // =====================================================================
-
-        this.app.get('/api/v1/ledger/entries', async (req: Request, res: Response) => {
-            if (!this.ledgerManager) {
-                res.status(503).json({ error: 'LedgerManager not available' });
-                return;
-            }
-            try {
-                const limit = Math.min(
-                    parseInt(req_query(req, 'limit') || '50', 10),
-                    500,
-                );
-                const entries = await this.ledgerManager.getRecentEntries(limit);
-                res.json({ entries, count: entries.length });
-            } catch (err) {
-                res.status(500).json({ error: 'Failed to retrieve ledger entries' });
-            }
-        });
-
-        this.app.get('/api/v1/ledger/verify', (_req: Request, res: Response) => {
-            if (!this.ledgerManager) {
-                res.status(503).json({ error: 'LedgerManager not available' });
-                return;
-            }
-            try {
-                const valid = this.ledgerManager.verifyChain();
-                res.json({ valid, verifiedAt: new Date().toISOString() });
-            } catch (err) {
-                res.status(500).json({ error: 'Chain verification failed' });
-            }
-        });
-
-        // =====================================================================
-        // Trust
-        // =====================================================================
-
-        this.app.get('/api/v1/trust', async (_req: Request, res: Response) => {
-            if (!this.qorelogicManager) {
-                res.status(503).json({ error: 'QoreLogicManager not available' });
-                return;
-            }
-            try {
-                const trustEngine = this.qorelogicManager.getTrustEngine();
-                const agents = await trustEngine.getAllAgents();
-                res.json(agents.map(a => ({
-                    did: a.did,
-                    score: a.trustScore,
-                    stage: a.trustStage,
-                    persona: a.persona,
-                    isQuarantined: a.isQuarantined,
-                    verificationsCompleted: a.verificationsCompleted,
-                })));
-            } catch (err) {
-                res.status(500).json({ error: 'Failed to retrieve trust data' });
-            }
-        });
-
-        this.app.get('/api/v1/trust/:did', (req: Request, res: Response) => {
-            if (!this.qorelogicManager) {
-                res.status(503).json({ error: 'QoreLogicManager not available' });
-                return;
-            }
-            const trustEngine = this.qorelogicManager.getTrustEngine();
-            const score = trustEngine.getTrustScore(String(req.params.did));
-            if (!score) {
-                res.status(404).json({ error: 'Agent DID not found' });
-                return;
-            }
-            res.json(score);
-        });
-
-        // =====================================================================
-        // Risks
-        // =====================================================================
-
-        this.app.get('/api/v1/risks', (_req: Request, res: Response) => {
-            if (!this.riskManager) {
-                res.status(503).json({ error: 'RiskManager not available' });
-                return;
-            }
-            res.json({
-                risks: this.riskManager.getAllRisks(),
-                summary: this.riskManager.getSummary(),
-            });
-        });
-
-        this.app.post('/api/v1/risks', (req: Request, res: Response) => {
-            if (!this.riskManager) {
-                res.status(503).json({ error: 'RiskManager not available' });
-                return;
-            }
-            const { title, description, category, severity, impact, mitigation, owner, relatedArtifacts, checkpointId } = req.body;
-            if (!title || !description || !category || !severity || !impact || !mitigation) {
-                res.status(400).json({
-                    error: 'Missing required fields',
-                    required: ['title', 'description', 'category', 'severity', 'impact', 'mitigation'],
-                });
-                return;
-            }
-            const risk = this.riskManager.createRisk({
-                title, description, category, severity, impact, mitigation, owner, relatedArtifacts, checkpointId,
-            });
-            res.status(201).json(risk);
-        });
-
-        this.app.put('/api/v1/risks/:id', (req: Request, res: Response) => {
-            if (!this.riskManager) {
-                res.status(503).json({ error: 'RiskManager not available' });
-                return;
-            }
-            const updated = this.riskManager.updateRisk(String(req.params.id), req.body);
-            if (!updated) {
-                res.status(404).json({ error: 'Risk not found' });
-                return;
-            }
-            res.json(updated);
-        });
-
-        this.app.delete('/api/v1/risks/:id', (req: Request, res: Response) => {
-            if (!this.riskManager) {
-                res.status(503).json({ error: 'RiskManager not available' });
-                return;
-            }
-            const deleted = this.riskManager.deleteRisk(String(req.params.id));
-            if (!deleted) {
-                res.status(404).json({ error: 'Risk not found' });
-                return;
-            }
-            res.status(204).send();
-        });
-
-        // =====================================================================
-        // Features
-        // =====================================================================
-
-        this.app.get('/api/v1/features', (_req: Request, res: Response) => {
-            const flags = Object.keys(FEATURE_TIER_MAP) as FeatureFlag[];
-            const features = flags.map(flag => ({
-                flag,
-                requiredTier: FEATURE_TIER_MAP[flag],
-                enabled: this.featureGate.isEnabled(flag),
-            }));
-            res.json({
-                tier: this.featureGate.getTier(),
-                features,
-            });
-        });
-
-        this.app.get('/api/v1/features/:flag', (req: Request, res: Response) => {
-            const flag = req.params.flag as FeatureFlag;
-            if (!(flag in FEATURE_TIER_MAP)) {
-                res.status(404).json({ error: 'Feature flag not found' });
-                return;
-            }
-            res.json({
-                flag,
-                requiredTier: FEATURE_TIER_MAP[flag],
-                enabled: this.featureGate.isEnabled(flag),
-            });
-        });
-
-        // =====================================================================
-        // SSE Event Stream
-        // =====================================================================
+        registerGovernanceRoutes(this.app, deps);
+        registerSentinelRoutes(this.app, deps);
+        registerLedgerRoutes(this.app, deps);
+        registerTrustRoutes(this.app, deps);
+        registerRiskRoutes(this.app, deps);
+        registerFeatureRoutes(this.app, deps);
 
         this.app.get('/api/v1/events/stream', this.eventStreamBridge.handler);
-
-        // =====================================================================
-        // Web UI - Static HTML pages served from webui/pages/
-        // =====================================================================
 
         const pagesDir = path.join(__dirname, '../webui/pages');
 
@@ -511,10 +223,4 @@ export class FailSafeApiServer {
         this.app.get('/ui/risks', serveHtmlPage('risk-register.html'));
         this.app.get('/ui/transparency', serveHtmlPage('transparency.html'));
     }
-}
-
-/** Safe query param extraction */
-function req_query(req: Request, key: string): string | undefined {
-    const val = req.query[key];
-    return typeof val === 'string' ? val : undefined;
 }

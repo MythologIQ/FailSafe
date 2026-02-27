@@ -108,12 +108,8 @@ export class FailSafeClient {
     async getFeature(flag: string): Promise<{ enabled: boolean; tier: string }> { return this.get(`/api/v1/features/${encodeURIComponent(flag)}`); }
 
     // SSE Event Subscription
-    subscribe(callback: (event: FailSafeEvent) => void, lastSeq?: number): () => void {
-        const url = lastSeq !== undefined
-            ? `${this.baseUrl}/api/v1/events/stream`
-            : `${this.baseUrl}/api/v1/events/stream`;
-
-        const source = new EventSource(url);
+    subscribe(callback: (event: FailSafeEvent) => void): () => void {
+        const source = new EventSource(`${this.baseUrl}/api/v1/events/stream`);
 
         source.onmessage = (e) => {
             try {

@@ -4,6 +4,7 @@ import * as vscode from "vscode";
 import { SentinelDaemon } from "../sentinel/SentinelDaemon";
 import { LedgerManager } from "../qorelogic/ledger/LedgerManager";
 import { IntentService } from "../governance/IntentService";
+import { SessionManager } from "../governance/SessionManager";
 import { Logger } from "../shared/Logger";
 import { z } from "zod";
 import * as path from "path";
@@ -24,6 +25,7 @@ export class FailSafeMCPServer {
     private sentinel: SentinelDaemon,
     private ledger: LedgerManager,
     private intentService: IntentService,
+    private sessionManager?: SessionManager,
   ) {
     this.logger = new Logger("MCP-Server");
 
@@ -127,7 +129,7 @@ export class FailSafeMCPServer {
               type: "text",
               text: JSON.stringify({
                 status: "ACTIVE",
-                locked: false, // TODO: Check sessionManager
+                locked: this.sessionManager?.getState().isLocked ?? false,
                 active_intent: activeIntent ? activeIntent.id : null,
               }),
             },

@@ -9,6 +9,7 @@ FailSafe is maintained by MythologIQ. This document describes how the project is
 ### Maintainers
 
 Maintainers have write access and are responsible for:
+
 - Reviewing and merging pull requests
 - Managing releases
 - Enforcing code of conduct
@@ -27,6 +28,7 @@ Anyone who uses the project and may report issues or request features.
 ### Consensus
 
 Most decisions are made through discussion and consensus:
+
 1. Proposal raised in issue or discussion
 2. Community feedback gathered
 3. Maintainers make final decision
@@ -34,6 +36,7 @@ Most decisions are made through discussion and consensus:
 ### Voting
 
 For significant changes:
+
 - Maintainers vote
 - Simple majority required
 - Voting period: 1 week minimum
@@ -64,17 +67,18 @@ Validation entrypoints:
 - `powershell -File tools/reliability/validate-branch-policy.ps1`
 - `powershell -File validate.ps1 -SkipContainerValidation`
 
-## QoreLogic A.E.G.I.S. Governance
+## QoreLogic Governance (The SHIELD Framework)
 
-This project uses QoreLogic A.E.G.I.S. for AI-assisted development governance:
+This project uses the QoreLogic SHIELD physical lifecycle for AI-assisted development governance:
 
-| Phase | Command | Description |
-|-------|---------|-------------|
-| ALIGN/ENCODE | `/ql-bootstrap` | Initialize project DNA |
-| PLAN | `/ql-plan` | Create implementation plans |
-| GATE | `/ql-audit` | Adversarial audit |
-| IMPLEMENT | `/ql-implement` | Build with Section 4 Razor |
-| SUBSTANTIATE | `/ql-substantiate` | Verify and seal |
+| Phase | Acronym       | Command            | Description                                             |
+| ----- | ------------- | ------------------ | ------------------------------------------------------- |
+| S     | SECURE INTENT | `/ql-bootstrap`    | Seed project DNA, document the Why                      |
+| H     | HYPOTHESIZE   | `/ql-plan`         | Create blueprints with risk grades and Section 4 limits |
+| I     | INTERROGATE   | `/ql-audit`        | Adversarial tribunal checks for drift; PASS or VETO     |
+| E     | EXECUTE       | `/ql-implement`    | Build under strict code complexity constraints          |
+| L     | LOCK PROOF    | `/ql-substantiate` | Verify Reality matches Promise with Merkle hash seal    |
+| D     | DELIVER       | `/ql-release`      | Deploy and monitor for operational drift                |
 
 All changes to security-critical components (L3) require mandatory audit.
 
@@ -90,4 +94,5 @@ All changes to security-critical components (L3) require mandatory audit.
 This governance model may be amended by maintainer consensus.
 
 ---
+
 _Last updated: 2026_

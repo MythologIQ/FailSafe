@@ -301,18 +301,16 @@ The VSCode extension includes:
 - **Agent personas** (`.github/copilot-instructions/`)
 - **Governance configuration** and skills
 
----
+### The SHIELD Workflow (Claude Code)
 
-### Claude Code Commands
+Both extensions include Claude Code slash commands that map to the physical **SHIELD** governance lifecycle:
 
-Both extensions include Claude Code slash commands:
-
-- `/ql-bootstrap` - Initialize workspace governance
-- `/ql-status` - Quick lifecycle check
-- `/ql-plan` - Create implementation plans
-- `/ql-audit` - Gate tribunal for plans
-- `/ql-implement` - Execute implementation
-- `/ql-substantiate` - Session seal with Merkle verification
+- **S - SECURE INTENT** (`/ql-bootstrap`): Seed project DNA. Document the Why, encode the architecture, initialize the Merkle chain.
+- **H - HYPOTHESIZE** (`/ql-plan`): Create implementation blueprints with risk grades, file contracts, and Section 4 complexity limits.
+- **I - INTERROGATE** (`/ql-audit`): Adversarial tribunal. The Judge audits the plan for security, correctness, and drift. PASS or VETO.
+- **E - EXECUTE** (`/ql-implement`): Build under KISS constraints after a PASS verdict. Functions under 40 lines. Nesting under 3 levels.
+- **L - LOCK PROOF** (`/ql-substantiate`): Verify Reality matches Promise. Cryptographically seal the session with Merkle hash verification.
+- **D - DELIVER** (`/ql-release`): Deploy, hand off with traceability, and monitor for operational drift.
 
 ---
 

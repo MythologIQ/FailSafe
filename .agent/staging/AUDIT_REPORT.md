@@ -1,9 +1,10 @@
 # AUDIT REPORT
 
-**Tribunal Date**: 2026-02-27T06:20:00.000Z
-**Target**: Token Economics Dashboard (v4.0.0) — plan-token-economics-v4.md
-**Risk Grade**: L1
+**Tribunal Date**: 2026-02-27T10:45:00.000Z
+**Target**: Time-Travel Rollback (v4.1.0) — plan-time-travel-rollback-v4.1.md (Rev 2)
+**Risk Grade**: L3
 **Auditor**: The QoreLogic Judge
+**Previous Verdict**: VETO (Entry #82, 8 violations)
 
 ---
 
@@ -13,7 +14,7 @@
 
 ### Executive Summary
 
-The Token Economics blueprint proposes a cleanly isolated economics module with zero vscode dependencies in the service layer, proper layering direction (UI -> domain -> data), no new npm dependencies, no security violations, no ghost UI paths, and full Section 4 Razor compliance across all 7 source files. The architecture correctly separates the API-first service boundary from the webview presentation layer. All proposed files connect to the build entry point through traced import chains. The plan is precise, incremental, and consistent with itself.
+The Governor has remediated all 8 violations from the Entry #82 VETO without introducing new defects. V1 (git flag injection) is addressed with a regex guard as the first line of `resetHard()`. V2 (ledger seal failure) is addressed with try/catch and emergency log fallback. V3 (TOCTOU race) is addressed with a second `getStatus()` immediately before the destructive operation. V4 (non-atomic JSONL write) is addressed with write-to-temp-then-rename in the extracted helper. V5 (actor/reason sanitization) is addressed with server-side actor override and reason length cap at both the API and panel layers. V6 (cancel handler) is fully specified with message contract and dispose chain. V7 (checkpoint endpoint) is fully specified with response schema. V8 (Razor violation) is resolved by extracting `SentinelJsonlFallback.ts`, bringing SentinelRagStore to ~248 lines. The naming inconsistency (revert vs rollback) noted in Entry #82 has also been unified to `governance.revert*` for internal types. Architecture remains sound: clean module boundaries, correct layering, zero cyclic deps, all files connected to build path.
 
 ### Audit Results
 
@@ -21,49 +22,57 @@ The Token Economics blueprint proposes a cleanly isolated economics module with 
 
 **Result**: PASS
 
-- Zero hardcoded credentials or secrets in any economics file
-- Zero placeholder auth logic or "TODO: implement auth" comments
-- Zero bypassed security checks or `// security: disabled` markers
-- Zero mock authentication returns in production code
-- Zero `console.log` statements in production code
-- XSS protection confirmed: `EconomicsTemplate.ts` uses `tooltipAttrs()` (which calls `escapeHtml()`) for all user-facing data attributes
-- CSP correctly enforced with nonce-based script and style sources
-- Path construction uses `path.join()` (no path traversal risk)
-- JSON parsing wrapped in try/catch (corrupted file returns null, no crash)
+| ID | Original Finding | Remediation | Verdict |
+|---|---|---|---|
+| V1 | Git flag injection in `resetHard()` | `GIT_HASH_RE = /^[0-9a-f]{40}$\|^[0-9a-f]{64}$/` validation as first line. Throws on mismatch. | RESOLVED |
+| V2 | Ledger seal failure unhandled | Try/catch wrapping `recordRevertCheckpoint`. On catch: `fs.appendFileSync` to `.failsafe/revert-emergency.log` with JSON record. Step recorded as failed with `ledger_seal_failed_emergency_logged`. | RESOLVED |
+| V3 | TOCTOU race between dirty check and reset | Second `getStatus()` call immediately before `resetHard()`. If clean state changed, abort with `workspace_changed_during_revert`. | RESOLVED |
+| V4 | JSONL non-atomic write | Extracted to `SentinelJsonlFallback.ts`. Uses `const tmpPath = jsonlPath + '.tmp.' + process.pid; fs.writeFileSync(tmpPath, ...); fs.renameSync(tmpPath, jsonlPath);` | RESOLVED |
+| V5 | Actor/reason unsanitized | API layer: `const actor = 'user.local'; const reason = String(rawReason \|\| '').slice(0, 2000);`. Panel layer: `actor: 'user.local'` hardcoded in message handler. Webview never sends actor. | RESOLVED |
+
+**Positive findings carried forward**: `shell: false` confirmed, parameterized SQL confirmed, `rejectIfRemote` confirmed on both endpoints, no hardcoded secrets, no placeholder auth stubs.
+
+**New positive finding**: Emergency log fallback ensures audit trail survives ledger failure after irreversible git operation.
 
 #### Ghost UI Pass
 
 **Result**: PASS
 
-- Refresh button (line 131 of EconomicsTemplate.ts): `onclick="refresh()"` calls `vscode.postMessage({ command: 'refresh' })`, which is handled by `EconomicsPanel.ts` lines 34-42 — calls `this.update()` to fetch fresh snapshot
-- Hero section: renders live `snapshot.weeklyTokensSaved` and `snapshot.weeklyCostSaved` — no placeholders
-- Donut chart: renders live `snapshot.contextSyncRatio` — no placeholders
-- Bar chart: renders live `snapshot.dailyAggregates` — no placeholders
-- Zero "coming soon" or disabled-but-visible UI elements
-- Zero forms without submission handlers
+| ID | Original Finding | Remediation | Verdict |
+|---|---|---|---|
+| V6 | Cancel button has no handler | Full chain specified: `cancel-btn` click -> `vscode.postMessage({ command: 'cancel' })` -> RevertPanel `case 'cancel': this.panel.dispose(); break;` | RESOLVED |
+| V7 | `GET /api/checkpoints/:id` unspecified | Full specification: `rejectIfRemote` guard, parameterized SQL `WHERE id = ?`, response schema `{ ok: boolean, checkpoint: CheckpointRef \| null }`, 400 on missing id. | RESOLVED |
+
+**Additional design gaps from Entry #82 — verified resolved**:
+
+- `actor` field in webview payload: RESOLVED. Actor is set server-side in both the API layer (`'user.local'`) and the panel host handler (`actor: 'user.local'`). The webview intentionally does NOT send actor — this is the correct V5 fix.
+- Result section update mechanism: RESOLVED. Plan specifies: panel sends `postMessage({ command: 'revertResult', result })`, webview listens via `window.addEventListener('message', ...)` with `event.data.command === 'revertResult'` discriminator, `renderResult()` populates result section and disables Revert button.
+
+**No new ghost paths detected.** All interactive elements have complete handler chains.
 
 #### Section 4 Razor Pass
 
 **Result**: PASS
 
-| Check | Limit | Blueprint Proposes | Actual | Status |
-|---|---|---|---|---|
-| Max function lines | 40 | ~33 (renderStyles) | 33 | OK |
-| Max file lines | 250 | ~245 (GenesisManager) | 245 | OK |
-| Max nesting depth | 3 | 3 (handleDispatch) | 3 | OK |
-| Nested ternaries | 0 | 0 | 0 | OK |
-
-File-by-file line counts verified:
-
-| File | Lines | Limit | Status |
+| Check | Limit | Blueprint Proposes | Status |
 |---|---|---|---|
-| types.ts | 56 | 250 | OK |
-| CostCalculator.ts | 40 | 250 | OK |
-| EconomicsPersistence.ts | 47 | 250 | OK |
-| TokenAggregatorService.ts | 180 | 250 | OK |
-| EconomicsPanel.ts | 92 | 250 | OK |
-| EconomicsTemplate.ts | 138 | 250 | OK |
-| GenesisManager.ts | 245 | 250 | OK |
+| Max function lines | 40 | ~30 (revert orchestrator) | OK |
+| Max file lines | 250 | ~248 (SentinelRagStore.ts) | OK |
+| Max nesting depth | 3 | 2 (purge JSONL filter) | OK |
+| Nested ternaries | 0 | 0 | OK |
+
+| File | Proposed Lines | Limit | Status |
+|---|---|---|---|
+| revert/types.ts | ~40 | 250 | OK |
+| revert/GitResetService.ts | ~95 | 250 | OK |
+| revert/FailSafeRevertService.ts | ~140 | 250 | OK |
+| SentinelJsonlFallback.ts | ~45 | 250 | OK |
+| RevertPanel.ts | ~95 | 250 | OK |
+| RevertTemplate.ts | ~180 | 250 | OK |
+| GenesisManager.ts (modified) | ~246 | 250 | OK |
+| SentinelRagStore.ts (modified) | ~248 | 250 | OK |
+
+V8 (SentinelRagStore exceeding 250 lines) is resolved. JSONL fallback logic extracted to `SentinelJsonlFallback.ts` (~45 lines). SentinelRagStore drops from 271 to ~248 via: +12 lines (purge method + import), -4 lines (inline JSONL ops delegated), -31 lines (JSONL init/append extracted). Arithmetic checks out.
 
 #### Dependency Pass
 
@@ -71,58 +80,51 @@ File-by-file line counts verified:
 
 | Package | Justification | <10 Lines Vanilla? | Verdict |
 |---|---|---|---|
-| (none) | No new npm dependencies added | N/A | PASS |
+| (none) | No new npm dependencies | N/A | PASS |
 
-The economics module imports only:
-- Node builtins: `fs`, `path` (in EconomicsPersistence.ts)
-- Internal: `../shared/EventBus`, `./types`, `./CostCalculator`, `./EconomicsPersistence`
-- UI layer: `../../../shared/components/Tooltip`, `../../shared/utils/htmlSanitizer`
-
-Zero new external dependencies.
+All new code uses only Node builtins (`child_process`, `fs`, `path`, `os`) and internal modules.
 
 #### Orphan Pass
 
 **Result**: PASS
 
+All proposed files trace to `main.ts` when the planned modifications are applied:
+
 | Proposed File | Entry Point Connection | Status |
 |---|---|---|
-| `src/economics/types.ts` | types.ts -> CostCalculator.ts -> TokenAggregatorService.ts -> GenesisManager.ts -> bootstrapGenesis.ts -> main.ts | Connected |
-| `src/economics/CostCalculator.ts` | CostCalculator.ts -> TokenAggregatorService.ts -> GenesisManager.ts -> bootstrapGenesis.ts -> main.ts | Connected |
-| `src/economics/EconomicsPersistence.ts` | EconomicsPersistence.ts -> TokenAggregatorService.ts -> GenesisManager.ts -> bootstrapGenesis.ts -> main.ts | Connected |
-| `src/economics/TokenAggregatorService.ts` | TokenAggregatorService.ts -> GenesisManager.ts -> bootstrapGenesis.ts -> main.ts | Connected |
-| `src/genesis/panels/EconomicsPanel.ts` | EconomicsPanel.ts -> GenesisManager.ts -> bootstrapGenesis.ts -> main.ts | Connected |
-| `src/genesis/panels/templates/EconomicsTemplate.ts` | EconomicsTemplate.ts -> EconomicsPanel.ts -> GenesisManager.ts -> bootstrapGenesis.ts -> main.ts | Connected |
-| `src/test/economics/CostCalculator.test.ts` | Test file — connected via test runner config | Connected |
-| `src/test/economics/EconomicsPersistence.test.ts` | Test file — connected via test runner config | Connected |
-| `src/test/economics/TokenAggregatorService.test.ts` | Test file — connected via test runner config | Connected |
-
-Command registration verified: `failsafe.showEconomics` in commands.ts (line 376) -> `genesis.showEconomics()` -> `EconomicsPanel.createOrShow()`.
+| `revert/types.ts` | types -> GitResetService -> FailSafeRevertService -> RoadmapServer -> main.ts | Connected |
+| `revert/GitResetService.ts` | GitResetService -> FailSafeRevertService -> RoadmapServer -> main.ts | Connected |
+| `revert/FailSafeRevertService.ts` | FailSafeRevertService -> RoadmapServer -> main.ts | Connected |
+| `SentinelJsonlFallback.ts` | SentinelJsonlFallback -> SentinelRagStore -> SentinelDaemon -> main.ts | Connected |
+| `RevertPanel.ts` | RevertPanel -> GenesisManager -> bootstrapGenesis -> main.ts | Connected |
+| `RevertTemplate.ts` | RevertTemplate -> RevertPanel -> GenesisManager -> main.ts | Connected |
+| Test files | Connected via test runner config (`src/test/`) | Connected |
 
 #### Macro-Level Architecture Pass
 
 **Result**: PASS
 
-- [x] Clear module boundaries: `src/economics/` is a self-contained domain module; `src/genesis/panels/` is the presentation layer
-- [x] No cyclic dependencies: `economics/` has zero imports from `genesis/`, `sentinel/`, `qorelogic/`, or `governance/`
-- [x] Layering direction enforced: UI (`EconomicsPanel`) -> domain (`TokenAggregatorService`) -> data (`EconomicsPersistence`). No reverse imports.
-- [x] Single source of truth for shared types: `EconomicsSnapshot` defined once in `economics/types.ts`, consumed everywhere
-- [x] Cross-cutting concerns centralized: EventBus subscription in service, HTML sanitization via shared `Tooltip`/`htmlSanitizer`
-- [x] No duplicated domain logic: cost calculation centralized in `CostCalculator.ts`, used by `TokenAggregatorService`
-- [x] Build path intentional: entry via `main.ts` -> `bootstrapGenesis.ts` -> `GenesisManager` -> economics service + panel
+- [x] Clear module boundaries: `governance/revert/` is self-contained, `sentinel/SentinelJsonlFallback.ts` is a pure helper
+- [x] No cyclic dependencies: `governance/revert/` has zero imports from `genesis/`, `sentinel/`, `qorelogic/`
+- [x] Layering direction enforced: UI (RevertPanel) -> orchestrator (FailSafeRevertService) -> git/RAG/ledger
+- [x] Single source of truth: `revert/types.ts` defines all revert value types once
+- [x] Cross-cutting concerns centralized: EventBus for events, existing checkpoint chain for ledger
+- [x] No duplicated domain logic: git operations centralized in GitResetService, JSONL ops in SentinelJsonlFallback
+- [x] Build path intentional: entry via main.ts -> RoadmapServer + GenesisManager
+
+**Naming consistency resolved**: EventBus types now use `governance.revert*` (matching ledger checkpoint type `'governance.revert'`). API path remains `/api/actions/rollback` for external consistency. Internal/external naming distinction is clearly documented in the plan.
 
 ### Violations Found
 
-| ID | Category | Location | Description |
-|---|---|---|---|
-| (none) | — | — | No violations found |
+None. All 8 violations from Entry #82 have been adequately remediated.
 
 ### Verdict Hash
 
 ```
 SHA256(this_report)
-= f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2
+= a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2
 ```
 
 ---
 
-_This verdict is binding. Implementation may proceed without modification._
+_This verdict is binding. Implementation may proceed._

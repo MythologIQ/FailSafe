@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FailSafe Risk Register</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0e0e1a;
+      --bg-card: #16162a;
+      --bg-input: #1c1c36;
+      --border: #2a2a4a;
+      --text: #e0e0f0;
+      --text-muted: #8888aa;
+      --accent: #5b7cf7;
+      --critical: #f87171;
+      --high: #fb923c;
+      --medium: #fbbf24;
+      --low: #34d399;
+      --open: #60a5fa;
+      --mitigating: #a78bfa;
+      --resolved: #34d399;
+      --accepted: #9ca3af;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      padding: 24px;
+      min-height: 100vh;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .page-title {
+      font-size: 22px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #5b7cf7 0%, #a78bfa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .add-btn {
+      padding: 8px 18px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .add-btn:hover { background: #4a6be0; }
+
+    /* Summary Cards */
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .summary-card {
+      background: var(--bg-card);
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+      border-left: 3px solid transparent;
+    }
+
+    .summary-card.critical { border-left-color: var(--critical); }
+    .summary-card.high { border-left-color: var(--high); }
+    .summary-card.medium { border-left-color: var(--medium); }
+    .summary-card.low { border-left-color: var(--low); }
+
+    .summary-count {
+      font-size: 28px;
+      font-weight: 700;
+    }
+
+    .summary-card.critical .summary-count { color: var(--critical); }
+    .summary-card.high .summary-count { color: var(--high); }
+    .summary-card.medium .summary-count { color: var(--medium); }
+    .summary-card.low .summary-count { color: var(--low); }
+
+    .summary-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Risk List */
+    .risk-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .risk-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .risk-item:hover { border-color: var(--accent); }
+
+    .risk-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .risk-title { font-weight: 600; font-size: 14px; }
+
+    .risk-badges { display: flex; gap: 6px; }
+
+    .badge {
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+
+    .badge.critical { background: rgba(248,113,113,0.2); color: var(--critical); }
+    .badge.high { background: rgba(251,146,60,0.2); color: var(--high); }
+    .badge.medium { background: rgba(251,191,36,0.2); color: var(--medium); }
+    .badge.low { background: rgba(52,211,153,0.2); color: var(--low); }
+    .badge.open { background: rgba(96,165,250,0.2); color: var(--open); }
+    .badge.mitigating { background: rgba(167,139,250,0.2); color: var(--mitigating); }
+    .badge.resolved { background: rgba(52,211,153,0.2); color: var(--resolved); }
+    .badge.accepted { background: rgba(156,163,175,0.2); color: var(--accepted); }
+
+    .risk-description {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      line-height: 1.4;
+    }
+
+    .risk-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .risk-actions button {
+      font-size: 11px;
+      padding: 5px 12px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .risk-actions button:hover {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
+    .risk-actions button.danger:hover {
+      border-color: var(--critical);
+      color: var(--critical);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    /* Create Risk Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 28px;
+      width: 480px;
+      max-width: 90vw;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal h2 {
+      font-size: 18px;
+      margin-bottom: 20px;
+      font-weight: 700;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 13px;
+      font-family: inherit;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .form-group textarea { resize: vertical; min-height: 60px; }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
+
+    .modal-actions button {
+      padding: 9px 20px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-cancel {
+      background: transparent;
+      border: 1px solid var(--border) !important;
+      color: var(--text-muted);
+    }
+
+    .btn-submit {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .btn-submit:hover { background: #4a6be0; }
+
+    .error-banner {
+      display: none;
+      background: rgba(248, 113, 113, 0.15);
+      border: 1px solid rgba(248, 113, 113, 0.3);
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      font-size: 13px;
+      color: var(--critical);
+    }
+
+    @media (max-width: 640px) {
+      body { padding: 12px; }
+      .summary { grid-template-columns: repeat(2, 1fr); }
+      .risk-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="error-banner" id="errorBanner"></div>
+
+  <div class="header">
+    <span class="page-title">Risk Register</span>
+    <button class="add-btn" onclick="openCreateModal()">+ Add Risk</button>
+  </div>
+
+  <div class="summary" id="summaryCards">
+    <div class="summary-card critical">
+      <div class="summary-count" id="countCritical">0</div>
+      <div class="summary-label">Critical</div>
+    </div>
+    <div class="summary-card high">
+      <div class="summary-count" id="countHigh">0</div>
+      <div class="summary-label">High</div>
+    </div>
+    <div class="summary-card medium">
+      <div class="summary-count" id="countMedium">0</div>
+      <div class="summary-label">Medium</div>
+    </div>
+    <div class="summary-card low">
+      <div class="summary-count" id="countLow">0</div>
+      <div class="summary-label">Low</div>
+    </div>
+  </div>
+
+  <div class="risk-list" id="riskList">
+    <div class="empty-state">Loading risks...</div>
+  </div>
+
+  <!-- Create Risk Modal -->
+  <div class="modal-overlay" id="createModal">
+    <div class="modal">
+      <h2>Create New Risk</h2>
+      <form id="riskForm" onsubmit="submitRisk(event)">
+        <div class="form-group">
+          <label for="riskTitle">Title *</label>
+          <input type="text" id="riskTitle" placeholder="e.g., API rate limiting not implemented" required>
+        </div>
+        <div class="form-group">
+          <label for="riskSeverity">Severity *</label>
+          <select id="riskSeverity" required>
+            <option value="critical">Critical</option>
+            <option value="high">High</option>
+            <option value="medium" selected>Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="riskCategory">Category *</label>
+          <select id="riskCategory" required>
+            <option value="security">Security</option>
+            <option value="performance">Performance</option>
+            <option value="technical-debt">Technical Debt</option>
+            <option value="dependency">Dependency</option>
+            <option value="governance">Governance</option>
+            <option value="compliance">Compliance</option>
+            <option value="operational">Operational</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="riskDescription">Description *</label>
+          <textarea id="riskDescription" placeholder="Describe the risk..." required></textarea>
+        </div>
+        <div class="form-group">
+          <label for="riskImpact">Impact *</label>
+          <textarea id="riskImpact" placeholder="What happens if this risk materializes?" required></textarea>
+        </div>
+        <div class="form-group">
+          <label for="riskMitigation">Mitigation *</label>
+          <textarea id="riskMitigation" placeholder="How can this risk be mitigated?" required></textarea>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" onclick="closeCreateModal()">Cancel</button>
+          <button type="submit" class="btn-submit">Create Risk</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // Inline FailSafeClient SDK
+    // =========================================================================
+    class FailSafeClient {
+      constructor(baseUrl) {
+        this.baseUrl = baseUrl || 'http://localhost:7777';
+      }
+
+      async request(method, path, body) {
+        var opts = { method: method, headers: { 'Content-Type': 'application/json' } };
+        if (body) opts.body = JSON.stringify(body);
+        var res = await fetch(this.baseUrl + path, opts);
+        if (!res.ok) throw new Error(method + ' ' + path + ': ' + res.status + ' ' + res.statusText);
+        if (res.status === 204) return null;
+        return res.json();
+      }
+
+      async getRisks() { return this.request('GET', '/api/v1/risks'); }
+      async createRisk(risk) { return this.request('POST', '/api/v1/risks', risk); }
+      async updateRisk(id, updates) { return this.request('PUT', '/api/v1/risks/' + encodeURIComponent(id), updates); }
+      async deleteRisk(id) { return this.request('DELETE', '/api/v1/risks/' + encodeURIComponent(id)); }
+
+      subscribe(callback) {
+        var source = new EventSource(this.baseUrl + '/api/v1/events/stream');
+        source.onmessage = function(e) {
+          try { callback(JSON.parse(e.data)); } catch (_) {}
+        };
+        return function() { source.close(); };
+      }
+    }
+
+    // =========================================================================
+    // Risk Register Application
+    // =========================================================================
+    var client = new FailSafeClient();
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function showError(msg) {
+      var banner = document.getElementById('errorBanner');
+      banner.textContent = msg;
+      banner.style.display = 'block';
+      setTimeout(function() { banner.style.display = 'none'; }, 8000);
+    }
+
+    function openCreateModal() {
+      document.getElementById('createModal').classList.add('open');
+      document.getElementById('riskTitle').focus();
+    }
+
+    function closeCreateModal() {
+      document.getElementById('createModal').classList.remove('open');
+      document.getElementById('riskForm').reset();
+    }
+
+    // Click outside modal to close
+    document.getElementById('createModal').addEventListener('click', function(e) {
+      if (e.target === this) closeCreateModal();
+    });
+
+    function updateSummary(summary) {
+      if (!summary) return;
+      document.getElementById('countCritical').textContent = summary.openCritical || 0;
+      document.getElementById('countHigh').textContent = summary.openHigh || 0;
+      document.getElementById('countMedium').textContent = (summary.bySeverity && summary.bySeverity.medium) || 0;
+      document.getElementById('countLow').textContent = (summary.bySeverity && summary.bySeverity.low) || 0;
+    }
+
+    function renderRiskList(risks) {
+      var container = document.getElementById('riskList');
+      if (!risks || risks.length === 0) {
+        container.innerHTML = '<div class="empty-state">No risks registered. Click "+ Add Risk" to create one.</div>';
+        return;
+      }
+
+      var html = '';
+      for (var i = 0; i < risks.length; i++) {
+        var r = risks[i];
+        html += '<div class="risk-item">';
+        html += '<div class="risk-header">';
+        html += '<span class="risk-title">' + escapeHtml(r.title) + '</span>';
+        html += '<div class="risk-badges">';
+        html += '<span class="badge ' + escapeHtml(r.severity) + '">' + escapeHtml(r.severity) + '</span>';
+        html += '<span class="badge ' + escapeHtml(r.status) + '">' + escapeHtml(r.status) + '</span>';
+        if (r.category) html += '<span class="badge">' + escapeHtml(r.category) + '</span>';
+        html += '</div></div>';
+        html += '<div class="risk-description">' + escapeHtml(r.description || r.impact || '') + '</div>';
+        html += '<div class="risk-actions">';
+        html += '<button onclick="event.stopPropagation(); updateStatus(\'' + escapeHtml(r.id) + '\', \'mitigating\')">Mitigate</button>';
+        html += '<button onclick="event.stopPropagation(); updateStatus(\'' + escapeHtml(r.id) + '\', \'resolved\')">Resolve</button>';
+        html += '<button onclick="event.stopPropagation(); updateStatus(\'' + escapeHtml(r.id) + '\', \'accepted\')">Accept</button>';
+        html += '<button class="danger" onclick="event.stopPropagation(); deleteRisk(\'' + escapeHtml(r.id) + '\')">Delete</button>';
+        html += '</div></div>';
+      }
+      container.innerHTML = html;
+    }
+
+    async function loadRisks() {
+      try {
+        var data = await client.getRisks();
+        renderRiskList(data.risks || []);
+        updateSummary(data.summary || {});
+      } catch (err) {
+        showError('Cannot load risks: ' + err.message);
+        document.getElementById('riskList').innerHTML = '<div class="empty-state">Failed to connect to API server</div>';
+      }
+    }
+
+    async function submitRisk(e) {
+      e.preventDefault();
+      var risk = {
+        title: document.getElementById('riskTitle').value,
+        severity: document.getElementById('riskSeverity').value,
+        category: document.getElementById('riskCategory').value,
+        description: document.getElementById('riskDescription').value,
+        impact: document.getElementById('riskImpact').value,
+        mitigation: document.getElementById('riskMitigation').value,
+      };
+      try {
+        await client.createRisk(risk);
+        closeCreateModal();
+        await loadRisks();
+      } catch (err) {
+        showError('Failed to create risk: ' + err.message);
+      }
+    }
+
+    async function updateStatus(id, status) {
+      try {
+        await client.updateRisk(id, { status: status });
+        await loadRisks();
+      } catch (err) {
+        showError('Failed to update risk: ' + err.message);
+      }
+    }
+
+    async function deleteRisk(id) {
+      if (!confirm('Delete this risk permanently?')) return;
+      try {
+        await client.deleteRisk(id);
+        await loadRisks();
+      } catch (err) {
+        showError('Failed to delete risk: ' + err.message);
+      }
+    }
+
+    // -- SSE Live Updates --
+    client.subscribe(function(event) {
+      if (event.type === 'risk.updated' || event.type === 'risk.created' || event.type === 'risk.deleted') {
+        loadRisks();
+      }
+    });
+
+    // -- Initialize --
+    loadRisks();
+  </script>
+</body>
+</html>

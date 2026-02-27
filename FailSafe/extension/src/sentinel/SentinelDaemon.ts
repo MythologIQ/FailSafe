@@ -8,15 +8,20 @@
  * - Daemon: Lifecycle & Event Loop
  * - Arbiter: Decision Logic
  * - Router: Action/Distribution
+ *
+ * Decoupled from vscode.* APIs: uses IConfigProvider for configuration
+ * reads instead of vscode.workspace.getConfiguration. The
+ * vscode.ExtensionContext dependency has been removed; ConfigManager
+ * (which implements the same workspace-root / config surface) is
+ * the sole configuration source.
  */
 
-import * as vscode from 'vscode';
 import * as chokidar from 'chokidar';
 import * as path from 'path';
 import * as crypto from 'crypto';
 import { EventBus } from '../shared/EventBus';
 import { Logger } from '../shared/Logger';
-import { ConfigManager } from '../shared/ConfigManager';
+import { IConfigProvider } from '../core/interfaces/IConfigProvider';
 import {
     SentinelStatus,
     SentinelEvent,
@@ -25,10 +30,10 @@ import {
 import { VerdictArbiter } from './VerdictArbiter';
 import { VerdictRouter } from './VerdictRouter';
 import { SentinelRagStore } from './SentinelRagStore';
+import { IFeatureGate } from '../core/interfaces/IFeatureGate';
 
 export class SentinelDaemon {
-    private context: vscode.ExtensionContext;
-    private configManager: ConfigManager;
+    private configProvider: IConfigProvider;
     private eventBus: EventBus;
     private logger: Logger;
 
@@ -55,23 +60,28 @@ export class SentinelDaemon {
     private startTime: number = 0;
     private processInterval: NodeJS.Timeout | undefined;
     private ragStore: SentinelRagStore | undefined;
+    private featureGate: IFeatureGate | undefined;
 
     constructor(
-        context: vscode.ExtensionContext,
-        configManager: ConfigManager,
+        configProvider: IConfigProvider,
         arbiter: VerdictArbiter,
         router: VerdictRouter,
-        eventBus: EventBus
+        eventBus: EventBus,
+        featureGate?: IFeatureGate
     ) {
-        this.context = context;
-        this.configManager = configManager;
+        this.configProvider = configProvider;
         this.arbiter = arbiter;
         this.router = router;
         this.eventBus = eventBus;
         this.logger = new Logger('Sentinel');
+        this.featureGate = featureGate;
 
         // Sync initial status
         this.status.mode = this.arbiter.getMode();
+    }
+
+    setFeatureGate(gate: IFeatureGate): void {
+        this.featureGate = gate;
     }
 
     /**
@@ -81,6 +91,11 @@ export class SentinelDaemon {
         if (this.status.running) {
             this.logger.warn('Sentinel already running');
             return;
+        }
+
+        // OS-level daemon mode requires FailSafe Pro
+        if (this.featureGate && !this.featureGate.isEnabled('sentinel.osDaemon')) {
+            this.logger.info('Sentinel OS daemon requires FailSafe Pro. Running in standard mode.');
         }
 
         this.logger.info('Starting Sentinel daemon...');
@@ -184,7 +199,7 @@ export class SentinelDaemon {
      * Initialize the file watcher
      */
     private async initializeWatcher(): Promise<void> {
-        const workspaceRoot = this.configManager.getWorkspaceRoot();
+        const workspaceRoot = this.configProvider.getWorkspaceRoot();
         if (!workspaceRoot) {
             this.logger.warn('No workspace root, file watching disabled');
             return;
@@ -336,14 +351,15 @@ export class SentinelDaemon {
     }
 
     private initializeRagStore(): void {
-        const enabled = vscode.workspace
-            .getConfiguration('failsafe')
-            .get<boolean>('sentinel.ragEnabled', true);
+        // Read RAG enabled flag from IConfigProvider config
+        const config = this.configProvider.getConfig();
+        const sentinelConfig = config.sentinel as Record<string, unknown> | undefined;
+        const enabled = (sentinelConfig?.ragEnabled as boolean) ?? true;
         if (!enabled) {
             this.ragStore = undefined;
             return;
         }
-        const workspaceRoot = this.configManager.getWorkspaceRoot();
+        const workspaceRoot = this.configProvider.getWorkspaceRoot();
         if (!workspaceRoot) {
             return;
         }
@@ -368,13 +384,13 @@ export class SentinelDaemon {
      */
     async validateClaim(claim: AgentClaim): Promise<SentinelVerdict> {
         this.logger.info('Validating agent claim', { agentDid: claim.agentDid });
-        
+
         // 1. Arbitrate
         const verdict = await this.arbiter.validateClaim(claim);
 
         // 2. Route
         await this.router.route(verdict);
-        
+
         return verdict;
     }
 }

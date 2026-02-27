@@ -13,12 +13,11 @@
  *   - Schema versioning
  */
 
-import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as crypto from 'crypto';
 import Database from 'better-sqlite3';
-import { ConfigManager } from '../../shared/ConfigManager';
+import { IConfigProvider } from '../../core/interfaces';
 import { LedgerManager } from '../ledger/LedgerManager';
 import {
     ShadowGenomeEntry,
@@ -77,8 +76,7 @@ type ShadowGenomeRow = {
 };
 
 export class ShadowGenomeManager {
-    private context: vscode.ExtensionContext;
-    private configManager: ConfigManager;
+    private configProvider: IConfigProvider;
     private ledgerManager: LedgerManager;
     private db: Database.Database | undefined;
     private dbPath: string = '';
@@ -86,12 +84,10 @@ export class ShadowGenomeManager {
     private enableSecurityHardening: boolean = true;
 
     constructor(
-        context: vscode.ExtensionContext,
-        configManager: ConfigManager,
+        configProvider: IConfigProvider,
         ledgerManager: LedgerManager
     ) {
-        this.context = context;
-        this.configManager = configManager;
+        this.configProvider = configProvider;
         this.ledgerManager = ledgerManager;
     }
 
@@ -104,9 +100,7 @@ export class ShadowGenomeManager {
             }
         }
 
-        await this.configManager.ensureDirectoryStructure();
-
-        const failsafeDir = this.configManager.getFailSafeDir();
+        const failsafeDir = this.configProvider.getFailSafeDir();
         this.dbPath = path.join(failsafeDir, 'ledger', 'shadow_genome.db');
 
         const dbDir = path.dirname(this.dbPath);
@@ -354,7 +348,7 @@ export class ShadowGenomeManager {
         const rows = this.db.prepare(
             'SELECT * FROM shadow_genome WHERE agent_did = ? ORDER BY id DESC LIMIT ?'
         ).all(agentDid, limit) as ShadowGenomeRow[];
-        return rows.map(this.mapRowToEntry);
+        return rows.map(row => this.mapRowToEntry(row));
     }
 
     /**
@@ -365,7 +359,7 @@ export class ShadowGenomeManager {
         const rows = this.db.prepare(
             'SELECT * FROM shadow_genome WHERE failure_mode = ? ORDER BY id DESC LIMIT ?'
         ).all(mode, limit) as ShadowGenomeRow[];
-        return rows.map(this.mapRowToEntry);
+        return rows.map(row => this.mapRowToEntry(row));
     }
 
     /**
@@ -376,7 +370,7 @@ export class ShadowGenomeManager {
         const rows = this.db.prepare(
             'SELECT * FROM shadow_genome WHERE remediation_status = ? ORDER BY created_at ASC LIMIT ?'
         ).all('UNRESOLVED', limit) as ShadowGenomeRow[];
-        return rows.map(this.mapRowToEntry);
+        return rows.map(row => this.mapRowToEntry(row));
     }
 
     /**

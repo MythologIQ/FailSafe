@@ -2,10 +2,14 @@
  * Logger - Structured logging for FailSafe
  *
  * Provides consistent logging across all components with
- * support for VS Code output channels and file logging.
+ * support for pluggable log sinks (VS Code output channels, console, etc.).
+ *
+ * When an ILogSink is provided, output is routed through the sink.
+ * When no sink is provided, output falls back to console.* methods,
+ * making Logger usable outside VS Code.
  */
 
-import * as vscode from 'vscode';
+import type { ILogSink } from '../core/interfaces';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -18,9 +22,9 @@ export interface LogEntry {
 }
 
 export class Logger {
-    private outputChannel: vscode.OutputChannel;
     private component: string;
     private minLevel: LogLevel;
+    private sink: ILogSink | undefined;
 
     private static levelPriority: Record<LogLevel, number> = {
         debug: 0,
@@ -29,10 +33,10 @@ export class Logger {
         error: 3
     };
 
-    constructor(component: string, minLevel: LogLevel = 'info') {
+    constructor(component: string, minLevel?: LogLevel, sink?: ILogSink) {
         this.component = component;
-        this.minLevel = minLevel;
-        this.outputChannel = vscode.window.createOutputChannel(`FailSafe: ${component}`);
+        this.minLevel = minLevel ?? 'info';
+        this.sink = sink;
     }
 
     private shouldLog(level: LogLevel): boolean {
@@ -51,10 +55,12 @@ export class Logger {
             return;
         }
 
-        const formatted = this.formatMessage(level, message, data);
-        this.outputChannel.appendLine(formatted);
+        if (this.sink) {
+            this.sink.log(level, this.component, message, data);
+        }
 
-        // Also log to console for debugging
+        // Always log to console as well (matches previous behavior)
+        const formatted = this.formatMessage(level, message, data);
         switch (level) {
             case 'debug':
                 console.debug(formatted);
@@ -91,20 +97,20 @@ export class Logger {
     }
 
     /**
-     * Show the output channel in VS Code
+     * Show the output channel (no-op when no sink or sink lacks show support)
      */
     show(): void {
-        this.outputChannel.show();
+        this.sink?.show?.();
     }
 
     /**
      * Create a child logger with a sub-component name
      */
     child(subComponent: string): Logger {
-        return new Logger(`${this.component}:${subComponent}`, this.minLevel);
+        return new Logger(`${this.component}:${subComponent}`, this.minLevel, this.sink);
     }
 
     dispose(): void {
-        this.outputChannel.dispose();
+        this.sink?.dispose();
     }
 }

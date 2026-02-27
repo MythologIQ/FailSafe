@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FailSafe Dashboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0e0e1a;
+      --bg-card: #16162a;
+      --bg-card-hover: #1c1c36;
+      --border: #2a2a4a;
+      --text: #e0e0f0;
+      --text-muted: #8888aa;
+      --accent: #5b7cf7;
+      --accent-dim: #3a5ad4;
+      --success: #34d399;
+      --warning: #fbbf24;
+      --error: #f87171;
+      --badge-bg: #2a2a4a;
+      --trust-bar-bg: #1e1e38;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      padding: 24px;
+      min-height: 100vh;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 28px;
+    }
+
+    .title {
+      font-size: 26px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #5b7cf7 0%, #34d399 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .status-badge .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .status-active { background: rgba(52, 211, 153, 0.15); color: var(--success); }
+    .status-active .dot { background: var(--success); box-shadow: 0 0 8px var(--success); }
+    .status-stopped { background: rgba(248, 113, 113, 0.15); color: var(--error); }
+    .status-stopped .dot { background: var(--error); box-shadow: 0 0 8px var(--error); }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      transition: border-color 0.2s;
+    }
+
+    .card:hover { border-color: var(--accent-dim); }
+
+    .card-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    .metric {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(42, 42, 74, 0.6);
+    }
+
+    .metric:last-child { border-bottom: none; }
+
+    .metric-label { color: var(--text-muted); font-size: 13px; }
+    .metric-value { font-weight: 600; font-size: 13px; }
+
+    .trust-bar {
+      height: 6px;
+      background: var(--trust-bar-bg);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 8px;
+      margin-bottom: 4px;
+    }
+
+    .trust-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--success));
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+
+    .mode-selector {
+      display: flex;
+      gap: 6px;
+      margin-top: 12px;
+    }
+
+    .mode-btn {
+      flex: 1;
+      padding: 8px 0;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .mode-btn:hover { border-color: var(--accent); color: var(--text); }
+    .mode-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .verdict-item {
+      padding: 10px;
+      margin: 6px 0;
+      background: rgba(42, 42, 74, 0.4);
+      border-radius: 6px;
+      font-size: 12px;
+      border-left: 3px solid var(--accent);
+    }
+
+    .verdict-item .file { font-weight: 600; color: var(--text); }
+    .verdict-item .meta { color: var(--text-muted); margin-top: 4px; font-size: 11px; }
+
+    .tier-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .tier-free { background: rgba(136, 136, 170, 0.2); color: var(--text-muted); }
+    .tier-pro { background: rgba(91, 124, 247, 0.2); color: var(--accent); }
+
+    .empty-state {
+      color: var(--text-muted);
+      font-style: italic;
+      font-size: 12px;
+      padding: 8px 0;
+    }
+
+    .connection-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      z-index: 100;
+    }
+
+    .connection-bar.connected { background: var(--success); opacity: 0; transition: opacity 1s; }
+    .connection-bar.disconnected { background: var(--error); opacity: 1; animation: pulse 1.5s infinite; }
+
+    @keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+
+    .error-banner {
+      display: none;
+      background: rgba(248, 113, 113, 0.15);
+      border: 1px solid rgba(248, 113, 113, 0.3);
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      font-size: 13px;
+      color: var(--error);
+    }
+
+    @media (max-width: 640px) {
+      body { padding: 12px; }
+      .grid { grid-template-columns: 1fr; }
+      .title { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="connection-bar" id="connectionBar"></div>
+  <div class="error-banner" id="errorBanner"></div>
+
+  <div class="header">
+    <div>
+      <div class="title">FailSafe</div>
+      <div class="subtitle">feat. QoreLogic | Governance Dashboard</div>
+    </div>
+    <span class="status-badge" id="statusBadge">
+      <span class="dot"></span>
+      <span id="statusLabel">Loading...</span>
+    </span>
+  </div>
+
+  <div class="grid">
+    <!-- Sentinel Status -->
+    <div class="card">
+      <div class="card-title">Sentinel Status</div>
+      <div id="sentinelMetrics">
+        <div class="metric">
+          <span class="metric-label">Mode</span>
+          <span class="metric-value" id="sentinelMode">--</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Files Watched</span>
+          <span class="metric-value" id="filesWatched">--</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Events Processed</span>
+          <span class="metric-value" id="eventsProcessed">--</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Queue Depth</span>
+          <span class="metric-value" id="queueDepth">--</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">LLM Available</span>
+          <span class="metric-value" id="llmAvailable">--</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Uptime</span>
+          <span class="metric-value" id="uptime">--</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Governance Mode -->
+    <div class="card">
+      <div class="card-title">Governance Mode</div>
+      <div class="metric">
+        <span class="metric-label">Current Mode</span>
+        <span class="metric-value" id="govMode">--</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Feature Tier</span>
+        <span id="featureTier"><span class="tier-badge tier-free">--</span></span>
+      </div>
+      <div class="mode-selector">
+        <button class="mode-btn" data-mode="observe" onclick="setMode('observe')">Observe</button>
+        <button class="mode-btn" data-mode="assist" onclick="setMode('assist')">Assist</button>
+        <button class="mode-btn" data-mode="enforce" onclick="setMode('enforce')">Enforce</button>
+      </div>
+    </div>
+
+    <!-- Trust Summary -->
+    <div class="card">
+      <div class="card-title">Trust Summary</div>
+      <div class="metric">
+        <span class="metric-label">Total Agents</span>
+        <span class="metric-value" id="totalAgents">0</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Average Trust</span>
+        <span class="metric-value" id="avgTrust">0%</span>
+      </div>
+      <div class="trust-bar">
+        <div class="trust-fill" id="trustFill" style="width: 0%"></div>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Quarantined</span>
+        <span class="metric-value" id="quarantined">0</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Stages (CBT/KBT/IBT)</span>
+        <span class="metric-value" id="trustStages">0/0/0</span>
+      </div>
+    </div>
+
+    <!-- Recent Verdicts -->
+    <div class="card">
+      <div class="card-title">Recent Verdicts</div>
+      <div id="verdictsList">
+        <div class="empty-state">No verdicts yet</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // Inline FailSafeClient SDK
+    // =========================================================================
+    class FailSafeClient {
+      constructor(baseUrl) {
+        this.baseUrl = baseUrl || 'http://localhost:7777';
+      }
+
+      async get(path) {
+        const res = await fetch(this.baseUrl + path);
+        if (!res.ok) throw new Error('GET ' + path + ': ' + res.status + ' ' + res.statusText);
+        return res.json();
+      }
+
+      async put(path, body) {
+        const res = await fetch(this.baseUrl + path, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) throw new Error('PUT ' + path + ': ' + res.status + ' ' + res.statusText);
+        return res.json();
+      }
+
+      async getHealth() { return this.get('/api/v1/health'); }
+      async getStatus() { return this.get('/api/v1/status'); }
+      async getGovernanceMode() { return this.get('/api/v1/governance/mode'); }
+      async setGovernanceMode(mode) { return this.put('/api/v1/governance/mode', { mode: mode }); }
+      async getSentinelStatus() { return this.get('/api/v1/sentinel/status'); }
+      async getVerdicts(limit) { return this.get('/api/v1/sentinel/verdicts?limit=' + (limit || 10)); }
+      async getTrustScores() { return this.get('/api/v1/trust'); }
+
+      subscribe(callback) {
+        var source = new EventSource(this.baseUrl + '/api/v1/events/stream');
+        source.onmessage = function(e) {
+          try { callback(JSON.parse(e.data)); } catch (_) {}
+        };
+        source.onerror = function() { /* auto-reconnects */ };
+        return function() { source.close(); };
+      }
+    }
+
+    // =========================================================================
+    // Dashboard Application
+    // =========================================================================
+    var client = new FailSafeClient();
+    var unsubscribe = null;
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function formatUptime(ms) {
+      var s = Math.floor(ms / 1000);
+      var h = Math.floor(s / 3600);
+      var m = Math.floor((s % 3600) / 60);
+      s = s % 60;
+      if (h > 0) return h + 'h ' + m + 'm';
+      if (m > 0) return m + 'm ' + s + 's';
+      return s + 's';
+    }
+
+    function showError(msg) {
+      var banner = document.getElementById('errorBanner');
+      banner.textContent = msg;
+      banner.style.display = 'block';
+      setTimeout(function() { banner.style.display = 'none'; }, 8000);
+    }
+
+    function setConnectionState(connected) {
+      var bar = document.getElementById('connectionBar');
+      bar.className = 'connection-bar ' + (connected ? 'connected' : 'disconnected');
+    }
+
+    // -- Update Functions --
+
+    function updateSentinelCard(sentinel) {
+      if (!sentinel) return;
+      document.getElementById('sentinelMode').textContent = (sentinel.mode || sentinel.operationalMode || '--').toUpperCase();
+      document.getElementById('filesWatched').textContent = sentinel.filesWatched != null ? sentinel.filesWatched : '--';
+      document.getElementById('eventsProcessed').textContent = sentinel.eventsProcessed != null ? sentinel.eventsProcessed : '--';
+      document.getElementById('queueDepth').textContent = sentinel.queueDepth != null ? sentinel.queueDepth : '--';
+      document.getElementById('llmAvailable').textContent = sentinel.llmAvailable ? 'Yes' : 'No';
+
+      var badge = document.getElementById('statusBadge');
+      var label = document.getElementById('statusLabel');
+      if (sentinel.running) {
+        badge.className = 'status-badge status-active';
+        label.textContent = 'ACTIVE';
+      } else {
+        badge.className = 'status-badge status-stopped';
+        label.textContent = 'STOPPED';
+      }
+    }
+
+    function updateGovernanceCard(mode, tier) {
+      var govEl = document.getElementById('govMode');
+      govEl.textContent = (mode || 'observe').toUpperCase();
+
+      // Highlight active mode button
+      var buttons = document.querySelectorAll('.mode-btn');
+      for (var i = 0; i < buttons.length; i++) {
+        if (buttons[i].getAttribute('data-mode') === mode) {
+          buttons[i].classList.add('active');
+        } else {
+          buttons[i].classList.remove('active');
+        }
+      }
+
+      var tierEl = document.getElementById('featureTier');
+      var tierClass = (tier === 'pro') ? 'tier-pro' : 'tier-free';
+      tierEl.innerHTML = '<span class="tier-badge ' + tierClass + '">' + escapeHtml(tier || 'free') + '</span>';
+    }
+
+    function updateTrustCard(agents) {
+      if (!agents || !Array.isArray(agents)) {
+        agents = [];
+      }
+      var total = agents.length;
+      var avg = total > 0 ? agents.reduce(function(s, a) { return s + (a.score || a.trustScore || 0); }, 0) / total : 0;
+      var quarantined = agents.filter(function(a) { return a.isQuarantined; }).length;
+      var stages = { CBT: 0, KBT: 0, IBT: 0 };
+      agents.forEach(function(a) {
+        var stage = a.stage || a.trustStage || '';
+        if (stages.hasOwnProperty(stage)) stages[stage]++;
+      });
+
+      var pct = Math.round(avg * 100);
+      document.getElementById('totalAgents').textContent = total;
+      document.getElementById('avgTrust').textContent = pct + '%';
+      document.getElementById('trustFill').style.width = pct + '%';
+      document.getElementById('quarantined').textContent = quarantined;
+      document.getElementById('trustStages').textContent = stages.CBT + '/' + stages.KBT + '/' + stages.IBT;
+    }
+
+    function updateVerdictsList(verdicts) {
+      var container = document.getElementById('verdictsList');
+      if (!verdicts || verdicts.length === 0) {
+        container.innerHTML = '<div class="empty-state">No verdicts yet</div>';
+        return;
+      }
+
+      var html = '';
+      var items = verdicts.slice(0, 8);
+      for (var i = 0; i < items.length; i++) {
+        var v = items[i];
+        var file = v.filePath ? v.filePath.split(/[/\\]/).pop() : 'unknown';
+        var borderColor = v.level === 'critical' || v.level === 'high' ? 'var(--error)' :
+                          v.level === 'medium' ? 'var(--warning)' : 'var(--accent)';
+        html += '<div class="verdict-item" style="border-left-color:' + borderColor + '">';
+        html += '<div class="file">' + escapeHtml(file) + '</div>';
+        html += '<div class="meta">' + escapeHtml(v.level || v.decision || '') + ' &middot; ' + escapeHtml(v.message || v.riskGrade || '') + '</div>';
+        html += '</div>';
+      }
+      container.innerHTML = html;
+    }
+
+    // -- Mode Switching --
+
+    async function setMode(mode) {
+      try {
+        await client.setGovernanceMode(mode);
+        updateGovernanceCard(mode, null);
+        await loadDashboard();
+      } catch (err) {
+        showError('Failed to set mode: ' + err.message);
+      }
+    }
+
+    // -- Data Loading --
+
+    async function loadDashboard() {
+      try {
+        var statusData = await client.getStatus();
+        setConnectionState(true);
+
+        updateSentinelCard(statusData.sentinel);
+        updateGovernanceCard(
+          statusData.governance ? statusData.governance.mode : 'observe',
+          statusData.tier || 'free'
+        );
+
+        var health = await client.getHealth();
+        document.getElementById('uptime').textContent = formatUptime(health.uptime || 0);
+      } catch (err) {
+        setConnectionState(false);
+        showError('Cannot reach API server at localhost:7777');
+      }
+
+      try {
+        var agents = await client.getTrustScores();
+        updateTrustCard(agents);
+      } catch (_) {}
+
+      try {
+        var data = await client.getVerdicts(10);
+        updateVerdictsList(data.verdicts || []);
+      } catch (_) {}
+    }
+
+    // -- SSE Live Updates --
+
+    function startSSE() {
+      if (unsubscribe) unsubscribe();
+      unsubscribe = client.subscribe(function(event) {
+        setConnectionState(true);
+        if (event.type === 'sentinel.verdict') {
+          // Reload verdicts on new verdict
+          client.getVerdicts(10).then(function(data) {
+            updateVerdictsList(data.verdicts || []);
+          }).catch(function() {});
+        }
+        if (event.type === 'sentinel.modeChange') {
+          loadDashboard();
+        }
+        if (event.type === 'qorelogic.trustUpdate') {
+          client.getTrustScores().then(function(agents) {
+            updateTrustCard(agents);
+          }).catch(function() {});
+        }
+      });
+    }
+
+    // -- Initialize --
+
+    loadDashboard();
+    startSSE();
+    // Periodic full refresh every 30s
+    setInterval(loadDashboard, 30000);
+  </script>
+</body>
+</html>

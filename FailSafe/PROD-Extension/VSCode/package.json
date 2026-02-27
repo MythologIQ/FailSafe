@@ -1,6 +1,6 @@
 {
   "name": "mythologiq-failsafe",
-  "displayName": "MythologIQ: FailSafe (feat. QoreLogic)",
+  "displayName": "FailSafe (feat. QoreLogic)",
   "description": "Token Efficient Governance for AI-assisted development in VSCode or Cursor",
   "icon": "icon.png",
   "version": "3.6.1",
@@ -23,7 +23,9 @@
     "copilot",
     "github",
     "ai",
-    "prompts"
+    "prompts",
+    "rollback",
+    "roi"
   ],
 
   "main": "./out/extension.js",

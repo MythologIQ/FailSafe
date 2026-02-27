@@ -5,12 +5,11 @@
  * backed by SQLite.
  */
 
-import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as crypto from 'crypto';
 import Database from 'better-sqlite3';
-import { ConfigManager } from '../../shared/ConfigManager';
+import { ISecretStore, IConfigProvider } from '../../core/interfaces';
 import { LedgerEntry, LedgerEventType, RiskGrade } from '../../shared/types';
 
 type LedgerRow = {
@@ -53,17 +52,17 @@ interface LedgerAppendRequest {
 }
 
 export class LedgerManager {
-    private context: vscode.ExtensionContext;
-    private configManager: ConfigManager;
+    private secretStore: ISecretStore;
+    private configProvider: IConfigProvider;
     private ledgerPath: string = '';
     private db: Database.Database | undefined;
     private lastHash: string = 'GENESIS_HASH_PLACEHOLDER';
     private cachedSecret: string | undefined;
     private isDisabled: boolean = false;
 
-    constructor(context: vscode.ExtensionContext, configManager: ConfigManager) {
-        this.context = context;
-        this.configManager = configManager;
+    constructor(secretStore: ISecretStore, configProvider: IConfigProvider) {
+        this.secretStore = secretStore;
+        this.configProvider = configProvider;
     }
 
     async initialize(): Promise<void> {
@@ -77,15 +76,12 @@ export class LedgerManager {
 
         // Initialize secret from secure storage (M1.5.3 Fix)
         // Note: secrets.get is async, so we must load it here first
-        this.cachedSecret = await this.context.secrets.get('ledgerSecret');
+        this.cachedSecret = await this.secretStore.get('ledgerSecret');
         if (!this.cachedSecret) {
             this.cachedSecret = await this.generateSecret();
         }
 
-        // Ensure directory structure
-        await this.configManager.ensureDirectoryStructure();
-
-        this.ledgerPath = this.configManager.getLedgerPath();
+        this.ledgerPath = this.configProvider.getLedgerPath();
         const ledgerDir = path.dirname(this.ledgerPath);
 
         if (!fs.existsSync(ledgerDir)) {
@@ -368,7 +364,7 @@ export class LedgerManager {
 
     private async generateSecret(): Promise<string> {
         const secret = crypto.randomBytes(32).toString('hex');
-        await this.context.secrets.store('ledgerSecret', secret);
+        await this.secretStore.store('ledgerSecret', secret);
         return secret;
     }
 

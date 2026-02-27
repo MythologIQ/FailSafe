@@ -8,9 +8,9 @@
  * - Operational modes
  */
 
-import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
+import { IConfigProvider } from '../../core/interfaces';
 import { RiskGrade, OperationalMode } from '../../shared/types';
 
 interface RiskGradingPolicy {
@@ -43,13 +43,13 @@ interface CitationPolicy {
 }
 
 export class PolicyEngine {
-    private context: vscode.ExtensionContext;
+    private configProvider: IConfigProvider;
     private riskPolicy: RiskGradingPolicy;
     private citationPolicy: CitationPolicy;
     private operationalMode: OperationalMode = 'normal';
 
-    constructor(context: vscode.ExtensionContext) {
-        this.context = context;
+    constructor(configProvider: IConfigProvider) {
+        this.configProvider = configProvider;
 
         // Initialize default policies
         this.riskPolicy = this.getDefaultRiskPolicy();
@@ -60,7 +60,7 @@ export class PolicyEngine {
      * Load policies from workspace configuration
      */
     async loadPolicies(): Promise<void> {
-        const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+        const workspaceRoot = this.configProvider.getWorkspaceRoot();
         if (!workspaceRoot) {
             return;
         }

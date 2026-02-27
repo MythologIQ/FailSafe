@@ -1,6 +1,6 @@
 {
   "name": "mythologiq-failsafe",
-  "displayName": "MythologIQ: FailSafe (feat. QoreLogic)",
+  "displayName": "FailSafe (feat. QoreLogic)",
   "description": "Token Efficient Governance for AI-assisted development in Antigravity/Gemini",
   "icon": "icon.png",
   "version": "3.6.1",
@@ -23,7 +23,9 @@
     "antigravity",
     "gemini",
     "ai",
-    "workflows"
+    "workflows",
+    "rollback",
+    "roi"
   ],
 
   "main": "./out/extension.js",

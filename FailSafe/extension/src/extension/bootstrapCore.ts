@@ -4,17 +4,20 @@ import { ConfigManager } from "../shared/ConfigManager";
 import { Logger } from "../shared/Logger";
 import { PlanManager } from "../qorelogic/planning/PlanManager";
 import { ensureGitRepositoryReady } from "../shared/gitBootstrap";
+import type { ILogSink } from "../core/interfaces";
 
 export interface CoreSubstrate {
   eventBus: EventBus;
   configManager: ConfigManager;
   workspaceRoot: string;
   planManager: PlanManager;
+  logSink: ILogSink;
 }
 
 export async function bootstrapCore(
   context: vscode.ExtensionContext,
   logger: Logger,
+  logSink: ILogSink,
 ): Promise<CoreSubstrate> {
   logger.info("Initializing Core Substrate...");
 
@@ -53,5 +56,6 @@ export async function bootstrapCore(
     configManager,
     workspaceRoot,
     planManager,
+    logSink,
   };
 }

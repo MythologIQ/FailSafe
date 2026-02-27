@@ -1,9 +1,9 @@
-import * as vscode from "vscode";
 import { IntentService } from "./IntentService";
-import { EnforcementEngine } from "./EnforcementEngine";
+import { EnforcementEngine, CommandExecutor } from "./EnforcementEngine";
 import { GovernanceStatusBar } from "./GovernanceStatusBar";
 import { ProposedAction, BlockVerdict } from "./types/IntentTypes";
 import { EvaluationRouter, CortexEvent } from "./EvaluationRouter";
+import { INotificationService } from "../core/interfaces/INotificationService";
 import { QoreLogicManager } from "../qorelogic/QoreLogicManager";
 import { PlanManager } from "../qorelogic/planning/PlanManager";
 import { Plan, PlanPhase } from "../qorelogic/planning/types";
@@ -12,20 +12,32 @@ import { GovernanceAdapter } from "./GovernanceAdapter";
 
 // ======================================================================================
 // GovernanceRouter: The Central Nervous System for Governance
+//
+// Decoupled from vscode.* APIs: uses INotificationService for user-facing
+// messages and CommandExecutor for triggering commands. The handleFileOperation
+// method now accepts a plain string path instead of vscode.Uri.
 // ======================================================================================
 export class GovernanceRouter {
   private logger: Logger;
   private planManager?: PlanManager;
   private governanceAdapter?: GovernanceAdapter;
+  private notifications: INotificationService;
+  private executeCommand: CommandExecutor;
+  private qoreLogicManager?: QoreLogicManager;
 
   constructor(
     private intentService: IntentService,
     private enforcement: EnforcementEngine,
     private statusBar: GovernanceStatusBar,
     private evaluationRouter: EvaluationRouter,
-    private qoreLogicManager?: QoreLogicManager,
+    notifications: INotificationService,
+    executeCommand?: CommandExecutor,
+    qoreLogicManager?: QoreLogicManager,
   ) {
     this.logger = new Logger("GovernanceRouter");
+    this.notifications = notifications;
+    this.executeCommand = executeCommand ?? (() => {});
+    this.qoreLogicManager = qoreLogicManager;
   }
 
   setGovernanceAdapter(adapter: GovernanceAdapter): void {
@@ -55,16 +67,20 @@ export class GovernanceRouter {
   /**
    * Handle file operations (Save, Rename, Delete)
    * Returns FALSE if blocked, TRUE if allowed.
+   *
+   * Accepts a plain filesystem path string instead of vscode.Uri.
+   * The bootstrap layer is responsible for extracting uri.fsPath
+   * before calling this method.
    */
   async handleFileOperation(
     type: ProposedAction["type"],
-    uri: vscode.Uri,
+    fsPath: string,
   ): Promise<boolean> {
     // 1. Construct ProposedAction
     const activeIntent = await this.intentService.getActiveIntent();
     const action: ProposedAction = {
       type,
-      targetPath: uri.fsPath,
+      targetPath: fsPath,
       intentId: activeIntent?.id ?? null,
       proposedAt: new Date().toISOString(),
       proposedBy: "vscode-user",
@@ -100,7 +116,7 @@ export class GovernanceRouter {
         action: "file.write",
         agentDid: "vscode-user",
         intentId: activeIntent?.id,
-        artifactPath: uri.fsPath,
+        artifactPath: fsPath,
         payload: { actionType: action.type },
       });
 
@@ -116,23 +132,16 @@ export class GovernanceRouter {
     }
 
     // 3. Evaluate Verdict via EnforcementEngine
-    // Note: EnforcementEngine.evaluateAction is now async
     const verdict = await this.enforcement.evaluateAction(action);
 
-    // Update status bar based on verdict/intent state?
-    // Actually status bar should update on Intent change, but maybe flash on block?
-    // For now, we rely on IntentService updates for status bar changes,
-    // but we could trigger a refresh here if needed.
-
-    // 3. Handle Result
+    // 4. Handle Result
     if (verdict.status === "ALLOW") {
       // Track file operation in active plan
       if (this.planManager) {
         const activePlan = this.planManager.getActivePlan();
         if (activePlan) {
-          const phase = this.findPhaseForArtifact(activePlan, uri.fsPath);
+          const phase = this.findPhaseForArtifact(activePlan, fsPath);
           if (phase) {
-            // Map VSCode operation type to plan operation
             const opMap: Record<
               string,
               "write" | "create" | "delete" | "rename"
@@ -146,7 +155,7 @@ export class GovernanceRouter {
             this.planManager.recordArtifactTouch(
               activePlan.id,
               phase.id,
-              uri.fsPath,
+              fsPath,
               planOp,
             );
           }
@@ -178,10 +187,9 @@ export class GovernanceRouter {
         intentId: verdict.intentId,
         targetFile: action.targetPath,
       });
-      vscode.window.showWarningMessage(
+      this.notifications.showWarning(
         `Governance Escalation: ${verdict.reason}`,
       );
-      // Allow for now? Or Block? Design decision: Block on escalate for safety.
       return false;
     }
 
@@ -218,29 +226,28 @@ export class GovernanceRouter {
     }
 
     if (diagnostics?.offendingFiles && diagnostics.offendingFiles.length > 0) {
-      errorMessage += `\n\nOffending File(s):\n${diagnostics.offendingFiles.map((f) => `  • ${f}`).join("\n")}`;
+      errorMessage += `\n\nOffending File(s):\n${diagnostics.offendingFiles.map((f) => `  - ${f}`).join("\n")}`;
     }
 
     if (diagnostics?.scopeFiles && diagnostics.scopeFiles.length > 0) {
-      errorMessage += `\n\nAllowed File(s):\n${diagnostics.scopeFiles.map((f) => `  • ${f}`).join("\n")}`;
+      errorMessage += `\n\nAllowed File(s):\n${diagnostics.scopeFiles.map((f) => `  - ${f}`).join("\n")}`;
     } else if (diagnostics?.scopeFiles && diagnostics.scopeFiles.length === 0) {
       errorMessage += `\n\nNote: No files are currently allowed in this Intent scope.`;
     }
 
     errorMessage += `\n\nRemediation: ${remediation}`;
 
-    const choice = await vscode.window.showErrorMessage(
+    const choice = await this.notifications.showError(
       errorMessage,
-      { modal: true },
       "Create Intent",
       "View Active Intent",
       "Show Logs",
     );
 
     if (choice === "Create Intent") {
-      vscode.commands.executeCommand("failsafe.createIntent");
+      this.executeCommand("failsafe.createIntent");
     } else if (choice === "View Active Intent") {
-      vscode.commands.executeCommand("failsafe.showMenu");
+      this.executeCommand("failsafe.showMenu");
     } else if (choice === "Show Logs") {
       this.logger.show();
     }

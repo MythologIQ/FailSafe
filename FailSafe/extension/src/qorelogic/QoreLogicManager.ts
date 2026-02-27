@@ -9,8 +9,9 @@
  * - Shadow Genome (failure archival)
  */
 
-import * as vscode from 'vscode';
 import * as crypto from 'crypto';
+import { IStateStore } from '../core/interfaces';
+import { IConfigProvider } from '../core/interfaces';
 import { EventBus } from '../shared/EventBus';
 import { Logger } from '../shared/Logger';
 import {
@@ -24,37 +25,36 @@ import { LedgerManager } from './ledger/LedgerManager';
 import { TrustEngine } from './trust/TrustEngine';
 import { PolicyEngine } from './policies/PolicyEngine';
 import { ShadowGenomeManager } from './shadow/ShadowGenomeManager';
-import { ConfigManager } from '../shared/ConfigManager';
 import { CortexEvent, RoutingDecision } from '../governance/EvaluationRouter';
 
 export class QoreLogicManager {
-    private context: vscode.ExtensionContext;
+    private stateStore: IStateStore;
+    private configProvider: IConfigProvider;
     private ledgerManager: LedgerManager;
     private trustEngine: TrustEngine;
     private policyEngine: PolicyEngine;
     private shadowGenomeManager: ShadowGenomeManager;
     private eventBus: EventBus;
     private logger: Logger;
-    private configManager: ConfigManager;
 
     private l3Queue: L3ApprovalRequest[] = [];
 
     constructor(
-        context: vscode.ExtensionContext,
+        stateStore: IStateStore,
+        configProvider: IConfigProvider,
         ledgerManager: LedgerManager,
         trustEngine: TrustEngine,
         policyEngine: PolicyEngine,
         shadowGenomeManager: ShadowGenomeManager,
-        eventBus: EventBus,
-        configManager: ConfigManager
+        eventBus: EventBus
     ) {
-        this.context = context;
+        this.stateStore = stateStore;
+        this.configProvider = configProvider;
         this.ledgerManager = ledgerManager;
         this.trustEngine = trustEngine;
         this.policyEngine = policyEngine;
         this.shadowGenomeManager = shadowGenomeManager;
         this.eventBus = eventBus;
-        this.configManager = configManager;
         this.logger = new Logger('QoreLogic');
     }
 
@@ -62,7 +62,7 @@ export class QoreLogicManager {
         this.logger.info('Initializing QoreLogic manager...');
 
         // Load persisted L3 queue
-        this.l3Queue = this.context.workspaceState.get<L3ApprovalRequest[]>('l3Queue', []);
+        this.l3Queue = this.stateStore.get<L3ApprovalRequest[]>('l3Queue', []);
 
         this.logger.info('QoreLogic manager initialized');
     }
@@ -99,7 +99,7 @@ export class QoreLogicManager {
      * Add an item to the L3 approval queue
      */
     async queueL3Approval(request: Omit<L3ApprovalRequest, 'id' | 'state' | 'queuedAt' | 'slaDeadline'>): Promise<string> {
-        const config = this.configManager.getConfig();
+        const config = this.configProvider.getConfig();
         const slaSecs = config.qorelogic.l3SLA;
 
         const id = crypto.randomUUID();
@@ -253,7 +253,7 @@ export class QoreLogicManager {
      * Persist L3 queue to workspace state
      */
     private async persistL3Queue(): Promise<void> {
-        await this.context.workspaceState.update('l3Queue', this.l3Queue);
+        await this.stateStore.update('l3Queue', this.l3Queue);
     }
 
     // =========================================================================

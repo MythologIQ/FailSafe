@@ -17,6 +17,8 @@ import { QoreLogicManager } from '../qorelogic/QoreLogicManager';
 import { SentinelDaemon } from '../sentinel/SentinelDaemon';
 import { EventBus } from '../shared/EventBus';
 import { SentinelVerdict } from '../shared/types';
+import { IFeatureGate, FeatureFlag } from '../core/interfaces/IFeatureGate';
+import { FEATURE_TIER_MAP } from '../core/FeatureGateService';
 
 const PORT = 9376;
 const HOST = '127.0.0.1';
@@ -97,6 +99,7 @@ type QoreRuntimeOptions = {
 type RoadmapServerOptions = {
   qoreRuntime?: Partial<QoreRuntimeOptions>;
   workspaceRoot?: string;
+  featureGate?: IFeatureGate;
 };
 
 type QoreRuntimeSnapshot = {
@@ -123,6 +126,7 @@ export class RoadmapServer {
   private checkpointMemory: CheckpointRecord[] = [];
   private qoreRuntime: QoreRuntimeOptions;
   private workspaceRoot: string;
+  private featureGate: IFeatureGate | undefined;
   private sealedSubstantiateCompletions = new Set<string>();
   private checkpointTypeRegistry = new Set<string>([
     'snapshot.created',
@@ -155,6 +159,7 @@ export class RoadmapServer {
     this.app = express();
     this.qoreRuntime = this.resolveQoreRuntimeOptions(options.qoreRuntime);
     this.workspaceRoot = options.workspaceRoot || process.cwd();
+    this.featureGate = options.featureGate;
     this.uiDir = this.resolveUiDir();
     this.initializeCheckpointStore();
     this.setupRoutes();
@@ -409,6 +414,23 @@ export class RoadmapServer {
       }
     });
 
+    // Feature gate: expose available features for UI
+    this.app.get('/api/v1/features', (_req: Request, res: Response) => {
+      if (!this.featureGate) {
+        res.json({ tier: 'free', features: {} });
+        return;
+      }
+      const tier = this.featureGate.getTier();
+      const features: Record<string, { requiredTier: string; enabled: boolean }> = {};
+      for (const flag of Object.keys(FEATURE_TIER_MAP) as FeatureFlag[]) {
+        features[flag] = {
+          requiredTier: FEATURE_TIER_MAP[flag],
+          enabled: this.featureGate.isEnabled(flag),
+        };
+      }
+      res.json({ tier, features });
+    });
+
     // SPA fallback for deep links or unknown non-API routes.
     this.app.use((req: Request, res: Response) => {
       if (req.path.startsWith('/api/') || req.path === '/health') {
@@ -469,6 +491,22 @@ export class RoadmapServer {
       return false;
     }
     res.status(403).json({ error: 'Forbidden: local access only' });
+    return true;
+  }
+
+  /**
+   * Returns true (and sends 402) if the given feature requires Pro and the user is on free tier.
+   */
+  private rejectIfProRequired(feature: FeatureFlag, _req: Request, res: Response): boolean {
+    if (!this.featureGate || this.featureGate.isEnabled(feature)) {
+      return false;
+    }
+    res.status(402).json({
+      error: `Feature '${feature}' requires FailSafe Pro`,
+      upgrade: true,
+      currentTier: this.featureGate.getTier(),
+      requiredTier: 'pro',
+    });
     return true;
   }
 

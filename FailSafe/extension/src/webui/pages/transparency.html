@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FailSafe Transparency Stream</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0e0e1a;
+      --bg-card: #16162a;
+      --border: #2a2a4a;
+      --text: #e0e0f0;
+      --text-muted: #8888aa;
+      --accent: #5b7cf7;
+      --success: #34d399;
+      --warning: #fbbf24;
+      --error: #f87171;
+      --purple: #a78bfa;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      padding: 24px;
+      min-height: 100vh;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .page-title {
+      font-size: 22px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #34d399 0%, #5b7cf7 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .btn {
+      padding: 7px 14px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn:hover { border-color: var(--accent); color: var(--text); }
+    .btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    .filter-bar {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      padding: 5px 12px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .filter-btn:hover { border-color: var(--accent); color: var(--text); }
+    .filter-btn.active { background: rgba(91,124,247,0.2); border-color: var(--accent); color: var(--accent); }
+
+    .event-count {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    .event-count span { color: var(--accent); font-weight: 600; }
+
+    .stream-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-right: 12px;
+    }
+
+    .stream-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .stream-dot.live { background: var(--success); box-shadow: 0 0 8px var(--success); animation: blink 2s infinite; }
+    .stream-dot.paused { background: var(--warning); }
+    .stream-dot.disconnected { background: var(--error); }
+
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    .event-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: calc(100vh - 200px);
+      overflow-y: auto;
+      scroll-behavior: smooth;
+    }
+
+    .event-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      transition: border-color 0.2s;
+    }
+
+    .event-item:hover { border-color: rgba(91,124,247,0.4); }
+    .event-item.new { animation: slideIn 0.3s ease; }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .event-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .event-type {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .event-type.build_started { background: rgba(96,165,250,0.2); color: #60a5fa; }
+    .event-type.build_completed { background: rgba(52,211,153,0.2); color: var(--success); }
+    .event-type.dispatched { background: rgba(251,191,36,0.2); color: var(--warning); }
+    .event-type.dispatch_blocked { background: rgba(248,113,113,0.2); color: var(--error); }
+    .event-type.sentinel { background: rgba(167,139,250,0.2); color: var(--purple); }
+    .event-type.trust { background: rgba(52,211,153,0.2); color: var(--success); }
+    .event-type.governance { background: rgba(91,124,247,0.2); color: var(--accent); }
+    .event-type.risk { background: rgba(251,146,60,0.2); color: #fb923c; }
+    .event-type.default { background: rgba(136,136,170,0.2); color: var(--text-muted); }
+
+    .event-time {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+
+    .event-details {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .detail-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 3px;
+    }
+
+    .detail-label {
+      font-weight: 600;
+      color: var(--text);
+      min-width: 70px;
+    }
+
+    .event-payload {
+      margin-top: 8px;
+      padding: 8px;
+      background: rgba(14, 14, 26, 0.5);
+      border-radius: 6px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 11px;
+      color: var(--text-muted);
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 120px;
+      overflow-y: auto;
+      display: none;
+    }
+
+    .event-item.expanded .event-payload { display: block; }
+
+    .expand-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 10px;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 3px;
+    }
+
+    .expand-btn:hover { color: var(--accent); }
+
+    .empty-state {
+      text-align: center;
+      padding: 48px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .paused-banner {
+      display: none;
+      background: rgba(251,191,36,0.15);
+      border: 1px solid rgba(251,191,36,0.3);
+      border-radius: 8px;
+      padding: 8px 14px;
+      margin-bottom: 12px;
+      font-size: 12px;
+      color: var(--warning);
+      text-align: center;
+    }
+
+    .paused-banner.visible { display: block; }
+
+    @media (max-width: 640px) {
+      body { padding: 12px; }
+      .header { flex-direction: column; gap: 12px; align-items: flex-start; }
+      .controls { width: 100%; justify-content: space-between; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <span class="page-title">Transparency Stream</span>
+    <div class="controls">
+      <span class="stream-status">
+        <span class="stream-dot" id="streamDot"></span>
+        <span id="streamLabel">Connecting...</span>
+      </span>
+      <button class="btn" id="pauseBtn" onclick="togglePause()">Pause</button>
+      <button class="btn" onclick="clearEvents()">Clear</button>
+    </div>
+  </div>
+
+  <div class="filter-bar" id="filterBar">
+    <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">All</button>
+    <button class="filter-btn" data-filter="sentinel" onclick="setFilter('sentinel')">Sentinel</button>
+    <button class="filter-btn" data-filter="prompt" onclick="setFilter('prompt')">Prompt</button>
+    <button class="filter-btn" data-filter="governance" onclick="setFilter('governance')">Governance</button>
+    <button class="filter-btn" data-filter="trust" onclick="setFilter('trust')">Trust</button>
+    <button class="filter-btn" data-filter="risk" onclick="setFilter('risk')">Risk</button>
+  </div>
+
+  <div class="paused-banner" id="pausedBanner">Auto-scroll paused. New events are still being captured.</div>
+
+  <div class="event-count" id="eventCount">
+    <span>0</span> events captured
+  </div>
+
+  <div class="event-list" id="eventList">
+    <div class="empty-state">Waiting for events... Events will appear here in real time as FailSafe processes AI interactions.</div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // Transparency Stream Application
+    // =========================================================================
+    var BASE_URL = 'http://localhost:7777';
+    var events = [];
+    var maxEvents = 500;
+    var activeFilter = 'all';
+    var isPaused = false;
+    var isHovering = false;
+    var eventSource = null;
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function formatTime(ts) {
+      try {
+        var d = new Date(ts);
+        return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 });
+      } catch (_) {
+        return ts || '--';
+      }
+    }
+
+    function classifyEvent(type) {
+      if (!type) return 'default';
+      if (type.indexOf('sentinel') >= 0) return 'sentinel';
+      if (type.indexOf('prompt.build_started') >= 0) return 'build_started';
+      if (type.indexOf('prompt.build_completed') >= 0) return 'build_completed';
+      if (type.indexOf('prompt.dispatched') >= 0) return 'dispatched';
+      if (type.indexOf('prompt.dispatch_blocked') >= 0) return 'dispatch_blocked';
+      if (type.indexOf('prompt') >= 0) return 'dispatched';
+      if (type.indexOf('governance') >= 0 || type.indexOf('mode') >= 0) return 'governance';
+      if (type.indexOf('trust') >= 0 || type.indexOf('qorelogic') >= 0) return 'trust';
+      if (type.indexOf('risk') >= 0) return 'risk';
+      return 'default';
+    }
+
+    function formatEventType(type) {
+      if (!type) return 'Event';
+      return type.replace(/\./g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+    }
+
+    function filterCategory(type) {
+      if (!type) return 'default';
+      if (type.indexOf('sentinel') >= 0) return 'sentinel';
+      if (type.indexOf('prompt') >= 0) return 'prompt';
+      if (type.indexOf('governance') >= 0 || type.indexOf('mode') >= 0) return 'governance';
+      if (type.indexOf('trust') >= 0 || type.indexOf('qorelogic') >= 0) return 'trust';
+      if (type.indexOf('risk') >= 0) return 'risk';
+      return 'default';
+    }
+
+    function matchesFilter(event) {
+      if (activeFilter === 'all') return true;
+      return filterCategory(event.type) === activeFilter;
+    }
+
+    function renderEventDetails(event) {
+      var payload = event.payload;
+      if (!payload || typeof payload !== 'object') return '';
+
+      var parts = [];
+      var p = payload;
+
+      if (p.intentId) parts.push('<div class="detail-row"><span class="detail-label">Intent:</span> ' + escapeHtml(String(p.intentId).substring(0, 12)) + '...</div>');
+      if (p.tokenCount) parts.push('<div class="detail-row"><span class="detail-label">Tokens:</span> ' + p.tokenCount + '</div>');
+      if (p.targetModel) parts.push('<div class="detail-row"><span class="detail-label">Model:</span> ' + escapeHtml(p.targetModel) + '</div>');
+      if (p.duration) parts.push('<div class="detail-row"><span class="detail-label">Duration:</span> ' + p.duration + 'ms</div>');
+      if (p.blockedReason) parts.push('<div class="detail-row"><span class="detail-label">Reason:</span> ' + escapeHtml(p.blockedReason) + '</div>');
+      if (p.riskGrade) parts.push('<div class="detail-row"><span class="detail-label">Risk:</span> ' + escapeHtml(p.riskGrade) + '</div>');
+      if (p.decision) parts.push('<div class="detail-row"><span class="detail-label">Decision:</span> ' + escapeHtml(p.decision) + '</div>');
+      if (p.filePath) parts.push('<div class="detail-row"><span class="detail-label">File:</span> ' + escapeHtml(String(p.filePath).split(/[/\\]/).pop()) + '</div>');
+      if (p.mode || p.newMode) parts.push('<div class="detail-row"><span class="detail-label">Mode:</span> ' + escapeHtml(p.mode || p.newMode) + '</div>');
+      if (p.previousMode) parts.push('<div class="detail-row"><span class="detail-label">Previous:</span> ' + escapeHtml(p.previousMode) + '</div>');
+
+      if (parts.length === 0 && event.seq != null) {
+        parts.push('<div class="detail-row"><span class="detail-label">Seq:</span> ' + event.seq + '</div>');
+      }
+
+      return parts.join('');
+    }
+
+    function renderEvent(event, index) {
+      var cls = classifyEvent(event.type);
+      var visible = matchesFilter(event);
+      var payloadStr = '';
+      try { payloadStr = JSON.stringify(event.payload, null, 2); } catch (_) { payloadStr = String(event.payload); }
+
+      return '<div class="event-item new" data-index="' + index + '" style="' + (visible ? '' : 'display:none') + '">'
+        + '<div class="event-header">'
+        + '<span class="event-type ' + cls + '">' + escapeHtml(formatEventType(event.type)) + '</span>'
+        + '<div><button class="expand-btn" onclick="toggleExpand(this)">details</button> '
+        + '<span class="event-time">' + formatTime(event.timestamp) + '</span></div>'
+        + '</div>'
+        + '<div class="event-details">' + renderEventDetails(event) + '</div>'
+        + '<div class="event-payload">' + escapeHtml(payloadStr) + '</div>'
+        + '</div>';
+    }
+
+    function addEvent(event) {
+      events.unshift(event);
+      if (events.length > maxEvents) events.pop();
+
+      updateCount();
+
+      var container = document.getElementById('eventList');
+      // Remove empty state if present
+      var empty = container.querySelector('.empty-state');
+      if (empty) empty.remove();
+
+      var html = renderEvent(event, 0);
+      container.insertAdjacentHTML('afterbegin', html);
+
+      // Trim DOM to maxEvents
+      while (container.children.length > maxEvents) {
+        container.removeChild(container.lastChild);
+      }
+
+      // Auto-scroll to top unless paused or hovering
+      if (!isPaused && !isHovering) {
+        container.scrollTop = 0;
+      }
+    }
+
+    function updateCount() {
+      var visible = events.filter(matchesFilter).length;
+      document.getElementById('eventCount').innerHTML = '<span>' + visible + '</span> events captured' +
+        (activeFilter !== 'all' ? ' (filtered from ' + events.length + ' total)' : '');
+    }
+
+    function renderAllEvents() {
+      var container = document.getElementById('eventList');
+      if (events.length === 0) {
+        container.innerHTML = '<div class="empty-state">Waiting for events... Events will appear here in real time as FailSafe processes AI interactions.</div>';
+        return;
+      }
+      var html = '';
+      for (var i = 0; i < events.length; i++) {
+        html += renderEvent(events[i], i);
+      }
+      container.innerHTML = html;
+      updateCount();
+    }
+
+    function toggleExpand(btn) {
+      var item = btn.closest('.event-item');
+      item.classList.toggle('expanded');
+      btn.textContent = item.classList.contains('expanded') ? 'collapse' : 'details';
+    }
+
+    // -- Filters --
+
+    function setFilter(filter) {
+      activeFilter = filter;
+      var buttons = document.querySelectorAll('.filter-btn');
+      for (var i = 0; i < buttons.length; i++) {
+        if (buttons[i].getAttribute('data-filter') === filter) {
+          buttons[i].classList.add('active');
+        } else {
+          buttons[i].classList.remove('active');
+        }
+      }
+      renderAllEvents();
+    }
+
+    // -- Pause / Resume --
+
+    function togglePause() {
+      isPaused = !isPaused;
+      var btn = document.getElementById('pauseBtn');
+      btn.textContent = isPaused ? 'Resume' : 'Pause';
+      btn.classList.toggle('active', isPaused);
+      document.getElementById('pausedBanner').classList.toggle('visible', isPaused);
+    }
+
+    function clearEvents() {
+      events = [];
+      renderAllEvents();
+    }
+
+    // -- Hover detection for auto-scroll pause --
+
+    var eventListEl = document.getElementById('eventList');
+    eventListEl.addEventListener('mouseenter', function() { isHovering = true; });
+    eventListEl.addEventListener('mouseleave', function() { isHovering = false; });
+
+    // -- SSE Connection --
+
+    function connectSSE() {
+      var dot = document.getElementById('streamDot');
+      var label = document.getElementById('streamLabel');
+
+      dot.className = 'stream-dot disconnected';
+      label.textContent = 'Connecting...';
+
+      eventSource = new EventSource(BASE_URL + '/api/v1/events/stream');
+
+      eventSource.onopen = function() {
+        dot.className = 'stream-dot live';
+        label.textContent = 'Live';
+      };
+
+      eventSource.onmessage = function(e) {
+        try {
+          var event = JSON.parse(e.data);
+          addEvent(event);
+        } catch (_) {}
+      };
+
+      eventSource.onerror = function() {
+        dot.className = 'stream-dot disconnected';
+        label.textContent = 'Reconnecting...';
+        // EventSource auto-reconnects
+      };
+    }
+
+    // -- Initialize --
+    connectSSE();
+  </script>
+</body>
+</html>

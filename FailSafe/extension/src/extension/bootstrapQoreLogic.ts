@@ -5,6 +5,7 @@ import { TrustEngine } from "../qorelogic/trust/TrustEngine";
 import { PolicyEngine } from "../qorelogic/policies/PolicyEngine";
 import { ShadowGenomeManager } from "../qorelogic/shadow/ShadowGenomeManager";
 import { GovernanceAdapter } from "../governance/GovernanceAdapter";
+import { VscodeSecretStore, VscodeStateStore } from "../core/adapters/vscode";
 import { CoreSubstrate } from "./bootstrapCore";
 import { GovernanceSubstrate } from "./bootstrapGovernance";
 import { Logger } from "../shared/Logger";
@@ -26,30 +27,38 @@ export async function bootstrapQoreLogic(
 ): Promise<QoreLogicSubstrate> {
   logger.info("Initializing QoreLogic layer...");
 
-  const ledgerManager = new LedgerManager(context, core.configManager);
+  // Create VS Code adapters (composition root wiring)
+  // Use shared ConfigManager (implements IConfigProvider) from core substrate
+  const secretStore = new VscodeSecretStore(context);
+  const workspaceStateStore = new VscodeStateStore(context.workspaceState);
+  const configProvider = core.configManager;
+
+  // Ensure directory structure before services initialize
+  await core.configManager.ensureDirectoryStructure();
+
+  const ledgerManager = new LedgerManager(secretStore, configProvider);
   await ledgerManager.initialize();
 
   const trustEngine = new TrustEngine(ledgerManager);
   await trustEngine.initialize();
 
-  const policyEngine = new PolicyEngine(context);
+  const policyEngine = new PolicyEngine(configProvider);
   await policyEngine.loadPolicies();
 
   const shadowGenomeManager = new ShadowGenomeManager(
-    context,
-    core.configManager,
+    configProvider,
     ledgerManager,
   );
   await shadowGenomeManager.initialize();
 
   const qorelogicManager = new QoreLogicManager(
-    context,
+    workspaceStateStore,
+    configProvider,
     ledgerManager,
     trustEngine,
     policyEngine,
     shadowGenomeManager,
     core.eventBus,
-    core.configManager,
   );
   await qorelogicManager.initialize();
 

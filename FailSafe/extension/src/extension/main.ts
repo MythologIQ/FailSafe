@@ -1,5 +1,5 @@
 /**
- * MythologIQ: FailSafe (feat. QoreLogic)
+ * FailSafe (feat. QoreLogic)
  *
  * Main extension entry point.
  * Decomposed into bootstrap modules for Section 4 Simplicity.
@@ -7,6 +7,7 @@
 
 import * as vscode from "vscode";
 import { Logger } from "../shared/Logger";
+import { VscodeLogSink } from "../core/adapters/vscode/VscodeLogSink";
 import { FeedbackManager } from "../genesis/FeedbackManager";
 import { FailSafeMCPServer } from "../mcp/FailSafeServer";
 import { FailSafeChatParticipant } from "../genesis/chat/FailSafeChatParticipant";
@@ -23,6 +24,8 @@ import { FailSafeSidebarProvider } from "../roadmap/FailSafeSidebarProvider";
 import { RiskManager } from "../qorelogic/risk";
 import { RiskRegisterProvider } from "../genesis/views/RiskRegisterProvider";
 import { TransparencyPanel } from "../genesis/panels/TransparencyPanel";
+import { FailSafeApiServer } from "../api";
+import { createVscodeFeatureGate } from "../core/adapters/vscode/VscodeFeatureGate";
 
 // Bootstrap Modules
 import { bootstrapCore } from "./bootstrapCore";
@@ -44,16 +47,18 @@ let ledgerManager: LedgerManager;
 let shadowGenomeManager: ShadowGenomeManager;
 let mcpServer: FailSafeMCPServer | undefined;
 let roadmapServer: RoadmapServer | undefined;
+let apiServer: FailSafeApiServer | undefined;
 
 export async function activate(
   context: vscode.ExtensionContext,
 ): Promise<void> {
-  logger = new Logger("FailSafe");
-  logger.info("Activating MythologIQ: FailSafe...");
+  const logSink = new VscodeLogSink("FailSafe");
+  logger = new Logger("FailSafe", undefined, logSink);
+  logger.info("Activating FailSafe...");
 
   try {
     // 1. Core
-    const core = await bootstrapCore(context, logger);
+    const core = await bootstrapCore(context, logger, logSink);
     eventBus = core.eventBus;
 
     // Hygiene Automation
@@ -146,6 +151,37 @@ export async function activate(
     );
     roadmapServer.start();
     context.subscriptions.push({ dispose: () => roadmapServer?.stop() });
+
+    // 8b. FailSafe API Server (REST + SSE on port 7777)
+    if (qoreRuntimeEnabled) {
+      try {
+        const featureGate = createVscodeFeatureGate(core.configManager);
+        apiServer = new FailSafeApiServer({
+          configProvider: core.configManager,
+          eventBus,
+          featureGate,
+          apiKey: qoreRuntimeApiKey,
+        });
+        apiServer.setServices({
+          enforcementEngine: gov.enforcementEngine,
+          intentService: gov.intentService,
+          sentinelDaemon,
+          qorelogicManager,
+          ledgerManager,
+          riskManager,
+          onModeChangeRequest: async (mode) => {
+            await vscode.workspace.getConfiguration("failsafe").update(
+              "governance.mode", mode, vscode.ConfigurationTarget.Workspace
+            );
+          },
+        });
+        apiServer.start();
+        context.subscriptions.push({ dispose: () => apiServer?.stop() });
+        logger.info("FailSafe API server started");
+      } catch (err) {
+        logger.error("Failed to start FailSafe API server", err);
+      }
+    }
     const riskRegisterProvider = new RiskRegisterProvider(
       context.extensionUri,
       riskManager,
@@ -228,6 +264,7 @@ export async function activate(
 
 export async function deactivate(): Promise<void> {
   logger?.info("Deactivating FailSafe...");
+  apiServer?.stop();
   roadmapServer?.stop();
   ledgerManager?.close();
   shadowGenomeManager?.close();

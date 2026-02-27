@@ -1,4 +1,4 @@
-# MythologIQ: FailSafe v3.6.0 (OpenVSX Package)
+# FailSafe v3.6.1 (OpenVSX Package)
 
 Token Efficient Governance for AI-assisted development in Antigravity-compatible editors.
 

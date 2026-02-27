@@ -1,6 +1,6 @@
 {
   "name": "mythologiq-failsafe",
-  "displayName": "MythologIQ: FailSafe (feat. QoreLogic)",
+  "displayName": "FailSafe (feat. QoreLogic)",
   "description": "Complete AI governance for modern development. Genesis visualization + QoreLogic framework + Sentinel monitoring.",
   "icon": "icon.png",
   "version": "3.6.0",
@@ -33,7 +33,9 @@
     "compliance",
     "deterministic governance",
     "intent management",
-    "checkpoint"
+    "checkpoint",
+    "rollback",
+    "roi"
   ],
   "activationEvents": [
     "onStartupFinished"

@@ -327,6 +327,17 @@ npm run compile
 
 ---
 
+## Upcoming Features (On the Roadmap)
+
+- **Token Economics & ROI Dashboard**: Visual quantification of token expenditure and context-sync savings.
+- **FailSafe Revert ("Time-Travel")**: One-click remediation to revert AI code changes, reset Git head, and purge poisoned context.
+- **CI/CD Pipeline Enforcer**: Headless Judge verification validating `failsafe_checkpoints` via cryptography during PRs.
+- **Shared "Core Axioms"**: IDE startup synchronization of enterprise-level Policy and Axioms to enforce team-wide Q-DNA compliance.
+- **Visual Chain of Governance**: Real-time tracing of the Tribunal workflow showing Governor, Executor, and Judge activities.
+- **Air-Gapped Judge Verification**: Support for routing L3 architectural audits to local LLMs (Ollama, LM Studio, etc.) for zero-leak compliance.
+
+---
+
 ## Status
 
 This is a beta product. Expect breaking changes and rough edges.

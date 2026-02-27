@@ -80,7 +80,7 @@ const DASHBOARD_TEMPLATE = `<!DOCTYPE html>
 <body>
     <div class="header">
         <div>
-            <div class="title">MythologIQ: FailSafe</div>
+            <div class="title">FailSafe</div>
             <div class="subtitle">feat. QoreLogic | Governance Dashboard | UI-05 Dashboard</div>
         </div>
         <span class="status-badge {{STATUS_BADGE_CLASS}}">{{STATUS_LABEL}}</span>

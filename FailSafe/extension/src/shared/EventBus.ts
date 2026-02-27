@@ -12,8 +12,9 @@ type EventCallback<T = unknown> = (event: FailSafeEvent<T>) => void;
 export class EventBus {
     private listeners: Map<FailSafeEventType, Set<EventCallback>> = new Map();
     private allListeners: Set<EventCallback> = new Set();
-    private eventHistory: FailSafeEvent[] = [];
+    private eventHistory: (FailSafeEvent & { seq: number })[] = [];
     private maxHistorySize = 1000;
+    private sequenceNumber = 0;
 
     /**
      * Subscribe to a specific event type
@@ -56,14 +57,16 @@ export class EventBus {
      * Emit an event to all subscribers
      */
     emit<T = unknown>(eventType: FailSafeEventType, payload: T): void {
-        const event: FailSafeEvent<T> = {
+        this.sequenceNumber++;
+        const event: FailSafeEvent<T> & { seq: number } = {
             type: eventType,
             timestamp: new Date().toISOString(),
-            payload
+            payload,
+            seq: this.sequenceNumber
         };
 
         // Store in history
-        this.eventHistory.push(event as FailSafeEvent);
+        this.eventHistory.push(event as FailSafeEvent & { seq: number });
         if (this.eventHistory.length > this.maxHistorySize) {
             this.eventHistory.shift();
         }
@@ -96,13 +99,27 @@ export class EventBus {
     getHistory(eventType?: FailSafeEventType, limit?: number): FailSafeEvent[] {
         let history = eventType
             ? this.eventHistory.filter(e => e.type === eventType)
-            : this.eventHistory;
+            : [...this.eventHistory];
 
         if (limit) {
             history = history.slice(-limit);
         }
 
         return history;
+    }
+
+    /**
+     * Get events after a specific sequence number (for SSE reconnection)
+     */
+    getHistorySince(sinceSeq: number): (FailSafeEvent & { seq: number })[] {
+        return this.eventHistory.filter(e => e.seq > sinceSeq);
+    }
+
+    /**
+     * Get the current sequence number
+     */
+    getSequenceNumber(): number {
+        return this.sequenceNumber;
     }
 
     /**

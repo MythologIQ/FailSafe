@@ -2,7 +2,6 @@
 // Enforcement Engine - Evaluates actions against Prime Axioms (D2: Secure Path Validation)
 import * as path from "path";
 import * as fs from "fs";
-import * as vscode from "vscode";
 import {
   ProposedAction,
   Verdict,
@@ -12,6 +11,9 @@ import {
   Intent,
 } from "./types/IntentTypes";
 import { Logger } from "../shared/Logger";
+import { IConfigProvider } from "../core/interfaces/IConfigProvider";
+import { INotificationService } from "../core/interfaces/INotificationService";
+import { IFeatureGate } from "../core/interfaces/IFeatureGate";
 
 interface ActionContext {
   action: ProposedAction;
@@ -41,26 +43,62 @@ export interface IntentProvider {
 export type GovernanceMode = "observe" | "assist" | "enforce";
 
 /**
+ * Callback to execute a named command (e.g. "failsafe.createIntent").
+ * In VS Code this maps to vscode.commands.executeCommand; in other
+ * environments it can be a no-op or routed differently.
+ */
+export type CommandExecutor = (command: string, ...args: unknown[]) => void;
+
+/**
  * Enforcement Engine - Evaluates proposed actions against Prime Axioms.
  * AXIOM 3: "FailSafe is the upstream authority."
+ *
+ * Decoupled from vscode.* APIs: uses IConfigProvider for configuration,
+ * INotificationService for user-facing messages, and an optional
+ * CommandExecutor for triggering commands.
  */
 export class EnforcementEngine {
   private intentProvider: IntentProvider;
   private workspaceRoot: string;
   private logger: Logger;
+  private configProvider: IConfigProvider;
+  private notifications: INotificationService;
+  private featureGate: IFeatureGate | undefined;
+  private executeCommand: CommandExecutor;
 
-  constructor(intentProvider: IntentProvider, workspaceRoot: string) {
+  constructor(
+    intentProvider: IntentProvider,
+    workspaceRoot: string,
+    configProvider: IConfigProvider,
+    notifications: INotificationService,
+    featureGate?: IFeatureGate,
+    executeCommand?: CommandExecutor,
+  ) {
     this.intentProvider = intentProvider;
     this.workspaceRoot = workspaceRoot;
+    this.configProvider = configProvider;
+    this.notifications = notifications;
     this.logger = new Logger("EnforcementEngine");
+    this.featureGate = featureGate;
+    this.executeCommand = executeCommand ?? (() => {});
+  }
+
+  setFeatureGate(gate: IFeatureGate): void {
+    this.featureGate = gate;
   }
 
   /**
-   * Get the current governance mode from VS Code configuration.
+   * Get the current governance mode from configuration.
+   * Reads from IConfigProvider instead of vscode.workspace directly.
    */
   getGovernanceMode(): GovernanceMode {
-    const config = vscode.workspace.getConfiguration("failsafe");
-    return config.get<GovernanceMode>("governance.mode", "observe");
+    const config = this.configProvider.getConfig();
+    // governance.mode may live at the top-level config (from sentinel.yaml)
+    // Cast through unknown to access potentially untyped governance section
+    const raw = (config as unknown as Record<string, unknown>)["governance"] as
+      | Record<string, unknown>
+      | undefined;
+    return (raw?.mode as GovernanceMode) ?? "observe";
   }
 
   /**
@@ -145,15 +183,15 @@ export class EnforcementEngine {
           mode,
         });
         // Show informational message (non-blocking)
-        vscode.window
-          .showInformationMessage(
+        this.notifications
+          .showInfo(
             `FailSafe (Observe): ${violation}`,
             "Create Intent",
             "Dismiss",
           )
           .then((choice) => {
             if (choice === "Create Intent") {
-              vscode.commands.executeCommand("failsafe.createIntent");
+              this.executeCommand("failsafe.createIntent");
             }
           });
         // Return ALLOW in observe mode
@@ -199,7 +237,7 @@ export class EnforcementEngine {
           this.logger.info("ASSIST MODE: Auto-created intent", {
             intentId: currentIntent.id,
           });
-          vscode.window.showInformationMessage(
+          this.notifications.showInfo(
             `FailSafe: Created intent "${intentTitle}" for your session.`,
           );
         } catch (err) {
@@ -222,7 +260,7 @@ export class EnforcementEngine {
           "violation" in axiom1Result
             ? axiom1Result.violation
             : "Policy violation";
-        vscode.window.showWarningMessage(
+        this.notifications.showWarning(
           `FailSafe (Assist): ${violation}`,
           "View Details",
           "Dismiss",
@@ -237,6 +275,16 @@ export class EnforcementEngine {
     }
 
     // ENFORCE MODE: Full blocking behavior (original logic)
+    // Lock-step enforcement requires FailSafe Pro
+    if (this.featureGate && !this.featureGate.isEnabled('governance.lockstep')) {
+      this.logger.info("ENFORCE MODE: Lock-step gated to Pro tier, falling back to assist behavior");
+      return {
+        status: "ALLOW",
+        reason: "Lock-step enforcement requires FailSafe Pro. Action permitted under free tier.",
+        intentId: activeIntent?.id,
+      } as AllowVerdict;
+    }
+
     const axiom1Result = this.enforceAxiom1(context);
     if (axiom1Result.status !== "ALLOW") return axiom1Result;
 

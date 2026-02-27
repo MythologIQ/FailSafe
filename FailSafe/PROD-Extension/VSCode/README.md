@@ -1,4 +1,4 @@
-# MythologIQ: FailSafe v3.6.0 (VS Code Marketplace Package)
+# FailSafe v3.6.1 (VS Code Marketplace Package)
 
 Token Efficient Governance for AI-assisted development in VS Code/Cursor.
 
@@ -27,6 +27,15 @@ Token Efficient Governance for AI-assisted development in VS Code/Cursor.
 | `FailSafe: Secure Workspace`                     | Apply workspace hardening baseline       |
 | `FailSafe: Panic Stop`                           | Stop active monitoring and guard actions |
 | `FailSafe: Resume Monitoring`                    | Resume Sentinel monitoring               |
+
+## Upcoming Features
+
+- **Token Economics & ROI Dashboard**: Visually tracks token savings from context sync.
+- **FailSafe Revert ("Time-Travel")**: One-click Git and context rollbacks for AI hallucinations.
+- **CI/CD Pipeline Enforcer**: Headless pipeline validation for `failsafe_checkpoints`.
+- **Shared "Core Axioms"**: Sync enterprise compliance rules automatically.
+- **Visual Chain of Governance**: Trace the inter-agent communications visually.
+- **Air-Gapped Judge Verification**: Leverage local LLMs for architecture audits.
 
 ## Links
 

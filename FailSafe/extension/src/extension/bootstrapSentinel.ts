@@ -7,6 +7,7 @@ import { ExistenceEngine } from "../sentinel/engines/ExistenceEngine";
 import { VerdictArbiter } from "../sentinel/VerdictArbiter";
 import { VerdictRouter } from "../sentinel/VerdictRouter";
 import { ArchitectureEngine } from "../sentinel/engines/ArchitectureEngine";
+import type { IConfigProvider } from "../core/interfaces";
 import { CoreSubstrate } from "./bootstrapCore";
 import { QoreLogicSubstrate } from "./bootstrapQoreLogic";
 import { Logger } from "../shared/Logger";
@@ -53,8 +54,8 @@ export async function bootstrapSentinel(
       qore.qorelogicManager,
     );
 
+    // Use shared ConfigManager (implements IConfigProvider) from core substrate
     const sentinelDaemon = new SentinelDaemon(
-      context,
       core.configManager,
       verdictArbiter,
       verdictRouter,

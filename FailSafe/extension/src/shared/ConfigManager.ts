@@ -9,17 +9,17 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as yaml from 'js-yaml';
+import type { IConfigProvider } from '../core/interfaces';
 import { FailSafeConfig, SentinelMode } from './types';
 import { ensureFailsafeGitignoreEntry } from './gitignore';
 
 type SentinelYamlConfig = Partial<FailSafeConfig> & Record<string, unknown>;
 
-export class ConfigManager {
+export class ConfigManager implements IConfigProvider {
     private context: vscode.ExtensionContext;
     private workspaceRoot: string | undefined;
     private configChangeEmitter = new vscode.EventEmitter<FailSafeConfig>();
 
-    readonly onConfigChange = this.configChangeEmitter.event;
 
     constructor(context: vscode.ExtensionContext) {
         this.context = context;
@@ -31,6 +31,11 @@ export class ConfigManager {
                 this.configChangeEmitter.fire(this.getConfig());
             }
         });
+    }
+
+    onConfigChange(callback: (config: FailSafeConfig) => void): () => void {
+        const disposable = this.configChangeEmitter.event(callback);
+        return () => disposable.dispose();
     }
 
     /**

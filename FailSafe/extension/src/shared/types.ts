@@ -459,7 +459,10 @@ export type FailSafeEventType =
   | "governance.checkpointCreated"
   | "governance.driftDetected"
   | "prompt.dispatch"
-  | "prompt.response";
+  | "prompt.response"
+  | "governance.revertInitiated"
+  | "governance.revertCompleted"
+  | "governance.revertFailed";
 
 export interface FailSafeEvent<T = unknown> {
   type: FailSafeEventType;

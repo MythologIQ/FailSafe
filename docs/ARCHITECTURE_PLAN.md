@@ -143,7 +143,7 @@ FailSafe/extension/src/genesis/panels/
 - `DojoViewProvider.ts` - Link to Roadmap view ✅
 - `main.ts` - Wire PlanManager at activation ✅
 
-### Planned Additions (v4.1.0 Time-Travel Rollback) 📋 PLANNED
+### Planned Additions (v4.1.0 Time-Travel Rollback) ✅ IMPLEMENTED
 
 ```
 FailSafe/extension/src/governance/revert/    # NEW MODULE (zero vscode deps)

@@ -1,0 +1,212 @@
+/**
+ * L3ApprovalService - Manages the L3 approval queue and decision processing.
+ *
+ * Extracted from QoreLogicManager to isolate L3 queue concerns:
+ * - Queue management (add, persist, retrieve)
+ * - Decision processing (approve/reject)
+ * - Evaluation routing integration
+ * - Risk grade mapping
+ */
+
+import * as crypto from 'crypto';
+import { IStateStore } from '../core/interfaces';
+import { IConfigProvider } from '../core/interfaces';
+import { EventBus } from '../shared/EventBus';
+import { Logger } from '../shared/Logger';
+import { L3ApprovalRequest, RiskGrade } from '../shared/types';
+import { LedgerManager } from './ledger/LedgerManager';
+import { TrustEngine } from './trust/TrustEngine';
+import { CortexEvent, RoutingDecision } from '../governance/EvaluationRouter';
+
+export class L3ApprovalService {
+    private readonly logger: Logger;
+    private l3Queue: L3ApprovalRequest[] = [];
+
+    constructor(
+        private readonly stateStore: IStateStore,
+        private readonly configProvider: IConfigProvider,
+        private readonly ledgerManager: LedgerManager,
+        private readonly trustEngine: TrustEngine,
+        private readonly eventBus: EventBus,
+        private readonly overseerId: string = 'did:myth:overseer:local',
+    ) {
+        this.logger = new Logger('L3ApprovalService');
+    }
+
+    /**
+     * Load persisted L3 queue from state store.
+     */
+    loadQueue(): void {
+        this.l3Queue = this.stateStore.get<L3ApprovalRequest[]>('l3Queue', []);
+    }
+
+    /**
+     * Get a copy of the current L3 approval queue.
+     */
+    getQueue(): L3ApprovalRequest[] {
+        return [...this.l3Queue];
+    }
+
+    /**
+     * Add an item to the L3 approval queue.
+     */
+    async queueL3Approval(
+        request: Omit<L3ApprovalRequest, 'id' | 'state' | 'queuedAt' | 'slaDeadline'>
+    ): Promise<string> {
+        const config = this.configProvider.getConfig();
+        const slaSecs = config.qorelogic.l3SLA;
+
+        const id = crypto.randomUUID();
+        const now = new Date();
+        const slaDeadline = new Date(now.getTime() + slaSecs * 1000);
+
+        const fullRequest: L3ApprovalRequest = {
+            ...request,
+            id,
+            state: 'QUEUED',
+            queuedAt: now.toISOString(),
+            slaDeadline: slaDeadline.toISOString()
+        };
+
+        this.l3Queue.push(fullRequest);
+        await this.persistL3Queue();
+
+        await this.ledgerManager.appendEntry({
+            eventType: 'L3_QUEUED',
+            agentDid: request.agentDid,
+            agentTrustAtAction: request.agentTrust,
+            artifactPath: request.filePath,
+            riskGrade: request.riskGrade,
+            payload: { sentinelSummary: request.sentinelSummary, flags: request.flags }
+        });
+
+        this.eventBus.emit('qorelogic.l3Queued', fullRequest);
+        this.logger.info('L3 approval queued', { id, filePath: request.filePath });
+
+        return id;
+    }
+
+    /**
+     * Process an L3 decision (approve/reject).
+     */
+    async processL3Decision(
+        requestId: string,
+        decision: 'APPROVED' | 'REJECTED',
+        conditions?: string[]
+    ): Promise<void> {
+        const index = this.l3Queue.findIndex(r => r.id === requestId);
+        if (index === -1) {
+            throw new Error(`L3 request not found: ${requestId}`);
+        }
+
+        const request = this.l3Queue[index];
+        const overseerDid = this.overseerId;
+
+        this.applyDecisionToRequest(request, decision, overseerDid, conditions);
+
+        await this.recordDecisionLedgerEntry(request, decision, overseerDid, conditions);
+
+        await this.updateTrustForDecision(request.agentDid, decision);
+
+        this.l3Queue.splice(index, 1);
+        await this.persistL3Queue();
+
+        this.eventBus.emit('qorelogic.l3Decided', { request, decision });
+        this.logger.info('L3 decision processed', { requestId, decision });
+    }
+
+    /**
+     * Process an evaluation routing decision.
+     */
+    async processEvaluationDecision(
+        decision: RoutingDecision,
+        event: CortexEvent
+    ): Promise<void> {
+        const mappedRisk = this.mapRiskToLegacy(decision.triage.risk);
+
+        if (decision.writeLedger) {
+            await this.ledgerManager.appendEntry({
+                eventType: 'EVALUATION_ROUTED',
+                agentDid: (event.payload?.intentId as string) || 'system',
+                artifactPath: event.payload?.targetPath as string,
+                riskGrade: mappedRisk,
+                payload: { tier: decision.tier, triage: decision.triage }
+            });
+        }
+
+        if (decision.tier === 3) {
+            await this.queueL3Approval({
+                agentDid: (event.payload?.intentId as string) || 'system',
+                agentTrust: decision.triage.confidence === 'high' ? 0.9 : 0.7,
+                filePath: event.payload?.targetPath as string,
+                riskGrade: mappedRisk,
+                sentinelSummary: `Tier 3 evaluation: ${decision.triage.risk} risk, ${decision.triage.novelty} novelty`,
+                flags: decision.requiredActions
+            });
+        }
+    }
+
+    /**
+     * Map EvaluationRouter risk grades to legacy RiskGrade format.
+     */
+    mapRiskToLegacy(risk: RoutingDecision['triage']['risk']): RiskGrade {
+        switch (risk) {
+            case 'R0':
+            case 'R1':
+                return 'L1';
+            case 'R2':
+                return 'L2';
+            case 'R3':
+                return 'L3';
+            default:
+                return 'L1';
+        }
+    }
+
+    /**
+     * Persist the L3 queue to workspace state.
+     */
+    private async persistL3Queue(): Promise<void> {
+        await this.stateStore.update('l3Queue', this.l3Queue);
+    }
+
+    private applyDecisionToRequest(
+        request: L3ApprovalRequest,
+        decision: 'APPROVED' | 'REJECTED',
+        overseerDid: string,
+        conditions?: string[]
+    ): void {
+        const hasConditions = decision === 'APPROVED' && conditions?.length;
+        request.state = hasConditions ? 'APPROVED_WITH_CONDITIONS' : decision;
+        request.decidedAt = new Date().toISOString();
+        request.overseerDid = overseerDid;
+        request.decision = decision;
+        request.conditions = conditions;
+    }
+
+    private async recordDecisionLedgerEntry(
+        request: L3ApprovalRequest,
+        decision: 'APPROVED' | 'REJECTED',
+        overseerDid: string,
+        conditions?: string[]
+    ): Promise<void> {
+        await this.ledgerManager.appendEntry({
+            eventType: decision === 'APPROVED' ? 'L3_APPROVED' : 'L3_REJECTED',
+            agentDid: request.agentDid,
+            agentTrustAtAction: request.agentTrust,
+            artifactPath: request.filePath,
+            riskGrade: request.riskGrade,
+            overseerDid,
+            overseerDecision: decision,
+            payload: { conditions }
+        });
+    }
+
+    private async updateTrustForDecision(
+        agentDid: string,
+        decision: 'APPROVED' | 'REJECTED'
+    ): Promise<void> {
+        const outcome = decision === 'APPROVED' ? 'success' : 'failure';
+        await this.trustEngine.updateTrust(agentDid, outcome);
+    }
+}

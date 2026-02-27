@@ -378,6 +378,19 @@ export function registerCommands(
     }),
   );
 
+  // Time-Travel Rollback (v4.1.0)
+  context.subscriptions.push(
+    vscode.commands.registerCommand("failsafe.revertToCheckpoint", async () => {
+      const checkpointId = await vscode.window.showInputBox({
+        prompt: "Checkpoint ID to revert to",
+        placeHolder: "Enter checkpoint ID",
+      });
+      if (checkpointId) {
+        genesis.showRevert(checkpointId);
+      }
+    }),
+  );
+
   // Export feedback command
   context.subscriptions.push(
     vscode.commands.registerCommand("failsafe.exportFeedback", async () => {

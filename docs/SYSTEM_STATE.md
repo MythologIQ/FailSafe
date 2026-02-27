@@ -1,8 +1,8 @@
 # SYSTEM STATE
 
-**Last Updated:** 2026-02-27T07:15:00.000Z
-**Version:** v4.0.0 Token Economics (SEALED)
-**Chain Entry:** #80 (SEALED)
+**Last Updated:** 2026-02-27T14:00:00.000Z
+**Version:** v4.1.0 Time-Travel Rollback (SEALED)
+**Chain Entry:** #86 (SEALED)
 
 ---
 
@@ -82,6 +82,55 @@ G:\MythologIQ\FailSafe\                    # WORKSPACE ROOT
         ├── CHANGELOG.md
         └── README.md
 ```
+
+---
+
+## v4.1.0 Time-Travel Rollback Implementation Summary
+
+**Ledger Entries**: #81 (PLAN) -> #82 (VETO, 8 violations) -> #83 (REMEDIATION) -> #84 (PASS) -> #85 (IMPLEMENT) -> #86 (SUBSTANTIATE/SEAL)
+
+### New Files
+
+| File | Lines | Purpose |
+|---|---|---|
+| `governance/revert/types.ts` | 28 | Pure value types: CheckpointRef, RevertRequest, RevertResult |
+| `governance/revert/GitResetService.ts` | 117 | Git operations with V1 hash validation, injectable CommandRunner |
+| `governance/revert/FailSafeRevertService.ts` | 170 | 3-step orchestrator: git reset + RAG purge + ledger seal |
+| `sentinel/SentinelJsonlFallback.ts` | 64 | V8 extracted JSONL ops + sha256/stableStringify |
+| `genesis/panels/RevertPanel.ts` | 136 | Singleton webview panel (EconomicsPanel pattern) |
+| `genesis/panels/templates/RevertTemplate.ts` | 196 | Confirmation UI with V6 cancel handler |
+| `test/governance/revert/GitResetService.test.ts` | 130 | 7 tests (status, log, hash validation, reset) |
+| `test/governance/revert/FailSafeRevertService.test.ts` | 192 | 6 tests (3-step, dirty abort, TOCTOU, emergency log) |
+
+### Modified Files
+
+| File | Lines | Change |
+|---|---|---|
+| `sentinel/SentinelRagStore.ts` | 250 | V8 extraction, added purgeAfterTimestamp |
+| `shared/types.ts` | +3 | 3 revert event types |
+| `genesis/GenesisManager.ts` | 239 | Revert panel wiring, compressed dispose |
+| `roadmap/RoadmapServer.ts` | +~60 | V5 rollback endpoint, V7 checkpoint-by-id, governance.revert type |
+| `extension/commands.ts` | +12 | failsafe.revertToCheckpoint command |
+| `package.json` | +1 | Command contribution |
+
+### Security Hardening (8 VETO Violations Resolved)
+
+| ID | Fix | Evidence |
+|---|---|---|
+| V1 | Git flag injection guard | `GIT_HASH_RE` regex in GitResetService.ts:3 |
+| V2 | Emergency audit log fallback | try/catch + writeEmergencyLog in FailSafeRevertService.ts |
+| V3 | TOCTOU double-check | Second getStatus() before resetHard() |
+| V4 | Atomic JSONL write | tmpPath + renameSync in SentinelJsonlFallback.ts |
+| V5 | Actor/reason sanitization | Server-side `actor = 'user.local'` + `.slice(0, 2000)` |
+| V6 | Cancel handler | `case 'cancel': this.panel.dispose()` in RevertPanel.ts |
+| V7 | Checkpoint endpoint | `GET /api/checkpoints/:id` in RoadmapServer.ts |
+| V8 | Razor extraction | SentinelJsonlFallback.ts extracted, SentinelRagStore at 250 lines |
+
+### Test Results
+
+- 49 passing, 0 failing (v4.1.0 scope)
+- TypeScript: 0 errors
+- Section 4 Razor: All files compliant (max 250 lines, all functions ≤40 lines)
 
 ---
 

@@ -20,6 +20,9 @@ import {
 import { GenesisRuntimeOps } from './services/GenesisRuntimeOps';
 import { TokenAggregatorService } from '../economics/TokenAggregatorService';
 import { EconomicsPanel } from './panels/EconomicsPanel';
+import { RevertPanel, CheckpointLookup } from './panels/RevertPanel';
+import { FailSafeRevertService } from '../governance/revert/FailSafeRevertService';
+import { GitResetService } from '../governance/revert/GitResetService';
 
 export class GenesisManager {
   private readonly context: vscode.ExtensionContext;
@@ -40,6 +43,8 @@ export class GenesisManager {
   private planningHubPanel: PlanningHubPanel | undefined;
   private analyticsDashboardPanel: AnalyticsDashboardPanel | undefined;
   private economicsPanel: EconomicsPanel | undefined;
+  private revertPanel: RevertPanel | undefined;
+  private revertDeps: { svc: FailSafeRevertService; git: GitResetService; lookup: CheckpointLookup } | undefined;
   private graphData: LivingGraphData | undefined;
   private planManager: PlanManager | undefined;
 
@@ -87,15 +92,9 @@ export class GenesisManager {
   }
 
   showLivingGraph(): void {
-    if (this.livingGraphPanel) {
-      this.livingGraphPanel.reveal();
-      return;
-    }
-
+    if (this.livingGraphPanel) { this.livingGraphPanel.reveal(); return; }
     this.livingGraphPanel = LivingGraphPanel.createOrShow(
-      this.context.extensionUri,
-      this.graphData,
-      this.eventBus
+      this.context.extensionUri, this.graphData, this.eventBus,
     );
   }
 
@@ -127,30 +126,35 @@ export class GenesisManager {
   }
 
   showAnalyticsDashboard(): void {
-    if (!this.workspaceRoot) {
-      vscode.window.showWarningMessage('No workspace folder open');
-      return;
-    }
-    if (this.analyticsDashboardPanel) {
-      this.analyticsDashboardPanel.reveal();
-      return;
-    }
+    if (!this.workspaceRoot) { vscode.window.showWarningMessage('No workspace folder open'); return; }
+    if (this.analyticsDashboardPanel) { this.analyticsDashboardPanel.reveal(); return; }
     this.analyticsDashboardPanel = AnalyticsDashboardPanel.createOrShow(
-      this.context.extensionUri,
-      this.eventBus,
-      this.workspaceRoot
+      this.context.extensionUri, this.eventBus, this.workspaceRoot,
     );
   }
 
   showEconomics(): void {
-    if (this.economicsPanel) {
-      this.economicsPanel.reveal();
+    if (this.economicsPanel) { this.economicsPanel.reveal(); return; }
+    this.economicsPanel = EconomicsPanel.createOrShow(this.context.extensionUri, this.tokenAggregator);
+  }
+
+  setRevertDeps(svc: FailSafeRevertService, git: GitResetService, lookup: CheckpointLookup): void {
+    this.revertDeps = { svc, git, lookup };
+  }
+
+  showRevert(checkpointId: string): void {
+    if (!this.revertDeps) {
+      vscode.window.showWarningMessage('Revert service not initialized');
       return;
     }
-    this.economicsPanel = EconomicsPanel.createOrShow(
-      this.context.extensionUri,
-      this.tokenAggregator,
-    );
+    if (!this.revertPanel) {
+      const { svc, git, lookup } = this.revertDeps;
+      this.revertPanel = RevertPanel.createOrShow(
+        this.context.extensionUri, svc, git, lookup, this.workspaceRoot,
+      );
+    }
+    this.revertPanel.reveal();
+    void this.revertPanel.showForCheckpoint(checkpointId);
   }
 
   async focusCortexOmnibar(): Promise<void> {
@@ -170,25 +174,16 @@ export class GenesisManager {
   }
 
   showLedgerViewer(): void {
-    if (this.ledgerViewerPanel) {
-      this.ledgerViewerPanel.reveal();
-      return;
-    }
+    if (this.ledgerViewerPanel) { this.ledgerViewerPanel.reveal(); return; }
     this.ledgerViewerPanel = LedgerViewerPanel.createOrShow(
-      this.context.extensionUri,
-      this.qorelogic.getLedgerManager()
+      this.context.extensionUri, this.qorelogic.getLedgerManager(),
     );
   }
 
   showL3ApprovalQueue(): void {
-    if (this.l3ApprovalPanel) {
-      this.l3ApprovalPanel.reveal();
-      return;
-    }
+    if (this.l3ApprovalPanel) { this.l3ApprovalPanel.reveal(); return; }
     this.l3ApprovalPanel = L3ApprovalPanel.createOrShow(
-      this.context.extensionUri,
-      this.qorelogic,
-      this.eventBus
+      this.context.extensionUri, this.qorelogic, this.eventBus,
     );
   }
 
@@ -201,13 +196,12 @@ export class GenesisManager {
   }
 
   dispose(): void {
-    this.livingGraphPanel?.dispose();
-    this.dashboardPanel?.dispose();
-    this.ledgerViewerPanel?.dispose();
-    this.l3ApprovalPanel?.dispose();
-    this.planningHubPanel?.dispose();
-    this.analyticsDashboardPanel?.dispose();
-    this.economicsPanel?.dispose();
+    const panels = [
+      this.livingGraphPanel, this.dashboardPanel, this.ledgerViewerPanel,
+      this.l3ApprovalPanel, this.planningHubPanel, this.analyticsDashboardPanel,
+      this.economicsPanel, this.revertPanel,
+    ];
+    panels.forEach((p) => p?.dispose());
     this.tokenAggregator.dispose();
   }
 

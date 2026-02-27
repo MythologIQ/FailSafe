@@ -125,6 +125,10 @@
       {
         "command": "failsafe.showEconomics",
         "title": "FailSafe: Token Economics Dashboard"
+      },
+      {
+        "command": "failsafe.revertToCheckpoint",
+        "title": "FailSafe: Revert to Checkpoint (Time-Travel)"
       }
     ],
     "viewsContainers": {

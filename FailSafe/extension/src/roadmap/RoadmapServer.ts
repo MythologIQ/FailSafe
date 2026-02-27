@@ -19,6 +19,9 @@ import { EventBus } from '../shared/EventBus';
 import { SentinelVerdict } from '../shared/types';
 import { IFeatureGate, FeatureFlag } from '../core/interfaces/IFeatureGate';
 import { FEATURE_TIER_MAP } from '../core/FeatureGateService';
+import { GitResetService } from '../governance/revert/GitResetService';
+import { FailSafeRevertService, RevertDeps } from '../governance/revert/FailSafeRevertService';
+import { CheckpointRef, RevertRequest } from '../governance/revert/types';
 
 const PORT = 9376;
 const HOST = '127.0.0.1';
@@ -128,6 +131,8 @@ export class RoadmapServer {
   private workspaceRoot: string;
   private featureGate: IFeatureGate | undefined;
   private sealedSubstantiateCompletions = new Set<string>();
+  private revertService: FailSafeRevertService | null = null;
+  private gitResetService: GitResetService;
   private checkpointTypeRegistry = new Set<string>([
     'snapshot.created',
     'phase.entered',
@@ -143,6 +148,7 @@ export class RoadmapServer {
     'monitoring.resumed',
     'monitoring.stopped',
     'event.stream',
+    'governance.revert',
   ]);
 
   constructor(
@@ -162,6 +168,8 @@ export class RoadmapServer {
     this.featureGate = options.featureGate;
     this.uiDir = this.resolveUiDir();
     this.initializeCheckpointStore();
+    this.gitResetService = new GitResetService();
+    this.initializeRevertService();
     this.setupRoutes();
     this.subscribeToEvents();
   }
@@ -365,6 +373,47 @@ export class RoadmapServer {
         checkpoints: this.getRecentCheckpoints(limit),
         chainValid: this.verifyCheckpointChain(),
       });
+    });
+
+    // [V7] API: Get a single checkpoint by ID
+    this.app.get('/api/checkpoints/:id', (req: Request, res: Response) => {
+      if (this.rejectIfRemote(req, res)) return;
+      const id = String(req.params.id || '');
+      if (!id) {
+        res.status(400).json({ ok: false, error: 'id required' });
+        return;
+      }
+      const checkpoint = this.getCheckpointById(id);
+      res.json({ ok: true, checkpoint });
+    });
+
+    // [V5] API: Rollback to a checkpoint
+    this.app.post('/api/actions/rollback', async (req: Request, res: Response) => {
+      if (this.rejectIfRemote(req, res)) return;
+      if (!this.revertService) {
+        res.status(503).json({ ok: false, error: 'revert service unavailable' });
+        return;
+      }
+      const { checkpointId, reason: rawReason } = req.body as { checkpointId?: string; reason?: string };
+      if (!checkpointId) {
+        res.status(400).json({ ok: false, error: 'checkpointId required' });
+        return;
+      }
+      const actor = 'user.local';
+      const reason = String(rawReason || '').slice(0, 2000);
+      const checkpoint = this.getCheckpointById(checkpointId);
+      if (!checkpoint) {
+        res.status(404).json({ ok: false, error: 'checkpoint not found' });
+        return;
+      }
+      try {
+        const request: RevertRequest = { targetCheckpoint: checkpoint, reason, actor };
+        const result = await this.revertService.revert(request);
+        this.broadcast({ type: 'hub.refresh' });
+        res.json({ ok: result.success, result });
+      } catch (error) {
+        res.status(500).json({ ok: false, error: String(error) });
+      }
     });
 
     // API: Action controls for Hub buttons
@@ -1646,6 +1695,59 @@ export class RoadmapServer {
       this.checkpointDb = null;
       console.warn('Checkpoint store running in memory fallback mode:', error);
     }
+  }
+
+  private initializeRevertService(): void {
+    const deps: RevertDeps = {
+      getCheckpoint: (id: string) => this.getCheckpointById(id),
+      gitService: this.gitResetService,
+      purgeRagAfter: () => 0,
+      recordRevertCheckpoint: (request: RevertRequest) => {
+        this.recordCheckpoint({
+          checkpointType: 'governance.revert',
+          actor: request.actor,
+          phase: 'revert',
+          status: 'sealed',
+          policyVerdict: 'PASS',
+          evidenceRefs: [],
+          payload: {
+            targetCheckpointId: request.targetCheckpoint.checkpointId,
+            targetGitHash: request.targetCheckpoint.gitHash,
+            reason: request.reason,
+          },
+        });
+        return crypto.randomUUID();
+      },
+      workspaceRoot: this.workspaceRoot,
+    };
+    this.revertService = new FailSafeRevertService(deps);
+  }
+
+  private getCheckpointById(id: string): CheckpointRef | null {
+    if (this.checkpointDb) {
+      try {
+        const row = this.checkpointDb.prepare(
+          'SELECT checkpoint_id, git_hash, timestamp, phase, status FROM failsafe_checkpoints WHERE checkpoint_id = ?',
+        ).get(id) as { checkpoint_id: string; git_hash: string; timestamp: string; phase: string; status: string } | undefined;
+        if (!row) return null;
+        return {
+          checkpointId: row.checkpoint_id,
+          gitHash: row.git_hash,
+          timestamp: row.timestamp,
+          phase: row.phase,
+          status: row.status,
+        };
+      } catch { /* fall through */ }
+    }
+    const mem = this.checkpointMemory.find((r) => r.checkpointId === id);
+    if (!mem) return null;
+    return {
+      checkpointId: mem.checkpointId,
+      gitHash: mem.gitHash,
+      timestamp: mem.timestamp,
+      phase: mem.phase,
+      status: mem.status,
+    };
   }
 
   private inferPhaseKeyFromPlan(plan: unknown): string {

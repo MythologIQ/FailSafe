@@ -1,8 +1,15 @@
 import * as fs from "fs";
 import * as path from "path";
-import * as crypto from "crypto";
+import { randomUUID } from "crypto";
 import { Logger } from "../shared/Logger";
 import { SentinelEvent, SentinelVerdict } from "../shared/types";
+import {
+  ensureJsonlFile,
+  appendJsonlRecord,
+  purgeJsonlAfterTimestamp,
+  sha256,
+  stableStringify,
+} from "./SentinelJsonlFallback";
 
 type SqliteDb = {
   prepare: (sql: string) => {
@@ -82,9 +89,7 @@ export class SentinelRagStore {
       return;
     }
 
-    if (!fs.existsSync(this.jsonlPath)) {
-      fs.writeFileSync(this.jsonlPath, "", "utf8");
-    }
+    ensureJsonlFile(this.jsonlPath);
     this.logger.warn(
       "Sentinel RAG running in JSONL fallback mode (better-sqlite3 unavailable).",
     );
@@ -127,7 +132,17 @@ export class SentinelRagStore {
       return;
     }
 
-    fs.appendFileSync(this.jsonlPath, `${JSON.stringify(record)}\n`, "utf8");
+    appendJsonlRecord(this.jsonlPath, record);
+  }
+
+  purgeAfterTimestamp(timestamp: string): number {
+    if (this.db) {
+      const result = this.db
+        .prepare("DELETE FROM sentinel_observations WHERE timestamp > ?")
+        .run(timestamp);
+      return (result as { changes: number }).changes;
+    }
+    return purgeJsonlAfterTimestamp(this.jsonlPath, timestamp);
   }
 
   dispose(): void {
@@ -159,10 +174,10 @@ export class SentinelRagStore {
     };
     const metadataJson = stableStringify(metadata);
     const text = this.composeRetrievalText(event, verdict, fileContext);
-    const contentHash = hash(`${payloadJson}:${metadataJson}:${text}`);
+    const contentHash = sha256(`${payloadJson}:${metadataJson}:${text}`);
 
     return {
-      id: crypto.randomUUID(),
+      id: randomUUID(),
       timestamp,
       eventId: event.id,
       eventType: event.type,
@@ -181,29 +196,17 @@ export class SentinelRagStore {
   }
 
   private composeRetrievalText(
-    event: SentinelEvent,
-    verdict: SentinelVerdict,
-    fileContext: string | null,
+    event: SentinelEvent, verdict: SentinelVerdict, fileContext: string | null,
   ): string {
-    const lines: string[] = [];
-    lines.push(`event_type: ${event.type}`);
-    lines.push(`source: ${event.source}`);
-    lines.push(`decision: ${verdict.decision}`);
-    lines.push(`risk_grade: ${verdict.riskGrade}`);
-    lines.push(`summary: ${verdict.summary}`);
-    if (verdict.details) {
-      lines.push(`details: ${verdict.details}`);
-    }
-    if (verdict.artifactPath) {
-      lines.push(`artifact_path: ${verdict.artifactPath}`);
-    }
-    if (verdict.matchedPatterns.length > 0) {
-      lines.push(`matched_patterns: ${verdict.matchedPatterns.join(", ")}`);
-    }
-    if (fileContext) {
-      lines.push("file_excerpt:");
-      lines.push(fileContext);
-    }
+    const lines = [
+      `event_type: ${event.type}`, `source: ${event.source}`,
+      `decision: ${verdict.decision}`, `risk_grade: ${verdict.riskGrade}`,
+      `summary: ${verdict.summary}`,
+    ];
+    if (verdict.details) lines.push(`details: ${verdict.details}`);
+    if (verdict.artifactPath) lines.push(`artifact_path: ${verdict.artifactPath}`);
+    if (verdict.matchedPatterns.length > 0) lines.push(`matched_patterns: ${verdict.matchedPatterns.join(", ")}`);
+    if (fileContext) lines.push("file_excerpt:", fileContext);
     return lines.join("\n");
   }
 
@@ -244,27 +247,4 @@ export class SentinelRagStore {
       return null;
     }
   }
-}
-
-function hash(value: string): string {
-  return crypto.createHash("sha256").update(value).digest("hex");
-}
-
-function stableStringify(value: unknown): string {
-  const normalize = (input: unknown): unknown => {
-    if (Array.isArray(input)) {
-      return input.map((item) => normalize(item));
-    }
-    if (input && typeof input === "object") {
-      const obj = input as Record<string, unknown>;
-      return Object.keys(obj)
-        .sort()
-        .reduce<Record<string, unknown>>((acc, key) => {
-          acc[key] = normalize(obj[key]);
-          return acc;
-        }, {});
-    }
-    return input;
-  };
-  return JSON.stringify(normalize(value));
 }

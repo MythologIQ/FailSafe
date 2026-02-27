@@ -65,7 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **10 QoreLogic Prompts** - Complete A.E.G.I.S. governance lifecycle
+- **10 QoreLogic Prompts** - Complete SHIELD governance lifecycle
   - `ql-bootstrap.prompt.md` - Project DNA seeder for workspace initialization
   - `ql-help.prompt.md` - Quick reference for all commands
   - `ql-status.prompt.md` - Lifecycle diagnostic with backlog tracking
@@ -78,7 +78,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `ql-organize.prompt.md` - Adaptive workspace organization
 
 - **3 Agent Personas** - Role-based AI behavior
-  - `ql-governor.agent.md` - Strategic planning (ALIGN/ENCODE phases)
+  - `ql-governor.agent.md` - Strategic planning (SECURE INTENT phase)
   - `ql-judge.agent.md` - Adversarial auditing (GATE/SUBSTANTIATE phases)
   - `ql-specialist.agent.md` - Precision implementation (IMPLEMENT phase)
 

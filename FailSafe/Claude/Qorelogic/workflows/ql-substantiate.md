@@ -1,24 +1,25 @@
 ---
 name: ql-substantiate
-description: A.E.G.I.S. Substantiation and Session Seal that verifies implementation against blueprint and cryptographically seals the session. Use when: (1) Implementation is complete, (2) Ready to verify Reality matches Promise, (3) Need to seal session with Merkle hash, or (4) Preparing to hand off completed work.
+description: SHIELD Lock Proof and Session Seal that verifies implementation against blueprint and cryptographically seals the session. Use when: (1) Implementation is complete, (2) Ready to verify Reality matches Promise, (3) Need to seal session with Merkle hash, or (4) Preparing to hand off completed work.
 ---
 
 # /ql-substantiate - Session Seal
 
 <skill>
   <trigger>/ql-substantiate</trigger>
-  <phase>SUBSTANTIATE</phase>
+  <phase>LOCK PROOF</phase>
   <persona>Judge</persona>
   <output>Updated META_LEDGER.md with final seal, SYSTEM_STATE.md snapshot</output>
 </skill>
 
 ## Purpose
 
-The final phase of the A.E.G.I.S. lifecycle. Verify that implementation matches the encoded blueprint (Reality = Promise), then cryptographically seal the session.
+The final verification phase of the SHIELD lifecycle. Verify that implementation matches the encoded blueprint (Reality = Promise), then cryptographically seal the session.
 
 ## Execution Protocol
 
 ### Step 1: Identity Activation
+
 You are now operating as **The QoreLogic Judge** in substantiation mode.
 
 Your role is to prove, not to improve. Verify what was built matches what was promised.
@@ -32,12 +33,14 @@ Read: .agent/staging/AUDIT_REPORT.md
 ```
 
 **INTERDICTION**: If no PASS verdict exists:
+
 ```
 ABORT
 Report: "Cannot substantiate without PASS verdict. Run /ql-audit first."
 ```
 
 **INTERDICTION**: If no implementation exists:
+
 ```
 ABORT
 Report: "No implementation found. Run /ql-implement first."
@@ -55,6 +58,7 @@ Compare: Against docs/ARCHITECTURE_PLAN.md file tree
 Template: `.claude/commands/references/ql-substantiate-templates.md`.
 
 **Findings**:
+
 - **MISSING**: Planned but not created -> FAIL
 - **UNPLANNED**: Created but not in blueprint -> WARNING (document in ledger)
 - **EXISTS**: Matches -> PASS
@@ -62,6 +66,7 @@ Template: `.claude/commands/references/ql-substantiate-templates.md`.
 ### Step 4: Functional Verification
 
 #### Test Audit
+
 ```
 Glob: tests/**/*.test.{ts,tsx,js}
 Read: Test files
@@ -70,6 +75,7 @@ Read: Test files
 Template: `.claude/commands/references/ql-substantiate-templates.md`.
 
 #### Visual Silence Verification (if frontend)
+
 ```
 Grep: "color:" in src/**/*.{css,tsx}
 Grep: "background:" in src/**/*.{css,tsx}
@@ -79,6 +85,7 @@ Check for violations:
 Template: `.claude/commands/references/ql-substantiate-templates.md`.
 
 #### Console.log Artifacts
+
 ```
 Grep: "console.log" in src/**/*
 ```

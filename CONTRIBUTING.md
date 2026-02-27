@@ -67,7 +67,7 @@ npm test
 npm run compile
 ```
 
-## QoreLogic A.E.G.I.S. Workflow
+## QoreLogic SHIELD Workflow
 
 This project uses QoreLogic governance:
 
@@ -82,4 +82,5 @@ This project uses QoreLogic governance:
 Open a discussion or reach out to maintainers.
 
 ---
+
 _Licensed under MIT - see [LICENSE](LICENSE) for details._

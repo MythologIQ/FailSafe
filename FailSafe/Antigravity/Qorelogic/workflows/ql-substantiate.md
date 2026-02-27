@@ -1,20 +1,20 @@
 ---
 name: ql-substantiate
-description: Session Seal that verifies implementation against blueprint and seals the session. Use when: (1) Implementation is complete, (2) Ready to verify Reality matches Promise, or (3) Need to seal session with Merkle hash.
+description: SHIELD Lock Proof and Session Seal that verifies implementation against blueprint and cryptographically seals the session. Use when: (1) Implementation is complete, (2) Ready to verify Reality matches Promise, (3) Need to seal session with Merkle hash, or (4) Preparing to hand off completed work.
 ---
 
 # /ql-substantiate - Session Seal
 
 <skill>
   <trigger>/ql-substantiate</trigger>
-  <phase>SUBSTANTIATE</phase>
+  <phase>LOCK PROOF</phase>
   <persona>Judge</persona>
   <output>Updated META_LEDGER.md with final seal, SYSTEM_STATE.md snapshot</output>
 </skill>
 
 ## Purpose
 
-The final phase of the A.E.G.I.S. lifecycle. Verify that implementation matches the encoded blueprint (Reality = Promise), then cryptographically seal the session.
+The final verification phase of the SHIELD lifecycle. Verify that implementation matches the encoded blueprint (Reality = Promise), then cryptographically seal the session.
 
 ## Execution Protocol
 

@@ -121,6 +121,10 @@
       {
         "command": "failsafe.setGovernanceMode",
         "title": "FailSafe: Set Governance Mode"
+      },
+      {
+        "command": "failsafe.showEconomics",
+        "title": "FailSafe: Token Economics Dashboard"
       }
     ],
     "viewsContainers": {

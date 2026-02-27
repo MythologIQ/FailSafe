@@ -371,6 +371,13 @@ export function registerCommands(
     }),
   );
 
+  // Token Economics ROI Dashboard (v4.0.0)
+  context.subscriptions.push(
+    vscode.commands.registerCommand("failsafe.showEconomics", () => {
+      genesis.showEconomics();
+    }),
+  );
+
   // Export feedback command
   context.subscriptions.push(
     vscode.commands.registerCommand("failsafe.exportFeedback", async () => {

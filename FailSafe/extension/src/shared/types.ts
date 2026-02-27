@@ -457,7 +457,9 @@ export type FailSafeEventType =
   | "genesis.conceptCreated"
   | "genesis.streamEvent"
   | "governance.checkpointCreated"
-  | "governance.driftDetected";
+  | "governance.driftDetected"
+  | "prompt.dispatch"
+  | "prompt.response";
 
 export interface FailSafeEvent<T = unknown> {
   type: FailSafeEventType;

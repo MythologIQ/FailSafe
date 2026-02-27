@@ -143,6 +143,26 @@ FailSafe/extension/src/genesis/panels/
 - `DojoViewProvider.ts` - Link to Roadmap view ✅
 - `main.ts` - Wire PlanManager at activation ✅
 
+### Planned Additions (v4.0.0 Token Economics) 📋 PLANNED
+
+```
+FailSafe/extension/src/economics/          # NEW MODULE (zero vscode deps)
+|-- types.ts                               # PromptDispatchPayload, EconomicsSnapshot, ModelPricing
+|-- CostCalculator.ts                      # Pure functions: calculateCost, calculateSavings, formatCurrency
+|-- EconomicsPersistence.ts                # JSON file storage with atomic write
+`-- TokenAggregatorService.ts              # EventBus subscriber, API-first interface
+
+FailSafe/extension/src/genesis/panels/
+|-- EconomicsPanel.ts                      # VS Code webview (loads from service API)
+`-- templates/
+    `-- EconomicsTemplate.ts               # HTML template (generic JSON schema consumer)
+
+FailSafe/extension/src/test/economics/
+|-- CostCalculator.test.ts                 # Pricing logic tests
+|-- EconomicsPersistence.test.ts           # Load/save round-trip tests
+`-- TokenAggregatorService.test.ts         # Event handling + snapshot tests
+```
+
 ### Planned Additions (v3.0.0 Horizon - Phase D) 📋 PLANNED
 
 ```

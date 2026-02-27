@@ -18,6 +18,8 @@ import {
   showVerdictNotification as showVerdictNotificationDialog
 } from './services/GenesisNotificationService';
 import { GenesisRuntimeOps } from './services/GenesisRuntimeOps';
+import { TokenAggregatorService } from '../economics/TokenAggregatorService';
+import { EconomicsPanel } from './panels/EconomicsPanel';
 
 export class GenesisManager {
   private readonly context: vscode.ExtensionContext;
@@ -29,6 +31,7 @@ export class GenesisManager {
   private readonly intentScout: IntentScout;
   private readonly runtimeOps: GenesisRuntimeOps;
   private readonly workspaceRoot: string;
+  private readonly tokenAggregator: TokenAggregatorService;
 
   private livingGraphPanel: LivingGraphPanel | undefined;
   private dashboardPanel: DashboardPanel | undefined;
@@ -36,6 +39,7 @@ export class GenesisManager {
   private l3ApprovalPanel: L3ApprovalPanel | undefined;
   private planningHubPanel: PlanningHubPanel | undefined;
   private analyticsDashboardPanel: AnalyticsDashboardPanel | undefined;
+  private economicsPanel: EconomicsPanel | undefined;
   private graphData: LivingGraphData | undefined;
   private planManager: PlanManager | undefined;
 
@@ -55,6 +59,7 @@ export class GenesisManager {
     this.intentScout = new IntentScout();
     this.runtimeOps = new GenesisRuntimeOps(eventBus, sentinel, architectureEngine, qorelogic);
     this.workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
+    this.tokenAggregator = new TokenAggregatorService(eventBus, this.workspaceRoot);
   }
 
   async initialize(): Promise<void> {
@@ -137,6 +142,17 @@ export class GenesisManager {
     );
   }
 
+  showEconomics(): void {
+    if (this.economicsPanel) {
+      this.economicsPanel.reveal();
+      return;
+    }
+    this.economicsPanel = EconomicsPanel.createOrShow(
+      this.context.extensionUri,
+      this.tokenAggregator,
+    );
+  }
+
   async focusCortexOmnibar(): Promise<void> {
     const query = await vscode.window.showInputBox({
       prompt: 'Cortex Query',
@@ -191,6 +207,8 @@ export class GenesisManager {
     this.l3ApprovalPanel?.dispose();
     this.planningHubPanel?.dispose();
     this.analyticsDashboardPanel?.dispose();
+    this.economicsPanel?.dispose();
+    this.tokenAggregator.dispose();
   }
 
   private setupEventSubscriptions(): void {

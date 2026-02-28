@@ -1,37 +1,41 @@
-# FailSafe v4.2.0 "The Answer" (OpenVSX Package)
+# FailSafe v4.2.1 (OpenVSX Package)
 
-AI Governance & Safety for AI-assisted development in Antigravity-compatible editors.
+FailSafe is a local-first governance extension for AI-assisted development distributed through Open VSX. It applies deterministic checks at the editor boundary, records decisions to a local ledger, and provides dedicated surfaces for audits, checkpoints, and agent governance.
 
-> _After 42 backlog items, 103 ledger entries, and one very long conversation with the universe, we arrived at The Answer. Turns out it's not 42 — it's deterministic governance. Don't Panic._
+## What's New in v4.2.0
 
-## UI Surfaces
+### Major Additions
 
-- `FailSafe Monitor` (compact sidebar)
-- `FailSafe Command Center` (extended popout/editor)
+- **Multi-Agent Governance Fabric**: runtime detection and governance injection for Claude CLI, Copilot, Codex CLI, and agent-team workflows
+- **Governance Ceremony**: one command to inject or remove governance files across detected agents
+- **First-Run Onboarding**: setup flow for workspace-vs-global agent governance coverage
+- **Agent Coverage Dashboard**: console route for detection, injection status, and compliance visibility
+- **Undo Last Attempt**: checkpoint-based rollback with integrity verification and user feedback
+- **Discovery Phase Governance**: DRAFT to CONCEIVED promotion gate with ledger-tagged discovery milestones
+- **Terminal Correlator**: terminal-to-agent mapping for cross-agent audit correlation
+- **Workflow Run Model**: run, stage, gate, claim, and evidence contracts aligned to governance lifecycle
+- **Agent Teams Detector**: generated governance overseer peer agent for `.claude/agents/`
+- **AGENTS.md Injection**: repo-root governance instructions for Copilot and Codex consumers
+- **Intent Schema v2**: `schemaVersion`, `agentIdentity`, and `planId` with migration from v1
+- **Verdict Replay Batch**: bulk replay support with timing-safe hash comparison
+- **CheckpointManager**: bridge layer between QoreLogic ledger and Sentinel checkpoint metrics
 
-## What's New in v4.2.0 "The Answer"
+### Under the Hood
 
-- **Multi-Agent Governance Fabric**: Runtime detection and governance injection for Claude CLI, Copilot, Codex CLI, and Agent Teams.
-- **Governance Ceremony** (`Set Up Agent Governance`): Single-command opt-in/opt-out for governance injection across all detected AI agents.
-- **First-Run Onboarding**: Multi-agent governance setup during initial activation.
-- **Agent Coverage Dashboard**: Console view of detected agents, injection status, and compliance.
-- **Undo Last Attempt**: Checkpoint-based rollback with integrity verification.
-- **Discovery Phase Governance**: DRAFT → CONCEIVED status gate with ledger graduation markers.
-- **Intent Schema v2**: Agent identity binding, plan references, and v1 auto-migration.
+- `SystemRegistry` expanded with broader detection fields and exported types
+- `FrameworkSync` upgraded for per-agent config delegation
+- `RoadmapServer` and `QoreLogicSubstrate` extended for registry-aware orchestration
+- Event taxonomy expanded with discovery tracking markers
 
-## What's New in v4.1.0
+## What's New in v4.2.1
 
-- **Break-Glass Protocol**: Emergency governance overrides with time limits, justification, and auto-revert.
-- **Mode-Change Audit Trail**: All governance mode changes recorded to ledger.
-- **Artifact Hashing**: SHA-256 hash of file content at save-time for verification.
-- **Verdict Replay**: Command to replay and verify past governance decisions.
+### Official Build "42" Release Notes
 
-## What's New in v4.0.0
+FailSafe started as a solo passion project. Along the way, it has been shaped by painful first-hand lessons, generous feedback from users, sharp insights from industry leaders, and real support from Reddit and Discord communities that cared enough to push the work forward.
 
-- **Token Economics Dashboard**: Real-time token usage, RAG savings, and cost-per-action metrics.
-- **Governance Modes**: Observe, Assist, or Enforce — match governance to your workflow.
-- **Chat Participant**: `@failsafe` in VS Code chat for governance queries.
-- **Risk Register & Transparency Stream**: Sidebar panels for risk tracking and event visibility.
+Build 42 marks the arrival at a complex but functional system that reduces time, token waste, and friction across AI-assisted development workflows. The goal is to keep making FailSafe into what it can be, while also leaving behind something useful for anyone who wants to learn how to build something new with AI coding tools.
+
+> **We'd love your review!** If FailSafe is useful to you, please leave a review on [Open VSX](https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe). Your feedback helps other developers discover FailSafe and directly shapes its roadmap. Bug reports and feature requests welcome on [GitHub Issues](https://github.com/MythologIQ/FailSafe/issues).
 
 ## Current Functionality
 
@@ -69,10 +73,9 @@ AI Governance & Safety for AI-assisted development in Antigravity-compatible edi
 
 1. Install FailSafe from Open VSX.
 2. Open the Command Palette (`Ctrl+Shift+P`) and run `FailSafe: Open Command Center (Browser Popout)`.
-3. Explore the Token Economics Dashboard via `FailSafe: Token Economics Dashboard`.
-4. Data is stored locally in `.failsafe/` — no external services required.
-
-> **We'd love your review!** If FailSafe is useful to you, please leave a review on [Open VSX](https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe). Your feedback helps other developers discover FailSafe and directly shapes its roadmap. Bug reports and feature requests welcome on [GitHub Issues](https://github.com/MythologIQ/FailSafe/issues).
+3. Run `FailSafe: Set Up Agent Governance` to inject governance rules into detected agents.
+4. Run `FailSafe: Audit Current File` to generate a governance verdict for the active editor.
+5. Data is stored locally in `.failsafe/`.
 
 ## Links
 

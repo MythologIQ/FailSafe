@@ -168,7 +168,26 @@ mythologiq-failsafe-X.X.X-openvsx.vsix    # → OpenVSX (Gemini + Claude)
 mythologiq-failsafe-X.X.X-vscode.vsix     # → VSCode Marketplace (Copilot + Claude)
 ```
 
-### Step 4: Publish
+### Step 4: Inspect Packaged Artifacts Before Publish
+
+Inspect the built VSIX payloads directly before upload:
+
+```powershell
+tar -xOf artifacts/mythologiq-failsafe-X.X.X-openvsx.vsix extension/readme.md | Select-Object -First 60
+tar -xOf artifacts/mythologiq-failsafe-X.X.X-openvsx.vsix extension.vsixmanifest | Select-String '<Description'
+tar -xOf artifacts/mythologiq-failsafe-X.X.X-vscode.vsix extension/readme.md | Select-Object -First 60
+tar -xOf artifacts/mythologiq-failsafe-X.X.X-vscode.vsix extension.vsixmanifest | Select-String '<Description'
+```
+
+Required checks:
+
+- README version and `What's New` content match the intended release
+- packaged manifest description matches current marketplace copy
+- packaged payload reflects current repo state, not a stale artifact
+
+If any packaged file is stale, abort publish, rebuild, and re-inspect.
+
+### Step 5: Publish
 
 ```powershell
 # Antigravity → OpenVSX

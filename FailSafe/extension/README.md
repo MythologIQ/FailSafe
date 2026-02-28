@@ -1,44 +1,77 @@
 # MythologIQ FailSafe for VS Code
 
-**AI Governance & Safety for AI-Assisted Development**
+FailSafe is a local-first governance extension for AI-assisted development in VS Code and Cursor. It applies deterministic checks at the editor boundary, records decisions to a local ledger, and provides dedicated surfaces for audits, checkpoints, and agent governance.
 
-Token Efficient Governance for AI-assisted development in VSCode or Cursor.
-
-Local-first safety for AI coding assistants.
-
-**Marketplace Categories**: Machine Learning, Testing, Visualization
-
-**Current Release**: v4.2.0 "The Answer" (2026-02-27)
+**Current Release**: v4.2.1 (2026-02-28)
 
 ![FailSafe Banner](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/icon.png)
 
-## The Problem
+## What's New in v4.2.0
 
-AI coding assistants can generate risky code without strong guarantees. Teams need enforceable guardrails, auditability, and clear workflows around high-risk changes.
+### Major Additions
 
-## The Solution
+- **Multi-Agent Governance Fabric**: runtime detection and governance injection for Claude CLI, Copilot, Codex CLI, and agent-team workflows
+- **Governance Ceremony**: one command to inject or remove governance files across detected agents
+- **First-Run Onboarding**: setup flow for workspace-vs-global agent governance coverage
+- **Agent Coverage Dashboard**: console route for detection, injection status, and compliance visibility
+- **Undo Last Attempt**: checkpoint-based rollback with integrity verification and user feedback
+- **Discovery Phase Governance**: DRAFT to CONCEIVED promotion gate with ledger-tagged discovery milestones
+- **Terminal Correlator**: terminal-to-agent mapping for cross-agent audit correlation
+- **Workflow Run Model**: run, stage, gate, claim, and evidence contracts aligned to governance lifecycle
+- **Agent Teams Detector**: generated governance overseer peer agent for `.claude/agents/`
+- **AGENTS.md Injection**: repo-root governance instructions for Copilot and Codex consumers
+- **Intent Schema v2**: `schemaVersion`, `agentIdentity`, and `planId` with migration from v1
+- **Verdict Replay Batch**: bulk replay support with timing-safe hash comparison
+- **CheckpointManager**: bridge layer between QoreLogic ledger and Sentinel checkpoint metrics
 
-FailSafe adds governance and visibility at the editor boundary:
+### Under the Hood
+
+- `SystemRegistry` expanded with broader detection fields and exported types
+- `FrameworkSync` upgraded for per-agent config delegation
+- `RoadmapServer` and `QoreLogicSubstrate` extended for registry-aware orchestration
+- Event taxonomy expanded with discovery tracking markers
+
+## What's New in v4.2.1
+
+### Official Build "42" Release Notes
+
+FailSafe started as a solo passion project. Along the way, it has been shaped by painful first-hand lessons, generous feedback from users, sharp insights from industry leaders, and real support from Reddit and Discord communities that cared enough to push the work forward.
+
+Build 42 marks the arrival at a complex but functional system that reduces time, token waste, and friction across AI-assisted development workflows. The goal is to keep making FailSafe into what it can be, while also leaving behind something useful for anyone who wants to learn how to build something new with AI coding tools.
+
+> **We'd love your review!** If FailSafe is useful to you, please leave a review on the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe) or [Open VSX](https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe). Your feedback helps other developers discover FailSafe and directly shapes its roadmap. Bug reports and feature requests welcome on [GitHub Issues](https://github.com/MythologIQ/FailSafe/issues).
+
+## Quick Start
+
+1. Install FailSafe from the VS Code Marketplace or Open VSX.
+2. Open a workspace in VS Code or Cursor.
+3. Run `FailSafe: Open Command Center (Browser Popout)` or press `Ctrl+Alt+F`.
+4. Run `FailSafe: Set Up Agent Governance` to inject governance rules into detected agents.
+5. Run `FailSafe: Audit Current File` to generate a governance verdict for the active editor.
+
+## Core Commands
+
+| Command | Purpose |
+| --- | --- |
+| `FailSafe: Open Command Center (Browser Popout)` | Open the main governance console in a browser window |
+| `FailSafe: Open Command Center (Editor Tab)` | Open the governance console in an editor tab |
+| `FailSafe: Audit Current File` | Run a manual audit on the active file |
+| `FailSafe: Set Governance Mode` | Switch between `observe`, `assist`, and `enforce` |
+| `FailSafe: Set Up Agent Governance` | Detect supported agents and inject governance rules |
+| `FailSafe: Activate Break-Glass Override` | Start a time-limited emergency override |
+| `FailSafe: Replay Verdict (Audit)` | Re-run a prior governance decision for comparison |
+| `FailSafe: Revert to Checkpoint (Time-Travel)` | Restore a recorded governance checkpoint |
+
+## What FailSafe Does
 
 FailSafe separates system awareness from system control.
 
-The Monitor provides real-time visibility into system health, governance posture, and operational risk. It is designed for continuous, low-effort awareness.
+The Monitor provides real-time visibility into system health, governance posture, and operational risk. The Command Center is the primary control surface for planning, audits, checkpoints, and agent governance.
 
-The Command Center is the primary control surface where teams plan, execute, and govern AI workflows. All configuration, orchestration, and audits originate here.
-
-This separation reduces cognitive load and mirrors real-world operations environments: observe first, act deliberately.
-
-- Save-time intent gate that can block writes outside an active Intent
-- Sentinel daemon for file-change audits (heuristic, LLM-assisted, and hybrid modes)
-- SOA ledger with a built-in viewer for audit history
-- MCP server for external tools to trigger audits and write ledger entries
-
-## Highlights
-
-- File watcher and manual audit command
-- SOA ledger viewer and L3 approval queue
-- Feedback capture and export
-- QoreLogic propagation to detected systems
+- Save-time intent gate that can block writes outside an active intent
+- Sentinel daemon for file-change audits in `heuristic`, `llm-assisted`, and `hybrid` modes
+- SOA ledger with local audit history and checkpoint summaries
+- MCP server support for external tools that need audit and ledger hooks
 
 ## QoreLogic: The Governance Layer
 
@@ -87,13 +120,6 @@ When an LLM is asked to enforce safety rules, it can:
 QoreLogic avoids these risks by executing deterministic TypeScript code at the governance boundary. The policy engine uses simple string matching and path analysis—no LLM inference required for governance decisions.
 
 **Example**: A file containing `api_key` will always trigger L3 classification. No prompt can persuade the code to ignore this trigger.
-
-## Quick Start
-
-1. Install from the VS Code Marketplace or Open VSX.
-2. Open a workspace.
-3. Run `FailSafe: Open Command Center (Browser Popout)` or press `Ctrl+Alt+F`.
-4. Run `FailSafe: Audit Current File` to generate a verdict.
 
 ## Safety Alert
 

@@ -78,7 +78,7 @@ This project uses the QoreLogic SHIELD physical lifecycle for AI-assisted develo
 | I     | INTERROGATE   | `/ql-audit`        | Adversarial tribunal checks for drift; PASS or VETO     |
 | E     | EXECUTE       | `/ql-implement`    | Build under strict code complexity constraints          |
 | L     | LOCK PROOF    | `/ql-substantiate` | Verify Reality matches Promise with Merkle hash seal    |
-| D     | DELIVER       | `/ql-release`      | Deploy and monitor for operational drift                |
+| D     | DELIVER       | `/ql-release`      | Deploy, inspect packaged artifacts before publish, and monitor for operational drift |
 
 All changes to security-critical components (L3) require mandatory audit.
 

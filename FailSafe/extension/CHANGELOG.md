@@ -11,6 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Post-4.2.0 scope to be scheduled.
 
+## [4.2.1] - 2026-02-28
+
+### Changed
+
+- Marketplace README and package metadata corrected so published artifacts reflect the intended release content.
+
+### Documentation
+
+- Added the Build "42" release note to the v4.2.1 release notes.
+- Added packaged-artifact inspection to the public release process and `/ql-repo-release`.
+
 ## [4.2.0] - 2026-02-27
 
 > _"The Answer to the Ultimate Question of Life, the Universe, and Everything."_

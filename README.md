@@ -18,7 +18,7 @@ _Local-first safety for AI coding assistants._
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Commands-8B5CF6)](https://github.com/MythologIQ/FailSafe/releases)
 [![Documentation](https://img.shields.io/badge/docs-FAILSAFE_SPECIFICATION-blue)](docs/FAILSAFE_SPECIFICATION.md)
 
-**Current Release**: v4.2.0 "The Answer" (2026-02-27)
+**Current Release**: v4.2.1 (2026-02-28)
 
 > **If this project helps you, please star it!** It helps others discover FailSafe.
 
@@ -310,7 +310,7 @@ Both extensions include Claude Code slash commands that map to the physical **SH
 - **I - INTERROGATE** (`/ql-audit`): Adversarial tribunal. The Judge audits the plan for security, correctness, and drift. PASS or VETO.
 - **E - EXECUTE** (`/ql-implement`): Build under KISS constraints after a PASS verdict. Functions under 40 lines. Nesting under 3 levels.
 - **L - LOCK PROOF** (`/ql-substantiate`): Verify Reality matches Promise. Cryptographically seal the session with Merkle hash verification.
-- **D - DELIVER** (`/ql-release`): Deploy, hand off with traceability, and monitor for operational drift.
+- **D - DELIVER** (`/ql-release`): Deploy, inspect packaged artifacts before publish, hand off with traceability, and monitor for operational drift.
 
 ---
 

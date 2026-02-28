@@ -1,9 +1,9 @@
 {
   "name": "mythologiq-failsafe",
   "displayName": "FailSafe (feat. QoreLogic)",
-  "description": "Token Efficient Governance for AI-assisted development in VSCode or Cursor",
+  "description": "Local-first AI governance for audits, checkpoints, and agent workflows",
   "icon": "icon.png",
-  "version": "4.2.0",
+  "version": "4.2.1",
   "publisher": "MythologIQ",
   "license": "MIT",
   "repository": {

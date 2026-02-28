@@ -1,11 +1,23 @@
-# FailSafe v4.1.0 (VS Code Marketplace Package)
+# FailSafe v4.2.0 "The Answer" (VS Code Marketplace Package)
 
 AI Governance & Safety for AI-assisted development in VS Code/Cursor.
+
+> _After 42 backlog items, 103 ledger entries, and one very long conversation with the universe, we arrived at The Answer. Turns out it's not 42 — it's deterministic governance. Don't Panic._
 
 ## UI Surfaces
 
 - `FailSafe Monitor` (compact sidebar)
 - `FailSafe Command Center` (extended popout/editor)
+
+## What's New in v4.2.0 "The Answer"
+
+- **Multi-Agent Governance Fabric**: Runtime detection and governance injection for Claude CLI, Copilot, Codex CLI, and Agent Teams.
+- **Governance Ceremony** (`Set Up Agent Governance`): Single-command opt-in/opt-out for governance injection across all detected AI agents.
+- **First-Run Onboarding**: Multi-agent governance setup during initial activation.
+- **Agent Coverage Dashboard**: Console view of detected agents, injection status, and compliance.
+- **Undo Last Attempt**: Checkpoint-based rollback with integrity verification.
+- **Discovery Phase Governance**: DRAFT → CONCEIVED status gate with ledger graduation markers.
+- **Intent Schema v2**: Agent identity binding, plan references, and v1 auto-migration.
 
 ## What's New in v4.1.0
 
@@ -30,20 +42,28 @@ AI Governance & Safety for AI-assisted development in VS Code/Cursor.
 - Skill provenance display (creator/source/admission metadata)
 - Checkpoint summaries and ledger-backed governance visibility
 - Token Economics dashboard with daily aggregates and cost tracking
+- Multi-agent detection and governance injection
+- Break-glass emergency overrides with audit trail
 
 ## Commands
 
-| Command                                            | Description                              |
-| -------------------------------------------------- | ---------------------------------------- |
-| `FailSafe: Open Command Center (Browser Popout)`   | Open extended governance hub             |
-| `FailSafe: Open Command Center (Browser)`          | Browser launch alias                     |
-| `FailSafe: Open Command Center (Editor Tab)`       | Open hub in editor tab                   |
-| `FailSafe: Token Economics Dashboard`              | Open token economics and ROI dashboard   |
-| `FailSafe: Audit Current File`                     | Run manual file audit                    |
-| `FailSafe: Secure Workspace`                       | Apply workspace hardening baseline       |
-| `FailSafe: Set Governance Mode`                    | Switch between Observe/Assist/Enforce    |
-| `FailSafe: Panic Stop`                             | Stop active monitoring and guard actions |
-| `FailSafe: Resume Monitoring`                      | Resume Sentinel monitoring               |
+| Command                                            | Description                                   |
+| -------------------------------------------------- | --------------------------------------------- |
+| `FailSafe: Open Command Center (Browser Popout)`   | Open extended governance hub                  |
+| `FailSafe: Open Command Center (Browser)`          | Browser launch alias                          |
+| `FailSafe: Open Command Center (Editor Tab)`       | Open hub in editor tab                        |
+| `FailSafe: Token Economics Dashboard`              | Open token economics and ROI dashboard        |
+| `FailSafe: Audit Current File`                     | Run manual file audit                         |
+| `FailSafe: Secure Workspace`                       | Apply workspace hardening baseline            |
+| `FailSafe: Set Governance Mode`                    | Switch between Observe/Assist/Enforce         |
+| `FailSafe: Panic Stop`                             | Stop active monitoring and guard actions      |
+| `FailSafe: Resume Monitoring`                      | Resume Sentinel monitoring                    |
+| `FailSafe: Activate Break-Glass Override`          | Emergency time-limited governance bypass      |
+| `FailSafe: Revoke Break-Glass Override`            | Manually revoke an active break-glass session |
+| `FailSafe: Replay Verdict (Audit)`                 | Re-execute a past governance decision         |
+| `FailSafe: Revert to Checkpoint (Time-Travel)`     | Revert workspace to a governance checkpoint   |
+| `FailSafe: Undo Last Attempt`                      | Rollback to a specific checkpoint             |
+| `FailSafe: Set Up Agent Governance`                | Inject governance into detected AI agents     |
 
 ## Getting Started
 
@@ -52,14 +72,12 @@ AI Governance & Safety for AI-assisted development in VS Code/Cursor.
 3. Explore the Token Economics Dashboard via `FailSafe: Token Economics Dashboard`.
 4. Data is stored locally in `.failsafe/` — no external services required.
 
-> **Enjoying FailSafe?** Please leave a review on the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe). Your feedback helps other developers discover FailSafe.
+> **We'd love your review!** If FailSafe is useful to you, please leave a review on the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe). Your feedback helps other developers discover FailSafe and directly shapes its roadmap. Bug reports and feature requests welcome on [GitHub Issues](https://github.com/MythologIQ/FailSafe/issues).
 
 ## Upcoming Features
 
-- **FailSafe Revert ("Time-Travel")**: One-click Git and context rollbacks for AI hallucinations.
 - **CI/CD Pipeline Enforcer**: Headless pipeline validation for `failsafe_checkpoints`.
 - **Shared "Core Axioms"**: Sync enterprise compliance rules automatically.
-- **Visual Chain of Governance**: Trace the inter-agent communications visually.
 - **Air-Gapped Judge Verification**: Leverage local LLMs for architecture audits.
 
 ## Links

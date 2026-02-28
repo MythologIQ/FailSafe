@@ -76,7 +76,7 @@ export class VerdictReplayEngine {
 
   private checkPolicyHash(originalHash: string | undefined, warnings: string[]): void {
     const currentHash = this.policyEngine.getPolicyHash();
-    if (originalHash && originalHash !== currentHash) {
+    if (originalHash && !this.hashesEqual(originalHash, currentHash)) {
       warnings.push(`Policy config changed: original=${originalHash}, current=${currentHash}`);
     }
   }
@@ -91,7 +91,7 @@ export class VerdictReplayEngine {
       if (fs.existsSync(path)) {
         const content = fs.readFileSync(path);
         const currentHash = crypto.createHash("sha256").update(content).digest("hex");
-        if (currentHash !== originalHash) {
+        if (!this.hashesEqual(currentHash, originalHash)) {
           warnings.push(`File content changed since verdict: ${path}`);
         }
       } else {
@@ -100,6 +100,17 @@ export class VerdictReplayEngine {
     } catch {
       warnings.push(`Cannot read file: ${path}`);
     }
+  }
+
+  async replayBatch(entryIds: number[]): Promise<ReplayResult[]> {
+    return Promise.all(entryIds.map(id => this.replay(id)));
+  }
+
+  private hashesEqual(a: string, b: string): boolean {
+    const bufA = Buffer.from(a, 'hex');
+    const bufB = Buffer.from(b, 'hex');
+    if (bufA.length !== bufB.length) return false;
+    return crypto.timingSafeEqual(bufA, bufB);
   }
 
   private compareVerdicts(

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FailSafe Command Center</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0e0e1a;
+      --bg-nav: #0a0a14;
+      --bg-card: #16162a;
+      --bg-hover: #1c1c36;
+      --border: #2a2a4a;
+      --text: #e0e0f0;
+      --text-muted: #8888aa;
+      --accent: #5b7cf7;
+      --accent-dim: rgba(91, 124, 247, 0.2);
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      height: 100vh;
+      display: flex;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      width: 240px;
+      background: var(--bg-nav);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .brand-area {
+      padding: 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .brand-title {
+      font-size: 20px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #5b7cf7 0%, #34d399 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .brand-subtitle {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .nav-list {
+      flex: 1;
+      padding: 16px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      overflow-y: auto;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      padding: 10px 14px;
+      border-radius: 8px;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .nav-item:hover {
+      background: var(--bg-hover);
+      color: var(--text);
+    }
+
+    .nav-item.active {
+      background: var(--accent-dim);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .nav-icon {
+      margin-right: 12px;
+      font-size: 16px;
+      width: 20px;
+      text-align: center;
+    }
+
+    .workspace-status {
+      padding: 16px;
+      border-top: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background: #34d399;
+      border-radius: 50%;
+      box-shadow: 0 0 6px #34d399;
+    }
+
+    .content-area {
+      flex: 1;
+      position: relative;
+    }
+
+    iframe#router-frame {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+      background: transparent;
+    }
+  </style>
+</head>
+<body>
+
+  <aside class="sidebar">
+    <div class="brand-area">
+      <div class="brand-title">FailSafe</div>
+      <div class="brand-subtitle">Command Center</div>
+    </div>
+    <nav class="nav-list" id="navList">
+      <a class="nav-item active" data-route="/dashboard.html">
+        <span class="nav-icon">📊</span> Monitor
+      </a>
+      <a class="nav-item" data-route="/risk-register.html">
+        <span class="nav-icon">⚠️</span> Risk Register
+      </a>
+      <a class="nav-item" data-route="/brainstorm.html">
+        <span class="nav-icon">💡</span> Brainstorm
+      </a>
+      <a class="nav-item" data-route="/transparency.html">
+        <span class="nav-icon">⚡</span> Event Stream
+      </a>
+    </nav>
+    <div class="workspace-status">
+      <div class="status-dot"></div>
+      Protected Workspace
+    </div>
+  </aside>
+
+  <main class="content-area">
+    <iframe id="router-frame" src="/dashboard.html"></iframe>
+  </main>
+
+  <script>
+    const navItems = document.querySelectorAll('.nav-item');
+    const iframe = document.getElementById('router-frame');
+
+    navItems.forEach(item => {
+      item.addEventListener('click', () => {
+        // Update active state
+        navItems.forEach(n => n.classList.remove('active'));
+        item.classList.add('active');
+        
+        // Navigate iframe (assume all are served relative to root in API mapping)
+        const route = item.getAttribute('data-route');
+        if (route) iframe.src = route;
+      });
+    });
+
+    // Optional: listen to messages from iframe to handle deep linking
+    window.addEventListener('message', (event) => {
+      if (event.data?.type === 'failsafe.route') {
+        const route = event.data.route;
+        const target = document.querySelector(`.nav-item[data-route="${route}"]`);
+        if (target) target.click();
+      }
+    });
+  </script>
+</body>
+</html>

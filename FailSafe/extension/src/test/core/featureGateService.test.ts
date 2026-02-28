@@ -98,7 +98,7 @@ describe('FeatureGateService', () => {
                 (err: unknown) => {
                     assert.ok(err instanceof FeatureGateError);
                     assert.equal(err.feature, 'governance.lockstep');
-                    assert.ok(err.message.includes('FailSafe Pro'));
+                    assert.ok(err.message.includes('not enabled in current configuration'));
                     return true;
                 },
             );

@@ -33,11 +33,18 @@ export const IntentEvidenceSchema = z.object({
   verifiedAt: z.string().optional(),
 });
 
+export const AgentIdentitySchema = z.object({
+  agentDid: z.string(),
+  workflow: z.enum(['ql-plan', 'auto-create', 'manual']),
+  createdVia: z.string().optional(),
+});
+
 export const IntentMetadataSchema = z.object({
   author: z.string(),
   tags: z.array(z.string()),
   parentIntentId: z.string().uuid().optional(),
   externalRef: z.string().optional(),
+  agentIdentity: AgentIdentitySchema.optional(),
 });
 
 export const IntentSchema = z.object({
@@ -48,11 +55,13 @@ export const IntentSchema = z.object({
   scope: IntentScopeSchema,
   status: IntentStatusSchema,
   blueprint: z.string().optional(),
+  planId: z.string().optional(),
   evidence: IntentEvidenceSchema.optional(),
   merkleRef: z.string().optional(),
   metadata: IntentMetadataSchema,
   updatedAt: z.string(),
   sealedAt: z.string().optional(),
+  schemaVersion: z.number().optional(),
 });
 
 export const IntentHistoryEventSchema = z.enum([
@@ -168,6 +177,12 @@ export interface IntentEvidence {
 /**
  * Metadata for traceability and context.
  */
+export interface AgentIdentity {
+  agentDid: string;
+  workflow: 'ql-plan' | 'auto-create' | 'manual';
+  createdVia?: string;
+}
+
 export interface IntentMetadata {
   /**
    * Human or agent who initiated the intent.
@@ -188,6 +203,11 @@ export interface IntentMetadata {
    * External reference (e.g., GitHub issue, JIRA ticket).
    */
   externalRef?: string;
+
+  /**
+   * Agent identity binding (B68).
+   */
+  agentIdentity?: AgentIdentity;
 }
 
 /**
@@ -236,6 +256,12 @@ export interface Intent {
   blueprint?: string;
 
   /**
+   * Plan ID linking this Intent to an approved plan (B66).
+   * Required in enforce mode.
+   */
+  planId?: string;
+
+  /**
    * Evidence of successful implementation.
    * Populated during SUBSTANTIATE phase.
    */
@@ -261,6 +287,11 @@ export interface Intent {
    * Timestamp when status became 'SEALED' (ISO 8601).
    */
   sealedAt?: string;
+
+  /**
+   * Schema version for migration (B77).
+   */
+  schemaVersion?: number;
 }
 
 /**

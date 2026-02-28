@@ -9,7 +9,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- Post-4.1.0 scope to be scheduled.
+- Post-4.2.0 scope to be scheduled.
+
+## [4.2.0] - 2026-02-27
+
+> _"The Answer to the Ultimate Question of Life, the Universe, and Everything."_
+
+### Added
+
+- **Multi-Agent Governance Fabric** — Runtime detection and governance injection for Claude CLI, Copilot, Codex CLI, and Agent Teams via `SystemRegistry` terminal-based detection and `FrameworkSync` per-agent config injection.
+- **Governance Ceremony** (`failsafe.onboardAgent`) — Single-command opt-in/opt-out to inject or remove governance files across all detected AI agents, with transparent diff preview.
+- **First-Run Onboarding** — Surfaces multi-agent governance coverage options during initial setup with workspace vs global scope guidance.
+- **Agent Coverage Dashboard** — Console route (`/console/agents`) showing detected agents, injection status, and compliance state.
+- **Undo Last Attempt** (`failsafe.undoLastAttempt`) — Checkpoint-based rollback with integrity verification and user feedback.
+- **Discovery Phase Governance** — DRAFT → CONCEIVED status gate with `DiscoveryGovernor` and ledger-tagged graduation markers.
+- **Terminal Correlator** — Maps VS Code terminals to agent systems via name pattern matching for cross-agent audit correlation.
+- **Workflow Run Model** — `WorkflowRunManager` with run/stage/gate/claim/evidence contracts aligned to governance lifecycle.
+- **Agent Teams Detector** — Generates `.claude/agents/failsafe-governance.md` governance overseer peer agent.
+- **AGENTS.md Injection** — Writes repo-root `AGENTS.md` with FailSafe governance rules consumed by Copilot and Codex.
+- **Intent Schema v2** — `schemaVersion` field, `agentIdentity` metadata, and `planId` reference on Intent creation with migration from v1.
+- **Verdict Replay Batch** — `replayBatch()` method for bulk verdict replay with timing-safe hash comparison.
+- **CheckpointManager** — Bridges QoreLogic ledger and Sentinel substrates for checkpoint metrics.
+
+### Changed
+
+- `SystemRegistry` extended to 11 fields with 3 detection methods and 3 exported types.
+- `FrameworkSync` now accepts optional `SystemRegistry` for per-agent config delegation.
+- `RoadmapServer` gains `setSystemRegistry()` deferred setter (following `setConsoleDeps()` pattern).
+- `QoreLogicSubstrate` interface extended with `systemRegistry: SystemRegistry` field.
+- `VerdictReplayEngine` upgraded with timing-safe hash comparison and batch replay.
+- Event types expanded with `DISCOVERY_RECORDED` and `DISCOVERY_PROMOTED`.
 
 ## [4.1.0] - 2026-02-27
 

@@ -31,8 +31,23 @@ export class IntentStore {
     if (!fs.existsSync(this.activeIntentPath)) return null;
     try {
       const data = await fs.promises.readFile(this.activeIntentPath, 'utf-8');
-      return JSON.parse(data) as Intent;
+      const intent = JSON.parse(data) as Intent;
+      return this.migrateIntent(intent);
     } catch { return null; }
+  }
+
+  private migrateIntent(intent: Intent): Intent {
+    if (!intent.schemaVersion || intent.schemaVersion < 2) {
+      intent.schemaVersion = 2;
+      intent.planId = intent.planId ?? undefined;
+      if (!intent.metadata.agentIdentity) {
+        intent.metadata.agentIdentity = {
+          agentDid: intent.metadata.author,
+          workflow: 'manual',
+        };
+      }
+    }
+    return intent;
   }
 
   // D5: Atomic write with file locking

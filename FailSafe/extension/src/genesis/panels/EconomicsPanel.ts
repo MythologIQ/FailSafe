@@ -2,7 +2,7 @@
  * EconomicsPanel — Token Economics ROI Dashboard webview.
  *
  * Fetches all data from TokenAggregatorService API methods.
- * Never reads files directly — designed for v5.0.0 swap to HTTP.
+ * Never reads files directly — designed for future swap to HTTP.
  */
 
 import * as vscode from "vscode";

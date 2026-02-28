@@ -15,6 +15,16 @@
 .windsurf/
 .copilot/
 
+# ============================================
+# CONFIDENTIAL / PROPRIETARY CONTENT
+# ============================================
+# Internal strategy, architecture, and product
+# planning that must never reach public remotes.
+# ============================================
+
+PRIVATE/
+FailSafe-Pro/
+
 # AI instruction files (workspace-specific)
 CLAUDE.md
 GEMINI.md

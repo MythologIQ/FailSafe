@@ -22,6 +22,9 @@
 | **1.3.0** | Autopilot | Governance integration (auto-progress tracking) |
 | **2.0.0** | Governance | Gold Standard skills + ambient integration (B12-B28) |
 | **3.0.0** | Horizon | Alternate views, Token ROI, Claude unified build (B6-B11, B29) |
+| **4.0.0** | Economics | Token economics, governance modes, risk register, transparency |
+| **4.1.0** | Governance Gaps | Break-glass, artifact hash, verdict replay, mode-change audit |
+| **4.2.0** | The Answer | Multi-agent governance fabric, intent schema v2, discovery phase |
 
 ### Architecture Change (v3.0.0) - Claude Unified Build
 

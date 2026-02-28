@@ -10,7 +10,7 @@
 
 The repository has been successfully updated to structural baseline **v3.7.0**.
 
-- All architecture planning for the v4.0.0 (TypeScript Extensions) and v5.0.0 (Rust/Tauri Daemon) separation is complete.
+- All architecture planning for TypeScript Extension architecture with service-boundary extraction readiness is complete.
 - The test suite is currently **100% passing** (191 tests, 0 failures). _Note: The `EventBus.ts` dispose bug has been formally patched._
 - Workspace boundaries, physical isolation protocols, and the Meta Ledger are fully up to date.
 
@@ -35,13 +35,13 @@ The first feature of the v4.x.x "Goodwill Expansion" is the **Token Economics RO
 - Create an isolated service that listens to the `EventBus` for prompt usage (e.g., `prompt.dispatch` and `prompt.response`).
 - It must calculate the delta between "tokens sent" (full context window) and "tokens saved" (lightweight Sentinel RAG).
 - It must explicitly save this telemetry to `.failsafe/telemetry/economics.json`.
-- _Crucial API-First Constraint:_ Structure the service boundaries heavily so that fetching data feels like querying a remote API. This prepares the service for the v5.0.0 extraction to the Rust daemon.
+- _Crucial API-First Constraint:_ Structure the service boundaries heavily so that fetching data feels like querying a remote API. This prepares the service for future extraction to a standalone daemon.
 
 **Phase B: The Webview UI**
 
 - Add a new "Economics" tab or panel in the Genesis Operations Hub.
 - Use high-contrast formatting: Hero Metric ("Tokens Saved This Week"), Cost Equivalent ($), Context Sync Ratio donut chart, and a 30-day trending chart.
-- Ensure the UI loads purely against generic JSON schemas so that it requires zero refactoring when v5.0.0 replaces the `.failsafe` file read with an `http://localhost:7777/api/economics` socket fetch.
+- Ensure the UI loads purely against generic JSON schemas so that it requires zero refactoring when a standalone daemon replaces the `.failsafe` file read with an `http://localhost:7777/api/economics` socket fetch.
 
 ---
 

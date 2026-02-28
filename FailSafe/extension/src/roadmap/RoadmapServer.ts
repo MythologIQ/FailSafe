@@ -22,6 +22,11 @@ import { FEATURE_TIER_MAP } from '../core/FeatureGateService';
 import { GitResetService } from '../governance/revert/GitResetService';
 import { FailSafeRevertService, RevertDeps } from '../governance/revert/FailSafeRevertService';
 import { CheckpointRef, RevertRequest } from '../governance/revert/types';
+import { HomeRoute, RunDetailRoute, WorkflowsRoute, SkillsRoute, GenomeRoute, ReportsRoute, SettingsRoute, PreflightRoute, GovernanceKPIRoute, AgentCoverageRoute } from './routes';
+import { ConfigurationProfile } from '../genesis/ConfigurationProfile';
+import type { RouteDeps } from './routes';
+import type { PermissionScopeManager } from '../governance/PermissionScopeManager';
+import type { EnforcementEngine } from '../governance/EnforcementEngine';
 
 const PORT = 9376;
 const HOST = '127.0.0.1';
@@ -133,6 +138,9 @@ export class RoadmapServer {
   private sealedSubstantiateCompletions = new Set<string>();
   private revertService: FailSafeRevertService | null = null;
   private gitResetService: GitResetService;
+  private enforcementEngine: EnforcementEngine | null = null;
+  private permissionManager: PermissionScopeManager | null = null;
+  private systemRegistry: import('../qorelogic/SystemRegistry').SystemRegistry | null = null;
   private checkpointTypeRegistry = new Set<string>([
     'snapshot.created',
     'phase.entered',
@@ -480,6 +488,9 @@ export class RoadmapServer {
       res.json({ tier, features });
     });
 
+    // v4.2.0: Console UI routes (HTML server-rendered)
+    this.setupConsoleRoutes();
+
     // SPA fallback for deep links or unknown non-API routes.
     this.app.use((req: Request, res: Response) => {
       if (req.path.startsWith('/api/') || req.path === '/health') {
@@ -544,14 +555,14 @@ export class RoadmapServer {
   }
 
   /**
-   * Returns true (and sends 402) if the given feature requires Pro and the user is on free tier.
+   * Returns true (and sends 402) if the given feature is not enabled in the current configuration.
    */
   private rejectIfProRequired(feature: FeatureFlag, _req: Request, res: Response): boolean {
     if (!this.featureGate || this.featureGate.isEnabled(feature)) {
       return false;
     }
     res.status(402).json({
-      error: `Feature '${feature}' requires FailSafe Pro`,
+      error: `Feature '${feature}' is not enabled in current configuration`,
       upgrade: true,
       currentTier: this.featureGate.getTier(),
       requiredTier: 'pro',
@@ -582,6 +593,53 @@ export class RoadmapServer {
         client.send(message);
       }
     });
+  }
+
+  /** v4.2.0: Set dependencies for console UI routes (deferred wiring) */
+  setConsoleDeps(enforcement: EnforcementEngine, perm: PermissionScopeManager): void {
+    this.enforcementEngine = enforcement;
+    this.permissionManager = perm;
+  }
+
+  /** v4.2.0: Set SystemRegistry for agent coverage route */
+  setSystemRegistry(registry: import('../qorelogic/SystemRegistry').SystemRegistry): void {
+    this.systemRegistry = registry;
+  }
+
+  private buildRouteDeps(): RouteDeps {
+    const configProfile = new ConfigurationProfile();
+    configProfile.loadDefaults({ workspaceRoot: this.workspaceRoot });
+    return {
+      planManager: this.planManager,
+      ledgerManager: this.qorelogicManager.getLedgerManager(),
+      shadowGenomeManager: this.qorelogicManager.getShadowGenomeManager(),
+      enforcementEngine: this.enforcementEngine!,
+      configProfile,
+      getInstalledSkills: () => this.getInstalledSkills(),
+      systemRegistry: this.systemRegistry ?? undefined,
+    };
+  }
+
+  private setupConsoleRoutes(): void {
+    const deps = () => this.buildRouteDeps();
+    this.app.get('/console/home', async (req, res) => HomeRoute.render(req, res, deps()));
+    this.app.get('/console/run/:runId', (req, res) => RunDetailRoute.render(req, res, deps()));
+    this.app.get('/console/workflows', (req, res) => WorkflowsRoute.render(req, res, deps()));
+    this.app.get('/console/skills', (req, res) => SkillsRoute.render(req, res, deps()));
+    this.app.get('/console/genome', async (req, res) => GenomeRoute.render(req, res, deps()));
+    this.app.get('/console/reports', async (req, res) => ReportsRoute.render(req, res, deps()));
+    this.app.get('/console/settings', (req, res) => SettingsRoute.render(req, res, deps()));
+    this.app.get('/console/kpi', async (req, res) => GovernanceKPIRoute.render(req, res, { ledgerManager: deps().ledgerManager }));
+    this.app.get('/console/agents', async (req, res) => {
+      if (!this.systemRegistry) { res.status(503).send('SystemRegistry not available'); return; }
+      AgentCoverageRoute.render(req, res, { systemRegistry: this.systemRegistry });
+    });
+    if (this.permissionManager) {
+      const pm = this.permissionManager;
+      this.app.get('/console/preflight', (req, res) => PreflightRoute.render(req, res, { permissionManager: pm }));
+      this.app.post('/console/preflight/grant', (req, res) => PreflightRoute.handleGrant(req, res, { permissionManager: pm }));
+      this.app.post('/console/preflight/deny', (req, res) => PreflightRoute.handleDeny(req, res, { permissionManager: pm }));
+    }
   }
 
   private subscribeToEvents(): void {

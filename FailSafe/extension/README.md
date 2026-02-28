@@ -8,7 +8,7 @@ Local-first safety for AI coding assistants.
 
 **Marketplace Categories**: Machine Learning, Testing, Visualization
 
-**Current Release**: v4.1.0 (2026-02-27)
+**Current Release**: v4.2.0 "The Answer" (2026-02-27)
 
 ![FailSafe Banner](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/icon.png)
 
@@ -183,19 +183,50 @@ FailSafe evaluates save operations against the active Intent and can block write
 
 Supported via internal sync flows when enabled by workspace governance configuration.
 
+### 10. Break-Glass Protocol (v4.1.0)
+
+Emergency governance overrides for time-sensitive situations. Activate via `FailSafe: Activate Break-Glass Override` with a justification (min 10 chars) and duration (15–240 minutes). Auto-reverts on expiry. Full audit trail recorded in the SOA ledger.
+
+### 11. Verdict Replay (v4.1.0)
+
+Re-execute past governance decisions for audit verification via `FailSafe: Replay Verdict (Audit)`. Compares current policy hash and artifact hash against the original decision to detect drift.
+
+### 12. Multi-Agent Governance Fabric (v4.2.0)
+
+FailSafe detects and governs multiple AI coding assistants in your workspace:
+
+- **Runtime Detection** — Identifies Claude CLI, Copilot, Codex CLI, and Agent Teams via terminal and config scanning.
+- **Per-Agent Config Injection** — Writes governance rules into each agent's native format (`.github/copilot-instructions.md`, `.kilocode/rules/`, `codex.md`, `.claude/agents/`).
+- **Governance Ceremony** — Single command (`FailSafe: Set Up Agent Governance`) to inject or remove governance across all detected agents.
+- **Coverage Dashboard** — Console view showing which agents are detected, governed, and compliant.
+- **First-Run Onboarding** — Guides new users through multi-agent governance setup on first activation.
+
+### 13. Intent Schema v2 (v4.2.0)
+
+Intents now carry `schemaVersion`, `agentIdentity` (which agent created the intent and via which workflow), and `planId` references. Legacy v1 intents are auto-migrated on read.
+
 ## Commands
 
-| Command                                        | Description                              |
-| ---------------------------------------------- | ---------------------------------------- |
-| FailSafe: Open Command Center (Browser Popout) | Main governance popout                   |
-| FailSafe: Open Command Center (Browser)        | Browser launch alias                     |
-| FailSafe: Open Command Center (Editor Tab)     | Compact monitor in editor                |
-| FailSafe: Token Economics Dashboard            | Open token economics and ROI dashboard   |
-| FailSafe: Audit Current File                   | Manual file audit                        |
-| FailSafe: Secure Workspace                     | Apply workspace hardening baseline       |
-| FailSafe: Panic Stop                           | Stop active monitoring and guard actions |
-| FailSafe: Resume Monitoring                    | Resume Sentinel monitoring               |
-| FailSafe: Set Governance Mode                  | Switch between Observe/Assist/Enforce    |
+| Command                                        | Description                                   |
+| ---------------------------------------------- | --------------------------------------------- |
+| FailSafe: Open Command Center (Browser Popout) | Main governance popout                        |
+| FailSafe: Open Command Center (Browser)        | Browser launch alias                          |
+| FailSafe: Open Command Center (Editor Tab)     | Compact monitor in editor                     |
+| FailSafe: Token Economics Dashboard            | Open token economics and ROI dashboard        |
+| FailSafe: Audit Current File                   | Manual file audit                             |
+| FailSafe: Secure Workspace                     | Apply workspace hardening baseline            |
+| FailSafe: Panic Stop                           | Stop active monitoring and guard actions      |
+| FailSafe: Resume Monitoring                    | Resume Sentinel monitoring                    |
+| FailSafe: Set Governance Mode                  | Switch between Observe/Assist/Enforce         |
+| FailSafe: Open Project Overview                | Project-level governance summary              |
+| FailSafe: Open Risk Register                   | Open the risk tracking panel                  |
+| FailSafe: Add Risk                             | Add a new risk entry                          |
+| FailSafe: Revert to Checkpoint (Time-Travel)   | Revert workspace to a governance checkpoint   |
+| FailSafe: Activate Break-Glass Override        | Emergency time-limited governance bypass      |
+| FailSafe: Revoke Break-Glass Override          | Manually revoke an active break-glass session |
+| FailSafe: Replay Verdict (Audit)               | Re-execute a past governance decision         |
+| FailSafe: Undo Last Attempt                    | Rollback to a specific checkpoint             |
+| FailSafe: Set Up Agent Governance              | Inject governance into detected AI agents     |
 
 ## Configuration
 
@@ -243,7 +274,9 @@ FailSafe seeds a `.failsafe/` directory in your workspace for configuration, led
 - Node.js 18+ (for development)
 - Ollama (optional, for LLM-assisted mode)
 
-> **Enjoying FailSafe?** Please consider leaving a review on the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe) or [Open VSX](https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe). Your feedback helps other developers discover FailSafe and directly shapes its roadmap.
+> **v4.2.0 "The Answer"** — After 42 backlog items, 103 ledger entries, and one very long conversation with the universe, we arrived at The Answer. Turns out it's not 42 — it's deterministic governance. Don't Panic.
+
+> **We'd love your review!** If FailSafe is useful to you, please leave a review on the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe) or [Open VSX](https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe). Your feedback helps other developers discover FailSafe and directly shapes its roadmap. Bug reports and feature requests welcome on [GitHub Issues](https://github.com/MythologIQ/FailSafe/issues).
 
 ## Contributing
 

@@ -8,6 +8,16 @@ import { SessionManager } from "../governance/SessionManager";
 import { SecurityReplayGuard } from "../governance/SecurityReplayGuard";
 import { PromptTransparency } from "../governance/PromptTransparency";
 import { VscodeNotificationService } from "../core/adapters/vscode/VscodeNotificationService";
+import { ReleasePipelineGate } from "../governance/ReleasePipelineGate";
+import { PermissionScopeManager } from "../governance/PermissionScopeManager";
+import { SkillRegistryEnforcer } from "../governance/SkillRegistryEnforcer";
+import { ApproverPipeline } from "../governance/ApproverPipeline";
+import { WorkspaceIntegrity } from "../governance/WorkspaceIntegrity";
+import { ComplianceExporter } from "../governance/ComplianceExporter";
+import { GovernanceWebhook } from "../governance/GovernanceWebhook";
+import { PolicySandbox } from "../governance/PolicySandbox";
+import { RBACManager } from "../governance/RBACManager";
+import { ArtifactHasher } from "../governance/ArtifactHasher";
 import { CoreSubstrate } from "./bootstrapCore";
 import { Logger } from "../shared/Logger";
 import { registerGovernanceCommands } from "./commands";
@@ -20,6 +30,16 @@ export interface GovernanceSubstrate {
   governanceStatusBar: GovernanceStatusBar;
   replayGuard: SecurityReplayGuard;
   transparency: PromptTransparency;
+  releasePipelineGate: ReleasePipelineGate;
+  permissionScopeManager: PermissionScopeManager;
+  skillRegistryEnforcer: SkillRegistryEnforcer;
+  approverPipeline: ApproverPipeline;
+  workspaceIntegrity: WorkspaceIntegrity;
+  complianceExporter: ComplianceExporter;
+  governanceWebhook: GovernanceWebhook;
+  policySandbox: PolicySandbox;
+  rbacManager: RBACManager;
+  artifactHasher: ArtifactHasher;
 }
 
 export async function bootstrapGovernance(
@@ -62,6 +82,8 @@ export async function bootstrapGovernance(
     undefined, // featureGate - set later if available
     executeCommand,
   );
+  // B66: Wire governance mode getter for planId enforcement
+  intentService.setGovernanceModeGetter(() => enforcement.getGovernanceMode());
   const governanceStatusBar = new GovernanceStatusBar();
 
   const evaluationRouter = EvaluationRouter.fromConfigManager(
@@ -100,9 +122,22 @@ export async function bootstrapGovernance(
   // Initialize security and transparency services
   const replayGuard = new SecurityReplayGuard(core.workspaceRoot);
   const transparency = new PromptTransparency(core.eventBus);
+  // B72: Release pipeline gate — ledger set later via main.ts wiring
+  const releasePipelineGate = new ReleasePipelineGate(intentService, null as unknown as import('../qorelogic/ledger/LedgerManager').LedgerManager);
   context.subscriptions.push(
     { dispose: () => replayGuard.dispose() },
   );
+
+  // v4.2.0: Governance services — ledger-dependent ones use null (set later)
+  const permissionScopeManager = new PermissionScopeManager(null);
+  const skillRegistryEnforcer = new SkillRegistryEnforcer(permissionScopeManager);
+  const approverPipeline = new ApproverPipeline(null);
+  const workspaceIntegrity = new WorkspaceIntegrity(core.workspaceRoot);
+  const complianceExporter = new ComplianceExporter(null as unknown as import('../qorelogic/ledger/LedgerManager').LedgerManager, null as unknown as import('../qorelogic/shadow/ShadowGenomeManager').ShadowGenomeManager);
+  const governanceWebhook = new GovernanceWebhook();
+  const policySandbox = new PolicySandbox();
+  const rbacManager = new RBACManager();
+  const artifactHasher = new ArtifactHasher();
 
   return {
     sessionManager,
@@ -112,5 +147,15 @@ export async function bootstrapGovernance(
     governanceStatusBar,
     replayGuard,
     transparency,
+    releasePipelineGate,
+    permissionScopeManager,
+    skillRegistryEnforcer,
+    approverPipeline,
+    workspaceIntegrity,
+    complianceExporter,
+    governanceWebhook,
+    policySandbox,
+    rbacManager,
+    artifactHasher,
   };
 }

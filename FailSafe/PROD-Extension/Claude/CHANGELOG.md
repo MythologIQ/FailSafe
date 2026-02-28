@@ -5,6 +5,42 @@ All notable changes to the FailSafe Claude CLI extension will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.2.0] - 2026-02-27
+
+### Added
+
+- **Multi-Agent Governance Fabric** — Runtime detection and governance injection for Claude CLI, Copilot, Codex CLI, and Agent Teams.
+- **Governance Ceremony** (`failsafe.onboardAgent`) — Single-command governance injection across all detected AI agents.
+- **First-Run Onboarding** — Multi-agent governance setup during initial activation.
+- **Undo Last Attempt** (`failsafe.undoLastAttempt`) — Checkpoint-based rollback.
+- **Intent Schema v2** — Agent identity binding, plan references, and v1 auto-migration.
+- **Discovery Phase Governance** — DRAFT → CONCEIVED status gate.
+
+## [4.1.0] - 2026-02-27
+
+### Added
+
+- **Break-Glass Protocol** — Time-limited emergency governance overrides with auto-revert.
+- **Artifact Hash on Write** — SHA-256 content hash at save-time.
+- **Verdict Replay** — Re-execute past governance decisions for audit verification.
+- **Mode-Change Audit Trail** — All governance mode changes recorded to SOA ledger.
+
+## [4.0.0] - 2026-02-27
+
+### Added
+
+- **Token Economics Dashboard** — Real-time token usage, RAG savings, and cost-per-action metrics.
+- **Governance Modes** — Observe, Assist, Enforce selectable via command or settings.
+- **Risk Register & Transparency Stream** — Sidebar panels for risk tracking and governance events.
+- **Chat Participant** — `@failsafe` chat commands for governance queries.
+
+## [3.6.0] - 2026-02-17
+
+### Changed
+
+- Marketplace categories updated to Machine Learning, Testing, Visualization.
+- Keywords expanded with ai safety, agent governance, code audit, and more.
+
 ## [3.5.2] - 2026-02-11
 
 ### Fixed

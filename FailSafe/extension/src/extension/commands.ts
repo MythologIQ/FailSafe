@@ -12,11 +12,11 @@ import { ProjectOverviewPanel } from "../genesis/panels/ProjectOverviewPanel";
 import { EventBus } from "../shared/EventBus";
 import * as http from "http";
 
-const ROADMAP_BASE_URL = "http://localhost:9376";
+const ROADMAP_BASE_URL = "http://localhost:7777/ui/console";
 
 function checkRoadmapServerReady(timeoutMs = 1200): Promise<boolean> {
   return new Promise((resolve) => {
-    const req = http.get(`${ROADMAP_BASE_URL}/health`, (res) => {
+    const req = http.get("http://localhost:7777/api/v1/health", (res) => {
       res.resume();
       resolve((res.statusCode || 500) >= 200 && (res.statusCode || 500) < 400);
     });

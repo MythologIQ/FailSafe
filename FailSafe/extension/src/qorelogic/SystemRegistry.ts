@@ -10,6 +10,23 @@ import {
 } from "./types/QoreLogicSystem";
 import { PluginRegistry } from "./PluginRegistry";
 
+export interface AgentTerminalInfo {
+  name: string;
+  terminalIndex: number;
+  agentType: string;
+}
+
+export interface AgentTeamsStatus {
+  enabled: boolean;
+  settingsPath: string;
+}
+
+export interface AgentLandscape {
+  registeredSystems: QoreLogicSystem[];
+  activeTerminals: AgentTerminalInfo[];
+  agentTeams: AgentTeamsStatus;
+}
+
 export class SystemRegistry {
   private logger: Logger;
   private workspaceRoot: string;
@@ -75,8 +92,54 @@ export class SystemRegistry {
     return path.join(this.workspaceRoot, relativePath);
   }
 
+  detectTerminalAgents(): AgentTerminalInfo[] {
+    const patterns: Record<string, string> = {
+      claude: 'claude',
+      copilot: 'copilot',
+      cursor: 'cursor',
+      codex: 'codex',
+      windsurf: 'windsurf',
+    };
+    const results: AgentTerminalInfo[] = [];
+    const terminals = vscode.window.terminals;
+    for (let i = 0; i < terminals.length; i++) {
+      const name = terminals[i].name.toLowerCase();
+      for (const [agentType, pattern] of Object.entries(patterns)) {
+        if (name.includes(pattern)) {
+          results.push({ name: terminals[i].name, terminalIndex: i, agentType });
+          break;
+        }
+      }
+    }
+    return results;
+  }
+
+  detectAgentTeams(): AgentTeamsStatus {
+    const homedir = require('os').homedir();
+    const settingsPath = path.join(homedir, '.claude', 'settings.json');
+    try {
+      if (!fs.existsSync(settingsPath)) {
+        return { enabled: false, settingsPath };
+      }
+      const raw = fs.readFileSync(settingsPath, 'utf-8');
+      const settings = JSON.parse(raw);
+      const env = settings?.env || {};
+      const enabled = env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS === '1';
+      return { enabled, settingsPath };
+    } catch {
+      return { enabled: false, settingsPath };
+    }
+  }
+
+  async detectAll(): Promise<AgentLandscape> {
+    const registeredSystems = await this.getSystems();
+    const activeTerminals = this.detectTerminalAgents();
+    const agentTeams = this.detectAgentTeams();
+    return { registeredSystems, activeTerminals, agentTeams };
+  }
+
   private async loadManifests(): Promise<SystemManifest[]> {
-    const baseDir = path.join(this.workspaceRoot, "qorelogic");
+    const baseDir = path.join(this.workspaceRoot, "FailSafe", "_STAGING_OLD");
     if (!fs.existsSync(baseDir)) return [];
     const entries = await fs.promises.readdir(baseDir, { withFileTypes: true });
     const manifests: SystemManifest[] = [];

@@ -18,7 +18,7 @@ _Local-first safety for AI coding assistants._
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Commands-8B5CF6)](https://github.com/MythologIQ/FailSafe/releases)
 [![Documentation](https://img.shields.io/badge/docs-FAILSAFE_SPECIFICATION-blue)](docs/FAILSAFE_SPECIFICATION.md)
 
-**Current Release**: v4.1.0 (2026-02-27)
+**Current Release**: v4.2.0 "The Answer" (2026-02-27)
 
 > **If this project helps you, please star it!** It helps others discover FailSafe.
 
@@ -325,32 +325,41 @@ npm run compile
 
 ---
 
-## What's New in v4.0.0
+## What's New in v4.2.0 "The Answer"
 
-- **Token Economics Dashboard**: Real-time visibility into prompt token usage, RAG savings, and cost-per-action metrics. Open via `FailSafe: Token Economics Dashboard` or `Ctrl+Alt+F` from the Command Center.
-- **Governance Modes**: Three modes to match your workflow — Observe (zero friction), Assist (smart defaults), and Enforce (full control with intent-gated saves).
-- **Chat Participant**: Use `@failsafe` in VS Code chat for governance queries — `/intent`, `/audit`, `/trust`, `/status`, `/seal`.
-- **Risk Register & Transparency Stream**: Dedicated sidebar panels for risk tracking and real-time governance event visibility.
-- **API-First Service Isolation**: Economics module built with zero VS Code dependencies, designed for future extraction to standalone runtimes.
+> _After 42 backlog items, 103 ledger entries, and one very long conversation with the universe, we arrived at The Answer. Turns out it's not 42 — it's deterministic governance. Don't Panic._
 
-### Getting Started with Token Economics
+### Multi-Agent Governance Fabric
 
-1. Install FailSafe from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe) or [Open VSX](https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe).
-2. Open the Command Palette (`Ctrl+Shift+P`) and run `FailSafe: Token Economics Dashboard`.
-3. The dashboard displays token savings, context sync ratio, and daily cost aggregates as your workspace generates governance events.
-4. Data persists locally in `.failsafe/economics/` — no external services required.
+FailSafe now detects and governs multiple AI coding assistants in your workspace — Claude CLI, Copilot, Codex CLI, and Agent Teams. A single command (`FailSafe: Set Up Agent Governance`) injects or removes governance files across all detected agents, with per-agent native format support.
 
-> **Enjoying FailSafe?** Please consider leaving a review on the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe) or [Open VSX](https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe). Your feedback helps other developers discover FailSafe and directly shapes its roadmap.
+### Highlights
+
+- **Governance Ceremony** — Opt-in/opt-out injection across all detected AI agents.
+- **First-Run Onboarding** — Guided setup for multi-agent governance on first activation.
+- **Agent Coverage Dashboard** — Console view of detected agents, injection status, and compliance.
+- **Undo Last Attempt** — Checkpoint-based rollback with integrity verification.
+- **Discovery Phase Governance** — DRAFT → CONCEIVED status gate with ledger graduation markers.
+- **Intent Schema v2** — Agent identity binding, plan references, and auto-migration from v1.
+- **Verdict Replay Batch** — Bulk re-execution of past governance decisions with timing-safe comparison.
+
+### Also in v4.1.0
+
+- **Break-Glass Protocol** — Time-limited emergency governance overrides with auto-revert.
+- **Artifact Hash on Write** — SHA-256 content hash recorded in ledger at save-time.
+- **Verdict Replay** — Deterministic re-execution of individual past governance decisions.
+- **Mode-Change Audit Trail** — All governance mode changes recorded to SOA ledger.
+
+> **We'd love your review!** If FailSafe is useful to you, please leave a review on the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe) or [Open VSX](https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe). Your feedback helps other developers discover FailSafe and directly shapes its roadmap. Bug reports and feature requests welcome on [GitHub Issues](https://github.com/MythologIQ/FailSafe/issues).
 
 ---
 
 ## Upcoming Features (On the Roadmap)
 
-- **FailSafe Revert ("Time-Travel")**: One-click remediation to revert AI code changes, reset Git head, and purge poisoned context.
 - **CI/CD Pipeline Enforcer**: Headless Judge verification validating `failsafe_checkpoints` via cryptography during PRs.
 - **Shared "Core Axioms"**: IDE startup synchronization of enterprise-level Policy and Axioms to enforce team-wide Q-DNA compliance.
-- **Visual Chain of Governance**: Real-time tracing of the Tribunal workflow showing Governor, Executor, and Judge activities.
 - **Air-Gapped Judge Verification**: Support for routing L3 architectural audits to local LLMs (Ollama, LM Studio, etc.) for zero-leak compliance.
+- **CLI Overseer Lite**: Lightweight CLI-compatible FailSafe for direct website integration.
 
 ---
 

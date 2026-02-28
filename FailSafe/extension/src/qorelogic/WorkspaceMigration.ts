@@ -43,6 +43,8 @@ export class WorkspaceMigration {
       if (this.isProprietaryWorkspace(rootPath)) {
         await this.repairConfig(rootPath);
       }
+      // B66/B68: Migrate Intent schema v1 -> v2
+      await this.migrateIntentSchema(rootPath);
     }
   }
 
@@ -144,6 +146,31 @@ export class WorkspaceMigration {
         vscode.window.showWarningMessage(
           "User override: Keeping custom workspace structure. Integrity checks may show warnings.",
         );
+      }
+    }
+  }
+
+  /**
+   * Migrate Intent schema from v1 to v2 (B66/B68).
+   * Adds planId and agentIdentity defaults to archived intents.
+   */
+  public static async migrateIntentSchema(rootPath: string): Promise<void> {
+    const intentsDir = path.join(rootPath, '.failsafe', 'manifest', 'intents');
+    if (!fs.existsSync(intentsDir)) return;
+    const files = fs.readdirSync(intentsDir).filter(f => f.endsWith('.json'));
+    for (const file of files) {
+      const filePath = path.join(intentsDir, file);
+      const raw = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      if (!raw.schemaVersion || raw.schemaVersion < 2) {
+        raw.schemaVersion = 2;
+        raw.planId = raw.planId ?? null;
+        if (!raw.metadata?.agentIdentity) {
+          raw.metadata = {
+            ...raw.metadata,
+            agentIdentity: { agentDid: raw.metadata?.author ?? 'unknown', workflow: 'manual' },
+          };
+        }
+        fs.writeFileSync(filePath, JSON.stringify(raw, null, 2), 'utf8');
       }
     }
   }

@@ -25,7 +25,7 @@ export interface IFeatureGate {
 
 export class FeatureGateError extends Error {
     constructor(public readonly feature: FeatureFlag) {
-        super(`Feature '${feature}' requires FailSafe Pro`);
+        super(`Feature '${feature}' is not enabled in current configuration`);
         this.name = 'FeatureGateError';
     }
 }

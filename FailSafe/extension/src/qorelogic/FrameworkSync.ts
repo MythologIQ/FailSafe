@@ -32,10 +32,10 @@ export class FrameworkSync {
     private workspaceRoot: string;
     private registry: SystemRegistry;
 
-    constructor(workspaceRoot: string) {
+    constructor(workspaceRoot: string, registry?: SystemRegistry) {
         this.workspaceRoot = workspaceRoot;
         this.logger = new Logger('FrameworkSync');
-        this.registry = new SystemRegistry(workspaceRoot, this.logger);
+        this.registry = registry ?? new SystemRegistry(workspaceRoot, this.logger);
     }
 
     /**
@@ -52,6 +52,10 @@ export class FrameworkSync {
                 }
             }
             await this.generateRootInstructions();
+
+            const { AgentConfigInjector } = await import('./AgentConfigInjector');
+            const injector = new AgentConfigInjector(this.registry, this.workspaceRoot);
+            await injector.injectAll();
 
             vscode.window.showInformationMessage('FailSafe: Multi-Agent Identity Synchronized Across All Detected Systems.');
         } catch (error) {

@@ -9,7 +9,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- Post-4.1.0 scope to be scheduled.
+- Post-4.2.0 scope to be scheduled.
+
+---
+
+## [4.2.0] - 2026-02-27
+
+> _"The Answer to the Ultimate Question of Life, the Universe, and Everything."_
+
+### Added
+
+- **Multi-Agent Governance Fabric** — Runtime detection and governance injection for Claude CLI, Copilot, Codex CLI, and Agent Teams via `SystemRegistry` and `FrameworkSync`.
+- **Governance Ceremony** (`failsafe.onboardAgent`) — Single-command opt-in/opt-out for governance injection across all detected AI agents.
+- **First-Run Onboarding** — Multi-agent governance coverage options during initial setup.
+- **Agent Coverage Dashboard** — Console route showing detected agents, injection status, and compliance state.
+- **Undo Last Attempt** (`failsafe.undoLastAttempt`) — Checkpoint-based rollback with integrity verification.
+- **Discovery Phase Governance** — DRAFT → CONCEIVED status gate with ledger-tagged graduation markers.
+- **Terminal Correlator** — Maps terminals to agent systems for cross-agent audit correlation.
+- **Workflow Run Model** — Run/stage/gate/claim/evidence contracts aligned to governance lifecycle.
+- **Intent Schema v2** — `schemaVersion`, `agentIdentity`, and `planId` fields with v1 migration.
+- **Verdict Replay Batch** — Bulk verdict replay with timing-safe hash comparison.
+- **CheckpointManager** — Bridges QoreLogic ledger and Sentinel substrates for checkpoint metrics.
+
+### Changed
+
+- `SystemRegistry` extended with terminal-based agent detection.
+- `RoadmapServer` gains `setSystemRegistry()` deferred setter.
+- `QoreLogicSubstrate` interface extended with `systemRegistry` field.
+- Event types expanded with `DISCOVERY_RECORDED` and `DISCOVERY_PROMOTED`.
 
 ---
 

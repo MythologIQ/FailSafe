@@ -35,6 +35,7 @@ export interface DecisionRequest {
   artifactHash?: string;
   payload?: Record<string, unknown>;
   nonce?: string;
+  workflow?: 'ql-plan' | 'auto-create' | 'manual';
 }
 
 export interface DecisionResponse {
@@ -101,6 +102,7 @@ export class GovernanceAdapter {
       return nonceResult;
     }
 
+    this.enrichWithAgentIdentity(request);
     const transparencyBuildId = this.emitTransparencyStart(request);
     const policyResult = await this.policyEvaluator.evaluate(request);
     const ledgerEntryId = await this.recordToLedger(
@@ -136,6 +138,19 @@ export class GovernanceAdapter {
       nonce: signed.nonce,
       payload: signed.payload,
     };
+  }
+
+  /** B68: Inject agent identity into request payload */
+  private enrichWithAgentIdentity(request: DecisionRequest): void {
+    if (request.agentDid && request.workflow) {
+      request.payload = {
+        ...request.payload,
+        agentIdentity: {
+          agentDid: request.agentDid,
+          workflow: request.workflow,
+        },
+      };
+    }
   }
 
   private resolveNonce(

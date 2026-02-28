@@ -3,7 +3,7 @@
  *
  * Listens to EventBus for prompt.dispatch / prompt.response events,
  * maintains rolling daily aggregates, and exposes an API-first
- * interface designed for seamless v5.0.0 Rust extraction.
+ * interface designed for seamless service extraction.
  *
  * ZERO vscode dependencies. Pure Node + EventBus.
  */

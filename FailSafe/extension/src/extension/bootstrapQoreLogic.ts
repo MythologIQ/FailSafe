@@ -1,4 +1,6 @@
 import * as vscode from "vscode";
+import * as path from "path";
+import { SystemRegistry } from "../qorelogic/SystemRegistry";
 import { QoreLogicManager } from "../qorelogic/QoreLogicManager";
 import { LedgerManager } from "../qorelogic/ledger/LedgerManager";
 import { TrustEngine } from "../qorelogic/trust/TrustEngine";
@@ -6,6 +8,9 @@ import { PolicyEngine } from "../qorelogic/policies/PolicyEngine";
 import { ShadowGenomeManager } from "../qorelogic/shadow/ShadowGenomeManager";
 import { GovernanceAdapter } from "../governance/GovernanceAdapter";
 import { BreakGlassProtocol } from "../governance/BreakGlassProtocol";
+import { AgentRevocation } from "../qorelogic/trust/AgentRevocation";
+import { LedgerRetentionPolicy } from "../qorelogic/ledger/LedgerRetentionPolicy";
+import { LedgerQueryAPI } from "../qorelogic/ledger/LedgerQueryAPI";
 import { VscodeSecretStore, VscodeStateStore } from "../core/adapters/vscode";
 import { CoreSubstrate } from "./bootstrapCore";
 import { GovernanceSubstrate } from "./bootstrapGovernance";
@@ -19,6 +24,10 @@ export interface QoreLogicSubstrate {
   qorelogicManager: QoreLogicManager;
   governanceAdapter: GovernanceAdapter;
   breakGlass: BreakGlassProtocol;
+  agentRevocation: AgentRevocation;
+  ledgerRetentionPolicy: LedgerRetentionPolicy;
+  ledgerQueryAPI: LedgerQueryAPI;
+  systemRegistry: SystemRegistry;
 }
 
 export async function bootstrapQoreLogic(
@@ -90,6 +99,13 @@ export async function bootstrapQoreLogic(
   });
   context.subscriptions.push({ dispose: () => breakGlass.dispose() });
 
+  // v4.2.0: QoreLogic services
+  const agentRevocation = new AgentRevocation(trustEngine, ledgerManager);
+  const archivePath = path.join(core.workspaceRoot, '.failsafe', 'archive');
+  const ledgerRetentionPolicy = new LedgerRetentionPolicy(ledgerManager, archivePath);
+  const ledgerQueryAPI = new LedgerQueryAPI(ledgerManager.getDatabase());
+  const systemRegistry = new SystemRegistry(core.workspaceRoot);
+
   return {
     ledgerManager,
     trustEngine,
@@ -98,5 +114,9 @@ export async function bootstrapQoreLogic(
     qorelogicManager,
     governanceAdapter,
     breakGlass,
+    agentRevocation,
+    ledgerRetentionPolicy,
+    ledgerQueryAPI,
+    systemRegistry,
   };
 }

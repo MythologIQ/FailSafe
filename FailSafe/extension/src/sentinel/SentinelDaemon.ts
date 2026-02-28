@@ -93,9 +93,9 @@ export class SentinelDaemon {
             return;
         }
 
-        // OS-level daemon mode requires FailSafe Pro
+        // OS-level daemon mode requires advanced configuration
         if (this.featureGate && !this.featureGate.isEnabled('sentinel.osDaemon')) {
-            this.logger.info('Sentinel OS daemon requires FailSafe Pro. Running in standard mode.');
+            this.logger.info('Sentinel OS daemon not enabled. Running in standard mode.');
         }
 
         this.logger.info('Starting Sentinel daemon...');

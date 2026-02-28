@@ -181,6 +181,37 @@ export async function activate(
       }),
     );
 
+    // 3.8 Multi-Agent Ceremony (B85)
+    const { AgentConfigInjector } = await import("../qorelogic/AgentConfigInjector");
+    const { GovernanceCeremony } = await import("../governance/GovernanceCeremony");
+    const ceremony = new GovernanceCeremony(
+      qore.systemRegistry,
+      new AgentConfigInjector(qore.systemRegistry, core.workspaceRoot),
+    );
+
+    context.subscriptions.push(
+      vscode.commands.registerCommand("failsafe.onboardAgent", () =>
+        ceremony.showQuickPick(),
+      ),
+    );
+
+    // 3.9 First-Run Onboarding (B88)
+    const { FirstRunOnboarding } = await import("../genesis/FirstRunOnboarding");
+    const onboarding = new FirstRunOnboarding(core.configManager, ceremony);
+    await onboarding.checkAndRun();
+
+    // 3.10 Undo Last Attempt (B60) — delegates to genesis revert panel
+    context.subscriptions.push(
+      vscode.commands.registerCommand("failsafe.undoLastAttempt", async () => {
+        const checkpointId = await vscode.window.showInputBox({
+          prompt: "Checkpoint ID to revert to",
+          placeHolder: "Enter checkpoint ID",
+        });
+        if (!checkpointId) return;
+        genesisManager.showRevert(checkpointId);
+      }),
+    );
+
     // 4. Sentinel
     const sentinel = await bootstrapSentinel(context, core, qore, logger);
     sentinelDaemon = sentinel.sentinelDaemon;
@@ -191,7 +222,7 @@ export async function activate(
       getSentinelEventsProcessed: () =>
         sentinel.sentinelDaemon.getStatus().eventsProcessed,
     };
-    const checkpointManager = new CheckpointManager(
+    const _checkpointManager = new CheckpointManager(
       core.configManager,
       qore.ledgerManager,
       checkpointMetrics,
@@ -268,6 +299,7 @@ export async function activate(
         workspaceRoot: core.workspaceRoot,
       },
     );
+    roadmapServer.setSystemRegistry(qore.systemRegistry);
     roadmapServer.start();
     context.subscriptions.push({ dispose: () => roadmapServer?.stop() });
 
@@ -347,7 +379,7 @@ export async function activate(
     setTimeout(async () => {
       // Re-initialize for startup check scope
       const { FrameworkSync } = await import("../qorelogic/FrameworkSync");
-      const frameworkSync = new FrameworkSync(core.workspaceRoot);
+      const frameworkSync = new FrameworkSync(core.workspaceRoot, qore.systemRegistry);
       const systems = await frameworkSync.detectSystems();
       const ungoverned = systems.filter(
         (s) => s.isInstalled && !s.hasGovernance,

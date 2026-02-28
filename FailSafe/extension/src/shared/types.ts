@@ -213,7 +213,10 @@ export type LedgerEventType =
   | "CHECKPOINT_CREATED" // Skill session started, checkpoint sealed
   | "CHECKPOINT_RECONCILED" // Gap detected and reconciled
   | "GOVERNANCE_PAUSED" // User explicitly paused governance
-  | "GOVERNANCE_RESUMED"; // User resumed governance
+  | "GOVERNANCE_RESUMED" // User resumed governance
+  | "RELEASE_PUBLISHED" // Extension release published to marketplace
+  | "DISCOVERY_RECORDED" // Discovery phase item recorded in ledger
+  | "DISCOVERY_PROMOTED"; // Discovery item promoted from DRAFT to CONCEIVED
 
 export interface LedgerEntry {
   id: number;

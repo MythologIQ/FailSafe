@@ -1,19 +1,27 @@
 // File: extension/src/governance/IntentService.ts
 import { v4 as uuidv4 } from 'uuid';
-import { Intent, IntentType, IntentScope, IntentMetadata, IntentStatus, IntentEvidence, IntentSchema } from './types/IntentTypes';
+import { Intent, IntentType, IntentScope, IntentMetadata, IntentStatus, IntentEvidence, IntentSchema, AgentIdentity } from './types/IntentTypes';
 import { IntentStore } from './IntentStore';
 import { IntentHistoryLog } from './IntentHistoryLog';
 import { SessionManager } from './SessionManager';
+import type { GovernanceMode } from './EnforcementEngine';
+
+export type GovernanceModeGetter = () => GovernanceMode;
 
 export class IntentService {
   private store: IntentStore;
   private history: IntentHistoryLog;
   private session: SessionManager;
+  private getGovernanceMode: GovernanceModeGetter | null = null;
 
   constructor(workspaceRoot: string, sessionManager: SessionManager) {
     this.store = new IntentStore(workspaceRoot);
     this.history = new IntentHistoryLog(this.store.getManifestDir());
     this.session = sessionManager;
+  }
+
+  setGovernanceModeGetter(getter: GovernanceModeGetter): void {
+    this.getGovernanceMode = getter;
   }
 
   // D1: Runtime validation using Zod
@@ -24,15 +32,25 @@ export class IntentService {
     catch (e) { console.error('Intent validation failed:', e); return null; } // Failsafe fallback
   }
 
-  async createIntent(params: { type: IntentType; purpose: string; scope: IntentScope; blueprint?: string; metadata: IntentMetadata }): Promise<Intent> {
+  async createIntent(params: {
+    type: IntentType; purpose: string; scope: IntentScope;
+    blueprint?: string; planId?: string; metadata: IntentMetadata;
+  }): Promise<Intent> {
     const active = await this.getActiveIntent();
     if (active && active.status !== 'SEALED') throw new Error(`Active Intent "${active.id}" must be SEALED.`);
-    
+
+    // B66: Require planId in enforce mode
+    const mode = this.getGovernanceMode?.() ?? 'observe';
+    if (mode === 'enforce' && !params.planId) {
+      throw new Error('Intent creation requires a planId in enforce mode.');
+    }
+
     const now = new Date().toISOString();
     const intent: Intent = {
       id: uuidv4(), type: params.type, createdAt: now, purpose: params.purpose,
       scope: params.scope, status: 'PULSE', blueprint: params.blueprint,
-      metadata: params.metadata, updatedAt: now,
+      planId: params.planId,
+      metadata: params.metadata, updatedAt: now, schemaVersion: 2,
     };
 
     await this.store.saveActiveIntent(intent);
@@ -41,10 +59,15 @@ export class IntentService {
     return intent;
   }
 
-  async updateStatus(newStatus: IntentStatus, actor: string): Promise<void> {
+  async updateStatus(newStatus: IntentStatus, actor: string, auditVerified?: boolean): Promise<void> {
     const active = await this.getActiveIntent();
     if (!active) throw new Error('No active Intent.');
     if (active.status === 'SEALED') throw new Error(`Intent "${active.id}" is SEALED.`);
+    // B67: PASS status requires audit sign-off in enforce mode
+    const mode = this.getGovernanceMode?.() ?? 'observe';
+    if (newStatus === 'PASS' && mode === 'enforce' && !auditVerified) {
+      throw new Error('Intent cannot reach PASS without audit sign-off in enforce mode.');
+    }
 
     const prevStatus = active.status;
     active.status = newStatus;

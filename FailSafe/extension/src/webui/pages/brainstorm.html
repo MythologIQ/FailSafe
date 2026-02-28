@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Brainstorm / Mindmap (Discovery)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0e0e1a;
+      --bg-card: #16162a;
+      --border: #2a2a4a;
+      --text: #e0e0f0;
+      --text-muted: #8888aa;
+      --accent: #5b7cf7;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 24px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header { margin-bottom: 24px; }
+    .title { font-size: 26px; font-weight: 700; color: #fff; }
+    .subtitle { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+    .canvas-container {
+      flex: 1;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+      background-image: 
+        radial-gradient(rgba(91, 124, 247, 0.1) 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+
+    .node {
+      position: absolute;
+      background: var(--bg);
+      border: 1px solid var(--accent);
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      cursor: grab;
+      user-select: none;
+    }
+    
+    .node.root { border-width: 2px; }
+
+    .toolbar {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      display: flex;
+      gap: 8px;
+    }
+
+    button {
+      background: rgba(91, 124, 247, 0.2);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    button:hover { background: var(--accent); color: #fff; }
+
+    /* SVG Lines */
+    svg {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none;
+    }
+    line {
+      stroke: var(--border);
+      stroke-width: 2;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="title">Discovery Mode: Brainstorm</div>
+    <div class="subtitle">Draft, map, and conceptualize your architecture before graduating to the planning phase.</div>
+  </div>
+
+  <div class="canvas-container" id="canvas">
+    <svg id="links"></svg>
+    <div class="node root" style="top: 40%; left: 40%;" id="rootNode">Intent Target (DRAFT)</div>
+    <!-- Static demo nodes -->
+    <div class="node" style="top: 25%; left: 20%;">Security Analysis</div>
+    <div class="node" style="top: 25%; left: 60%;">API Design</div>
+    <div class="node" style="top: 65%; left: 30%;">Database Schema</div>
+    
+    <div class="toolbar">
+      <button>+ Add Node</button>
+      <button>Graduate to CONCEIVED</button>
+    </div>
+  </div>
+
+</body>
+</html>

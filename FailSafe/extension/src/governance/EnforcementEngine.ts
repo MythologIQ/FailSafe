@@ -275,12 +275,12 @@ export class EnforcementEngine {
     }
 
     // ENFORCE MODE: Full blocking behavior (original logic)
-    // Lock-step enforcement requires FailSafe Pro
+    // Lock-step enforcement requires advanced configuration
     if (this.featureGate && !this.featureGate.isEnabled('governance.lockstep')) {
-      this.logger.info("ENFORCE MODE: Lock-step gated to Pro tier, falling back to assist behavior");
+      this.logger.info("ENFORCE MODE: Lock-step not enabled, falling back to assist behavior");
       return {
         status: "ALLOW",
-        reason: "Lock-step enforcement requires FailSafe Pro. Action permitted under free tier.",
+        reason: "Lock-step enforcement not enabled. Action permitted under current configuration.",
         intentId: activeIntent?.id,
       } as AllowVerdict;
     }

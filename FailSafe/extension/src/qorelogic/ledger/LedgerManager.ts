@@ -11,6 +11,7 @@ import * as crypto from 'crypto';
 import Database from 'better-sqlite3';
 import { ISecretStore, IConfigProvider } from '../../core/interfaces';
 import { LedgerEntry, LedgerEventType, RiskGrade } from '../../shared/types';
+import { LedgerSchemaManager } from './LedgerSchemaManager';
 
 type LedgerRow = {
     id: number;
@@ -92,6 +93,9 @@ export class LedgerManager {
             this.db = new Database(this.ledgerPath);
             this.db.pragma('journal_mode = WAL');
             this.initSchema();
+            // B77: Run schema migrations after base schema init
+            const schemaManager = new LedgerSchemaManager(this.db);
+            schemaManager.migrate();
             this.loadLastHash();
         } catch (error) {
             console.error('Failed to initialize Ledger DB - running in stub mode:', error);

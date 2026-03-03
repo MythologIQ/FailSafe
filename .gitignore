@@ -61,6 +61,10 @@ PMTransfer/
 docs/
 docs/Deep Review/
 
+# Keep extension planning source tracked even on case-insensitive filesystems.
+!FailSafe/extension/src/qorelogic/planning/
+!FailSafe/extension/src/qorelogic/planning/**
+
 # ============================================
 # BUILD ARTIFACTS & DEPENDENCIES
 # ============================================

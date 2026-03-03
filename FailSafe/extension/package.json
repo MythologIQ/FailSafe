@@ -2,6 +2,7 @@
   "name": "mythologiq-failsafe",
   "displayName": "FailSafe (feat. QoreLogic)",
   "description": "Complete AI governance for modern development. Genesis visualization + QoreLogic framework + Sentinel monitoring.",
+  "icon": "media/icon.png",
   "version": "4.3.1",
   "publisher": "MythologIQ",
   "license": "MIT",

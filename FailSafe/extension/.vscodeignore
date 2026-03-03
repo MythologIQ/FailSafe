@@ -69,3 +69,6 @@ Thumbs.db
 **/.internal/**
 **/private/**
 **/.private/**
+
+# Old icon files
+old-icon.png

@@ -89,4 +89,6 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: vsix
-      - run: npx ovsx publish *.vsix -p ${{ secrets.OVSX_TOKEN }}
+      - run: npx ovsx publish *.vsix
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_TOKEN }}

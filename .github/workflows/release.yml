@@ -42,6 +42,8 @@ jobs:
           node-version: "20"
       - run: npm ci
         working-directory: FailSafe/extension
+      - run: npx playwright install --with-deps chromium
+        working-directory: FailSafe/extension
       - run: npm run compile
         working-directory: FailSafe/extension
       - run: xvfb-run -a npm run test:all

@@ -6,7 +6,7 @@ FailSafe is a local-first governance extension for AI-assisted development in VS
 
 **Current Release**: v4.3.1 (2026-03-03)
 
-![FailSafe Banner](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/extension/icon.png)
+![FailSafe Banner](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/extension/FailSafe%20Banner.png)
 
 ## What's New in v4.3.1
 

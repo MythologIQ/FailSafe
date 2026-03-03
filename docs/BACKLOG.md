@@ -219,6 +219,13 @@
 - [x] [B93] Provenance Tracking via Ledger: Record AI authorship attribution as ledger entries with confidence levels, debounced per-file, scope-filtered, stub-mode safe | v4.3.0
 - [x] [B94] CI/CD Governance Context Export: Portable bash script exports version-controlled governance artifacts as CI artifacts, non-blocking, no sensitive data | v4.3.0
 
+**Security Hardening (v4.3.1)** ✅ COMPLETE
+
+- [x] [B107] SQL injection protection in SchemaVersionManager.ts via table name whitelist validation | v4.3.1
+- [x] [B108] XSS prevention in LivingGraphTemplate.ts via HTML escaping of dynamic graph data | v4.3.1
+- [x] [B109] XSS prevention in RevertTemplate.ts via HTML escaping of result messages | v4.3.1
+- [x] [B110] README logo path correction to reference current FailSafe branding | v4.3.1
+
 **Razor Debt (v4.3.1)**
 
 - [ ] [B95] Decompose types.ts (525L) into domain-grouped type files with barrel export | v4.3.1
@@ -226,6 +233,16 @@
 - [ ] [B97] Extract inline wiring from main.ts activate() (428L) into dedicated bootstrap modules | v4.3.1
 - [ ] [B98] Extract static pages and deps factory from FailSafeApiServer.ts (268L) | v4.3.1
 - [ ] [B99] Extract nonce/transparency/ledger from GovernanceAdapter.ts (267L) into manager classes | v4.3.1
+
+**CI/CD Review (FailSafe Plus)**
+
+- [ ] [B100] Release workflow parity gate: add a local or containerized Linux release rehearsal that exercises the exact SemVer, build, extension-host, Playwright, package, and VSIX validation steps used by GitHub Actions before retagging a release | FailSafe Plus
+- [ ] [B101] Workflow shell discipline: prevent mixed-shell command syntax in GitHub Actions (`bash` vs `pwsh`) through a workflow lint/check step and review checklist for release jobs | FailSafe Plus
+- [ ] [B102] SemVer rerun safety: harden `tools/validate-release-version.ps1` and its tests so reruns on an existing release tag compare against the previous distinct release, not the current tag itself | FailSafe Plus
+- [ ] [B103] Case-insensitive ignore audit: add a repository guard that detects source directories accidentally ignored on Windows/macOS by broad patterns such as `Planning/`, and fail release prep when tracked source files are missing from git | FailSafe Plus
+- [ ] [B104] Linux headless test prerequisites: codify and validate release-runner requirements for extension-host and Playwright tests (`xvfb`, browser install, runtime deps) so CI cannot reach test execution with missing platform prerequisites | FailSafe Plus
+- [ ] [B105] VSIX validation hardening: standardize artifact naming and archive inspection so validation accepts tag-style filenames, package-style filenames, and reads VSIX contents via ZIP-safe tooling rather than tar-specific behavior | FailSafe Plus
+- [ ] [B106] Release operator checklist: write an explicit release-prep checklist covering lint debt closure, local `test:all`, local VSIX validation, exact artifact naming, and final ref/tag sequencing before publish | FailSafe Plus
 
 ## Wishlist (Nice to Have)
 
@@ -257,6 +274,7 @@
 | v4.1.0     | Governance Gaps       | ✅ SEALED      | Mode-change audit trail, break-glass, artifact hash, verdict replay (Gaps 1-4)                                      |
 | **v4.2.0** | **The Answer**        | ✅ SEALED      | Full-stack governance: console, release pipeline, schema hardening, multi-agent fabric, and discovery workflow delivery |
 | **v4.3.0** | **Telemetry Loop**    | ✅ SEALED      | Commit guard, AI provenance tracing, CI governance context export, and post-substantiation quality sweep remediation |
+| **v4.3.1** | **Security Hardening**| IN PROGRESS    | SQL injection protection, XSS prevention, README logo correction, Razor Debt decomposition |
 
 ---
 

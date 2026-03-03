@@ -9,7 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- Post-4.3.0 scope to be scheduled.
+- Post-4.3.1 scope to be scheduled.
+
+## [4.3.1] - 2026-03-03
+
+### Fixed
+
+- **SQL Injection Protection** — `SchemaVersionManager.hasColumn()` now validates table names against a strict whitelist before PRAGMA queries.
+- **XSS Prevention** — `LivingGraphTemplate` tooltip and `RevertTemplate` result rendering now HTML-escape all dynamic values.
+- **README Logo** — Corrected logo path to reference current FailSafe branding.
 
 ## [4.3.0] - 2026-03-02
 

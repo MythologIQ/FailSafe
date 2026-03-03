@@ -1,4 +1,4 @@
-[![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.3.0?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.3.0?platform=universal)
+[![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.3.1?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.3.1?platform=universal)
 
 # FailSafe - AI Governance Extension
 
@@ -91,10 +91,10 @@ G:\MythologIQ\FailSafe\FailSafe\   # APP CONTAINER
 
 **Architecture Change (v3.0.0):** Claude Code is no longer a separate build. Claude-specific skills, commands, and file structures are folded into both Antigravity and VSCode extensions.
 
-| Variant | Source | Artifact | Destination | Includes |
-|---------|--------|----------|-------------|----------|
-| **Antigravity** | `FailSafe/Antigravity/` + `FailSafe/Claude/` | `.vsix` | [OpenVSX](https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe) | Gemini + Claude |
-| **VSCode** | `FailSafe/VSCode/` + `FailSafe/Claude/` | `.vsix` | [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe) | Copilot + Claude |
+| Variant         | Source                                       | Artifact | Destination                                                                                              | Includes         |
+| --------------- | -------------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------- | ---------------- |
+| **Antigravity** | `FailSafe/Antigravity/` + `FailSafe/Claude/` | `.vsix`  | [OpenVSX](https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe)                                 | Gemini + Claude  |
+| **VSCode**      | `FailSafe/VSCode/` + `FailSafe/Claude/`      | `.vsix`  | [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe) | Copilot + Claude |
 
 ### Pipeline Steps
 
@@ -239,13 +239,14 @@ cd ..  # Back to workspace root
 _This container ensures complete physical isolation between workspace governance and application development._
 
 <!-- CHECKPOINT-DEEP-DIVE:START -->
+
 ## UI Snapshot
 
 ![FailSafe UI Preview](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/ScreenShots/UI-Preview.png)
 
 ## Checkpoint Integrity and Local Memory
 
-FailSafe tracks more than Git state. It records governance checkpoints as signed metadata records, then stores Sentinel observations in a local retrieval store so operators can recover the *what*, *why*, and *how* of runtime decisions.
+FailSafe tracks more than Git state. It records governance checkpoints as signed metadata records, then stores Sentinel observations in a local retrieval store so operators can recover the _what_, _why_, and _how_ of runtime decisions.
 
 ### Process Reality
 
@@ -264,16 +265,16 @@ FailSafe tracks more than Git state. It records governance checkpoints as signed
 
 ### Claim-to-Source Map
 
-| Claim | Status | Source |
-| --- | --- | --- |
-| Checkpoints persist in `failsafe_checkpoints` with typed governance fields. | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts:1381` |
-| Checkpoint records include hash-chain material (`payload_hash`, `entry_hash`, `prev_hash`). | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts:1395` |
-| Each checkpoint captures current Git head/hash context. | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts:1494` |
-| Checkpoint history and chain validity are exposed over API. | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts:265` |
-| Hub snapshot includes `checkpointSummary` and `recentCheckpoints`. | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts:590` |
-| Sentinel local RAG persists observation payload + metadata + retrieval text. | implemented | `FailSafe/extension/src/sentinel/SentinelRagStore.ts:61` |
-| Sentinel RAG can fall back to JSONL when SQLite is unavailable. | implemented | `FailSafe/extension/src/sentinel/SentinelRagStore.ts:89` |
-| RAG writes are controlled by `failsafe.sentinel.ragEnabled` (default `true`). | implemented | `FailSafe/extension/src/sentinel/SentinelDaemon.ts:341` |
-| Checkpoint and Sentinel RAG tables are independent (no foreign-key link). | **false** | Confirmed: `failsafe_checkpoints` (ledger DB) and `sentinel_observations` (RAG DB) are in separate databases with no shared keys. `evidenceRefs` is always `[]`. |
+| Claim                                                                                       | Status      | Source                                                                                                                                                           |
+| ------------------------------------------------------------------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Checkpoints persist in `failsafe_checkpoints` with typed governance fields.                 | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts:1381`                                                                                                           |
+| Checkpoint records include hash-chain material (`payload_hash`, `entry_hash`, `prev_hash`). | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts:1395`                                                                                                           |
+| Each checkpoint captures current Git head/hash context.                                     | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts:1494`                                                                                                           |
+| Checkpoint history and chain validity are exposed over API.                                 | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts:265`                                                                                                            |
+| Hub snapshot includes `checkpointSummary` and `recentCheckpoints`.                          | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts:590`                                                                                                            |
+| Sentinel local RAG persists observation payload + metadata + retrieval text.                | implemented | `FailSafe/extension/src/sentinel/SentinelRagStore.ts:61`                                                                                                         |
+| Sentinel RAG can fall back to JSONL when SQLite is unavailable.                             | implemented | `FailSafe/extension/src/sentinel/SentinelRagStore.ts:89`                                                                                                         |
+| RAG writes are controlled by `failsafe.sentinel.ragEnabled` (default `true`).               | implemented | `FailSafe/extension/src/sentinel/SentinelDaemon.ts:341`                                                                                                          |
+| Checkpoint and Sentinel RAG tables are independent (no foreign-key link).                   | **false**   | Confirmed: `failsafe_checkpoints` (ledger DB) and `sentinel_observations` (RAG DB) are in separate databases with no shared keys. `evidenceRefs` is always `[]`. |
 
 <!-- CHECKPOINT-DEEP-DIVE:END -->

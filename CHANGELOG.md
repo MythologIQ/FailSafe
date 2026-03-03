@@ -9,7 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- Post-4.3.0 scope to be scheduled.
+- Post-4.3.1 scope to be scheduled.
+
+---
+
+## [4.3.1] - 2026-03-03
+
+> _"Security Hardening"_
+
+### Fixed
+
+- **SQL Injection Protection** — `SchemaVersionManager.hasColumn()` now validates table names against a strict whitelist (`shadow_genome`, `schema_version`, `soa_ledger`) before PRAGMA queries, preventing dynamic table name injection.
+- **XSS Prevention in LivingGraphTemplate** — Graph tooltip and stats elements now HTML-escape all dynamic node data (`label`, `type`, `state`, `riskGrade`) before rendering. Stats element switched from `innerHTML` to `textContent` for numeric-only content.
+- **XSS Prevention in RevertTemplate** — Revert result display now HTML-escapes step status, name, detail, and error messages before innerHTML assignment.
+- **README Logo Path** — Corrected logo reference from root `icon.png` to `FailSafe/extension/icon.png` to display the current FailSafe branding.
 
 ---
 

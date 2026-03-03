@@ -1,6 +1,4 @@
 import express, { Request, Response } from "express";
-import * as path from "path";
-import * as fs from "fs";
 import { Server as HttpServer } from "http";
 import { IConfigProvider } from "../core/interfaces/IConfigProvider";
 import { IFeatureGate } from "../core/interfaces/IFeatureGate";
@@ -15,6 +13,7 @@ import { registerLedgerRoutes } from "./routes/ledgerRoutes";
 import { registerTrustRoutes } from "./routes/trustRoutes";
 import { registerRiskRoutes } from "./routes/riskRoutes";
 import { registerFeatureRoutes } from "./routes/featureRoutes";
+import { registerStaticPageRoutes } from "./routes/staticPageRoutes";
 import type { RouteDeps } from "./routes/types";
 
 // Lazy service references - wired in after construction via setServices()
@@ -246,30 +245,7 @@ export class FailSafeApiServer {
 
     this.app.get("/api/v1/events/stream", this.eventStreamBridge.handler);
 
-    const pagesDir = path.join(__dirname, "../webui/pages");
-
-    const serveHtmlPage =
-      (filePath: string) => (_req: Request, res: Response) => {
-        const fullPath = path.join(pagesDir, filePath);
-        if (fs.existsSync(fullPath)) {
-          res.setHeader("Content-Type", "text/html; charset=utf-8");
-          res.sendFile(fullPath);
-        } else {
-          res.status(404).json({ error: "Page not found", path: filePath });
-        }
-      };
-
-    this.app.get("/ui/console", serveHtmlPage("index.html"));
-    this.app.get("/ui/dashboard", serveHtmlPage("dashboard.html"));
-    this.app.get("/ui/risks", serveHtmlPage("risk-register.html"));
-    this.app.get("/ui/transparency", serveHtmlPage("transparency.html"));
-    this.app.get("/ui/brainstorm", serveHtmlPage("brainstorm.html"));
-
-    // Serve raw static pages so the central iframe index.html can route them natively
-    this.app.get("/index.html", serveHtmlPage("index.html"));
-    this.app.get("/dashboard.html", serveHtmlPage("dashboard.html"));
-    this.app.get("/risk-register.html", serveHtmlPage("risk-register.html"));
-    this.app.get("/transparency.html", serveHtmlPage("transparency.html"));
-    this.app.get("/brainstorm.html", serveHtmlPage("brainstorm.html"));
+    // Static page routes (extracted to staticPageRoutes.ts)
+    registerStaticPageRoutes(this.app);
   }
 }

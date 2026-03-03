@@ -62,7 +62,7 @@ jobs:
           retention-days: 30
       - run: npx vsce package
         working-directory: FailSafe/extension
-      - run: npm run validate:vsix -- mythologiq-failsafe-${{ github.ref_name }}.vsix
+      - run: npm run validate:vsix
         working-directory: FailSafe/extension
       - uses: actions/upload-artifact@v4
         with:

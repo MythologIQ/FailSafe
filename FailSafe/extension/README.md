@@ -1,16 +1,22 @@
-[![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.3.0?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.3.0?platform=universal)
+[![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.3.1?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.3.1?platform=universal)
 
 # MythologIQ FailSafe for VS Code
 
 FailSafe is a local-first governance extension for AI-assisted development in VS Code and Cursor. It applies deterministic checks at the editor boundary, records decisions to a local ledger, and provides dedicated surfaces for audits, checkpoints, and agent governance.
 
-**Current Release**: v4.3.0 (2026-03-02)
+**Current Release**: v4.3.1 (2026-03-03)
 
-![FailSafe Banner](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/icon.png)
+![FailSafe Banner](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/extension/icon.png)
 
-## What's New in v4.3.0
+## What's New in v4.3.1
 
-### Major Additions
+### Security Hardening
+
+- **SQL Injection Protection**: `SchemaVersionManager.hasColumn()` now validates table names against a strict whitelist before PRAGMA queries.
+- **XSS Prevention**: `LivingGraphTemplate` and `RevertTemplate` now HTML-escape all dynamic values before rendering.
+- **README Logo**: Corrected logo path to reference current FailSafe branding.
+
+### Retained from v4.3.0
 
 - **Pre-Commit Guard**: `FailSafe: Install Commit Hook` installs a git hook that calls FailSafe's authenticated `commit-check` API before commit.
 - **AI Provenance Tracking**: saved artifacts can be traced through `PROVENANCE_RECORDED` ledger events and the provenance API route.
@@ -42,18 +48,18 @@ FailSafe is a local-first governance extension for AI-assisted development in VS
 
 ## Core Commands
 
-| Command | Purpose |
-| --- | --- |
-| `FailSafe: Open Command Center (Browser Popout)` | Open the main governance console in a browser window |
-| `FailSafe: Open Command Center (Editor Tab)` | Open the governance console in an editor tab |
-| `FailSafe: Audit Current File` | Run a manual audit on the active file |
-| `FailSafe: Set Governance Mode` | Switch between `observe`, `assist`, and `enforce` |
-| `FailSafe: Set Up Agent Governance` | Detect supported agents and inject governance rules |
-| `FailSafe: Install Commit Hook` | Add the authenticated pre-commit governance hook to the current repository |
-| `FailSafe: Remove Commit Hook` | Remove the FailSafe pre-commit governance hook and token file |
-| `FailSafe: Activate Break-Glass Override` | Start a time-limited emergency override |
-| `FailSafe: Replay Verdict (Audit)` | Re-run a prior governance decision for comparison |
-| `FailSafe: Revert to Checkpoint (Time-Travel)` | Restore a recorded governance checkpoint |
+| Command                                          | Purpose                                                                    |
+| ------------------------------------------------ | -------------------------------------------------------------------------- |
+| `FailSafe: Open Command Center (Browser Popout)` | Open the main governance console in a browser window                       |
+| `FailSafe: Open Command Center (Editor Tab)`     | Open the governance console in an editor tab                               |
+| `FailSafe: Audit Current File`                   | Run a manual audit on the active file                                      |
+| `FailSafe: Set Governance Mode`                  | Switch between `observe`, `assist`, and `enforce`                          |
+| `FailSafe: Set Up Agent Governance`              | Detect supported agents and inject governance rules                        |
+| `FailSafe: Install Commit Hook`                  | Add the authenticated pre-commit governance hook to the current repository |
+| `FailSafe: Remove Commit Hook`                   | Remove the FailSafe pre-commit governance hook and token file              |
+| `FailSafe: Activate Break-Glass Override`        | Start a time-limited emergency override                                    |
+| `FailSafe: Replay Verdict (Audit)`               | Re-run a prior governance decision for comparison                          |
+| `FailSafe: Revert to Checkpoint (Time-Travel)`   | Restore a recorded governance checkpoint                                   |
 
 ## What FailSafe Does
 
@@ -287,7 +293,7 @@ Open Settings and search for `FailSafe`:
 
 If `.failsafe/config/sentinel.yaml` exists, it overrides settings. The initializer seeds it with `mode: hybrid` unless you change it.
 
-The `v4.3.0` release also introduces commit-time governance through the local FailSafe API on `http://127.0.0.1:7777` when the optional git hook is installed.
+The `v4.3.1` release also introduces commit-time governance through the local FailSafe API on `http://127.0.0.1:7777` when the optional git hook is installed.
 
 ## Workspace Files
 
@@ -308,7 +314,7 @@ FailSafe seeds a `.failsafe/` directory in your workspace for configuration, led
 - `curl` (required only if you install the commit hook)
 - Ollama (optional, for LLM-assisted mode)
 
-> **v4.3.0 "Telemetry Loop"** - Commit-time governance, provenance tracing, and CI context export now close the loop between active coding, release review, and audit evidence.
+> **v4.3.1 "Security Hardening"** - SQL injection protection, XSS prevention, and README logo correction now harden the governance surfaces for safer operation.
 
 > **We'd love your review!** If FailSafe is useful to you, please leave a review on the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe) or [Open VSX](https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe). Your feedback helps other developers discover FailSafe and directly shapes its roadmap. Bug reports and feature requests welcome on [GitHub Issues](https://github.com/MythologIQ/FailSafe/issues).
 
@@ -375,20 +381,20 @@ FailSafe tracks more than Git state. It records governance checkpoints as signed
 
 ### Claim-to-Source Map
 
-| Claim                                                                                       | Status      | Source                                                                                                                                                                                                         |
-| ------------------------------------------------------------------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `v4.3.0` ships commit hook install/remove commands.                                         | implemented | `FailSafe/extension/src/extension/main.ts`, `FailSafe/extension/package.json`                                                                                                                                  |
-| `v4.3.0` ships `commit-check` and provenance API routes.                                    | implemented | `FailSafe/extension/src/api/routes/governanceRoutes.ts`                                                                                                                                                        |
-| `v4.3.0` exports governance context in release CI.                                          | implemented | `.github/workflows/release.yml`, `tools/export-governance-context.sh`                                                                                                                                          |
-| Bundled operator docs ship inside the VSIX.                                                 | implemented | `FailSafe/extension/.vscodeignore`, `FailSafe/extension/docs/COMPONENT_HELP.md`, `FailSafe/extension/docs/PROCESS_GUIDE.md`                                                                                  |
-| Checkpoints persist in `failsafe_checkpoints` with typed governance fields.                 | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts:1533-1556`                                                                                                                                                    |
-| Checkpoint records include hash-chain material (`payload_hash`, `entry_hash`, `prev_hash`). | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts:1689-1695`                                                                                                                                                    |
-| Each checkpoint captures current Git head/hash context.                                     | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts:1647`                                                                                                                                                         |
-| Checkpoint history and chain validity are exposed over API.                                 | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts:331`                                                                                                                                                          |
-| Hub snapshot includes `checkpointSummary` and `recentCheckpoints`.                          | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts:742-743`                                                                                                                                                      |
-| Sentinel local RAG persists observation payload + metadata + retrieval text.                | implemented | `FailSafe/extension/src/sentinel/SentinelRagStore.ts:60-81`                                                                                                                                                    |
-| Sentinel RAG can fall back to JSONL when SQLite is unavailable.                             | implemented | `FailSafe/extension/src/sentinel/SentinelRagStore.ts:85-91`                                                                                                                                                    |
-| RAG writes are controlled by `failsafe.sentinel.ragEnabled` (default `true`).               | implemented | `FailSafe/extension/src/sentinel/SentinelDaemon.ts:339-341`                                                                                                                                                    |
-| Checkpoint and Sentinel RAG tables are independent (no foreign-key link). | **false** | Confirmed: `failsafe_checkpoints` (ledger DB) and `sentinel_observations` (RAG DB) are in separate databases with no shared keys. `evidenceRefs` is always `[]`. |
+| Claim                                                                                       | Status      | Source                                                                                                                                                           |
+| ------------------------------------------------------------------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `v4.3.0` ships commit hook install/remove commands.                                         | implemented | `FailSafe/extension/src/extension/main.ts`, `FailSafe/extension/package.json`                                                                                    |
+| `v4.3.0` ships `commit-check` and provenance API routes.                                    | implemented | `FailSafe/extension/src/api/routes/governanceRoutes.ts`                                                                                                          |
+| `v4.3.0` exports governance context in release CI.                                          | implemented | `.github/workflows/release.yml`, `tools/export-governance-context.sh`                                                                                            |
+| Bundled operator docs ship inside the VSIX.                                                 | implemented | `FailSafe/extension/.vscodeignore`, `FailSafe/extension/docs/COMPONENT_HELP.md`, `FailSafe/extension/docs/PROCESS_GUIDE.md`                                      |
+| Checkpoints persist in `failsafe_checkpoints` with typed governance fields.                 | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts:1533-1556`                                                                                                      |
+| Checkpoint records include hash-chain material (`payload_hash`, `entry_hash`, `prev_hash`). | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts:1689-1695`                                                                                                      |
+| Each checkpoint captures current Git head/hash context.                                     | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts:1647`                                                                                                           |
+| Checkpoint history and chain validity are exposed over API.                                 | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts:331`                                                                                                            |
+| Hub snapshot includes `checkpointSummary` and `recentCheckpoints`.                          | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts:742-743`                                                                                                        |
+| Sentinel local RAG persists observation payload + metadata + retrieval text.                | implemented | `FailSafe/extension/src/sentinel/SentinelRagStore.ts:60-81`                                                                                                      |
+| Sentinel RAG can fall back to JSONL when SQLite is unavailable.                             | implemented | `FailSafe/extension/src/sentinel/SentinelRagStore.ts:85-91`                                                                                                      |
+| RAG writes are controlled by `failsafe.sentinel.ragEnabled` (default `true`).               | implemented | `FailSafe/extension/src/sentinel/SentinelDaemon.ts:339-341`                                                                                                      |
+| Checkpoint and Sentinel RAG tables are independent (no foreign-key link).                   | **false**   | Confirmed: `failsafe_checkpoints` (ledger DB) and `sentinel_observations` (RAG DB) are in separate databases with no shared keys. `evidenceRefs` is always `[]`. |
 
 <!-- CHECKPOINT-DEEP-DIVE:END -->

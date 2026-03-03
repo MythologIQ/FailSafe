@@ -163,14 +163,15 @@ function renderScript(nonce: string): string {
       const stepsEl = document.getElementById('result-steps');
       const summaryEl = document.getElementById('result-summary');
       section.style.display = 'block';
+      const esc = function(s) { return String(s).replace(/[&<>"']/g, function(c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c]; }); };
       const icons = { success: '\\u2713', failed: '\\u2717', skipped: '\\u2014', pending: '\\u25CB' };
       stepsEl.innerHTML = (result.steps || []).map(function(s) {
-        return '<div class="step-row"><span class="step-icon step-' + s.status + '">'
-          + (icons[s.status] || '?') + '</span><span>' + s.name + ': ' + s.detail + '</span></div>';
+        return '<div class="step-row"><span class="step-icon step-' + esc(s.status) + '">'
+          + (icons[s.status] || '?') + '</span><span>' + esc(s.name) + ': ' + esc(s.detail) + '</span></div>';
       }).join('');
       summaryEl.innerHTML = result.success
         ? '<p style="color:var(--vscode-charts-green)">Revert completed successfully.</p>'
-        : '<p style="color:var(--danger)">Revert failed: ' + (result.error || 'unknown error') + '</p>';
+        : '<p style="color:var(--danger)">Revert failed: ' + esc(result.error || 'unknown error') + '</p>';
     }
   </script>`;
 }

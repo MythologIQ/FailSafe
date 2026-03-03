@@ -1,4 +1,4 @@
-[![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.3.0?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.3.0?platform=universal)
+[![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.3.1?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.3.1?platform=universal)
 
 <div align="center">
 
@@ -20,7 +20,7 @@ _Local-first safety for AI coding assistants._
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Commands-8B5CF6)](https://github.com/MythologIQ/FailSafe/releases)
 [![Documentation](https://img.shields.io/badge/docs-FAILSAFE_SPECIFICATION-blue)](docs/FAILSAFE_SPECIFICATION.md)
 
-**Current Release**: v4.3.0 (2026-03-02)
+**Current Release**: v4.3.1 (2026-03-03)
 
 > **If this project helps you, please star it!** It helps others discover FailSafe.
 
@@ -37,7 +37,7 @@ _FailSafe is open source. Fork it, open issues, and submit pull requests._
 ---
 
 <p align="center">
-  <img src="icon.png" alt="FailSafe" width="220"/>
+  <img src="FailSafe/extension/icon.png" alt="FailSafe" width="220"/>
 </p>
 
 ## UI Preview
@@ -327,17 +327,23 @@ npm run compile
 
 ---
 
-## What's New in v4.3.0 "Telemetry Loop"
+## What's New in v4.3.1 "Security Hardening"
 
-> _Commit-time governance, provenance tracing, and CI context export now close the loop between active coding, release review, and audit evidence._
+> _Security hardening, SQL injection protection, and XSS prevention across governance UI surfaces._
 
 ### Release Focus
 
-`v4.3.0` links editor-time governance to commit and release workflows without changing the core model. Policy still executes locally in code. The new surfaces add better operator visibility and clearer release evidence.
+`v4.3.1` addresses security audit findings by adding input validation, HTML escaping, and table whitelisting. All changes are defensive hardening for existing surfaces.
 
 ### Highlights
 
-New in `v4.3.0`:
+New in `v4.3.1`:
+
+- **SQL Injection Protection** - `SchemaVersionManager` now validates table names against a strict whitelist before PRAGMA queries.
+- **XSS Prevention** - `LivingGraphTemplate` and `RevertTemplate` now escape all dynamic content before innerHTML assignment.
+- **README Logo Update** - Corrected logo path to reference the current FailSafe branding.
+
+Retained from `v4.3.0`:
 
 - **Pre-Commit Guard** - `FailSafe: Install Commit Hook` installs a thin git hook that asks the local FailSafe API whether a commit should proceed.
 - **AI Provenance Tracking** - Save events can emit `PROVENANCE_RECORDED` ledger entries with artifact path, detected agent type, confidence, and active intent.

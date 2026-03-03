@@ -1,12 +1,11 @@
-import * as crypto from 'crypto';
-import * as fs from 'fs';
-import * as path from 'path';
-import { execSync } from 'child_process';
+import * as crypto from "crypto";
+import * as fs from "fs";
+import * as path from "path";
 
 export interface HookDetection {
   exists: boolean;
   path: string;
-  type: 'raw' | 'husky' | 'pre-commit-framework' | 'none';
+  type: "raw" | "husky" | "pre-commit-framework" | "none";
 }
 
 export class CommitGuard {
@@ -14,15 +13,15 @@ export class CommitGuard {
   private readonly hookDir: string;
   private readonly hookPath: string;
   private readonly tokenPath: string;
-  private readonly backupSuffix = '.failsafe-original';
+  private readonly backupSuffix = ".failsafe-original";
 
   constructor(
     private readonly workspaceRoot: string,
-    private readonly apiPort: number
+    private readonly apiPort: number,
   ) {
-    this.hookDir = path.join(workspaceRoot, '.git', 'hooks');
-    this.hookPath = path.join(this.hookDir, 'pre-commit');
-    this.tokenPath = path.join(workspaceRoot, '.git', 'failsafe-hook-token');
+    this.hookDir = path.join(workspaceRoot, ".git", "hooks");
+    this.hookPath = path.join(this.hookDir, "pre-commit");
+    this.tokenPath = path.join(workspaceRoot, ".git", "failsafe-hook-token");
   }
 
   generateToken(): string {
@@ -34,8 +33,8 @@ export class CommitGuard {
     if (!this.token || !t) {
       return false;
     }
-    const expected = Buffer.from(this.token, 'utf8');
-    const received = Buffer.from(t, 'utf8');
+    const expected = Buffer.from(this.token, "utf8");
+    const received = Buffer.from(t, "utf8");
     if (expected.length !== received.length) {
       return false;
     }
@@ -66,33 +65,42 @@ export class CommitGuard {
     if (!fs.existsSync(this.hookPath)) {
       return false;
     }
-    const content = fs.readFileSync(this.hookPath, 'utf8');
-    return content.includes('FailSafe Pre-Commit Guard');
+    const content = fs.readFileSync(this.hookPath, "utf8");
+    return content.includes("FailSafe Pre-Commit Guard");
   }
 
   private async detectExistingHooks(): Promise<HookDetection> {
-    if (fs.existsSync(path.join(this.workspaceRoot, '.pre-commit-config.yaml'))) {
-      return { exists: true, path: this.hookPath, type: 'pre-commit-framework' };
+    if (
+      fs.existsSync(path.join(this.workspaceRoot, ".pre-commit-config.yaml"))
+    ) {
+      return {
+        exists: true,
+        path: this.hookPath,
+        type: "pre-commit-framework",
+      };
     }
-    try {
-      const hooksPath = execSync('git config core.hooksPath', {
-        cwd: this.workspaceRoot,
-        encoding: 'utf8',
-      }).trim();
-      if (hooksPath) {
-        return { exists: true, path: this.hookPath, type: 'husky' };
-      }
-    } catch {
-      // No custom hooks path configured
+    if (this.readGitConfigHooksPath() !== null) {
+      return { exists: true, path: this.hookPath, type: "husky" };
     }
     if (fs.existsSync(this.hookPath)) {
-      return { exists: true, path: this.hookPath, type: 'raw' };
+      return { exists: true, path: this.hookPath, type: "raw" };
     }
-    return { exists: false, path: this.hookPath, type: 'none' };
+    return { exists: false, path: this.hookPath, type: "none" };
+  }
+
+  /** Reads core.hooksPath from .git/config without spawning a shell process. */
+  private readGitConfigHooksPath(): string | null {
+    const gitConfigPath = path.join(this.workspaceRoot, ".git", "config");
+    if (!fs.existsSync(gitConfigPath)) {
+      return null;
+    }
+    const content = fs.readFileSync(gitConfigPath, "utf8");
+    const match = content.match(/^\s*hooksPath\s*=\s*(.+)$/m);
+    return match ? match[1].trim() : null;
   }
 
   private async chainExistingHook(detection: HookDetection): Promise<void> {
-    if (!detection.exists || detection.type === 'none') {
+    if (!detection.exists || detection.type === "none") {
       return;
     }
     if (!fs.existsSync(this.hookPath)) {
@@ -111,35 +119,35 @@ export class CommitGuard {
     const backupPath = this.hookPath + this.backupSuffix;
     const chainLine = fs.existsSync(backupPath)
       ? `\n# Chain to original hook\n"${backupPath}" "$@" || exit $?\n`
-      : '';
+      : "";
     const script = [
-      '#!/bin/sh',
-      '# FailSafe Pre-Commit Guard — thin client querying commit-check endpoint',
+      "#!/bin/sh",
+      "# FailSafe Pre-Commit Guard — thin client querying commit-check endpoint",
       `FAILSAFE_PORT="${this.apiPort}"`,
       `TOKEN_FILE="$(git rev-parse --git-dir)/failsafe-hook-token"`,
-      '',
+      "",
       'if [ ! -f "$TOKEN_FILE" ]; then',
-      '  exit 0',
-      'fi',
-      '',
+      "  exit 0",
+      "fi",
+      "",
       'TOKEN=$(cat "$TOKEN_FILE")',
-      'response=$(curl -sf --max-time 2 \\',
+      "response=$(curl -sf --max-time 2 \\",
       '  -H "X-FailSafe-Token: $TOKEN" \\',
       `  "http://127.0.0.1:\${FAILSAFE_PORT}/api/v1/governance/commit-check" 2>/dev/null)`,
-      '',
-      'if [ $? -ne 0 ]; then',
-      '  exit 0',
-      'fi',
-      '',
+      "",
+      "if [ $? -ne 0 ]; then",
+      "  exit 0",
+      "fi",
+      "",
       'allow=$(echo "$response" | grep -o \'"allow":true\')',
       'if [ -z "$allow" ]; then',
       '  reason=$(echo "$response" | grep -o \'"reason":"[^"]*"\' | cut -d\'"\' -f4)',
       '  echo "[FailSafe] Commit blocked: $reason"',
-      '  exit 1',
-      'fi',
-      chainLine + 'exit 0',
-      '',
-    ].join('\n');
+      "  exit 1",
+      "fi",
+      chainLine + "exit 0",
+      "",
+    ].join("\n");
 
     fs.writeFileSync(this.hookPath, script, { mode: 0o755 });
   }

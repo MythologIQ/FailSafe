@@ -116,7 +116,13 @@ CREATE INDEX IF NOT EXISTS idx_shadow_status ON shadow_genome(remediation_status
 CREATE INDEX IF NOT EXISTS idx_shadow_created ON shadow_genome(created_at);
 `;
 
+/** Whitelist of allowed table names for schema introspection */
+const ALLOWED_TABLES = new Set(['shadow_genome', 'schema_version', 'soa_ledger']);
+
 const hasColumn = (db: Database.Database, table: string, column: string): boolean => {
+    if (!ALLOWED_TABLES.has(table)) {
+        throw new Error(`Invalid table name: ${table}. Only whitelisted tables are allowed.`);
+    }
     const columns = db.prepare(`PRAGMA table_info('${table}')`).all() as Array<{ name: string }>;
     return columns.some((c) => c.name === column);
 };

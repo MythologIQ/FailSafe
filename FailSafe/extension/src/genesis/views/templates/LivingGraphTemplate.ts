@@ -85,7 +85,8 @@ const LIVING_GRAPH_TEMPLATE = `<!DOCTYPE html>
                 .on('mouseover', (event, d) => {
                     const tooltip = document.getElementById('tooltip');
                     const trustLabel = d.trustScore ? (d.trustScore * 100).toFixed(0) + '%' : 'N/A';
-                    tooltip.innerHTML = '<strong>' + d.label + '</strong><br>Type: ' + d.type + '<br>State: ' + (d.state || 'idle') + '<br>Risk: ' + (d.riskGrade || 'N/A') + '<br>Trust: ' + trustLabel;
+                    const esc = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"})[c]);
+                    tooltip.innerHTML = '<strong>' + esc(d.label) + '</strong><br>Type: ' + esc(d.type) + '<br>State: ' + esc(d.state || 'idle') + '<br>Risk: ' + esc(d.riskGrade || 'N/A') + '<br>Trust: ' + esc(trustLabel);
                     tooltip.style.display = 'block';
                     tooltip.style.left = event.pageX + 10 + 'px';
                     tooltip.style.top = event.pageY + 10 + 'px';
@@ -99,7 +100,7 @@ const LIVING_GRAPH_TEMPLATE = `<!DOCTYPE html>
                 node.attr('transform', d => 'translate(' + d.x + ',' + d.y + ')');
             });
             const stats = document.getElementById('stats');
-            stats.innerHTML = 'Nodes: ' + (data.metadata?.nodeCount || 0) + ' | Edges: ' + (data.metadata?.edgeCount || 0) + ' | L1: ' + (data.metadata?.riskSummary?.L1 || 0) + ' | L2: ' + (data.metadata?.riskSummary?.L2 || 0) + ' | L3: ' + (data.metadata?.riskSummary?.L3 || 0);
+            stats.textContent = 'Nodes: ' + (data.metadata?.nodeCount || 0) + ' | Edges: ' + (data.metadata?.edgeCount || 0) + ' | L1: ' + (data.metadata?.riskSummary?.L1 || 0) + ' | L2: ' + (data.metadata?.riskSummary?.L2 || 0) + ' | L3: ' + (data.metadata?.riskSummary?.L3 || 0);
         }
         function dragstarted(event, d) { if (!event.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; }
         function dragged(event, d) { d.fx = event.x; d.fy = event.y; }

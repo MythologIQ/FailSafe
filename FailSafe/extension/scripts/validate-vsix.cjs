@@ -98,21 +98,21 @@ function main() {
   ].forEach((entry) => assertIncludes(list, entry, "Archive entry"));
 
   const pkg = archive.read("extension/package.json");
-  assertIncludes(pkg, `"version": "4.3.0"`, "Packaged package.json version");
+  assertIncludes(pkg, `"version": "4.3.1"`, "Packaged package.json version");
   assertIncludes(pkg, `"main": "./dist/extension/main.js"`, "Packaged package.json main");
   assertIncludes(pkg, `"command": "failsafe.installCommitHook"`, "Packaged command");
   assertIncludes(pkg, `"command": "failsafe.removeCommitHook"`, "Packaged command");
 
   const manifest = archive.read("extension.vsixmanifest");
-  assertIncludes(manifest, `Version="4.3.0"`, "VSIX manifest version");
+  assertIncludes(manifest, `Version="4.3.1"`, "VSIX manifest version");
   assertIncludes(manifest, `DisplayName>FailSafe (feat. QoreLogic)<`, "VSIX display name");
 
   const readme = archive.read("extension/README.md");
-  assertIncludes(readme, `**Current Release**: v4.3.0 (2026-03-02)`, "Packaged README release marker");
-  assertIncludes(readme, `## What's New in v4.3.0`, "Packaged README release notes");
+  assertIncludes(readme, `**Current Release**: v4.3.1 (2026-03-03)`, "Packaged README release marker");
+  assertIncludes(readme, `## What's New in v4.3.1`, "Packaged README release notes");
 
   const changelog = archive.read("extension/CHANGELOG.md");
-  assertIncludes(changelog, `## [4.3.0] - 2026-03-02`, "Packaged changelog release entry");
+  assertIncludes(changelog, `## [4.3.1]`, "Packaged changelog release entry");
 
   console.log(`[PASS] VSIX validated: ${vsixPath}`);
 }

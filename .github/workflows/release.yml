@@ -25,10 +25,11 @@ jobs:
         with:
           fetch-depth: 0 # Full history needed for tag comparison
       - name: Validate SemVer 2.0.0 compliance
+        shell: pwsh
         run: |
-          pwsh tools/validate-release-version.ps1 `
-            -Version ${{ github.ref_name }} `
-            -DiffCategory ${{ inputs.diff_category || 'none' }}
+          tools/validate-release-version.ps1 `
+            -Version '${{ github.ref_name }}' `
+            -DiffCategory '${{ inputs.diff_category || 'none' }}'
 
   build:
     name: Build & Test

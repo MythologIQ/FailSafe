@@ -200,7 +200,7 @@ export class GovernanceAdapter {
     request: DecisionRequest,
     policyResult: PolicyResult,
     nonce: string,
-    timestamp: string,
+    _timestamp: string,
   ): Promise<string | undefined> {
     if (!this.config.enableLedger) {
       return undefined;

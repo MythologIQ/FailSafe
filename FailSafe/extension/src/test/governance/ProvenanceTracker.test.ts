@@ -47,8 +47,6 @@ describe('ProvenanceTracker', () => {
   let registry: ReturnType<typeof createMockRegistry>;
   let intentProvider: ReturnType<typeof createMockIntentProvider>;
   let tracker: ProvenanceTracker;
-  let realSetTimeout: typeof setTimeout;
-  let realClearTimeout: typeof clearTimeout;
 
   beforeEach(() => {
     mode = 'assist';
@@ -56,8 +54,6 @@ describe('ProvenanceTracker', () => {
     registry = createMockRegistry([{ name: 'Claude', terminalIndex: 0, agentType: 'claude' }]);
     intentProvider = createMockIntentProvider({ id: 'intent-1', status: 'PASS', scope: { files: ['src/'] } });
     tracker = new ProvenanceTracker(ledger as any, registry as any, intentProvider as any, () => mode);
-    realSetTimeout = global.setTimeout;
-    realClearTimeout = global.clearTimeout;
   });
 
   afterEach(() => {

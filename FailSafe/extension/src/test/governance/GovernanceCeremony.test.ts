@@ -1,7 +1,13 @@
 import { describe, it } from 'mocha';
 import { strict as assert } from 'assert';
+import * as vscode from 'vscode';
 import { GovernanceCeremony } from '../../governance/GovernanceCeremony';
 import { QoreLogicSystem } from '../../qorelogic/types/QoreLogicSystem';
+
+type WindowPatchTarget = {
+  showQuickPick: typeof vscode.window.showQuickPick;
+  showInformationMessage: typeof vscode.window.showInformationMessage;
+};
 
 function makeSystem(id: string, name: string): QoreLogicSystem {
   return {
@@ -56,19 +62,17 @@ function createMockInjector(): MockInjector {
 }
 
 function patchQuickPick(returnValue: unknown): () => void {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const vscode = require('vscode');
-  const original = vscode.window.showQuickPick;
-  vscode.window.showQuickPick = async () => returnValue;
-  return () => { vscode.window.showQuickPick = original; };
+  const windowTarget = vscode.window as unknown as WindowPatchTarget;
+  const original = windowTarget.showQuickPick;
+  windowTarget.showQuickPick = (async () => returnValue) as unknown as typeof vscode.window.showQuickPick;
+  return () => { windowTarget.showQuickPick = original; };
 }
 
 function patchInfoMessage(returnValue: unknown): () => void {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const vscode = require('vscode');
-  const original = vscode.window.showInformationMessage;
-  vscode.window.showInformationMessage = async () => returnValue;
-  return () => { vscode.window.showInformationMessage = original; };
+  const windowTarget = vscode.window as unknown as WindowPatchTarget;
+  const original = windowTarget.showInformationMessage;
+  windowTarget.showInformationMessage = (async () => returnValue) as typeof vscode.window.showInformationMessage;
+  return () => { windowTarget.showInformationMessage = original; };
 }
 
 describe('GovernanceCeremony', () => {
@@ -83,19 +87,21 @@ describe('GovernanceCeremony', () => {
       );
       const injector = createMockInjector();
       let capturedItems: unknown[] = [];
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const vscode = require('vscode');
-      const originalQP = vscode.window.showQuickPick;
-      const originalInfo = vscode.window.showInformationMessage;
-      vscode.window.showQuickPick = async (items: unknown[]) => { capturedItems = items; return []; };
-      vscode.window.showInformationMessage = async () => undefined;
+      const windowTarget = vscode.window as unknown as WindowPatchTarget;
+      const originalQP = windowTarget.showQuickPick;
+      const originalInfo = windowTarget.showInformationMessage;
+      windowTarget.showQuickPick = (async (items: readonly unknown[]) => {
+        capturedItems = [...items];
+        return [];
+      }) as unknown as typeof vscode.window.showQuickPick;
+      windowTarget.showInformationMessage = (async () => undefined) as typeof vscode.window.showInformationMessage;
 
       try {
         const ceremony = new GovernanceCeremony(registry as any, injector as any);
         await ceremony.showQuickPick();
       } finally {
-        vscode.window.showQuickPick = originalQP;
-        vscode.window.showInformationMessage = originalInfo;
+        windowTarget.showQuickPick = originalQP;
+        windowTarget.showInformationMessage = originalInfo;
       }
 
       assert.strictEqual(capturedItems.length, 1, 'only ungoverned systems should appear');
@@ -108,19 +114,24 @@ describe('GovernanceCeremony', () => {
       const injector = createMockInjector();
       let capturedMsg = '';
       let quickPickCalled = false;
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const vscode = require('vscode');
-      const originalQP = vscode.window.showQuickPick;
-      const originalInfo = vscode.window.showInformationMessage;
-      vscode.window.showQuickPick = async () => { quickPickCalled = true; return []; };
-      vscode.window.showInformationMessage = async (msg: string) => { capturedMsg = msg; return undefined; };
+      const windowTarget = vscode.window as unknown as WindowPatchTarget;
+      const originalQP = windowTarget.showQuickPick;
+      const originalInfo = windowTarget.showInformationMessage;
+      windowTarget.showQuickPick = (async () => {
+        quickPickCalled = true;
+        return [];
+      }) as unknown as typeof vscode.window.showQuickPick;
+      windowTarget.showInformationMessage = (async (msg: string) => {
+        capturedMsg = msg;
+        return undefined;
+      }) as typeof vscode.window.showInformationMessage;
 
       try {
         const ceremony = new GovernanceCeremony(registry as any, injector as any);
         await ceremony.showQuickPick();
       } finally {
-        vscode.window.showQuickPick = originalQP;
-        vscode.window.showInformationMessage = originalInfo;
+        windowTarget.showQuickPick = originalQP;
+        windowTarget.showInformationMessage = originalInfo;
       }
 
       assert.strictEqual(quickPickCalled, false, 'showQuickPick should not be called');
@@ -136,19 +147,18 @@ describe('GovernanceCeremony', () => {
         [],
       );
       const injector = createMockInjector();
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const vscode = require('vscode');
-      const originalQP = vscode.window.showQuickPick;
-      const originalInfo = vscode.window.showInformationMessage;
-      vscode.window.showQuickPick = async (items: Array<{ label: string; system: QoreLogicSystem }>) => items;
-      vscode.window.showInformationMessage = async () => undefined;
+      const windowTarget = vscode.window as unknown as WindowPatchTarget;
+      const originalQP = windowTarget.showQuickPick;
+      const originalInfo = windowTarget.showInformationMessage;
+      windowTarget.showQuickPick = (async (items: readonly { label: string; system: QoreLogicSystem }[]) => [...items]) as unknown as typeof vscode.window.showQuickPick;
+      windowTarget.showInformationMessage = (async () => undefined) as typeof vscode.window.showInformationMessage;
 
       try {
         const ceremony = new GovernanceCeremony(registry as any, injector as any);
         await ceremony.showQuickPick();
       } finally {
-        vscode.window.showQuickPick = originalQP;
-        vscode.window.showInformationMessage = originalInfo;
+        windowTarget.showQuickPick = originalQP;
+        windowTarget.showInformationMessage = originalInfo;
       }
 
       assert.strictEqual(injector.injectCalls().length, 2, 'inject should be called for each selection');
@@ -181,19 +191,18 @@ describe('GovernanceCeremony', () => {
       const claudeSystem = makeSystem('claude', 'Claude Code');
       const registry = createMockRegistry([claudeSystem], ['claude'], ['claude']);
       const injector = createMockInjector();
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const vscode = require('vscode');
-      const originalQP = vscode.window.showQuickPick;
-      const originalInfo = vscode.window.showInformationMessage;
-      vscode.window.showQuickPick = async (items: Array<{ label: string; system: QoreLogicSystem }>) => items;
-      vscode.window.showInformationMessage = async () => undefined;
+      const windowTarget = vscode.window as unknown as WindowPatchTarget;
+      const originalQP = windowTarget.showQuickPick;
+      const originalInfo = windowTarget.showInformationMessage;
+      windowTarget.showQuickPick = (async (items: readonly { label: string; system: QoreLogicSystem }[]) => [...items]) as unknown as typeof vscode.window.showQuickPick;
+      windowTarget.showInformationMessage = (async () => undefined) as typeof vscode.window.showInformationMessage;
 
       try {
         const ceremony = new GovernanceCeremony(registry as any, injector as any);
         await ceremony.removeGovernance();
       } finally {
-        vscode.window.showQuickPick = originalQP;
-        vscode.window.showInformationMessage = originalInfo;
+        windowTarget.showQuickPick = originalQP;
+        windowTarget.showInformationMessage = originalInfo;
       }
 
       assert.strictEqual(injector.removeCalls().length, 1, 'remove should be called once');
@@ -206,19 +215,24 @@ describe('GovernanceCeremony', () => {
       const injector = createMockInjector();
       let capturedMsg = '';
       let quickPickCalled = false;
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const vscode = require('vscode');
-      const originalQP = vscode.window.showQuickPick;
-      const originalInfo = vscode.window.showInformationMessage;
-      vscode.window.showQuickPick = async () => { quickPickCalled = true; return []; };
-      vscode.window.showInformationMessage = async (msg: string) => { capturedMsg = msg; return undefined; };
+      const windowTarget = vscode.window as unknown as WindowPatchTarget;
+      const originalQP = windowTarget.showQuickPick;
+      const originalInfo = windowTarget.showInformationMessage;
+      windowTarget.showQuickPick = (async () => {
+        quickPickCalled = true;
+        return [];
+      }) as unknown as typeof vscode.window.showQuickPick;
+      windowTarget.showInformationMessage = (async (msg: string) => {
+        capturedMsg = msg;
+        return undefined;
+      }) as typeof vscode.window.showInformationMessage;
 
       try {
         const ceremony = new GovernanceCeremony(registry as any, injector as any);
         await ceremony.removeGovernance();
       } finally {
-        vscode.window.showQuickPick = originalQP;
-        vscode.window.showInformationMessage = originalInfo;
+        windowTarget.showQuickPick = originalQP;
+        windowTarget.showInformationMessage = originalInfo;
       }
 
       assert.strictEqual(quickPickCalled, false, 'showQuickPick should not be called');

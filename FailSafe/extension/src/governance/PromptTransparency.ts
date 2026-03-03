@@ -12,7 +12,8 @@
 
 import { EventBus } from "../shared/EventBus";
 import { Logger } from "../shared/Logger";
-import * as vscode from "vscode";
+import * as fs from "fs";
+import * as path from "path";
 
 export type PromptEventType =
   | "prompt.build_started"
@@ -241,8 +242,6 @@ export class TransparencyLogger {
   constructor(workspaceRoot: string) {
     this.logger = new Logger("TransparencyLogger");
     if (workspaceRoot) {
-      const fs = require("fs");
-      const path = require("path");
       this.logPath = path.join(
         workspaceRoot,
         ".failsafe",
@@ -262,7 +261,6 @@ export class TransparencyLogger {
     if (!this.logPath) return;
 
     try {
-      const fs = require("fs");
       const line = JSON.stringify(event) + "\n";
       fs.appendFileSync(this.logPath, line, "utf8");
     } catch (error) {
@@ -274,7 +272,6 @@ export class TransparencyLogger {
     if (!this.logPath) return [];
 
     try {
-      const fs = require("fs");
       if (!fs.existsSync(this.logPath)) return [];
 
       const content = fs.readFileSync(this.logPath, "utf8");

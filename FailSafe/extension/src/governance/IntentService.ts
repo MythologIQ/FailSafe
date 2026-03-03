@@ -1,6 +1,6 @@
 // File: extension/src/governance/IntentService.ts
 import { v4 as uuidv4 } from 'uuid';
-import { Intent, IntentType, IntentScope, IntentMetadata, IntentStatus, IntentEvidence, IntentSchema, AgentIdentity } from './types/IntentTypes';
+import { Intent, IntentType, IntentScope, IntentMetadata, IntentStatus, IntentEvidence, IntentSchema } from './types/IntentTypes';
 import { IntentStore } from './IntentStore';
 import { IntentHistoryLog } from './IntentHistoryLog';
 import { SessionManager } from './SessionManager';

@@ -8,7 +8,6 @@ function makeTerminal(name: string): vscode.Terminal {
 }
 
 function patchTerminals(list: vscode.Terminal[]): { restore: () => void } {
-  const win = vscode.window as unknown as Record<string, unknown>;
   const originalDescriptor = Object.getOwnPropertyDescriptor(vscode.window, 'terminals');
   Object.defineProperty(vscode.window, 'terminals', {
     get: () => list,

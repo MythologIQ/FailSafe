@@ -20,7 +20,21 @@ function runTar(args) {
 function resolveVsixPath() {
   const explicit = process.argv[2];
   if (explicit) {
-    return path.resolve(process.cwd(), explicit);
+    const resolved = path.resolve(process.cwd(), explicit);
+    if (fs.existsSync(resolved)) {
+      return resolved;
+    }
+
+    const basename = path.basename(explicit);
+    const strippedV = basename.replace(/-v(\d+\.\d+\.\d+(?:[-+][^.]*)?(?:\.[^.]+)*)\.vsix$/i, "-$1.vsix");
+    if (strippedV !== basename) {
+      const fallback = path.resolve(process.cwd(), path.join(path.dirname(explicit), strippedV));
+      if (fs.existsSync(fallback)) {
+        return fallback;
+      }
+    }
+
+    return resolved;
   }
 
   const files = fs

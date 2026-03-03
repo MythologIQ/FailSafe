@@ -1,5 +1,6 @@
 import { describe, it } from 'mocha';
 import { strict as assert } from 'assert';
+import * as vscode from 'vscode';
 import { FirstRunOnboarding } from '../../genesis/FirstRunOnboarding';
 
 interface MockConfigManager {
@@ -37,8 +38,6 @@ function createMockCeremony(): MockCeremony {
 }
 
 function patchShowInfoMessage(returnValue: string | undefined): () => void {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const vscode = require('vscode');
   const original = vscode.window.showInformationMessage;
   vscode.window.showInformationMessage = async () => returnValue;
   return () => { vscode.window.showInformationMessage = original; };
@@ -49,8 +48,6 @@ describe('FirstRunOnboarding', () => {
     const config = createMockConfigManager(false);
     const ceremony = createMockCeremony();
     let capturedMsg = '';
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const vscode = require('vscode');
     const original = vscode.window.showInformationMessage;
     vscode.window.showInformationMessage = async (msg: string) => {
       capturedMsg = msg;
@@ -102,8 +99,6 @@ describe('FirstRunOnboarding', () => {
     const config = createMockConfigManager(true);
     const ceremony = createMockCeremony();
     let messageShown = false;
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const vscode = require('vscode');
     const original = vscode.window.showInformationMessage;
     vscode.window.showInformationMessage = async () => {
       messageShown = true;

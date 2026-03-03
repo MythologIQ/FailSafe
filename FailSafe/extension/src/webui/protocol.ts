@@ -13,20 +13,46 @@ export interface HostBridge {
     dispose(): void;
 }
 
+type VscodeApi = {
+    postMessage: (msg: unknown) => void;
+    getState: () => unknown;
+    setState: (s: unknown) => void;
+};
+
+type BrowserEventTarget = {
+    addEventListener: (type: string, listener: (e: MessageEvent) => void) => void;
+    removeEventListener: (type: string, listener: (e: MessageEvent) => void) => void;
+};
+
+type HostResponseMessage = {
+    type: 'response';
+    id: string;
+    result?: unknown;
+    error?: string;
+};
+
+type HostEventMessage = {
+    type: 'event';
+    eventType: string;
+    payload: unknown;
+};
+
+type HostMessage = HostResponseMessage | HostEventMessage;
+
 /**
  * VS Code webview bridge using acquireVsCodeApi().postMessage
  */
 export class VscodeHostBridge implements HostBridge {
-    private vscodeApi: { postMessage: (msg: unknown) => void; getState: () => unknown; setState: (s: unknown) => void };
+    private vscodeApi: VscodeApi;
     private pendingRequests = new Map<string, { resolve: (v: unknown) => void; reject: (e: Error) => void }>();
     private eventListeners = new Map<string, Set<(data: unknown) => void>>();
     private messageHandler: (e: MessageEvent) => void;
 
     constructor() {
         // acquireVsCodeApi is available in VS Code webview context
-        this.vscodeApi = (globalThis as any).acquireVsCodeApi();
+        this.vscodeApi = (globalThis as typeof globalThis & { acquireVsCodeApi: () => VscodeApi }).acquireVsCodeApi();
         this.messageHandler = (e: MessageEvent) => this.handleMessage(e.data);
-        const g = globalThis as any; // webview browser context
+        const g = globalThis as unknown as BrowserEventTarget;
         g.addEventListener('message', this.messageHandler);
     }
 
@@ -58,23 +84,24 @@ export class VscodeHostBridge implements HostBridge {
     }
 
     dispose(): void {
-        const g = globalThis as any; // webview browser context
+        const g = globalThis as unknown as BrowserEventTarget;
         g.removeEventListener('message', this.messageHandler);
         this.pendingRequests.clear();
         this.eventListeners.clear();
     }
 
-    private handleMessage(data: any): void {
-        if (data.type === 'response' && data.id) {
-            const pending = this.pendingRequests.get(data.id);
+    private handleMessage(data: unknown): void {
+        const message = data as Partial<HostMessage>;
+        if (message.type === 'response' && message.id) {
+            const pending = this.pendingRequests.get(message.id);
             if (pending) {
-                this.pendingRequests.delete(data.id);
-                data.error ? pending.reject(new Error(data.error)) : pending.resolve(data.result);
+                this.pendingRequests.delete(message.id);
+                message.error ? pending.reject(new Error(message.error)) : pending.resolve(message.result);
             }
-        } else if (data.type === 'event' && data.eventType) {
-            const listeners = this.eventListeners.get(data.eventType);
+        } else if (message.type === 'event' && message.eventType) {
+            const listeners = this.eventListeners.get(message.eventType);
             if (listeners) {
-                for (const cb of listeners) { cb(data.payload); }
+                for (const cb of listeners) { cb(message.payload); }
             }
         }
     }
@@ -152,7 +179,7 @@ export class ApiHostBridge implements HostBridge {
  * Detect the current environment and return the appropriate bridge
  */
 export function createHostBridge(apiBaseUrl = 'http://localhost:7777'): HostBridge {
-    if (typeof (globalThis as any).acquireVsCodeApi === 'function') {
+    if (typeof (globalThis as typeof globalThis & { acquireVsCodeApi?: unknown }).acquireVsCodeApi === 'function') {
         return new VscodeHostBridge();
     }
     return new ApiHostBridge(apiBaseUrl);

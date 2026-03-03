@@ -1,4 +1,5 @@
 import * as fs from "fs";
+import * as os from "os";
 import * as path from "path";
 import * as vscode from "vscode";
 import { Logger } from "../shared/Logger";
@@ -115,8 +116,7 @@ export class SystemRegistry {
   }
 
   detectAgentTeams(): AgentTeamsStatus {
-    const homedir = require('os').homedir();
-    const settingsPath = path.join(homedir, '.claude', 'settings.json');
+    const settingsPath = path.join(os.homedir(), '.claude', 'settings.json');
     try {
       if (!fs.existsSync(settingsPath)) {
         return { enabled: false, settingsPath };

@@ -60,7 +60,7 @@ jobs:
           name: governance-context
           path: .failsafe-ci-context/
           retention-days: 30
-      - run: npx vsce package
+      - run: npx @vscode/vsce package
         working-directory: FailSafe/extension
       - run: npm run validate:vsix
         working-directory: FailSafe/extension
@@ -77,7 +77,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: vsix
-      - run: npx vsce publish --packagePath *.vsix
+      - run: npx @vscode/vsce publish --packagePath *.vsix
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
 

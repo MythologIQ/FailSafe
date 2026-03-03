@@ -1,3 +1,5 @@
+[![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.2.1?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.2.1?platform=universal)
+
 # Build Infrastructure
 
 Scripts for deploying source files and creating release artifacts.

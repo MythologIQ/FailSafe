@@ -1,4 +1,4 @@
-import { describe, it } from 'mocha';
+import { afterEach, describe, it } from 'mocha';
 import { strict as assert } from 'assert';
 import * as fs from 'fs';
 import * as os from 'os';

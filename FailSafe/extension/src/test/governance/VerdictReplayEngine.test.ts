@@ -45,7 +45,7 @@ describe("VerdictReplayEngine", () => {
   });
 
   it("replay() detects divergence when current state differs", async () => {
-    const entry = createLedgerEntry({ id: 20, riskGrade: "L1" });
+    const entry = createLedgerEntry({ id: 20, riskGrade: "L1", artifactPath: "src/example.ts" });
     const engine = new VerdictReplayEngine(
       createMockLedger({ 20: entry }),
       createMockPolicyEngine("L3"),

@@ -9,9 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- Post-4.2.0 scope to be scheduled.
+- Post-4.3.0 scope to be scheduled.
 
 ---
+
+## [4.3.0] - 2026-03-02
+
+> _"Telemetry Loop"_
+
+### Added
+
+- **Pre-Commit Guard** (`failsafe.installCommitHook`, `failsafe.removeCommitHook`) - Installs an authenticated thin-client git hook that queries `GET /api/v1/governance/commit-check` before commit.
+- **Provenance Tracking** - Records AI authorship attribution to the SOA ledger as `PROVENANCE_RECORDED` events and exposes artifact history via `GET /api/v1/governance/provenance/:artifactPath`.
+- **CI Governance Context Export** - Adds `tools/export-governance-context.sh` and release workflow artifact upload so shipped builds retain public governance context.
+
+### Changed
+
+- Release documentation, README surfaces, and packaged extension metadata now align on `v4.3.0`.
+- Bundled extension operator docs now ship with the VSIX for component-level and process-level guidance.
+
+### Fixed
+
+- Quality sweep remediation sealed for `v4.3.0`: IPv6 SSRF coverage in `GovernanceWebhook`, dead-code removal in `capabilities.ts`, and Razor compliance restoration in `SentinelRagStore.ts`.
 
 ## [4.2.0] - 2026-02-27
 

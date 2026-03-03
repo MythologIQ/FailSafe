@@ -9,7 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- Post-4.2.0 scope to be scheduled.
+- Post-4.3.0 scope to be scheduled.
+
+## [4.3.0] - 2026-03-02
+
+### Added
+
+- **Pre-Commit Guard** - `failsafe.installCommitHook` and `failsafe.removeCommitHook` install or remove an authenticated thin-client git hook that queries `GET /api/v1/governance/commit-check`.
+- **Provenance Tracking** - FailSafe records AI authorship attribution as `PROVENANCE_RECORDED` SOA ledger events and exposes history through `GET /api/v1/governance/provenance/:artifactPath`.
+- **CI Governance Context Export** - Release automation now exports public governance context with `tools/export-governance-context.sh` and uploads it as a non-blocking workflow artifact.
+- **Bundled Operator Docs** - The packaged VSIX now includes component-level and process-level help guides for installed users.
+
+### Changed
+
+- Marketplace README, changelog, and package metadata now align on shipped `v4.3.0` behavior.
+- `showGenesisHelp()` and inline component help text now use the current command set and clearer operator language.
+
+### Fixed
+
+- `v4.3.0` quality sweep remediation sealed: IPv6 private-range coverage in `GovernanceWebhook`, dead-code removal in `capabilities.ts`, and Razor compliance restoration in `SentinelRagStore.ts`.
 
 ## [4.2.1] - 2026-02-28
 

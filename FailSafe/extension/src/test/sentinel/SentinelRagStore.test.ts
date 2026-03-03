@@ -105,19 +105,77 @@ describe("SentinelRagStore", () => {
     store.initialize();
 
     const jsonlPath = path.join(workspace, ".failsafe", "rag", "sentinel-observations.jsonl");
-    fs.writeFileSync(jsonlPath, [
-      JSON.stringify({ timestamp: "2026-02-27T08:00:00Z", id: "1" }),
-      JSON.stringify({ timestamp: "2026-02-27T09:00:00Z", id: "2" }),
-      JSON.stringify({ timestamp: "2026-02-27T10:00:00Z", id: "3" }),
-    ].join("\n") + "\n", "utf8");
+    const dbPath = path.join(workspace, ".failsafe", "rag", "sentinel-rag.db");
+
+    if (fs.existsSync(dbPath)) {
+      // Seed the active sqlite backend when better-sqlite3 is available.
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const BetterSqlite3 = require("better-sqlite3") as new (dbPath: string) => {
+        prepare: (sql: string) => { run: (...args: unknown[]) => unknown; get: (...args: unknown[]) => unknown };
+        close: () => void;
+      };
+      const db = new BetterSqlite3(dbPath);
+      const insert = db.prepare(`
+        INSERT INTO sentinel_observations (
+          id, timestamp, event_id, event_type, source, file_path,
+          decision, risk_grade, confidence, summary, details, text,
+          payload_json, metadata_json, content_hash
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      [
+        ["1", "2026-02-27T08:00:00Z"],
+        ["2", "2026-02-27T09:00:00Z"],
+        ["3", "2026-02-27T10:00:00Z"],
+      ].forEach(([id, timestamp]) => {
+        insert.run(
+          id,
+          timestamp,
+          `evt-${id}`,
+          "FILE_MODIFIED",
+          "file_watcher",
+          null,
+          "PASS",
+          "L1",
+          0.9,
+          "ok",
+          "ok",
+          "ok",
+          "{}",
+          "{}",
+          `hash-${id}`,
+        );
+      });
+      db.close();
+    } else {
+      fs.writeFileSync(jsonlPath, [
+        JSON.stringify({ timestamp: "2026-02-27T08:00:00Z", id: "1" }),
+        JSON.stringify({ timestamp: "2026-02-27T09:00:00Z", id: "2" }),
+        JSON.stringify({ timestamp: "2026-02-27T10:00:00Z", id: "3" }),
+      ].join("\n") + "\n", "utf8");
+    }
 
     const purged = store.purgeAfterTimestamp("2026-02-27T08:30:00Z");
-    store.dispose();
-
     assert.equal(purged, 2);
-    const remaining = fs.readFileSync(jsonlPath, "utf8").trim().split("\n").filter(Boolean);
-    assert.equal(remaining.length, 1);
-    assert.ok(remaining[0]!.includes('"id":"1"'));
+
+    if (fs.existsSync(dbPath)) {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const BetterSqlite3 = require("better-sqlite3") as new (dbPath: string) => {
+        prepare: (sql: string) => { all: (...args: unknown[]) => Array<{ id: string }> };
+        close: () => void;
+      };
+      const db = new BetterSqlite3(dbPath);
+      const remaining = db
+        .prepare("SELECT id FROM sentinel_observations ORDER BY timestamp ASC")
+        .all() as Array<{ id: string }>;
+      db.close();
+      assert.equal(remaining.length, 1);
+      assert.equal(remaining[0]?.id, "1");
+    } else {
+      const remaining = fs.readFileSync(jsonlPath, "utf8").trim().split("\n").filter(Boolean);
+      assert.equal(remaining.length, 1);
+      assert.ok(remaining[0]!.includes('"id":"1"'));
+    }
+    store.dispose();
   });
 
   it("purgeAfterTimestamp returns 0 when no records match", () => {

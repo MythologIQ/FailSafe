@@ -1886,6 +1886,12 @@ export class RoadmapServer {
       return;
     }
     const timestamp = new Date().toISOString();
+
+    // Auto-populate evidenceRefs from recent sentinel observations
+    if (input.evidenceRefs.length === 0) {
+      const since = new Date(Date.now() - 60_000).toISOString();
+      input.evidenceRefs = this.sentinelDaemon.getRecentObservationIds(since, 10);
+    }
     const runId = this.planManager.getActivePlan()?.id
       || this.planManager.getCurrentSprint()?.id
       || 'global';

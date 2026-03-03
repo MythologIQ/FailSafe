@@ -1,0 +1,86 @@
+const { spawnSync } = require("child_process");
+const fs = require("fs");
+const path = require("path");
+
+const root = path.resolve(__dirname, "..");
+
+function fail(message) {
+  console.error(`[FAIL] ${message}`);
+  process.exit(1);
+}
+
+function runTar(args) {
+  const result = spawnSync("tar", args, { encoding: "utf8" });
+  if (result.status !== 0) {
+    fail(result.stderr.trim() || `tar ${args.join(" ")} failed`);
+  }
+  return result.stdout;
+}
+
+function resolveVsixPath() {
+  const explicit = process.argv[2];
+  if (explicit) {
+    return path.resolve(process.cwd(), explicit);
+  }
+
+  const files = fs
+    .readdirSync(root)
+    .filter((name) => name.endsWith(".vsix"))
+    .map((name) => path.join(root, name))
+    .sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs);
+
+  if (files.length === 0) {
+    fail("No VSIX found. Pass a path or run packaging first.");
+  }
+
+  return files[0];
+}
+
+function assertIncludes(haystack, needle, label) {
+  if (!haystack.includes(needle)) {
+    fail(`${label} missing: ${needle}`);
+  }
+}
+
+function main() {
+  const vsixPath = resolveVsixPath();
+  if (!fs.existsSync(vsixPath)) {
+    fail(`VSIX not found: ${vsixPath}`);
+  }
+
+  const list = runTar(["-tf", vsixPath]);
+  [
+    "extension.vsixmanifest",
+    "extension/package.json",
+    "extension/README.md",
+    "extension/CHANGELOG.md",
+    "extension/docs/COMPONENT_HELP.md",
+    "extension/docs/PROCESS_GUIDE.md",
+    "extension/dist/extension/main.js",
+    "extension/dist/extension/ui/index.html",
+    "extension/dist/extension/ui/legacy-index.html",
+    "extension/dist/webui/pages/index.html",
+    "extension/dist/webui/pages/dashboard.html",
+  ].forEach((entry) => assertIncludes(list, entry, "Archive entry"));
+
+  const pkg = runTar(["-xOf", vsixPath, "extension/package.json"]);
+  assertIncludes(pkg, `"version": "4.3.0"`, "Packaged package.json version");
+  assertIncludes(pkg, `"main": "./dist/extension/main.js"`, "Packaged package.json main");
+  assertIncludes(pkg, `"command": "failsafe.installCommitHook"`, "Packaged command");
+  assertIncludes(pkg, `"command": "failsafe.removeCommitHook"`, "Packaged command");
+
+  const manifest = runTar(["-xOf", vsixPath, "extension.vsixmanifest"]);
+  assertIncludes(manifest, `Version="4.3.0"`, "VSIX manifest version");
+  assertIncludes(manifest, `DisplayName>FailSafe (feat. QoreLogic)<`, "VSIX display name");
+
+  const readme = runTar(["-xOf", vsixPath, "extension/README.md"]);
+  assertIncludes(readme, `**Current Release**: v4.3.0 (2026-03-02)`, "Packaged README release marker");
+  assertIncludes(readme, `## What's New in v4.3.0`, "Packaged README release notes");
+
+  const changelog = runTar(["-xOf", vsixPath, "extension/CHANGELOG.md"]);
+  assertIncludes(changelog, `## [4.3.0] - 2026-03-02`, "Packaged changelog release entry");
+
+  console.log(`[PASS] VSIX validated: ${vsixPath}`);
+}
+
+main();

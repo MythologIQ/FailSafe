@@ -1,3 +1,5 @@
+[![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.3.0?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.3.0?platform=universal)
+
 # FailSafe - AI Governance Extension
 
 **Physical Isolation**: This directory contains **100% application/extension code**. Workspace governance operates at the parent level.
@@ -272,6 +274,6 @@ FailSafe tracks more than Git state. It records governance checkpoints as signed
 | Sentinel local RAG persists observation payload + metadata + retrieval text. | implemented | `FailSafe/extension/src/sentinel/SentinelRagStore.ts:61` |
 | Sentinel RAG can fall back to JSONL when SQLite is unavailable. | implemented | `FailSafe/extension/src/sentinel/SentinelRagStore.ts:89` |
 | RAG writes are controlled by `failsafe.sentinel.ragEnabled` (default `true`). | implemented | `FailSafe/extension/src/sentinel/SentinelDaemon.ts:341` |
-| Checkpoint rows are directly foreign-key linked to Sentinel RAG rows. | unknown | No explicit join/foreign key in `RoadmapServer` checkpoint insert (`FailSafe/extension/src/roadmap/RoadmapServer.ts:1537`) or Sentinel RAG insert (`FailSafe/extension/src/sentinel/SentinelRagStore.ts:99`). |
+| Checkpoint and Sentinel RAG tables are independent (no foreign-key link). | **false** | Confirmed: `failsafe_checkpoints` (ledger DB) and `sentinel_observations` (RAG DB) are in separate databases with no shared keys. `evidenceRefs` is always `[]`. |
 
 <!-- CHECKPOINT-DEEP-DIVE:END -->

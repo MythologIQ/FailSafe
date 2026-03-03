@@ -14,6 +14,7 @@ import {
 type SqliteDb = {
   prepare: (sql: string) => {
     run: (...args: unknown[]) => unknown;
+    all: (...args: unknown[]) => unknown[];
   };
   exec: (sql: string) => void;
   close: () => void;
@@ -38,22 +39,17 @@ type ObservationRecord = {
 };
 
 export class SentinelRagStore {
-  private readonly workspaceRoot: string;
-  private readonly logger: Logger;
   private readonly ragDir: string;
   private readonly jsonlPath: string;
   private readonly dbPath: string;
   private db: SqliteDb | null = null;
   private initialized = false;
 
-  constructor(workspaceRoot: string, logger: Logger) {
-    this.workspaceRoot = workspaceRoot;
-    this.logger = logger;
-    this.ragDir = path.join(this.workspaceRoot, ".failsafe", "rag");
+  constructor(private readonly workspaceRoot: string, private readonly logger: Logger) {
+    this.ragDir = path.join(workspaceRoot, ".failsafe", "rag");
     this.jsonlPath = path.join(this.ragDir, "sentinel-observations.jsonl");
     this.dbPath = path.join(this.ragDir, "sentinel-rag.db");
   }
-
   initialize(): void {
     if (this.initialized) {
       return;
@@ -134,7 +130,15 @@ export class SentinelRagStore {
 
     appendJsonlRecord(this.jsonlPath, record);
   }
-
+  getRecentObservationIds(since: string, limit = 20): string[] {
+    if (this.db) {
+      const rows = this.db.prepare(
+        'SELECT id FROM sentinel_observations WHERE timestamp >= ? ORDER BY timestamp DESC LIMIT ?',
+      ).all(since, limit) as Array<{ id: string }>;
+      return rows.map(r => r.id);
+    }
+    return [];
+  }
   purgeAfterTimestamp(timestamp: string): number {
     if (this.db) {
       const result = this.db
@@ -144,14 +148,12 @@ export class SentinelRagStore {
     }
     return purgeJsonlAfterTimestamp(this.jsonlPath, timestamp);
   }
-
   dispose(): void {
     if (this.db) {
       this.db.close();
       this.db = null;
     }
   }
-
   private async buildRecord(
     event: SentinelEvent,
     verdict: SentinelVerdict,
@@ -160,18 +162,7 @@ export class SentinelRagStore {
     const filePath = this.getEventFilePath(event);
     const fileContext = await this.getFileContext(filePath);
     const payloadJson = stableStringify(event.payload || {});
-    const metadata = {
-      matchedPatterns: verdict.matchedPatterns,
-      actions: verdict.actions.map((action) => ({
-        type: action.type,
-        status: action.status,
-      })),
-      artifactPath: verdict.artifactPath || null,
-      agentDid: verdict.agentDid,
-      source: event.source,
-      eventType: event.type,
-      fileSnapshotIncluded: Boolean(fileContext),
-    };
+    const metadata = this.buildMetadata(event, verdict, fileContext);
     const metadataJson = stableStringify(metadata);
     const text = this.composeRetrievalText(event, verdict, fileContext);
     const contentHash = sha256(`${payloadJson}:${metadataJson}:${text}`);
@@ -194,7 +185,19 @@ export class SentinelRagStore {
       contentHash,
     };
   }
-
+  private buildMetadata(
+    event: SentinelEvent, verdict: SentinelVerdict, fileContext: string | null,
+  ): Record<string, unknown> {
+    return {
+      matchedPatterns: verdict.matchedPatterns,
+      actions: verdict.actions.map((a) => ({ type: a.type, status: a.status })),
+      artifactPath: verdict.artifactPath || null,
+      agentDid: verdict.agentDid,
+      source: event.source,
+      eventType: event.type,
+      fileSnapshotIncluded: Boolean(fileContext),
+    };
+  }
   private composeRetrievalText(
     event: SentinelEvent, verdict: SentinelVerdict, fileContext: string | null,
   ): string {
@@ -209,7 +212,6 @@ export class SentinelRagStore {
     if (fileContext) lines.push("file_excerpt:", fileContext);
     return lines.join("\n");
   }
-
   private getEventFilePath(event: SentinelEvent): string | null {
     const payloadPath = event.payload?.path;
     if (typeof payloadPath !== "string" || payloadPath.length === 0) {
@@ -217,7 +219,6 @@ export class SentinelRagStore {
     }
     return payloadPath;
   }
-
   private async getFileContext(filePath: string | null): Promise<string | null> {
     if (!filePath) {
       return null;
@@ -234,7 +235,6 @@ export class SentinelRagStore {
       return null;
     }
   }
-
   private openSqlite(): SqliteDb | null {
     try {
       // eslint-disable-next-line @typescript-eslint/no-var-requires

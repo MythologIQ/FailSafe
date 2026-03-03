@@ -221,7 +221,9 @@ export class GovernanceAdapter {
           nonce,
           conditions: policyResult.conditions,
           reason: policyResult.reason,
-          policyHash: this.policyEngine.getPolicyHash(),
+          policyHash: typeof this.policyEngine.getPolicyHash === "function"
+            ? this.policyEngine.getPolicyHash()
+            : undefined,
         },
       });
       return String(entry.id);

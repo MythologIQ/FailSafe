@@ -15,8 +15,12 @@ export interface ReleaseGateResult {
 export class ReleasePipelineGate {
   constructor(
     private readonly intentService: IntentService,
-    private readonly ledger: LedgerManager,
+    private ledger: LedgerManager,
   ) {}
+
+  setLedgerManager(ledger: LedgerManager): void {
+    this.ledger = ledger;
+  }
 
   async evaluate(version: string): Promise<ReleaseGateResult> {
     const checks = await Promise.all([

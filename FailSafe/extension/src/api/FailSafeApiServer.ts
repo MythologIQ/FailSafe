@@ -27,6 +27,7 @@ import type { SentinelDaemon } from "../sentinel/SentinelDaemon";
 import type { QoreLogicManager } from "../qorelogic/QoreLogicManager";
 import type { LedgerManager } from "../qorelogic/ledger/LedgerManager";
 import type { RiskManager } from "../qorelogic/risk/RiskManager";
+import type { CommitGuard } from "../governance/CommitGuard";
 
 const API_VERSION = "3.6.1";
 const DEFAULT_PORT = 7777;
@@ -46,6 +47,7 @@ export interface FailSafeApiServices {
   qorelogicManager?: QoreLogicManager;
   ledgerManager?: LedgerManager;
   riskManager?: RiskManager;
+  commitGuard?: CommitGuard;
   onModeChangeRequest?: (mode: GovernanceMode) => Promise<void>;
 }
 
@@ -67,6 +69,7 @@ export class FailSafeApiServer {
   private qorelogicManager?: QoreLogicManager;
   private ledgerManager?: LedgerManager;
   private riskManager?: RiskManager;
+  private commitGuard?: CommitGuard;
   private onModeChangeRequest?: (mode: GovernanceMode) => Promise<void>;
 
   constructor(options: FailSafeApiServerOptions) {
@@ -98,7 +101,7 @@ export class FailSafeApiServer {
         );
         res.setHeader(
           "Access-Control-Allow-Headers",
-          "Content-Type, Authorization",
+          "Content-Type, Authorization, X-FailSafe-Token",
         );
       }
       if (_req.method === "OPTIONS") {
@@ -119,6 +122,7 @@ export class FailSafeApiServer {
     this.qorelogicManager = services.qorelogicManager;
     this.ledgerManager = services.ledgerManager;
     this.riskManager = services.riskManager;
+    this.commitGuard = services.commitGuard;
     this.onModeChangeRequest = services.onModeChangeRequest;
   }
 
@@ -218,6 +222,9 @@ export class FailSafeApiServer {
       },
       get riskManager() {
         return self.riskManager;
+      },
+      get commitGuard() {
+        return self.commitGuard;
       },
       get featureGate() {
         return self.featureGate;

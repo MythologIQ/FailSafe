@@ -174,6 +174,10 @@ export class SentinelDaemon {
         return this.status.running;
     }
 
+    getRecentObservationIds(since: string, limit?: number): string[] {
+        return this.ragStore?.getRecentObservationIds(since, limit) ?? [];
+    }
+
     /**
      * Manually audit a file
      */

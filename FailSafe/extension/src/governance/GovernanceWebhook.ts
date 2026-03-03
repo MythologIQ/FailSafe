@@ -75,11 +75,19 @@ export class GovernanceWebhook {
 
   private isPrivateIp(hostname: string): boolean {
     if (net.isIP(hostname) === 0) return false;
-    return hostname.startsWith('10.') ||
-      hostname.startsWith('172.16.') || hostname.startsWith('172.17.') ||
-      hostname.startsWith('172.18.') || hostname.startsWith('172.19.') ||
-      hostname.startsWith('172.2') || hostname.startsWith('172.3') ||
-      hostname.startsWith('192.168.') ||
-      hostname === '127.0.0.1' || hostname === '0.0.0.0' || hostname === '::1';
+    if (hostname === '127.0.0.1' || hostname === '0.0.0.0' || hostname === '::1') return true;
+    if (hostname.startsWith('10.') || hostname.startsWith('192.168.')) return true;
+    if (hostname.startsWith('169.254.')) return true;
+    // RFC 1918: 172.16.0.0 – 172.31.255.255
+    if (hostname.startsWith('172.')) {
+      const second = parseInt(hostname.split('.')[1], 10);
+      if (second >= 16 && second <= 31) return true;
+    }
+    // IPv6 private ranges
+    const lower = hostname.toLowerCase();
+    if (lower.startsWith('fc') || lower.startsWith('fd')) return true;
+    if (lower.startsWith('fe80:')) return true;
+    if (lower.startsWith('::ffff:')) return true;
+    return false;
   }
 }

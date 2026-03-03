@@ -223,27 +223,6 @@ export function enforceCapability(
         );
     }
 }
-
-/**
- * Log capability check result for audit purposes
- */
-export function logCapabilityCheck(
-    result: CapabilityCheckResult,
-    context: { agentDid?: string; action: string }
-): void {
-    const status = result.allowed ? 'ALLOWED' : 'DENIED';
-    const logEntry = {
-        timestamp: new Date().toISOString(),
-        status,
-        persona: result.persona,
-        capability: result.capability,
-        reason: result.reason,
-        ...context
-    };
-    
-    console.log(`[CapabilityCheck] ${JSON.stringify(logEntry)}`);
-}
-
 // =============================================================================
 // CONSTANTS
 // =============================================================================

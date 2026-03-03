@@ -55,33 +55,33 @@ export const INFO_HINT_STYLES = `
  */
 export const HELP_TEXT = {
   sentinelMode:
-    "Heuristic: rule-based only. LLM-assisted: uses local model. Hybrid: combines both.",
+    "Sentinel audit strategy. Heuristic = local rules only. LLM-assisted = uses the configured local model. Hybrid = combines both passes.",
   operationalMode:
-    "Operational mode controls monitoring intensity: NORMAL, LEAN, SURGE, or SAFE.",
-  filesWatched: "Number of files actively monitored for changes by Sentinel.",
-  queueDepth: "Pending file audits waiting to be processed.",
-  eventsProcessed: "Total file change events processed since Sentinel started.",
-  uptime: "Time elapsed since Sentinel daemon was activated.",
+    "Sentinel workload posture. NORMAL balances coverage, LEAN reduces overhead, SURGE increases scrutiny, SAFE prioritizes conservative behavior.",
+  filesWatched: "Count of files currently under Sentinel watch in the active workspace.",
+  queueDepth: "Number of saved-change events waiting for Sentinel review.",
+  eventsProcessed: "Total saved-change events Sentinel has processed during the current session.",
+  uptime: "Elapsed time since the Sentinel daemon started in this session.",
   trustStages:
-    "CBT: Calculus-Based (0-50%). KBT: Knowledge-Based (50-80%). IBT: Identification-Based (80-100%).",
-  l3Queue: "High-risk changes requiring human review before proceeding.",
-  avgTrust: "Average trust score across all registered AI agents.",
+    "Trust stage bands. CBT = 0-50%, KBT = 50-80%, IBT = 80-100%. Higher stages indicate stronger historical reliability.",
+  l3Queue: "High-risk items that require explicit human approval before work should proceed.",
+  avgTrust: "Average trust score across registered AI agents in the local ledger.",
   quarantined:
-    "Agents isolated due to trust violations or suspicious behavior.",
+    "Agents isolated after trust violations or suspicious behavior until reviewed.",
   verdictDecision:
-    "Sentinel decision outcome: PASS, WARN, BLOCK, ESCALATE, or QUARANTINE.",
-  riskGrade: "Risk grade classification. L1: low, L2: moderate, L3: critical.",
+    "Latest Sentinel outcome. PASS = clear, WARN = caution, BLOCK = stop, ESCALATE = human review, QUARANTINE = isolate agent or session.",
+  riskGrade: "Artifact risk grade. L1 = low impact, L2 = elevated review, L3 = critical or human-gated work.",
   noveltyLevels:
-    "Novelty tiers based on similarity scoring. Higher means less similar to known patterns.",
-  avgConfidence: "Average confidence for novelty evaluation results.",
-  cacheHits: "Requests served from cache without recomputation.",
-  cacheMisses: "Requests that required fresh computation.",
-  cacheSizes: "Active entries stored in fingerprint and novelty caches.",
-  influenceWeight: "Trust-derived weighting used to scale agent impact.",
+    "Novelty tiers from similarity scoring. Higher novelty means the change is less like known patterns and may deserve closer review.",
+  avgConfidence: "Average confidence of novelty or evaluation results shown in this panel.",
+  cacheHits: "Requests served from cache without recomputing fingerprints or novelty scores.",
+  cacheMisses: "Requests that required fresh fingerprint or novelty computation.",
+  cacheSizes: "Current entry counts stored in the fingerprint and novelty caches.",
+  influenceWeight: "Trust-derived weighting used when FailSafe scales an agent's downstream influence.",
   trustScore:
-    "Trust score ranges 0.0 to 1.0 and influences verification weight.",
+    "Trust score ranges from 0.0 to 1.0 and affects how much verification weight an agent receives.",
   checkpointGovernance:
-    "Pause governance before using third-party skills. Resume to reconcile drift and restore tracking.",
+    "Checkpoint governance captures a known-good state so you can inspect drift, undo failures, and recover with evidence.",
   planProgress:
-    "Percentage of plan phases completed. Blocked phases are excluded from count.",
+    "Percent of plan phases completed. Blocked phases do not count toward completion.",
 } as const;

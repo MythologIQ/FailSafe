@@ -213,6 +213,20 @@
 - [x] [B88] First-run onboarding review: surface multi-agent governance coverage options during initial setup with clear guidance for workspace vs global scope decisions | v4.2.0
 - [x] [B89] Pre-v4.2.0 True-Up Audit: purge fictional state from `SYSTEM_STATE.md`, reconcile `_STAGING_OLD` drift, and assert test gates in the release pipeline before writing new features | v4.2.0
 
+**Deployment & Telemetry (NEW)**
+
+- [x] [B92] Pre-Commit Guard via Commit-Check Endpoint: Single authenticated API endpoint returns pre-computed `{allow, reason}` decision; thin-client shell hook with per-session token auth; fails open when API unreachable; chains with existing hooks | v4.3.0
+- [x] [B93] Provenance Tracking via Ledger: Record AI authorship attribution as ledger entries with confidence levels, debounced per-file, scope-filtered, stub-mode safe | v4.3.0
+- [x] [B94] CI/CD Governance Context Export: Portable bash script exports version-controlled governance artifacts as CI artifacts, non-blocking, no sensitive data | v4.3.0
+
+**Razor Debt (v4.3.1)**
+
+- [ ] [B95] Decompose types.ts (525L) into domain-grouped type files with barrel export | v4.3.1
+- [ ] [B96] Extract axiom enforcement from EnforcementEngine.ts (473L) into focused enforcer classes | v4.3.1
+- [ ] [B97] Extract inline wiring from main.ts activate() (428L) into dedicated bootstrap modules | v4.3.1
+- [ ] [B98] Extract static pages and deps factory from FailSafeApiServer.ts (268L) | v4.3.1
+- [ ] [B99] Extract nonce/transparency/ledger from GovernanceAdapter.ts (267L) into manager classes | v4.3.1
+
 ## Wishlist (Nice to Have)
 
 - [ ] [B90] CLI Overseer Lite Feasibility Extraction: Explore creating a lightweight, CLI-compatible version of FailSafe for direct website integration | v5.0.0
@@ -241,7 +255,8 @@
 | v3.2.5     | Console Overhaul      | ✅ SEALED      | Partial delivery (B52/B58/B59); remainder deferred to v4.2.0                                                        |
 | v4.0.0     | Economics             | ✅ SEALED      | Token economics, governance modes, risk register, transparency stream                                               |
 | v4.1.0     | Governance Gaps       | ✅ SEALED      | Mode-change audit trail, break-glass, artifact hash, verdict replay (Gaps 1-4)                                      |
-| **v4.2.0** | **The Answer**        | 🚧 IN PROGRESS | Full-stack governance: console, release pipeline, provenance, schema, multi-agent fabric, discovery phase (B11-B89) |
+| **v4.2.0** | **The Answer**        | ✅ SEALED      | Full-stack governance: console, release pipeline, schema hardening, multi-agent fabric, and discovery workflow delivery |
+| **v4.3.0** | **Telemetry Loop**    | ✅ SEALED      | Commit guard, AI provenance tracing, CI governance context export, and post-substantiation quality sweep remediation |
 
 ---
 

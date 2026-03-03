@@ -18,6 +18,9 @@ import { GovernanceWebhook } from "../governance/GovernanceWebhook";
 import { PolicySandbox } from "../governance/PolicySandbox";
 import { RBACManager } from "../governance/RBACManager";
 import { ArtifactHasher } from "../governance/ArtifactHasher";
+import { CommitGuard } from "../governance/CommitGuard";
+import { ProvenanceTracker } from "../governance/ProvenanceTracker";
+import { SystemRegistry } from "../qorelogic/SystemRegistry";
 import { CoreSubstrate } from "./bootstrapCore";
 import { Logger } from "../shared/Logger";
 import { registerGovernanceCommands } from "./commands";
@@ -40,6 +43,8 @@ export interface GovernanceSubstrate {
   policySandbox: PolicySandbox;
   rbacManager: RBACManager;
   artifactHasher: ArtifactHasher;
+  commitGuard: CommitGuard;
+  provenanceTracker: ProvenanceTracker;
 }
 
 export async function bootstrapGovernance(
@@ -139,6 +144,24 @@ export async function bootstrapGovernance(
   const rbacManager = new RBACManager();
   const artifactHasher = new ArtifactHasher();
 
+  // v4.3.0: Commit guard + provenance tracker (B92/B93)
+  const commitGuard = new CommitGuard(core.workspaceRoot, 7777);
+  const provenanceRegistry = new SystemRegistry(core.workspaceRoot);
+  const provenanceTracker = new ProvenanceTracker(
+    null as unknown as import('../qorelogic/ledger/LedgerManager').LedgerManager,
+    provenanceRegistry,
+    intentService,
+    () => enforcement.getGovernanceMode(),
+  );
+
+  // Wire provenance tracking into file save events
+  context.subscriptions.push(
+    vscode.workspace.onDidSaveTextDocument((doc) => {
+      provenanceTracker.onFileWrite(doc.uri);
+    }),
+    { dispose: () => provenanceTracker.dispose() },
+  );
+
   return {
     sessionManager,
     intentService,
@@ -157,5 +180,7 @@ export async function bootstrapGovernance(
     policySandbox,
     rbacManager,
     artifactHasher,
+    commitGuard,
+    provenanceTracker,
   };
 }

@@ -216,7 +216,10 @@ export type LedgerEventType =
   | "GOVERNANCE_RESUMED" // User resumed governance
   | "RELEASE_PUBLISHED" // Extension release published to marketplace
   | "DISCOVERY_RECORDED" // Discovery phase item recorded in ledger
-  | "DISCOVERY_PROMOTED"; // Discovery item promoted from DRAFT to CONCEIVED
+  | "DISCOVERY_PROMOTED" // Discovery item promoted from DRAFT to CONCEIVED
+  // Commit governance + provenance (v4.3.0)
+  | "COMMIT_CHECKED"      // Pre-commit hook queried commit-check endpoint
+  | "PROVENANCE_RECORDED"; // AI authorship attribution recorded
 
 export interface LedgerEntry {
   id: number;

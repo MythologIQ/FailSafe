@@ -13,10 +13,12 @@ import type { LedgerManager } from '../../qorelogic/ledger/LedgerManager';
 import type { RiskManager } from '../../qorelogic/risk/RiskManager';
 import type { IFeatureGate } from '../../core/interfaces/IFeatureGate';
 import type { EventBus } from '../../shared/EventBus';
+import type { CommitGuard } from '../../governance/CommitGuard';
 
 export interface RouteDeps {
     enforcementEngine?: EnforcementEngine;
     intentService?: IntentService;
+    commitGuard?: CommitGuard;
     sentinelDaemon?: SentinelDaemon;
     qorelogicManager?: QoreLogicManager;
     ledgerManager?: LedgerManager;

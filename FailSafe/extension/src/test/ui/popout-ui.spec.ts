@@ -31,28 +31,32 @@ test('popout UI shell renders required sections', async ({ page }) => {
   try {
     await page.goto(`http://127.0.0.1:${address.port}/legacy-index.html`);
 
-    await expect(page.getByRole('button', { name: 'Home' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Run' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Skills' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Governance' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Activity' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Reports' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Settings' })).toBeVisible();
-    await expect(page.locator('#profile-select')).toBeVisible();
+    await expect(page.locator('.tab[data-route="home"]')).toBeVisible();
+    await expect(page.locator('.tab[data-route="run"]')).toBeVisible();
+    await expect(page.locator('.tab[data-route="skills"]')).toBeVisible();
+    await expect(page.locator('.tab[data-route="governance"]')).toBeVisible();
+    await expect(page.locator('.tab[data-route="activity"]')).toBeVisible();
+    await expect(page.locator('.tab[data-route="reports"]')).toBeVisible();
+    await expect(page.locator('.tab[data-route="settings"]')).toBeVisible();
+    await expect(page.locator('#theme-select')).toBeHidden();
 
-    await page.getByRole('button', { name: 'Skills' }).click();
+    await page.locator('.tab[data-route="skills"]').click();
+    await expect(page.locator('#panel-skills')).toHaveClass(/active-panel/);
     await expect(page.locator('#intent-input')).toBeVisible();
-    await expect(page.getByText('All Relevant')).toHaveCount(1);
+    await expect(page.locator('[data-skill-tab="allRelevant"]')).toBeVisible();
     await expect(page.locator('#intent-output')).toBeVisible();
 
-    await page.getByRole('button', { name: 'Governance' }).click();
+    await page.locator('.tab[data-route="governance"]').click();
+    await expect(page.locator('#panel-governance')).toHaveClass(/active-panel/);
     await expect(page.locator('#sentinel-status')).toBeVisible();
 
-    await page.getByRole('button', { name: 'Activity' }).click();
+    await page.locator('.tab[data-route="activity"]').click();
+    await expect(page.locator('#panel-activity')).toHaveClass(/active-panel/);
     await expect(page.locator('#focus-toggle')).toBeVisible();
 
-    await page.getByRole('button', { name: 'Settings' }).click();
-    await expect(page.locator('#setting-theme')).toBeVisible();
+    await page.locator('.tab[data-route="settings"]').click();
+    await expect(page.locator('#panel-settings')).toHaveClass(/active-panel/);
+    await expect(page.locator('#theme-select')).toBeVisible();
   } finally {
     await new Promise<void>((resolve, reject) => server.close((err) => (err ? reject(err) : resolve())));
   }

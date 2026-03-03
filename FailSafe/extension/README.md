@@ -1,43 +1,28 @@
+[![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.3.0?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.3.0?platform=universal)
+
 # MythologIQ FailSafe for VS Code
 
 FailSafe is a local-first governance extension for AI-assisted development in VS Code and Cursor. It applies deterministic checks at the editor boundary, records decisions to a local ledger, and provides dedicated surfaces for audits, checkpoints, and agent governance.
 
-**Current Release**: v4.2.1 (2026-02-28)
+**Current Release**: v4.3.0 (2026-03-02)
 
 ![FailSafe Banner](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/icon.png)
 
-## What's New in v4.2.0
+## What's New in v4.3.0
 
 ### Major Additions
 
-- **Multi-Agent Governance Fabric**: runtime detection and governance injection for Claude CLI, Copilot, Codex CLI, and agent-team workflows
-- **Governance Ceremony**: one command to inject or remove governance files across detected agents
-- **First-Run Onboarding**: setup flow for workspace-vs-global agent governance coverage
-- **Agent Coverage Dashboard**: console route for detection, injection status, and compliance visibility
-- **Undo Last Attempt**: checkpoint-based rollback with integrity verification and user feedback
-- **Discovery Phase Governance**: DRAFT to CONCEIVED promotion gate with ledger-tagged discovery milestones
-- **Terminal Correlator**: terminal-to-agent mapping for cross-agent audit correlation
-- **Workflow Run Model**: run, stage, gate, claim, and evidence contracts aligned to governance lifecycle
-- **Agent Teams Detector**: generated governance overseer peer agent for `.claude/agents/`
-- **AGENTS.md Injection**: repo-root governance instructions for Copilot and Codex consumers
-- **Intent Schema v2**: `schemaVersion`, `agentIdentity`, and `planId` with migration from v1
-- **Verdict Replay Batch**: bulk replay support with timing-safe hash comparison
-- **CheckpointManager**: bridge layer between QoreLogic ledger and Sentinel checkpoint metrics
+- **Pre-Commit Guard**: `FailSafe: Install Commit Hook` installs a git hook that calls FailSafe's authenticated `commit-check` API before commit.
+- **AI Provenance Tracking**: saved artifacts can be traced through `PROVENANCE_RECORDED` ledger events and the provenance API route.
+- **CI Governance Context Export**: release workflow exports `CHANGELOG.md`, `docs/SYSTEM_STATE.md`, and commit context as a downloadable artifact.
+- **Bundled Help Docs**: packaged `COMPONENT_HELP.md` and `PROCESS_GUIDE.md` now ship inside the extension for offline operator reference.
 
 ### Under the Hood
 
-- `SystemRegistry` expanded with broader detection fields and exported types
-- `FrameworkSync` upgraded for per-agent config delegation
-- `RoadmapServer` and `QoreLogicSubstrate` extended for registry-aware orchestration
-- Event taxonomy expanded with discovery tracking markers
-
-## What's New in v4.2.1
-
-### Official Build "42" Release Notes
-
-FailSafe started as a solo passion project. Along the way, it has been shaped by painful first-hand lessons, generous feedback from users, sharp insights from industry leaders, and real support from Reddit and Discord communities that cared enough to push the work forward.
-
-Build 42 marks the arrival at a complex but functional system that reduces time, token waste, and friction across AI-assisted development workflows. The goal is to keep making FailSafe into what it can be, while also leaving behind something useful for anyone who wants to learn how to build something new with AI coding tools.
+- `governanceRoutes.ts` now serves `commit-check` and provenance lookup endpoints.
+- `bootstrapGovernance.ts` wires `CommitGuard` and `ProvenanceTracker` into the active governance substrate.
+- The release workflow uploads governance context without blocking the build when no exportable state is present.
+- The quality sweep sealed IPv6 SSRF handling, removed dead code, and restored Razor compliance to `SentinelRagStore.ts`.
 
 > **We'd love your review!** If FailSafe is useful to you, please leave a review on the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe) or [Open VSX](https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe). Your feedback helps other developers discover FailSafe and directly shapes its roadmap. Bug reports and feature requests welcome on [GitHub Issues](https://github.com/MythologIQ/FailSafe/issues).
 
@@ -48,6 +33,12 @@ Build 42 marks the arrival at a complex but functional system that reduces time,
 3. Run `FailSafe: Open Command Center (Browser Popout)` or press `Ctrl+Alt+F`.
 4. Run `FailSafe: Set Up Agent Governance` to inject governance rules into detected agents.
 5. Run `FailSafe: Audit Current File` to generate a governance verdict for the active editor.
+6. If you want commit-time guardrails, run `FailSafe: Install Commit Hook` inside a git workspace with `curl` available on the path.
+
+## Bundled Documentation
+
+- `docs/COMPONENT_HELP.md` - every shipped surface, metric group, and governance component in one place
+- `docs/PROCESS_GUIDE.md` - setup, audits, commit hooks, provenance, break-glass, replay, rollback, and troubleshooting flows
 
 ## Core Commands
 
@@ -58,6 +49,8 @@ Build 42 marks the arrival at a complex but functional system that reduces time,
 | `FailSafe: Audit Current File` | Run a manual audit on the active file |
 | `FailSafe: Set Governance Mode` | Switch between `observe`, `assist`, and `enforce` |
 | `FailSafe: Set Up Agent Governance` | Detect supported agents and inject governance rules |
+| `FailSafe: Install Commit Hook` | Add the authenticated pre-commit governance hook to the current repository |
+| `FailSafe: Remove Commit Hook` | Remove the FailSafe pre-commit governance hook and token file |
 | `FailSafe: Activate Break-Glass Override` | Start a time-limited emergency override |
 | `FailSafe: Replay Verdict (Audit)` | Re-run a prior governance decision for comparison |
 | `FailSafe: Revert to Checkpoint (Time-Travel)` | Restore a recorded governance checkpoint |
@@ -217,7 +210,19 @@ Emergency governance overrides for time-sensitive situations. Activate via `Fail
 
 Re-execute past governance decisions for audit verification via `FailSafe: Replay Verdict (Audit)`. Compares current policy hash and artifact hash against the original decision to detect drift.
 
-### 12. Multi-Agent Governance Fabric (v4.2.0)
+### 12. Commit Governance (v4.3.0)
+
+- `FailSafe: Install Commit Hook` writes a thin hook client and per-session token into `.git/`.
+- The hook calls `GET /api/v1/governance/commit-check` and only enforces the server's `allow` decision.
+- If the local API is unreachable or no token is present, the hook fails open by design. This is an operator guardrail, not a hard security boundary.
+
+### 13. AI Provenance Tracking (v4.3.0)
+
+- Save events can emit `PROVENANCE_RECORDED` ledger entries with artifact path, detected agent type, confidence, and active intent.
+- Provenance is observational. It does not mutate source files or inject comments.
+- History is queryable through the governance API and visible in local ledger data.
+
+### 14. Multi-Agent Governance Fabric (v4.2.0)
 
 FailSafe detects and governs multiple AI coding assistants in your workspace:
 
@@ -227,7 +232,7 @@ FailSafe detects and governs multiple AI coding assistants in your workspace:
 - **Coverage Dashboard** — Console view showing which agents are detected, governed, and compliant.
 - **First-Run Onboarding** — Guides new users through multi-agent governance setup on first activation.
 
-### 13. Intent Schema v2 (v4.2.0)
+### 15. Intent Schema v2 (v4.2.0)
 
 Intents now carry `schemaVersion`, `agentIdentity` (which agent created the intent and via which workflow), and `planId` references. Legacy v1 intents are auto-migrated on read.
 
@@ -282,6 +287,8 @@ Open Settings and search for `FailSafe`:
 
 If `.failsafe/config/sentinel.yaml` exists, it overrides settings. The initializer seeds it with `mode: hybrid` unless you change it.
 
+The `v4.3.0` release also introduces commit-time governance through the local FailSafe API on `http://127.0.0.1:7777` when the optional git hook is installed.
+
 ## Workspace Files
 
 FailSafe seeds a `.failsafe/` directory in your workspace for configuration, ledger, and feedback output. The primary workspace config is `.failsafe/config/sentinel.yaml`. Optional policy overrides can be placed at:
@@ -296,11 +303,12 @@ FailSafe seeds a `.failsafe/` directory in your workspace for configuration, led
 
 ## Requirements
 
-- VS Code 1.74.0 or later
+- VS Code 1.90.0 or later
 - Node.js 18+ (for development)
+- `curl` (required only if you install the commit hook)
 - Ollama (optional, for LLM-assisted mode)
 
-> **v4.2.0 "The Answer"** — After 42 backlog items, 103 ledger entries, and one very long conversation with the universe, we arrived at The Answer. Turns out it's not 42 — it's deterministic governance. Don't Panic.
+> **v4.3.0 "Telemetry Loop"** - Commit-time governance, provenance tracing, and CI context export now close the loop between active coding, release review, and audit evidence.
 
 > **We'd love your review!** If FailSafe is useful to you, please leave a review on the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe) or [Open VSX](https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe). Your feedback helps other developers discover FailSafe and directly shapes its roadmap. Bug reports and feature requests welcome on [GitHub Issues](https://github.com/MythologIQ/FailSafe/issues).
 
@@ -369,6 +377,10 @@ FailSafe tracks more than Git state. It records governance checkpoints as signed
 
 | Claim                                                                                       | Status      | Source                                                                                                                                                                                                         |
 | ------------------------------------------------------------------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `v4.3.0` ships commit hook install/remove commands.                                         | implemented | `FailSafe/extension/src/extension/main.ts`, `FailSafe/extension/package.json`                                                                                                                                  |
+| `v4.3.0` ships `commit-check` and provenance API routes.                                    | implemented | `FailSafe/extension/src/api/routes/governanceRoutes.ts`                                                                                                                                                        |
+| `v4.3.0` exports governance context in release CI.                                          | implemented | `.github/workflows/release.yml`, `tools/export-governance-context.sh`                                                                                                                                          |
+| Bundled operator docs ship inside the VSIX.                                                 | implemented | `FailSafe/extension/.vscodeignore`, `FailSafe/extension/docs/COMPONENT_HELP.md`, `FailSafe/extension/docs/PROCESS_GUIDE.md`                                                                                  |
 | Checkpoints persist in `failsafe_checkpoints` with typed governance fields.                 | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts:1533-1556`                                                                                                                                                    |
 | Checkpoint records include hash-chain material (`payload_hash`, `entry_hash`, `prev_hash`). | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts:1689-1695`                                                                                                                                                    |
 | Each checkpoint captures current Git head/hash context.                                     | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts:1647`                                                                                                                                                         |
@@ -377,6 +389,6 @@ FailSafe tracks more than Git state. It records governance checkpoints as signed
 | Sentinel local RAG persists observation payload + metadata + retrieval text.                | implemented | `FailSafe/extension/src/sentinel/SentinelRagStore.ts:60-81`                                                                                                                                                    |
 | Sentinel RAG can fall back to JSONL when SQLite is unavailable.                             | implemented | `FailSafe/extension/src/sentinel/SentinelRagStore.ts:85-91`                                                                                                                                                    |
 | RAG writes are controlled by `failsafe.sentinel.ragEnabled` (default `true`).               | implemented | `FailSafe/extension/src/sentinel/SentinelDaemon.ts:339-341`                                                                                                                                                    |
-| Checkpoint rows are directly foreign-key linked to Sentinel RAG rows.                       | unknown     | No explicit join/foreign key in `RoadmapServer` checkpoint insert (`FailSafe/extension/src/roadmap/RoadmapServer.ts:1689`) or Sentinel RAG insert (`FailSafe/extension/src/sentinel/SentinelRagStore.ts:103`). |
+| Checkpoint and Sentinel RAG tables are independent (no foreign-key link). | **false** | Confirmed: `failsafe_checkpoints` (ledger DB) and `sentinel_observations` (RAG DB) are in separate databases with no shared keys. `evidenceRefs` is always `[]`. |
 
 <!-- CHECKPOINT-DEEP-DIVE:END -->

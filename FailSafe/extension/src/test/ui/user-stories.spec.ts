@@ -12,7 +12,7 @@ type HubPayload = {
     milestones: Array<{ title: string; completedAt?: string | null; targetDate?: string | null }>;
     risks: Array<{ level?: string }>;
   };
-  sentinelStatus: { running: boolean; mode: string; filesWatched: number; queueDepth: number };
+  sentinelStatus: { running: boolean; mode: string; filesWatched: number; queueDepth: number; lastVerdict?: { decision?: string } };
   l3Queue: unknown[];
   recentVerdicts: Array<{ decision?: string; riskGrade?: string; summary?: string }>;
   trustSummary: { totalAgents: number; avgTrust: number; quarantined: number; stageCounts: { CBT: number; KBT: number; IBT: number } };
@@ -191,9 +191,10 @@ test('US: Command Center branding and skills tabs default behavior', async ({ pa
   await withUiServer(async (baseUrl) => {
     await page.goto(`${baseUrl}/legacy-index.html`);
     await expect(page).toHaveTitle(/FailSafe Command Center/);
-    await expect(page.getByRole('heading', { name: 'FailSafe Command Center' })).toBeVisible();
+    await expect(page.locator('h1')).toHaveText('FAILSAFE');
+    await expect(page.locator('.brand-subtitle')).toHaveText('Command Center');
 
-    await page.getByRole('button', { name: 'Skills' }).click();
+    await page.locator('.tab[data-route="skills"]').click();
     await expect(page.locator('[data-skill-tab="recommended"]')).toHaveClass(/active/);
     await expect(page.locator('[data-skill-panel="recommended"]')).toHaveClass(/active/);
 
@@ -203,11 +204,10 @@ test('US: Command Center branding and skills tabs default behavior', async ({ pa
   });
 });
 
-test('US: mission state precedence when Sentinel is paused', async ({ page }) => {
+test('US: sentinel pause state is reflected in the status strip', async ({ page }) => {
   await withUiServer(async (baseUrl) => {
     await page.goto(`${baseUrl}/legacy-index.html`);
-    await expect(page.locator('#mission-state')).toHaveText(/Risk Elevated/);
-    await expect(page.locator('#mission-detail')).toContainText('Sentinel paused');
+    await expect(page.locator('#status-sentinel')).toHaveText('Paused');
   }, {
     hub: baseHub({
       sentinelStatus: { running: false, mode: 'heuristic', filesWatched: 10, queueDepth: 0 },
@@ -215,14 +215,19 @@ test('US: mission state precedence when Sentinel is paused', async ({ page }) =>
   });
 });
 
-test('US: mission state precedence for critical risk signals', async ({ page }) => {
+test('US: critical verdicts elevate sentinel status', async ({ page }) => {
   await withUiServer(async (baseUrl) => {
     await page.goto(`${baseUrl}/legacy-index.html`);
-    await expect(page.locator('#mission-state')).toHaveText(/Risk Elevated/);
-    await expect(page.locator('#mission-detail')).toContainText('risk');
+    await expect(page.locator('#status-sentinel')).toHaveText('Critical');
   }, {
     hub: baseHub({
-      sentinelStatus: { running: true, mode: 'heuristic', filesWatched: 10, queueDepth: 2 },
+      sentinelStatus: {
+        running: true,
+        mode: 'heuristic',
+        filesWatched: 10,
+        queueDepth: 2,
+        lastVerdict: { decision: 'BLOCK' },
+      },
       recentVerdicts: [{ decision: 'BLOCK', summary: 'Critical policy violation' }],
       activePlan: {
         ...baseHub().activePlan,
@@ -232,7 +237,7 @@ test('US: mission state precedence for critical risk signals', async ({ page }) 
   });
 });
 
-test('US: mission state for audit in progress', async ({ page }) => {
+test('US: audit queue surfaces reviewing status and active audit phase', async ({ page }) => {
   const hub = baseHub();
   hub.activePlan.currentPhaseId = 'phase-audit';
   hub.activePlan.phases = hub.activePlan.phases.map((phase) => ({
@@ -243,12 +248,13 @@ test('US: mission state for audit in progress', async ({ page }) => {
 
   await withUiServer(async (baseUrl) => {
     await page.goto(`${baseUrl}/legacy-index.html`);
-    await expect(page.locator('#mission-state')).toHaveText(/Audit In Progress/);
-    await expect(page.locator('#mission-detail')).toContainText(/queue/i);
+    await expect(page.locator('#status-sentinel')).toHaveText('Reviewing');
+    await page.locator('.tab[data-route="run"]').click();
+    await expect(page.locator('#phase-grid .phase-card.active .phase-title')).toHaveText('Audit');
   }, { hub });
 });
 
-test('US: mission state for build running and governance active', async ({ page }) => {
+test('US: run view reflects implement and plan phase context', async ({ page }) => {
   const buildHub = baseHub();
   buildHub.activePlan.currentPhaseId = 'phase-implement';
   buildHub.activePlan.phases = buildHub.activePlan.phases.map((phase) => ({
@@ -258,19 +264,23 @@ test('US: mission state for build running and governance active', async ({ page 
 
   await withUiServer(async (baseUrl) => {
     await page.goto(`${baseUrl}/legacy-index.html`);
-    await expect(page.locator('#mission-state')).toHaveText(/Build Running/);
+    await page.locator('.tab[data-route="run"]').click();
+    await expect(page.locator('#phase-grid .phase-card.active .phase-title')).toHaveText('Implement');
+    await expect(page.locator('#status-sentinel')).toHaveText('Nominal');
   }, { hub: buildHub });
 
   await withUiServer(async (baseUrl) => {
     await page.goto(`${baseUrl}/legacy-index.html`);
-    await expect(page.locator('#mission-state')).toHaveText(/Governance Active/);
+    await page.locator('.tab[data-route="run"]').click();
+    await expect(page.locator('#phase-grid .phase-card.active .phase-title')).toHaveText('Plan');
+    await expect(page.locator('#sprint-info')).toContainText('phase-plan');
   }, { hub: baseHub() });
 });
 
 test('US: action feedback confirms cause and effect', async ({ page }) => {
   await withUiServer(async (baseUrl) => {
     await page.goto(`${baseUrl}/legacy-index.html`);
-    await page.getByRole('button', { name: 'Run' }).click();
+    await page.locator('.tab[data-route="run"]').click();
 
     await page.locator('[data-action="resume"]').click();
     await expect(page.locator('#action-feedback')).toContainText('Run started');

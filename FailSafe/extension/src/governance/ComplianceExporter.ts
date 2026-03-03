@@ -14,9 +14,17 @@ interface ControlMapping {
 
 export class ComplianceExporter {
   constructor(
-    private readonly ledgerManager: LedgerManager,
-    private readonly shadowGenomeManager: ShadowGenomeManager,
+    private ledgerManager: LedgerManager,
+    private shadowGenomeManager: ShadowGenomeManager,
   ) {}
+
+  setLedgerManager(ledger: LedgerManager): void {
+    this.ledgerManager = ledger;
+  }
+
+  setShadowGenomeManager(shadow: ShadowGenomeManager): void {
+    this.shadowGenomeManager = shadow;
+  }
 
   async exportBundle(framework: ComplianceFramework, outputDir: string): Promise<string> {
     const bundle = {

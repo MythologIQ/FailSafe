@@ -76,6 +76,12 @@ export async function activate(
     ledgerManager = qore.ledgerManager;
     shadowGenomeManager = qore.shadowGenomeManager;
 
+    // 3.4 Late-bind ledger to governance services created before QoreLogic
+    gov.releasePipelineGate.setLedgerManager(qore.ledgerManager);
+    gov.complianceExporter.setLedgerManager(qore.ledgerManager);
+    gov.complianceExporter.setShadowGenomeManager(qore.shadowGenomeManager);
+    gov.provenanceTracker.setLedgerManager(qore.ledgerManager);
+
     // 3.5 Gap 1: Mode-change audit trail
     let lastKnownMode = vscode.workspace
       .getConfiguration("failsafe")
@@ -212,6 +218,18 @@ export async function activate(
       }),
     );
 
+    // 3.11 Commit Hook commands (B92)
+    context.subscriptions.push(
+      vscode.commands.registerCommand("failsafe.installCommitHook", async () => {
+        await gov.commitGuard.install();
+        vscode.window.showInformationMessage("FailSafe commit hook installed.");
+      }),
+      vscode.commands.registerCommand("failsafe.removeCommitHook", async () => {
+        await gov.commitGuard.uninstall();
+        vscode.window.showInformationMessage("FailSafe commit hook removed.");
+      }),
+    );
+
     // 4. Sentinel
     const sentinel = await bootstrapSentinel(context, core, qore, logger);
     sentinelDaemon = sentinel.sentinelDaemon;
@@ -316,6 +334,7 @@ export async function activate(
         apiServer.setServices({
           enforcementEngine: gov.enforcementEngine,
           intentService: gov.intentService,
+          commitGuard: gov.commitGuard,
           sentinelDaemon,
           qorelogicManager,
           ledgerManager,

@@ -1,3 +1,5 @@
+[![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.3.0?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.3.0?platform=universal)
+
 <div align="center">
 
 # FailSafe
@@ -18,7 +20,7 @@ _Local-first safety for AI coding assistants._
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Commands-8B5CF6)](https://github.com/MythologIQ/FailSafe/releases)
 [![Documentation](https://img.shields.io/badge/docs-FAILSAFE_SPECIFICATION-blue)](docs/FAILSAFE_SPECIFICATION.md)
 
-**Current Release**: v4.2.1 (2026-02-28)
+**Current Release**: v4.3.0 (2026-03-02)
 
 > **If this project helps you, please star it!** It helps others discover FailSafe.
 
@@ -325,15 +327,22 @@ npm run compile
 
 ---
 
-## What's New in v4.2.0 "The Answer"
+## What's New in v4.3.0 "Telemetry Loop"
 
-> _After 42 backlog items, 103 ledger entries, and one very long conversation with the universe, we arrived at The Answer. Turns out it's not 42 — it's deterministic governance. Don't Panic._
+> _Commit-time governance, provenance tracing, and CI context export now close the loop between active coding, release review, and audit evidence._
 
-### Multi-Agent Governance Fabric
+### Release Focus
 
-FailSafe now detects and governs multiple AI coding assistants in your workspace — Claude CLI, Copilot, Codex CLI, and Agent Teams. A single command (`FailSafe: Set Up Agent Governance`) injects or removes governance files across all detected agents, with per-agent native format support.
+`v4.3.0` links editor-time governance to commit and release workflows without changing the core model. Policy still executes locally in code. The new surfaces add better operator visibility and clearer release evidence.
 
 ### Highlights
+
+New in `v4.3.0`:
+
+- **Pre-Commit Guard** - `FailSafe: Install Commit Hook` installs a thin git hook that asks the local FailSafe API whether a commit should proceed.
+- **AI Provenance Tracking** - Save events can emit `PROVENANCE_RECORDED` ledger entries with artifact path, detected agent type, confidence, and active intent.
+- **CI Governance Context Export** - Release automation now uploads a governance-context artifact built from public repository state.
+- **Bundled Operator Docs** - The packaged extension now ships clear component and process guides for installed users.
 
 - **Governance Ceremony** — Opt-in/opt-out injection across all detected AI agents.
 - **First-Run Onboarding** — Guided setup for multi-agent governance on first activation.
@@ -343,7 +352,11 @@ FailSafe now detects and governs multiple AI coding assistants in your workspace
 - **Intent Schema v2** — Agent identity binding, plan references, and auto-migration from v1.
 - **Verdict Replay Batch** — Bulk re-execution of past governance decisions with timing-safe comparison.
 
-### Also in v4.1.0
+### Also Included
+
+Retained from recent sealed releases and still part of the shipped surface:
+
+- **Multi-Agent Governance Fabric** - Runtime detection and governance injection for Claude CLI, Copilot, Codex CLI, and Agent Teams.
 
 - **Break-Glass Protocol** — Time-limited emergency governance overrides with auto-revert.
 - **Artifact Hash on Write** — SHA-256 content hash recorded in ledger at save-time.
@@ -438,6 +451,6 @@ FailSafe tracks more than Git state. It records governance checkpoints as signed
 | Sentinel local RAG persists observation payload + metadata + retrieval text.                | implemented | `FailSafe/extension/src/sentinel/SentinelRagStore.ts:60-81`                                                                                                                                                    |
 | Sentinel RAG can fall back to JSONL when SQLite is unavailable.                             | implemented | `FailSafe/extension/src/sentinel/SentinelRagStore.ts:85-91`                                                                                                                                                    |
 | RAG writes are controlled by `failsafe.sentinel.ragEnabled` (default `true`).               | implemented | `FailSafe/extension/src/sentinel/SentinelDaemon.ts:339-341`                                                                                                                                                    |
-| Checkpoint rows are directly foreign-key linked to Sentinel RAG rows.                       | unknown     | No explicit join/foreign key in `RoadmapServer` checkpoint insert (`FailSafe/extension/src/roadmap/RoadmapServer.ts:1689`) or Sentinel RAG insert (`FailSafe/extension/src/sentinel/SentinelRagStore.ts:103`). |
+| Checkpoint and Sentinel RAG tables are independent (no foreign-key link). | **false** | Confirmed: `failsafe_checkpoints` (ledger DB) and `sentinel_observations` (RAG DB) are in separate databases with no shared keys. `evidenceRefs` is always `[]`. |
 
 <!-- CHECKPOINT-DEEP-DIVE:END -->

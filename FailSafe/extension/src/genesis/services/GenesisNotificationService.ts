@@ -69,6 +69,6 @@ ${verdict.actions.map((a) => `- ${a.type}: ${a.details} (${a.status})`).join('\n
 
 export function showGenesisHelp(): void {
   vscode.window.showInformationMessage(
-    'Cortex Commands: audit, show graph, show ledger, find risks, trust status, explain, approve, help'
+    'FailSafe help: audit current file, set governance mode, set up agent governance, install commit hook, replay verdict, break-glass override.'
   );
 }

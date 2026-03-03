@@ -28,6 +28,8 @@ function makeLandscape(overrides: Partial<AgentLandscape> = {}): AgentLandscape 
 function createMockRegistry(landscape: AgentLandscape) {
   return {
     detectAll: async () => landscape,
+    detect: async () => ({ detected: true }),
+    hasGovernance: () => true,
   };
 }
 

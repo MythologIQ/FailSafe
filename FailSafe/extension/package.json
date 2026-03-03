@@ -2,7 +2,7 @@
   "name": "mythologiq-failsafe",
   "displayName": "FailSafe (feat. QoreLogic)",
   "description": "Complete AI governance for modern development. Genesis visualization + QoreLogic framework + Sentinel monitoring.",
-  "icon": "extension/icon.png",
+  "icon": "icon.png",
   "version": "4.3.1",
   "publisher": "MythologIQ",
   "license": "MIT",
@@ -179,12 +179,14 @@
         {
           "id": "failsafe.riskRegister",
           "name": "Risk Register",
-          "type": "webview"
+          "type": "webview",
+          "icon": "media/failsafe-icon.png"
         },
         {
           "id": "failsafe.transparencyPanel",
           "name": "Transparency Stream",
-          "type": "webview"
+          "type": "webview",
+          "icon": "media/failsafe-icon.png"
         }
       ]
     },

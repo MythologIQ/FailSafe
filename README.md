@@ -10,7 +10,7 @@ _Local-first safety for AI coding assistants._
 
 [![GitHub Stars](https://img.shields.io/github/stars/MythologIQ/FailSafe?style=social)](https://github.com/MythologIQ/FailSafe/stargazers)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/status-stable-green)
+[![Status](https://img.shields.io/badge/status-stable-green)](https://github.com/MythologIQ/FailSafe)
 [![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.3.1?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.3.1?platform=universal)
 [![Node](https://img.shields.io/badge/node-18+-green.svg)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue.svg)](https://www.typescriptlang.org)

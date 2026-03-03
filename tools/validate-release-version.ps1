@@ -225,6 +225,7 @@ if ($rawTags) {
     foreach ($tag in $rawTags) {
         $parsed = Parse-SemVer $tag
         if ($parsed) {
+            $parsed.TagName = $tag
             $parsedTags += $parsed
         }
     }
@@ -309,6 +310,11 @@ if ($errors.Count -gt 0) {
     exit 1
 }
 
+# Exclude the current target tag/version from "last release" calculations.
+$comparisonTags = @($parsedTags | Where-Object { $_.Raw -ne $targetVersion.Raw })
+$previousTag = $null
+if ($comparisonTags.Count -gt 0) { $previousTag = $comparisonTags[0] }
+
 # Check 2: package.json alignment
 if ($targetVersion.Core -ne $pkgVersion.Core -or $targetVersion.PreRelease -ne $pkgVersion.PreRelease) {
     $errors += "FAIL [PKG-ALIGN] Tag version '$($targetVersion.Raw)' != package.json version '$($pkgVersion.Raw)'"
@@ -330,26 +336,26 @@ if (Test-Path $changelogPath) {
 }
 
 # Check 4: Monotonic ordering (new must be > last tag)
-if ($lastTag) {
-    $cmp = Compare-SemVer $targetVersion $lastTag
+if ($previousTag) {
+    $cmp = Compare-SemVer $targetVersion $previousTag
     if ($cmp -le 0) {
-        $errors += "FAIL [MONOTONIC] Version $($targetVersion.Raw) is not greater than last tag $($lastTag.Raw). Versions must only increase."
+        $errors += "FAIL [MONOTONIC] Version $($targetVersion.Raw) is not greater than last tag $($previousTag.Raw). Versions must only increase."
     } else {
-        Write-Host "PASS [MONOTONIC] $($targetVersion.Raw) > $($lastTag.Raw) (last tag)" -ForegroundColor Green
+        Write-Host "PASS [MONOTONIC] $($targetVersion.Raw) > $($previousTag.Raw) (last tag)" -ForegroundColor Green
     }
 } else {
     Write-Host "PASS [MONOTONIC] No prior tags -- first release" -ForegroundColor Green
 }
 
 # Check 5: Diff category enforcement
-if ($DiffCategory -ne "none" -and $lastTag) {
-    $bumpCat = Get-BumpCategory $lastTag $targetVersion
+if ($DiffCategory -ne "none" -and $previousTag) {
+    $bumpCat = Get-BumpCategory $previousTag $targetVersion
 
     switch ($DiffCategory) {
         "breaking" {
-            if ($lastTag.Major -gt 0 -and $bumpCat -ne "major") {
-                $errors += "FAIL [BUMP-RULE] Breaking changes require MAJOR bump ($($lastTag.Major + 1).0.0), got $($targetVersion.Raw). SemVer spec rule 8."
-            } elseif ($lastTag.Major -eq 0) {
+            if ($previousTag.Major -gt 0 -and $bumpCat -ne "major") {
+                $errors += "FAIL [BUMP-RULE] Breaking changes require MAJOR bump ($($previousTag.Major + 1).0.0), got $($targetVersion.Raw). SemVer spec rule 8."
+            } elseif ($previousTag.Major -eq 0) {
                 $warnings += "WARN [BUMP-RULE] Major version 0: breaking changes allowed without major bump per spec rule 4."
             } else {
                 Write-Host "PASS [BUMP-RULE] Breaking change -> MAJOR bump correct" -ForegroundColor Green
@@ -373,15 +379,15 @@ if ($DiffCategory -ne "none" -and $lastTag) {
 }
 
 # Check 6: Reset rules (spec rule 7: patch resets on minor, rule 8: both reset on major)
-if ($lastTag) {
-    if ($targetVersion.Major -gt $lastTag.Major) {
+if ($previousTag) {
+    if ($targetVersion.Major -gt $previousTag.Major) {
         if ($targetVersion.Minor -ne 0 -or $targetVersion.Patch -ne 0) {
             $errors += "FAIL [RESET-RULE] MAJOR bump requires MINOR and PATCH reset to 0. Got $($targetVersion.Raw), expected $($targetVersion.Major).0.0"
         } else {
             Write-Host "PASS [RESET-RULE] MAJOR bump resets MINOR.PATCH to 0" -ForegroundColor Green
         }
     }
-    elseif ($targetVersion.Minor -gt $lastTag.Minor -and $targetVersion.Major -eq $lastTag.Major) {
+    elseif ($targetVersion.Minor -gt $previousTag.Minor -and $targetVersion.Major -eq $previousTag.Major) {
         if ($targetVersion.Patch -ne 0) {
             $errors += "FAIL [RESET-RULE] MINOR bump requires PATCH reset to 0. Got $($targetVersion.Raw), expected $($targetVersion.Major).$($targetVersion.Minor).0"
         } else {

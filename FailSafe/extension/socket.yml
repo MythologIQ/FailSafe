@@ -1,0 +1,10 @@
+version: 2
+issueRules:
+  shellAccess:
+    action: defer
+  networkAccess:
+    action: defer
+  broadActivationEvents:
+    action: defer
+  dynamicCodeExecution:
+    action: defer

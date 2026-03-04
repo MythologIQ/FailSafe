@@ -88,9 +88,8 @@ export class OverviewRenderer {
 
     let html = `<div style="display: flex; flex-direction: column; gap: 8px;">`;
     for (const c of items) {
-      const color = c.policyVerdict === 'VIOLATION' ? 'var(--accent-red)' : 
-                    c.policyVerdict === 'WARN' ? 'var(--accent-gold)' : 
-                    'var(--accent-green)';
+      const verdictColors = { VIOLATION: 'var(--accent-red)', WARN: 'var(--accent-gold)' };
+      const color = verdictColors[c.policyVerdict] || 'var(--accent-green)';
       
       html += `
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(0,0,0,0.15); border-left: 3px solid ${color}; border-radius: 4px;">

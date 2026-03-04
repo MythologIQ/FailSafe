@@ -1,10 +1,12 @@
 // FailSafe Unified Command Center — Connection Module
 // Handles WebSocket and SSE for real-time telemetry from ConsoleServer
+import { createRestApi } from './rest-api.js';
 
 export class ConnectionClient {
   constructor(options = {}) {
     this.baseUrl = options.baseUrl || ''; // Empty string resolves to same-origin
     this.wsUrl = options.wsUrl || `ws://${window.location.host}`;
+    Object.assign(this, createRestApi(this.baseUrl));
     
     // Callbacks registered by UI components
     this.callbacks = {
@@ -199,26 +201,6 @@ export class ConnectionClient {
     } catch (error) {
       console.error("Failed to load hub data:", error);
       return null;
-    }
-  }
-
-  async fetchSkills() {
-    try {
-      const res = await fetch(`${this.baseUrl}/api/skills`);
-      if (!res.ok) throw new Error(`Skill fetch failed (${res.status})`);
-      return await res.json();
-    } catch (e) {
-      return { skills: [] };
-    }
-  }
-
-  async fetchRisks() {
-    try {
-      const res = await fetch(`${this.baseUrl}/api/v1/risks`);
-      if (!res.ok) throw new Error(`Risks fetch failed`);
-      return await res.json();
-    } catch (e) {
-      return { risks: [] };
     }
   }
 

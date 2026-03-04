@@ -40,12 +40,24 @@ export class FailSafeSidebarProvider implements vscode.WebviewViewProvider {
       case "reload":
         this.refresh();
         break;
-      case "initialize":
-        await vscode.commands.executeCommand("failsafe.bootstrap"); // Assuming this is the command ID
+      case "initialize": {
+        const initCmds = await vscode.commands.getCommands(true);
+        if (initCmds.includes("failsafe.bootstrap")) {
+          await vscode.commands.executeCommand("failsafe.bootstrap");
+        } else {
+          vscode.window.showInformationMessage("Bootstrap is not enabled in current configuration.");
+        }
         break;
-      case "organize":
-        await vscode.commands.executeCommand("failsafe.organize"); // Assuming command exists or reusing bootstrap with args
+      }
+      case "organize": {
+        const cmds = await vscode.commands.getCommands(true);
+        if (cmds.includes("failsafe.organize")) {
+          await vscode.commands.executeCommand("failsafe.organize");
+        } else {
+          vscode.window.showInformationMessage("Organize is not enabled in current configuration.");
+        }
         break;
+      }
     }
   }
 

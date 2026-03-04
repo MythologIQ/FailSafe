@@ -6,74 +6,6 @@
   <title>FAILSAFE Console</title>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="command-center.css">
-  <style>
-    /* Temporary inline layout just to get the shell running, move to css later */
-    .tab-nav {
-      position: relative;
-      z-index: 100;
-      display: flex;
-      gap: 16px;
-      padding: 0 24px;
-      border-bottom: 1px solid var(--border-rim);
-      background: linear-gradient(90deg, transparent, var(--glass-bg), transparent);
-    }
-    
-    .tab-btn {
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      font-family: var(--font-display);
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      padding: 12px 4px;
-      cursor: pointer;
-      position: relative;
-      transition: color 0.2s;
-    }
-    
-    .tab-btn:hover { color: var(--text-main); }
-    .tab-btn.active { color: var(--primary); font-weight: 700; text-shadow: 0 0 8px var(--primary-glow); }
-    
-    .tab-btn.active::after {
-      content: '';
-      position: absolute;
-      bottom: -1px;
-      left: 0;
-      right: 0;
-      height: 2px;
-      background: var(--primary);
-      box-shadow: 0 -2px 8px var(--primary);
-    }
-
-    .status-strip {
-      display: flex;
-      justify-content: space-between;
-      padding: 8px 24px;
-      background: var(--console-bg);
-      border-bottom: 1px solid var(--border-rim);
-      font-family: var(--font-mono, monospace);
-      font-size: 0.75rem;
-      color: var(--console-meta);
-      position: relative;
-      z-index: 100;
-    }
-    
-    .status-item span { color: var(--console-text); font-weight: 600; margin-left: 6px; }
-
-    .content-area {
-      flex: 1;
-      padding: 24px;
-      overflow-y: auto;
-      position: relative;
-      z-index: 10;
-    }
-    
-    .tab-panel { display: none; }
-    .tab-panel.active { display: block; animation: fade-in 0.3s ease; }
-    
-    @keyframes fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
-  </style>
 </head>
 <body>
 
@@ -86,7 +18,7 @@
       <img src="failsafe-icon.png" class="app-logo" alt="FailSafe Logo">
       <div class="app-name">FAILSAFE CONSOLE</div>
     </div>
-    
+
     <div class="header-right">
       <div class="connection-status">
         <span class="dot connected"></span>
@@ -103,6 +35,7 @@
     <button class="tab-btn" data-target="risks">Risks</button>
     <button class="tab-btn" data-target="skills">Skills</button>
     <button class="tab-btn" data-target="governance">Governance</button>
+    <button class="tab-btn" data-target="brainstorm">Brainstorm</button>
     <button class="tab-btn" data-target="settings">Settings</button>
   </nav>
 
@@ -115,30 +48,14 @@
 
   <!-- Main Viewport Area -->
   <main class="content-area">
-    <!-- OVERVIEW TAB -->
-    <div id="overview" class="tab-panel active">
-      <h2>Overview Dashboard Setup (Mock)</h2>
-    </div>
-
-    <!-- SETTINGS TAB (Testing Themes) -->
-    <div id="settings" class="tab-panel">
-      <h2>Themes</h2>
-      <div style="display: flex; gap: 12px; margin-top: 16px;">
-        <button onclick="document.documentElement.setAttribute('data-theme', 'pegasus')">Pegasus (Light)</button>
-        <button onclick="document.documentElement.setAttribute('data-theme', 'mythiq')">Mythiq (Dark)</button>
-        <button onclick="document.documentElement.setAttribute('data-theme', 'midnight')">Midnight (Pitch)</button>
-        <button onclick="document.documentElement.setAttribute('data-theme', 'aurora')">Aurora (Teal)</button>
-        <button onclick="document.documentElement.setAttribute('data-theme', 'crimson')">Crimson (Red)</button>
-        <button onclick="document.documentElement.setAttribute('data-theme', 'atmosphere')">Atmosphere</button>
-      </div>
-    </div>
-    
-    <!-- Other Tabs (Stubs) -->
-    <div id="operations" class="tab-panel"><h2>Operations</h2></div>
-    <div id="transparency" class="tab-panel"><h2>Transparency</h2></div>
-    <div id="risks" class="tab-panel"><h2>Risks</h2></div>
-    <div id="skills" class="tab-panel"><h2>Skills</h2></div>
-    <div id="governance" class="tab-panel"><h2>Governance</h2></div>
+    <div id="overview" class="tab-panel active"></div>
+    <div id="operations" class="tab-panel"></div>
+    <div id="transparency" class="tab-panel"></div>
+    <div id="risks" class="tab-panel"></div>
+    <div id="skills" class="tab-panel"></div>
+    <div id="governance" class="tab-panel"></div>
+    <div id="brainstorm" class="tab-panel"></div>
+    <div id="settings" class="tab-panel"></div>
   </main>
 
   <script src="command-center.js" type="module"></script>

@@ -428,6 +428,61 @@ export class ConsoleServer {
       res.json({ risks });
     });
 
+    // API: Create risk
+    this.app.post("/api/v1/risks", (req: Request, res: Response) => {
+      if (this.rejectIfRemote(req, res)) return;
+      const { title, severity, status, description } = req.body;
+      if (!title || !severity) {
+        res.status(400).json({ ok: false, error: "title and severity required" });
+        return;
+      }
+      const risk = {
+        id: `risk-${Date.now()}`,
+        title: String(title).slice(0, 200),
+        severity: String(severity),
+        status: String(status || "open"),
+        description: String(description || "").slice(0, 2000),
+        createdAt: new Date().toISOString(),
+      };
+      const risks = this.getRiskRegister();
+      risks.push(risk);
+      this.writeRiskRegister(risks);
+      this.broadcast({ type: "risk.created", payload: risk });
+      res.json({ ok: true, risk });
+    });
+
+    // API: Update risk
+    this.app.put("/api/v1/risks/:id", (req: Request, res: Response) => {
+      if (this.rejectIfRemote(req, res)) return;
+      const id = req.params.id;
+      const risks = this.getRiskRegister();
+      const idx = risks.findIndex((r: any) => r.id === id);
+      if (idx === -1) {
+        res.status(404).json({ ok: false, error: "risk not found" });
+        return;
+      }
+      const updated = { ...risks[idx], ...req.body, id };
+      risks[idx] = updated;
+      this.writeRiskRegister(risks);
+      this.broadcast({ type: "risk.updated", payload: updated });
+      res.json({ ok: true, risk: updated });
+    });
+
+    // API: Delete risk
+    this.app.delete("/api/v1/risks/:id", (req: Request, res: Response) => {
+      if (this.rejectIfRemote(req, res)) return;
+      const id = req.params.id;
+      const risks = this.getRiskRegister();
+      const filtered = risks.filter((r: any) => r.id !== id);
+      if (filtered.length === risks.length) {
+        res.status(404).json({ ok: false, error: "risk not found" });
+        return;
+      }
+      this.writeRiskRegister(filtered);
+      this.broadcast({ type: "risk.deleted", payload: { id } });
+      res.json({ ok: true });
+    });
+
     this.app.get("/api/checkpoints", (req: Request, res: Response) => {
       const limitRaw = Number.parseInt(String(req.query.limit || "50"), 10);
       const limit = Number.isFinite(limitRaw)
@@ -561,6 +616,39 @@ export class ConsoleServer {
       },
     );
 
+    // API: Process all pending L3 approvals in batch
+    this.app.post(
+      "/api/actions/approve-l3-batch",
+      async (req: Request, res: Response) => {
+        if (this.rejectIfRemote(req, res)) return;
+        const decision: "APPROVED" | "REJECTED" =
+          req.body.decision === "REJECTED" ? "REJECTED" : "APPROVED";
+        const conditions: string[] = Array.isArray(req.body.conditions)
+          ? req.body.conditions
+          : [];
+        const queue = this.qorelogicManager.getL3Queue();
+        if (!queue.length) {
+          res.json({ ok: true, processed: 0 });
+          return;
+        }
+        const results: Array<{ id: string; ok: boolean; error?: string }> = [];
+        for (const item of queue) {
+          try {
+            await this.qorelogicManager.processL3Decision(
+              item.id,
+              decision,
+              conditions,
+            );
+            results.push({ id: item.id, ok: true });
+          } catch (e: any) {
+            results.push({ id: item.id, ok: false, error: e.message });
+          }
+        }
+        this.broadcast({ type: "l3.batch_processed", payload: { results } });
+        res.json({ ok: true, processed: results.length, results });
+      },
+    );
+
     // Feature gate: expose available features for UI
     this.app.get("/api/v1/features", (_req: Request, res: Response) => {
       if (!this.featureGate) {
@@ -579,6 +667,43 @@ export class ConsoleServer {
         };
       }
       res.json({ tier, features });
+    });
+
+    // API: Unified system status
+    this.app.get("/api/v1/status", async (_req: Request, res: Response) => {
+      const hub = await this.buildHubSnapshot();
+      const sentinel = hub.sentinelStatus as Record<string, unknown> | undefined;
+      res.json({
+        sentinel: {
+          running: sentinel?.running ?? false,
+          mode: sentinel?.mode ?? "unknown",
+          eventsProcessed: sentinel?.eventsProcessed ?? 0,
+        },
+        governance: { mode: sentinel?.mode ?? "observe" },
+        chain: { valid: hub.chainValid ?? false },
+        version: hub.version ?? "unknown",
+      });
+    });
+
+    // API: Recent sentinel verdicts
+    this.app.get("/api/v1/verdicts", (_req: Request, res: Response) => {
+      const limit = Math.min(Number(_req.query.limit) || 20, 100);
+      res.json(this.recentVerdicts.slice(0, limit));
+    });
+
+    // API: Trust scores from checkpoint analysis
+    this.app.get("/api/v1/trust", async (_req: Request, res: Response) => {
+      const hub = await this.buildHubSnapshot();
+      const checkpoints = Object.values((hub.checkpoints as Record<string, unknown>) || {});
+      const total = checkpoints.length || 1;
+      const passed = checkpoints.filter(
+        (c: any) => c.policyVerdict !== "VIOLATION",
+      ).length;
+      res.json({
+        overall: Math.round((passed / total) * 100),
+        checkpointCount: total,
+        passCount: passed,
+      });
     });
 
     // v4.2.0: Console UI routes (HTML server-rendered)
@@ -2624,5 +2749,17 @@ export class ConsoleServer {
     }
 
     return [];
+  }
+
+  private writeRiskRegister(risks: Array<Record<string, unknown>>): void {
+    const risksPath = path.join(
+      this.workspaceRoot,
+      ".failsafe",
+      "risks",
+      "risks.json",
+    );
+    const dir = path.dirname(risksPath);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(risksPath, JSON.stringify({ risks }, null, 2), "utf-8");
   }
 }

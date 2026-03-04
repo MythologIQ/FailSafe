@@ -1,8 +1,10 @@
 // FailSafe Unified Command Center — Main Entry Point
 import { ConnectionClient } from './modules/connection.js';
+import { OverviewRenderer } from './modules/overview.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-  // 1. Initialize Connection Client
+  // 1. Initialize Renderers & Client
+  const overview = new OverviewRenderer('overview');
   const client = new ConnectionClient();
   
   const statusLabels = document.querySelectorAll('.connection-status');
@@ -19,8 +21,24 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   client.on('hub', (data) => {
-    // We will pass this data to the active tab renderers in the next step
-    console.log("Hub Snapshot Received:", data);
+    // Top-Level Application Tickers
+    const protoEl = document.getElementById('ticker-protocol');
+    const sentEl = document.getElementById('ticker-sentinel');
+    const latEl = document.getElementById('ticker-latency');
+
+    if (protoEl) protoEl.innerHTML = `PROTOCOL <span style="color:var(--text-main); font-weight: 600; margin-left: 6px;">${data.sentinelStatus?.mode || 'Unknown'}</span>`;
+    
+    if (sentEl) {
+      const isLive = data.sentinelStatus?.running;
+      sentEl.innerHTML = `SENTINEL <span style="color: ${isLive ? 'var(--accent-green)' : 'var(--accent-red)'}; font-weight: 600; margin-left: 6px;">${isLive ? 'Active' : 'Halted'}</span>`;
+    }
+
+    if (latEl) {
+      latEl.innerHTML = `API <span style="color:var(--text-muted); font-family: var(--font-mono); font-weight: 600; margin-left: 6px;">${data.qoreStatus?.latencyMs || '??'}ms</span>`;
+    }
+
+    // Direct data downstream to modules
+    overview.render(data);
   });
 
   // Start polling/subscribing

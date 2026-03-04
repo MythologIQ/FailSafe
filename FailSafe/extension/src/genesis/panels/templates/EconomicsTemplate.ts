@@ -26,11 +26,11 @@ function renderHeroSection(snapshot: EconomicsSnapshot): string {
     <section class="hero">
       <div class="hero-metric">
         <span class="hero-label">Tokens Saved This Week</span>
-        <span class="hero-value">${formatNumber(snapshot.weeklyTokensSaved)}</span>
+        <span class="hero-value" data-field="weeklyTokensSaved">${formatNumber(snapshot.weeklyTokensSaved)}</span>
       </div>
       <div class="hero-cost">
         <span class="cost-label">Estimated Savings</span>
-        <span class="cost-value">$${cost}</span>
+        <span class="cost-value" data-field="weeklyCostSaved">$${cost}</span>
       </div>
     </section>`;
 }
@@ -41,18 +41,18 @@ function renderDonutChart(ratio: number): string {
   return `
     <section class="chart-card">
       <h3 ${tooltipAttrs("Percentage of prompts using lightweight Sentinel RAG")}>Context Sync Ratio</h3>
-      <div class="donut" style="background: conic-gradient(
+      <div class="donut" data-field="donut" style="background: conic-gradient(
         var(--success) 0% ${ragPct}%,
         var(--muted) ${ragPct}% 100%
       );">
         <div class="donut-hole">
-          <span class="donut-pct">${ragPct}%</span>
+          <span class="donut-pct" data-field="ragPct">${ragPct}%</span>
           <span class="donut-label">RAG</span>
         </div>
       </div>
       <div class="donut-legend">
-        <span class="legend-item"><span class="dot rag"></span> RAG (${ragPct}%)</span>
-        <span class="legend-item"><span class="dot full"></span> Full (${fullPct}%)</span>
+        <span class="legend-item" data-field="ragLegend"><span class="dot rag"></span> RAG (${ragPct}%)</span>
+        <span class="legend-item" data-field="fullLegend"><span class="dot full"></span> Full (${fullPct}%)</span>
       </div>
     </section>`;
 }
@@ -132,6 +132,32 @@ export function renderEconomicsTemplate(model: EconomicsViewModel): string {
   <script nonce="${nonce}">
     const vscode = acquireVsCodeApi();
     function refresh() { vscode.postMessage({ command: 'refresh' }); }
+    function formatNumber(n) {
+      if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+      if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+      return String(Math.round(n));
+    }
+    function updateDashboard(snapshot) {
+      var tokensEl = document.querySelector('[data-field="weeklyTokensSaved"]');
+      var costEl = document.querySelector('[data-field="weeklyCostSaved"]');
+      var ragPctEl = document.querySelector('[data-field="ragPct"]');
+      var ragLegendEl = document.querySelector('[data-field="ragLegend"]');
+      var fullLegendEl = document.querySelector('[data-field="fullLegend"]');
+      var donutEl = document.querySelector('[data-field="donut"]');
+      if (tokensEl) tokensEl.textContent = formatNumber(snapshot.weeklyTokensSaved);
+      if (costEl) costEl.textContent = '$' + snapshot.weeklyCostSaved.toFixed(2);
+      var ragPct = Math.round(snapshot.contextSyncRatio * 100);
+      var fullPct = 100 - ragPct;
+      if (ragPctEl) ragPctEl.textContent = ragPct + '%';
+      if (ragLegendEl) ragLegendEl.innerHTML = '<span class="dot rag"></span> RAG (' + ragPct + '%)';
+      if (fullLegendEl) fullLegendEl.innerHTML = '<span class="dot full"></span> Full (' + fullPct + '%)';
+      if (donutEl) donutEl.style.background = 'conic-gradient(var(--success) 0% ' + ragPct + '%, var(--muted) ' + ragPct + '% 100%)';
+    }
+    window.addEventListener('message', function(e) {
+      if (e.data && e.data.type === 'updateDashboard') {
+        updateDashboard(e.data.snapshot);
+      }
+    });
   </script>
 </body>
 </html>`;

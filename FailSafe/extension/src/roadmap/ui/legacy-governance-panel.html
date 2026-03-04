@@ -1,0 +1,28 @@
+<section id="panel-governance" class="panel route-panel governance-panel governance-shell" data-route="governance">
+        <div class="panel-headline">
+          <h2>System Governance</h2>
+          <p class="panel-subline">Unified oversight of protocol health and policy enforcement signals.</p>
+        </div>
+        <section class="governance-layout">
+          <div class="governance-left-col">
+            <article class="card governance-card"><h3>Sentinel Status</h3><div id="sentinel-status"></div><button id="verify-integrity-btn" class="hub-action-btn primary small" type="button" style="margin-top: 8px;">Verify Integrity</button></article>
+            <article class="card governance-card"><h3>Active Policies</h3><div id="trust-summary"></div></article>
+          </div>
+          <div class="governance-right-col">
+            <article class="card governance-card queue-card">
+              <div class="governance-card-head">
+                <h3>L3 Verification Queue</h3>
+                <button class="hub-action-btn primary small" type="button">Process All</button>
+              </div>
+              <div id="l3-queue"></div>
+            </article>
+            <article class="card governance-card audit-card">
+              <div class="governance-card-head">
+                <h3>Protocol Audit Logs</h3>
+                <span class="governance-stream-tag">RT_STREAM: STABLE</span>
+              </div>
+              <div id="sentinel-alerts"></div>
+            </article>
+          </div>
+        </section>
+      </section>

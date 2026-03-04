@@ -1,0 +1,84 @@
+<section id="panel-skills" class="panel route-panel skills-panel" data-route="skills">
+        <div class="panel-headline">
+          <h2>Intent Orchestration</h2>
+          <p class="panel-subline">System command interface for autonomous skill deployment.</p>
+        </div>
+
+        <section class="intent-shell">
+          <label class="intent-label" for="intent-input">Intent Goal</label>
+          <textarea id="intent-input" class="intent-input" rows="4" placeholder="Define intent goals (e.g. audit security posture and optimize execution routing)..."></textarea>
+          <div class="intent-buffer-row">
+            <div id="intent-context" class="intent-context"></div>
+          </div>
+          <div class="intent-actions intent-actions-right">
+            <button id="intent-generate" class="hub-action-btn primary" type="button">Generate Package</button>
+            <button id="intent-copy" class="hub-action-btn ghost" type="button">Copy Package</button>
+          </div>
+          <p class="intent-action-note">Generate Package creates a structured action package only. It does not execute a run.</p>
+          <pre id="intent-output" class="intent-output">Package preview appears here after generation.</pre>
+        </section>
+
+        <div class="skills-command-grid">
+          <div class="skills-library-shell">
+            <div class="skills-library-head">
+              <h3>Skill Library</h3>
+              <div class="skills-library-head-right">
+                <span class="skills-buffer-inline">Buffer 14.2%</span>
+                <span class="skills-library-badge"><span id="skills-active-count">0</span> Active Modules</span>
+              </div>
+            </div>
+            <div class="skills-toolbar">
+              <div class="ingest-head" style="display:none"></div>
+              <div class="ingest-branch">
+                <button id="skill-manual-ingest" class="hub-action-btn primary ingest-main" type="button" aria-haspopup="menu" aria-expanded="false">Manual Ingest</button>
+                <div id="skill-ingest-menu" class="skill-ingest-menu" role="menu" aria-label="Manual ingest options" hidden>
+                  <button id="skill-manual-file" class="hub-action-btn ingest-option" type="button" role="menuitem">Ingest Single File</button>
+                  <button id="skill-manual-folder" class="hub-action-btn ingest-option" type="button" role="menuitem">Ingest Directory</button>
+                </div>
+              </div>
+              <button id="skill-auto-ingest" class="hub-action-btn auto-workspace" type="button">Auto Workspace</button>
+              <div id="skill-phase-label" class="skill-context-title"></div>
+              <div id="skill-ingest-status" class="skill-ingest-status">Only admitted local skills are recognized.</div>
+              <input id="skill-manual-file-input" type="file" accept=".md,.yml,.yaml,.txt" class="visually-hidden">
+              <input id="skill-manual-folder-input" type="file" webkitdirectory directory multiple class="visually-hidden">
+            </div>
+            <div class="skill-tabs" role="tablist" aria-label="Skill categories">
+              <button class="skill-tab active" type="button" role="tab" aria-selected="true" data-skill-tab="recommended">Recommended</button>
+              <button class="skill-tab" type="button" role="tab" aria-selected="false" data-skill-tab="allRelevant">All Relevant</button>
+              <button class="skill-tab" type="button" role="tab" aria-selected="false" data-skill-tab="allInstalled">All Installed</button>
+              <button class="skill-tab" type="button" role="tab" aria-selected="false" data-skill-tab="otherAvailable">Other Available</button>
+            </div>
+
+            <div class="skills-layout">
+              <section class="skill-group skill-tab-panel active" data-skill-panel="recommended">
+                <div class="skill-carousel-controls">
+                  <button class="carousel-btn" type="button" data-carousel-target="skill-recommended" data-carousel-dir="prev" aria-label="Previous recommended skills">&lt;</button>
+                  <button class="carousel-btn" type="button" data-carousel-target="skill-recommended" data-carousel-dir="next" aria-label="Next recommended skills">&gt;</button>
+                </div>
+                <div id="skill-recommended" class="skill-list"></div>
+              </section>
+              <section class="skill-group skill-tab-panel" data-skill-panel="allRelevant">
+                <div class="skill-carousel-controls">
+                  <button class="carousel-btn" type="button" data-carousel-target="skill-all-relevant" data-carousel-dir="prev" aria-label="Previous relevant skills">&lt;</button>
+                  <button class="carousel-btn" type="button" data-carousel-target="skill-all-relevant" data-carousel-dir="next" aria-label="Next relevant skills">&gt;</button>
+                </div>
+                <div id="skill-all-relevant" class="skill-list"></div>
+              </section>
+              <section class="skill-group skill-tab-panel" data-skill-panel="allInstalled">
+                <div class="skill-carousel-controls">
+                  <button class="carousel-btn" type="button" data-carousel-target="skill-all-installed" data-carousel-dir="prev" aria-label="Previous installed skills">&lt;</button>
+                  <button class="carousel-btn" type="button" data-carousel-target="skill-all-installed" data-carousel-dir="next" aria-label="Next installed skills">&gt;</button>
+                </div>
+                <div id="skill-all-installed" class="skill-list"></div>
+              </section>
+              <section class="skill-group skill-tab-panel" data-skill-panel="otherAvailable">
+                <div class="skill-carousel-controls">
+                  <button class="carousel-btn" type="button" data-carousel-target="skill-other" data-carousel-dir="prev" aria-label="Previous other skills">&lt;</button>
+                  <button class="carousel-btn" type="button" data-carousel-target="skill-other" data-carousel-dir="next" aria-label="Next other skills">&gt;</button>
+                </div>
+                <div id="skill-other" class="skill-list"></div>
+              </section>
+            </div>
+          </div>
+        </div>
+      </section>

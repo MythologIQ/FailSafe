@@ -8,15 +8,15 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #0e0e1a;
-      --bg-card: #16162a;
-      --border: #2a2a4a;
-      --text: #e0e0f0;
-      --text-muted: #8888aa;
-      --accent: #5b7cf7;
-      --success: #34d399;
-      --warning: #fbbf24;
-      --error: #f87171;
+      --bg: #0b1220;
+      --bg-card: #111f38;
+      --border: #2e4770;
+      --text: #e6eefb;
+      --text-muted: #9fb1cd;
+      --accent: #3d7dff;
+      --success: #22c55e;
+      --warning: #eab308;
+      --error: #ef4444;
       --purple: #a78bfa;
     }
 
@@ -38,7 +38,7 @@
     .page-title {
       font-size: 22px;
       font-weight: 700;
-      background: linear-gradient(135deg, #34d399 0%, #5b7cf7 100%);
+      background: linear-gradient(135deg, #22c55e 0%, #3d7dff 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -284,7 +284,7 @@
     // =========================================================================
     // Transparency Stream Application
     // =========================================================================
-    var BASE_URL = 'http://localhost:7777';
+    var BASE_URL = window.location.origin;
     var events = [];
     var maxEvents = 500;
     var activeFilter = 'all';

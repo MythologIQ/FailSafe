@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 
-const ROADMAP_BASE_URL = "http://localhost:7777";
+const ROADMAP_BASE_URL = "http://localhost:9376";
 
 type SidebarMessage =
   | { command: "openPopout" }
@@ -58,7 +58,7 @@ export class FailSafeSidebarProvider implements vscode.WebviewViewProvider {
 
   private getHtml(): string {
     const nonce = getNonce();
-    const compactUrl = `${ROADMAP_BASE_URL}/ui/console`;
+    const compactUrl = `${ROADMAP_BASE_URL}/?ui=compact`;
     return `<!DOCTYPE html>
 <html lang="en">
 <head>

@@ -5,7 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FailSafe Command Center</title>
   <link rel="icon" type="image/png" href="/failsafe-icon.png">
-  <link rel="stylesheet" href="legacy-roadmap.css?v=12">
+  <script>
+    // Embedded mode - hide chrome when loaded inside unified Command Center
+    if (new URLSearchParams(window.location.search).get('ui') === 'console') {
+      document.documentElement.classList.add('embedded');
+    }
+  </script>
+  <link rel="stylesheet" href="legacy-roadmap.css?v=13">
 </head>
 <body>
   <div id="app">
@@ -213,7 +219,7 @@
         </div>
         <section class="governance-layout">
           <div class="governance-left-col">
-            <article class="card governance-card"><h3>Sentinel Status</h3><div id="sentinel-status"></div></article>
+            <article class="card governance-card"><h3>Sentinel Status</h3><div id="sentinel-status"></div><button id="verify-integrity-btn" class="hub-action-btn primary small" type="button" style="margin-top: 8px;">Verify Integrity</button></article>
             <article class="card governance-card"><h3>Active Policies</h3><div id="trust-summary"></div></article>
           </div>
           <div class="governance-right-col">

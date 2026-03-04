@@ -135,8 +135,15 @@ function setupTabs() {
   });
 
   const requestedView = new URLSearchParams(window.location.search).get('view');
+  const hashRoute = window.location.hash?.replace('#', '');
   const map = { timeline: 'run', 'current-sprint': 'run', 'live-activity': 'activity' };
-  applyRoute(map[requestedView] || 'home');
+  applyRoute(hashRoute || map[requestedView] || 'home');
+
+  // Listen for hash changes from parent frame
+  window.addEventListener('hashchange', () => {
+    const route = window.location.hash?.replace('#', '');
+    if (route) applyRoute(route);
+  });
 
   document.querySelectorAll('[data-route-jump]').forEach((button) => {
     button.addEventListener('click', () => {
@@ -474,6 +481,11 @@ stateStore.subscribe((state) => {
   renderStatusStrip(state);
 });
 
+// Enable embedded mode when loaded in unified Command Center
+if (new URLSearchParams(window.location.search).get('ui') === 'console') {
+  document.documentElement.classList.add('embedded');
+}
+
 applyTheme();
 setupTabs();
 setupProfile();
@@ -482,3 +494,32 @@ setupActions();
 setupSkillIngestActions();
 renderResumeSummary();
 dataClient.start();
+
+// Verify Integrity button handler
+const verifyBtn = document.getElementById('verify-integrity-btn');
+if (verifyBtn) {
+  verifyBtn.addEventListener('click', async () => {
+    verifyBtn.disabled = true;
+    verifyBtn.textContent = 'Verifying...';
+    try {
+      const res = await fetch('/api/actions/verify-integrity', { method: 'POST' });
+      const data = await res.json();
+      verifyBtn.textContent = data.chainValid ? 'Verified OK' : 'Integrity Failed!';
+      renderActionFeedback(
+        data.chainValid ? 'Checkpoint chain integrity verified.' : 'Integrity check failed!',
+        data.chainValid ? 'ok' : 'err'
+      );
+      setTimeout(() => {
+        verifyBtn.textContent = 'Verify Integrity';
+        verifyBtn.disabled = false;
+      }, 2000);
+    } catch {
+      verifyBtn.textContent = 'Error';
+      renderActionFeedback('Integrity check failed: network error', 'err');
+      setTimeout(() => {
+        verifyBtn.textContent = 'Verify Integrity';
+        verifyBtn.disabled = false;
+      }, 2000);
+    }
+  });
+}

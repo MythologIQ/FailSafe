@@ -8,18 +8,18 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #0e0e1a;
-      --bg-card: #16162a;
-      --bg-card-hover: #1c1c36;
-      --border: #2a2a4a;
-      --text: #e0e0f0;
-      --text-muted: #8888aa;
-      --accent: #5b7cf7;
-      --accent-dim: #3a5ad4;
-      --success: #34d399;
-      --warning: #fbbf24;
-      --error: #f87171;
-      --badge-bg: #2a2a4a;
+      --bg: #0b1220;
+      --bg-card: #111f38;
+      --bg-card-hover: #152845;
+      --border: #2e4770;
+      --text: #e6eefb;
+      --text-muted: #9fb1cd;
+      --accent: #3d7dff;
+      --accent-dim: #2f67de;
+      --success: #22c55e;
+      --warning: #eab308;
+      --error: #ef4444;
+      --badge-bg: #2e4770;
       --trust-bar-bg: #1e1e38;
     }
 
@@ -41,7 +41,7 @@
     .title {
       font-size: 26px;
       font-weight: 700;
-      background: linear-gradient(135deg, #5b7cf7 0%, #34d399 100%);
+      background: linear-gradient(135deg, #3d7dff 0%, #22c55e 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -324,7 +324,7 @@
     // =========================================================================
     class FailSafeClient {
       constructor(baseUrl) {
-        this.baseUrl = baseUrl || 'http://localhost:7777';
+        this.baseUrl = baseUrl || window.location.origin;
       }
 
       async get(path) {
@@ -527,7 +527,7 @@
         document.getElementById('uptime').textContent = formatUptime(health.uptime || 0);
       } catch (err) {
         setConnectionState(false);
-        showError('Cannot reach API server at localhost:7777');
+        showError('Cannot reach API server');
       }
 
       try {

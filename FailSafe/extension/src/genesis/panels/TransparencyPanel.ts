@@ -28,6 +28,7 @@ export class TransparencyPanel implements vscode.WebviewViewProvider {
   private events: PromptEvent[] = [];
   private maxEvents: number = 100;
   private disposables: vscode.Disposable[] = [];
+  private initialized: boolean = false;
 
   constructor(
     extensionUri: vscode.Uri,
@@ -91,9 +92,29 @@ export class TransparencyPanel implements vscode.WebviewViewProvider {
   }
 
   private refresh(): void {
-    if (this.view) {
-      this.view.webview.html = this.getHtmlContent();
+    if (!this.view) {
+      return;
     }
+    if (!this.initialized) {
+      this.view.webview.html = this.getHtmlContent();
+      this.initialized = true;
+      return;
+    }
+    // Send message-based update instead of full HTML rebuild
+    this.view.webview.postMessage({
+      type: "updateEvents",
+      events: this.events.map((e) => ({
+        id: e.id,
+        type: e.type,
+        timestamp: e.timestamp,
+        intentId: e.intentId,
+        tokenCount: e.tokenCount,
+        targetModel: e.targetModel,
+        duration: e.duration,
+        blockedReason: e.blockedReason,
+        riskGrade: e.riskGrade,
+      })),
+    });
   }
 
   private getHtmlContent(): string {
@@ -206,10 +227,51 @@ export class TransparencyPanel implements vscode.WebviewViewProvider {
       <button class="btn" onclick="vscode.postMessage({command:'clearEvents'})">Clear</button>
     </div>
   </div>
-  <div class="event-list">
+  <div class="event-list" id="event-list">
     ${this.renderEvents()}
   </div>
-  <script nonce="${nonce}">const vscode = acquireVsCodeApi();</script>
+  <script nonce="${nonce}">
+    const vscode = acquireVsCodeApi();
+    function formatEventType(type) {
+      const labels = {
+        'prompt.build_started': 'Build Started',
+        'prompt.build_completed': 'Build Completed',
+        'prompt.dispatched': 'Dispatched',
+        'prompt.dispatch_blocked': 'Blocked'
+      };
+      return labels[type] || type;
+    }
+    function renderEventDetails(event) {
+      const parts = [];
+      if (event.intentId) parts.push('<span class="detail-label">Intent:</span> ' + event.intentId.substring(0, 8) + '...');
+      if (event.tokenCount) parts.push('<span class="detail-label">Tokens:</span> ' + event.tokenCount);
+      if (event.targetModel) parts.push('<span class="detail-label">Model:</span> ' + event.targetModel);
+      if (event.duration) parts.push('<span class="detail-label">Duration:</span> ' + event.duration + 'ms');
+      if (event.blockedReason) parts.push('<span class="detail-label">Reason:</span> ' + event.blockedReason);
+      if (event.riskGrade) parts.push('<span class="detail-label">Risk:</span> ' + event.riskGrade);
+      if (parts.length === 0) return '<span class="detail-label">ID:</span> ' + event.id.substring(0, 12) + '...';
+      return parts.map(function(p) { return '<div class="event-detail-row">' + p + '</div>'; }).join('');
+    }
+    function renderEvents(events) {
+      const container = document.getElementById('event-list');
+      if (!container) return;
+      if (events.length === 0) {
+        container.innerHTML = '<div class="empty-state">No transparency events yet. Events will appear here as AI interactions occur.</div>';
+        return;
+      }
+      container.innerHTML = events.map(function(event) {
+        const typeLabel = formatEventType(event.type);
+        const time = new Date(event.timestamp).toLocaleTimeString();
+        const details = renderEventDetails(event);
+        return '<div class="event-item"><div class="event-header"><span class="event-type ' + event.type.replace('prompt.', '') + '">' + typeLabel + '</span><span class="event-time">' + time + '</span></div><div class="event-details">' + details + '</div></div>';
+      }).join('');
+    }
+    window.addEventListener('message', function(e) {
+      if (e.data && e.data.type === 'updateEvents') {
+        renderEvents(e.data.events || []);
+      }
+    });
+  </script>
 </body>
 </html>`;
   }

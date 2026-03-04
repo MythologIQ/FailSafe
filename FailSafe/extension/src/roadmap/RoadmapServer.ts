@@ -4,32 +4,47 @@
  * Serves the external browser-based roadmap visualization on port 9376.
  * Provides real-time updates via WebSocket for live activity streaming.
  */
-import * as path from 'path';
-import * as fs from 'fs';
-import * as crypto from 'crypto';
-import { spawnSync } from 'child_process';
-import express, { Request, Response } from 'express';
-import { Server as HttpServer } from 'http';
-import { WebSocketServer, WebSocket } from 'ws';
-import * as yaml from 'js-yaml';
-import { PlanManager } from '../qorelogic/planning/PlanManager';
-import { QoreLogicManager } from '../qorelogic/QoreLogicManager';
-import { SentinelDaemon } from '../sentinel/SentinelDaemon';
-import { EventBus } from '../shared/EventBus';
-import { SentinelVerdict } from '../shared/types';
-import { IFeatureGate, FeatureFlag } from '../core/interfaces/IFeatureGate';
-import { FEATURE_TIER_MAP } from '../core/FeatureGateService';
-import { GitResetService } from '../governance/revert/GitResetService';
-import { FailSafeRevertService, RevertDeps } from '../governance/revert/FailSafeRevertService';
-import { CheckpointRef, RevertRequest } from '../governance/revert/types';
-import { HomeRoute, RunDetailRoute, WorkflowsRoute, SkillsRoute, GenomeRoute, ReportsRoute, SettingsRoute, PreflightRoute, GovernanceKPIRoute, AgentCoverageRoute } from './routes';
-import { ConfigurationProfile } from '../genesis/ConfigurationProfile';
-import type { RouteDeps } from './routes';
-import type { PermissionScopeManager } from '../governance/PermissionScopeManager';
-import type { EnforcementEngine } from '../governance/EnforcementEngine';
+import * as path from "path";
+import * as fs from "fs";
+import * as crypto from "crypto";
+import * as net from "net";
+import { spawnSync } from "child_process";
+import express, { Request, Response } from "express";
+import { Server as HttpServer } from "http";
+import { WebSocketServer, WebSocket } from "ws";
+import * as yaml from "js-yaml";
+import { PlanManager } from "../qorelogic/planning/PlanManager";
+import { QoreLogicManager } from "../qorelogic/QoreLogicManager";
+import { SentinelDaemon } from "../sentinel/SentinelDaemon";
+import { EventBus } from "../shared/EventBus";
+import { SentinelVerdict } from "../shared/types";
+import { IFeatureGate, FeatureFlag } from "../core/interfaces/IFeatureGate";
+import { FEATURE_TIER_MAP } from "../core/FeatureGateService";
+import { GitResetService } from "../governance/revert/GitResetService";
+import {
+  FailSafeRevertService,
+  RevertDeps,
+} from "../governance/revert/FailSafeRevertService";
+import { CheckpointRef, RevertRequest } from "../governance/revert/types";
+import {
+  HomeRoute,
+  RunDetailRoute,
+  WorkflowsRoute,
+  SkillsRoute,
+  GenomeRoute,
+  ReportsRoute,
+  SettingsRoute,
+  PreflightRoute,
+  GovernanceKPIRoute,
+  AgentCoverageRoute,
+} from "./routes";
+import { ConfigurationProfile } from "../genesis/ConfigurationProfile";
+import type { RouteDeps } from "./routes";
+import type { PermissionScopeManager } from "../governance/PermissionScopeManager";
+import type { EnforcementEngine } from "../governance/EnforcementEngine";
 
 const PORT = 9376;
-const HOST = '127.0.0.1';
+const HOST = "127.0.0.1";
 type InstalledSkill = {
   id: string;
   displayName: string;
@@ -53,7 +68,7 @@ type SkillRelevance = InstalledSkill & {
   reasons: string[];
 };
 
-type CheckpointStatus = 'proposed' | 'validated' | 'sealed' | 'superseded';
+type CheckpointStatus = "proposed" | "validated" | "sealed" | "superseded";
 
 type CheckpointRecord = {
   checkpointId: string;
@@ -130,7 +145,13 @@ export class RoadmapServer {
   private eventBus: EventBus;
   private recentVerdicts: SentinelVerdict[] = [];
   private uiDir: string;
-  private checkpointDb: { prepare: (sql: string) => { run: (...args: unknown[]) => unknown; get: (...args: unknown[]) => unknown; all: (...args: unknown[]) => unknown } } | null = null;
+  private checkpointDb: {
+    prepare: (sql: string) => {
+      run: (...args: unknown[]) => unknown;
+      get: (...args: unknown[]) => unknown;
+      all: (...args: unknown[]) => unknown;
+    };
+  } | null = null;
   private checkpointMemory: CheckpointRecord[] = [];
   private qoreRuntime: QoreRuntimeOptions;
   private workspaceRoot: string;
@@ -138,25 +159,29 @@ export class RoadmapServer {
   private sealedSubstantiateCompletions = new Set<string>();
   private revertService: FailSafeRevertService | null = null;
   private gitResetService: GitResetService;
+  private chainValidAt: string | null = null;
+  private cachedChainValid: boolean = true;
   private enforcementEngine: EnforcementEngine | null = null;
   private permissionManager: PermissionScopeManager | null = null;
-  private systemRegistry: import('../qorelogic/SystemRegistry').SystemRegistry | null = null;
+  private systemRegistry:
+    | import("../qorelogic/SystemRegistry").SystemRegistry
+    | null = null;
   private checkpointTypeRegistry = new Set<string>([
-    'snapshot.created',
-    'phase.entered',
-    'phase.exited',
-    'skill.recommended',
-    'skill.invoked',
-    'policy.checked',
-    'override.requested',
-    'override.approved',
-    'attempt.committed',
-    'attempt.rolled_back',
-    'export.generated',
-    'monitoring.resumed',
-    'monitoring.stopped',
-    'event.stream',
-    'governance.revert',
+    "snapshot.created",
+    "phase.entered",
+    "phase.exited",
+    "skill.recommended",
+    "skill.invoked",
+    "policy.checked",
+    "override.requested",
+    "override.approved",
+    "attempt.committed",
+    "attempt.rolled_back",
+    "export.generated",
+    "monitoring.resumed",
+    "monitoring.stopped",
+    "event.stream",
+    "governance.revert",
   ]);
 
   constructor(
@@ -185,35 +210,42 @@ export class RoadmapServer {
   private resolveUiDir(): string {
     const candidates = [
       // Packaged/compiled location (if copied into out)
-      path.join(__dirname, 'ui'),
+      path.join(__dirname, "ui"),
       // Dev workspace location from compiled out/roadmap
-      path.resolve(__dirname, '../../src/roadmap/ui'),
+      path.resolve(__dirname, "../../src/roadmap/ui"),
       // Alternate depth fallback for tests/tooling execution contexts
-      path.resolve(__dirname, '../../../src/roadmap/ui'),
+      path.resolve(__dirname, "../../../src/roadmap/ui"),
     ];
 
     for (const candidate of candidates) {
-      if (fs.existsSync(path.join(candidate, 'index.html'))) {
+      if (fs.existsSync(path.join(candidate, "index.html"))) {
         return candidate;
       }
     }
 
     // Last fallback to avoid crashes; requests will still 404 if missing.
-    return path.join(__dirname, 'ui');
+    return path.join(__dirname, "ui");
   }
 
-  private resolveQoreRuntimeOptions(options?: Partial<QoreRuntimeOptions>): QoreRuntimeOptions {
-    const baseUrl = String(options?.baseUrl || 'http://127.0.0.1:7777').trim().replace(/\/+$/, '');
+  private resolveQoreRuntimeOptions(
+    options?: Partial<QoreRuntimeOptions>,
+  ): QoreRuntimeOptions {
+    const baseUrl = String(options?.baseUrl || "http://127.0.0.1:7777")
+      .trim()
+      .replace(/\/+$/, "");
     return {
       enabled: Boolean(options?.enabled),
       baseUrl,
       apiKey: options?.apiKey ? String(options.apiKey) : undefined,
-      timeoutMs: Math.max(500, Math.min(30000, Number(options?.timeoutMs || 4000))),
+      timeoutMs: Math.max(
+        500,
+        Math.min(30000, Number(options?.timeoutMs || 4000)),
+      ),
     };
   }
 
   private setupRoutes(): void {
-    this.app.use(express.json({ limit: '12mb' }));
+    this.app.use(express.json({ limit: "12mb" }));
 
     // Serve static UI assets for the Operations Hub.
     // Important: disable implicit index serving so route mode selection controls `/`.
@@ -221,24 +253,47 @@ export class RoadmapServer {
 
     // Root serves the extensive console by default.
     // Compact shell is available only when explicitly requested.
-    this.app.get('/', (req: Request, res: Response) => {
+    this.app.get("/", (req: Request, res: Response) => {
       const file = this.getUiEntryFile(req);
       const target = path.join(this.uiDir, file);
       if (fs.existsSync(target)) {
         res.sendFile(target);
         return;
       }
-      res.sendFile(path.join(this.uiDir, 'legacy-index.html'));
+      res.sendFile(path.join(this.uiDir, "legacy-index.html"));
     });
 
     // Readiness endpoint for command-side launch checks.
-    this.app.get('/health', (_req: Request, res: Response) => {
-      const ready = fs.existsSync(path.join(this.uiDir, 'index.html'));
+    this.app.get("/health", (_req: Request, res: Response) => {
+      const ready = fs.existsSync(path.join(this.uiDir, "index.html"));
       res.status(ready ? 200 : 503).json({ ready, uiDir: this.uiDir });
     });
 
+    // Unified UI routes - serve webui/pages from this server
+    const pagesDir = path.join(__dirname, "../webui/pages");
+    this.app.use("/pages", express.static(pagesDir));
+    this.app.get("/legacy-skills-panel.html", (_req, res) =>
+      res.sendFile(path.join(this.uiDir, "legacy-skills-panel.html")),
+    );
+    this.app.get("/legacy-governance-panel.html", (_req, res) =>
+      res.sendFile(path.join(this.uiDir, "legacy-governance-panel.html")),
+    );
+    // Direct routes for pages (used by unified Command Center iframe)
+    this.app.get("/dashboard.html", (_req, res) =>
+      res.sendFile(path.join(pagesDir, "dashboard.html")),
+    );
+    this.app.get("/risk-register.html", (_req, res) =>
+      res.sendFile(path.join(pagesDir, "risk-register.html")),
+    );
+    this.app.get("/transparency.html", (_req, res) =>
+      res.sendFile(path.join(pagesDir, "transparency.html")),
+    );
+    this.app.get("/brainstorm.html", (_req, res) =>
+      res.sendFile(path.join(pagesDir, "brainstorm.html")),
+    );
+
     // API: Get full roadmap state
-    this.app.get('/api/roadmap', (_req: Request, res: Response) => {
+    this.app.get("/api/roadmap", (_req: Request, res: Response) => {
       const sprints = this.planManager.getAllSprints();
       const currentSprint = this.planManager.getCurrentSprint();
       const activePlan = this.planManager.getActivePlan();
@@ -246,12 +301,12 @@ export class RoadmapServer {
     });
 
     // API: Unified planner hub snapshot (single UI source of truth)
-    this.app.get('/api/hub', async (_req: Request, res: Response) => {
+    this.app.get("/api/hub", async (_req: Request, res: Response) => {
       const hub = await this.buildHubSnapshot();
       res.json(hub);
     });
 
-    this.app.get('/api/qore/runtime', async (req: Request, res: Response) => {
+    this.app.get("/api/qore/runtime", async (req: Request, res: Response) => {
       if (this.rejectIfRemote(req, res)) {
         return;
       }
@@ -259,41 +314,49 @@ export class RoadmapServer {
       res.json(snapshot);
     });
 
-    this.app.get('/api/qore/health', async (req: Request, res: Response) => {
+    this.app.get("/api/qore/health", async (req: Request, res: Response) => {
       if (this.rejectIfRemote(req, res)) {
         return;
       }
       if (!this.qoreRuntime.enabled) {
-        res.status(503).json({ error: 'Qore runtime integration is disabled' });
+        res.status(503).json({ error: "Qore runtime integration is disabled" });
         return;
       }
-      const response = await this.fetchQoreJson('/health');
-      res.status(response.ok ? 200 : 502).json(response.ok ? response.body : {
-        error: response.error,
-        detail: response.detail,
-      });
+      const response = await this.fetchQoreJson("/health");
+      res.status(response.ok ? 200 : 502).json(
+        response.ok
+          ? response.body
+          : {
+              error: response.error,
+              detail: response.detail,
+            },
+      );
     });
 
-    this.app.post('/api/qore/evaluate', async (req: Request, res: Response) => {
+    this.app.post("/api/qore/evaluate", async (req: Request, res: Response) => {
       if (this.rejectIfRemote(req, res)) {
         return;
       }
       if (!this.qoreRuntime.enabled) {
-        res.status(503).json({ error: 'Qore runtime integration is disabled' });
+        res.status(503).json({ error: "Qore runtime integration is disabled" });
         return;
       }
-      const response = await this.fetchQoreJson('/evaluate', {
-        method: 'POST',
+      const response = await this.fetchQoreJson("/evaluate", {
+        method: "POST",
         body: req.body || {},
       });
-      res.status(response.ok ? 200 : 502).json(response.ok ? response.body : {
-        error: response.error,
-        detail: response.detail,
-      });
+      res.status(response.ok ? 200 : 502).json(
+        response.ok
+          ? response.body
+          : {
+              error: response.error,
+              detail: response.detail,
+            },
+      );
     });
 
     // API: Get specific sprint details
-    this.app.get('/api/sprint/:id', (req: Request, res: Response) => {
+    this.app.get("/api/sprint/:id", (req: Request, res: Response) => {
       const sprintId = req.params.id as string;
       const sprint = this.planManager.getSprint(sprintId);
       const plan = sprint ? this.planManager.getPlan(sprint.planId) : null;
@@ -301,19 +364,19 @@ export class RoadmapServer {
     });
 
     // API: Get all plans
-    this.app.get('/api/plans', (_req: Request, res: Response) => {
+    this.app.get("/api/plans", (_req: Request, res: Response) => {
       const plans = this.planManager.getAllPlans();
       res.json({ plans });
     });
 
     // API: Discover installed skills from local Codex skill directories.
-    this.app.get('/api/skills', (_req: Request, res: Response) => {
+    this.app.get("/api/skills", (_req: Request, res: Response) => {
       const skills = this.getInstalledSkills();
       res.json({ skills });
     });
 
     // API: auto-ingest skills by scanning known workspace-local roots only.
-    this.app.post('/api/skills/ingest/auto', (_req: Request, res: Response) => {
+    this.app.post("/api/skills/ingest/auto", (_req: Request, res: Response) => {
       try {
         const summary = this.autoIngestWorkspaceSkills();
         res.json(summary);
@@ -323,22 +386,30 @@ export class RoadmapServer {
     });
 
     // API: manual ingest accepts selected file/folder payload from UI.
-    this.app.post('/api/skills/ingest/manual', (req: Request, res: Response) => {
-      try {
-        const mode = String(req.body?.mode || 'file').toLowerCase() === 'folder' ? 'folder' : 'file';
-        const items = Array.isArray(req.body?.items) ? req.body.items : [];
-        const summary = this.manualIngestSkillPayload(items, mode);
-        res.json(summary);
-      } catch (error) {
-        res.status(400).json({ ok: false, error: String(error) });
-      }
-    });
+    this.app.post(
+      "/api/skills/ingest/manual",
+      (req: Request, res: Response) => {
+        try {
+          const mode =
+            String(req.body?.mode || "file").toLowerCase() === "folder"
+              ? "folder"
+              : "file";
+          const items = Array.isArray(req.body?.items) ? req.body.items : [];
+          const summary = this.manualIngestSkillPayload(items, mode);
+          res.json(summary);
+        } catch (error) {
+          res.status(400).json({ ok: false, error: String(error) });
+        }
+      },
+    );
 
     // API: rank installed skills for a phase with explainability payload.
-    this.app.get('/api/skills/relevance', (req: Request, res: Response) => {
-      const phase = String(req.query.phase || '').trim().toLowerCase();
+    this.app.get("/api/skills/relevance", (req: Request, res: Response) => {
+      const phase = String(req.query.phase || "")
+        .trim()
+        .toLowerCase();
       if (!phase) {
-        res.status(400).json({ error: 'phase is required' });
+        res.status(400).json({ error: "phase is required" });
         return;
       }
       const catalog = this.getInstalledSkills();
@@ -352,7 +423,9 @@ export class RoadmapServer {
       }
       const recommended = allRelevant.slice(0, Math.min(4, allRelevant.length));
       const relevantKeys = new Set(allRelevant.map((item) => item.key));
-      const otherAvailable = ranked.filter((item) => !relevantKeys.has(item.key));
+      const otherAvailable = ranked.filter(
+        (item) => !relevantKeys.has(item.key),
+      );
 
       res.json({
         phase,
@@ -363,20 +436,22 @@ export class RoadmapServer {
     });
 
     // API: Get transparency events (prompt lifecycle audit stream)
-    this.app.get('/api/transparency', (_req: Request, res: Response) => {
+    this.app.get("/api/transparency", (_req: Request, res: Response) => {
       const events = this.getTransparencyEvents(50);
       res.json({ events });
     });
 
     // API: Get risk register
-    this.app.get('/api/risks', (_req: Request, res: Response) => {
+    this.app.get("/api/risks", (_req: Request, res: Response) => {
       const risks = this.getRiskRegister();
       res.json({ risks });
     });
 
-    this.app.get('/api/checkpoints', (req: Request, res: Response) => {
-      const limitRaw = Number.parseInt(String(req.query.limit || '50'), 10);
-      const limit = Number.isFinite(limitRaw) ? Math.max(1, Math.min(200, limitRaw)) : 50;
+    this.app.get("/api/checkpoints", (req: Request, res: Response) => {
+      const limitRaw = Number.parseInt(String(req.query.limit || "50"), 10);
+      const limit = Number.isFinite(limitRaw)
+        ? Math.max(1, Math.min(200, limitRaw))
+        : 50;
       res.json({
         checkpoints: this.getRecentCheckpoints(limit),
         chainValid: this.verifyCheckpointChain(),
@@ -384,11 +459,11 @@ export class RoadmapServer {
     });
 
     // [V7] API: Get a single checkpoint by ID
-    this.app.get('/api/checkpoints/:id', (req: Request, res: Response) => {
+    this.app.get("/api/checkpoints/:id", (req: Request, res: Response) => {
       if (this.rejectIfRemote(req, res)) return;
-      const id = String(req.params.id || '');
+      const id = String(req.params.id || "");
       if (!id) {
-        res.status(400).json({ ok: false, error: 'id required' });
+        res.status(400).json({ ok: false, error: "id required" });
         return;
       }
       const checkpoint = this.getCheckpointById(id);
@@ -396,89 +471,126 @@ export class RoadmapServer {
     });
 
     // [V5] API: Rollback to a checkpoint
-    this.app.post('/api/actions/rollback', async (req: Request, res: Response) => {
-      if (this.rejectIfRemote(req, res)) return;
-      if (!this.revertService) {
-        res.status(503).json({ ok: false, error: 'revert service unavailable' });
-        return;
-      }
-      const { checkpointId, reason: rawReason } = req.body as { checkpointId?: string; reason?: string };
-      if (!checkpointId) {
-        res.status(400).json({ ok: false, error: 'checkpointId required' });
-        return;
-      }
-      const actor = 'user.local';
-      const reason = String(rawReason || '').slice(0, 2000);
-      const checkpoint = this.getCheckpointById(checkpointId);
-      if (!checkpoint) {
-        res.status(404).json({ ok: false, error: 'checkpoint not found' });
-        return;
-      }
-      try {
-        const request: RevertRequest = { targetCheckpoint: checkpoint, reason, actor };
-        const result = await this.revertService.revert(request);
-        this.broadcast({ type: 'hub.refresh' });
-        res.json({ ok: result.success, result });
-      } catch (error) {
-        res.status(500).json({ ok: false, error: String(error) });
-      }
-    });
+    this.app.post(
+      "/api/actions/rollback",
+      async (req: Request, res: Response) => {
+        if (this.rejectIfRemote(req, res)) return;
+        if (!this.revertService) {
+          res
+            .status(503)
+            .json({ ok: false, error: "revert service unavailable" });
+          return;
+        }
+        const { checkpointId, reason: rawReason } = req.body as {
+          checkpointId?: string;
+          reason?: string;
+        };
+        if (!checkpointId) {
+          res.status(400).json({ ok: false, error: "checkpointId required" });
+          return;
+        }
+        const actor = "user.local";
+        const reason = String(rawReason || "").slice(0, 2000);
+        const checkpoint = this.getCheckpointById(checkpointId);
+        if (!checkpoint) {
+          res.status(404).json({ ok: false, error: "checkpoint not found" });
+          return;
+        }
+        try {
+          const request: RevertRequest = {
+            targetCheckpoint: checkpoint,
+            reason,
+            actor,
+          };
+          const result = await this.revertService.revert(request);
+          this.broadcast({ type: "hub.refresh" });
+          res.json({ ok: result.success, result });
+        } catch (error) {
+          res.status(500).json({ ok: false, error: String(error) });
+        }
+      },
+    );
 
     // API: Action controls for Hub buttons
-    this.app.post('/api/actions/resume-monitoring', async (req: Request, res: Response) => {
-      if (this.rejectIfRemote(req, res)) {
-        return;
-      }
-      try {
-        if (!this.sentinelDaemon.isRunning()) {
-          await this.sentinelDaemon.start();
+    this.app.post(
+      "/api/actions/resume-monitoring",
+      async (req: Request, res: Response) => {
+        if (this.rejectIfRemote(req, res)) {
+          return;
         }
-        this.recordCheckpoint({
-          checkpointType: 'monitoring.resumed',
-          actor: 'system',
-          phase: this.inferPhaseKeyFromPlan(this.planManager.getActivePlan()),
-          status: 'validated',
-          policyVerdict: 'PASS',
-          evidenceRefs: [],
-          payload: { action: 'resume-monitoring' },
-        });
-        this.broadcast({ type: 'hub.refresh' });
-        res.json({ ok: true, status: this.sentinelDaemon.getStatus() });
-      } catch (error) {
-        res.status(500).json({ ok: false, error: String(error) });
-      }
-    });
+        try {
+          if (!this.sentinelDaemon.isRunning()) {
+            await this.sentinelDaemon.start();
+          }
+          this.recordCheckpoint({
+            checkpointType: "monitoring.resumed",
+            actor: "system",
+            phase: this.inferPhaseKeyFromPlan(this.planManager.getActivePlan()),
+            status: "validated",
+            policyVerdict: "PASS",
+            evidenceRefs: [],
+            payload: { action: "resume-monitoring" },
+          });
+          this.broadcast({ type: "hub.refresh" });
+          res.json({ ok: true, status: this.sentinelDaemon.getStatus() });
+        } catch (error) {
+          res.status(500).json({ ok: false, error: String(error) });
+        }
+      },
+    );
 
-    this.app.post('/api/actions/panic-stop', (req: Request, res: Response) => {
+    this.app.post("/api/actions/panic-stop", (req: Request, res: Response) => {
       if (this.rejectIfRemote(req, res)) {
         return;
       }
       try {
         this.sentinelDaemon.stop();
         this.recordCheckpoint({
-          checkpointType: 'monitoring.stopped',
-          actor: 'system',
+          checkpointType: "monitoring.stopped",
+          actor: "system",
           phase: this.inferPhaseKeyFromPlan(this.planManager.getActivePlan()),
-          status: 'validated',
-          policyVerdict: 'WARN',
+          status: "validated",
+          policyVerdict: "WARN",
           evidenceRefs: [],
-          payload: { action: 'panic-stop' },
+          payload: { action: "panic-stop" },
         });
-        this.broadcast({ type: 'hub.refresh' });
+        this.broadcast({ type: "hub.refresh" });
         res.json({ ok: true, status: this.sentinelDaemon.getStatus() });
       } catch (error) {
         res.status(500).json({ ok: false, error: String(error) });
       }
     });
 
+    // [V4.3.2] Manual checkpoint chain integrity verification
+    this.app.post(
+      "/api/actions/verify-integrity",
+      (req: Request, res: Response) => {
+        if (this.rejectIfRemote(req, res)) {
+          return;
+        }
+        try {
+          const chainValid = this.verifyCheckpointChain();
+          this.chainValidAt = new Date().toISOString();
+          this.cachedChainValid = chainValid;
+          this.broadcast({ type: "hub.refresh" });
+          res.json({ ok: true, chainValid, verifiedAt: this.chainValidAt });
+        } catch (error) {
+          res.status(500).json({ ok: false, error: String(error) });
+        }
+      },
+    );
+
     // Feature gate: expose available features for UI
-    this.app.get('/api/v1/features', (_req: Request, res: Response) => {
+    this.app.get("/api/v1/features", (_req: Request, res: Response) => {
       if (!this.featureGate) {
-        res.json({ tier: 'free', features: {} });
+        res.json({ tier: "free", features: {} });
         return;
       }
       const tier = this.featureGate.getTier();
-      const features: Record<string, { requiredTier: string; enabled: boolean }> = {};
+      const features: Record<
+        string,
+        { requiredTier: string; enabled: boolean }
+      > = {};
       for (const flag of Object.keys(FEATURE_TIER_MAP) as FeatureFlag[]) {
         features[flag] = {
           requiredTier: FEATURE_TIER_MAP[flag],
@@ -493,8 +605,8 @@ export class RoadmapServer {
 
     // SPA fallback for deep links or unknown non-API routes.
     this.app.use((req: Request, res: Response) => {
-      if (req.path.startsWith('/api/') || req.path === '/health') {
-        res.status(404).json({ error: 'Not found' });
+      if (req.path.startsWith("/api/") || req.path === "/health") {
+        res.status(404).json({ error: "Not found" });
         return;
       }
       const file = this.getUiEntryFile(req);
@@ -503,46 +615,58 @@ export class RoadmapServer {
         res.sendFile(target);
         return;
       }
-      res.sendFile(path.join(this.uiDir, 'legacy-index.html'));
+      res.sendFile(path.join(this.uiDir, "legacy-index.html"));
     });
   }
 
-  private getUiEntryFile(req: Request): 'legacy-index.html' | 'index.html' {
-    const uiMode = String(req.query.ui || '').toLowerCase();
-    const compactParam = String(req.query.compact || '').toLowerCase();
+  private getUiEntryFile(req: Request): "legacy-index.html" | "index.html" {
+    const uiMode = String(req.query.ui || "").toLowerCase();
+    const compactParam = String(req.query.compact || "").toLowerCase();
 
     // Explicit modes.
-    if (uiMode === 'compact') {
-      return 'index.html';
+    if (uiMode === "compact") {
+      return "index.html";
     }
-    if (uiMode === 'console' || uiMode === 'extended' || uiMode === 'popout') {
-      return 'legacy-index.html';
+    if (uiMode === "console" || uiMode === "extended" || uiMode === "popout") {
+      return "legacy-index.html";
     }
 
     // Backward-compatible compact toggle.
-    if (compactParam === '1' || compactParam === 'true' || compactParam === 'yes') {
-      return 'index.html';
+    if (
+      compactParam === "1" ||
+      compactParam === "true" ||
+      compactParam === "yes"
+    ) {
+      return "index.html";
     }
-    return 'legacy-index.html';
+    return "legacy-index.html";
   }
 
   private shouldServeLegacyUi(req: Request): boolean {
-    const legacyParam = String(req.query.legacy || '').toLowerCase();
-    if (legacyParam === '1' || legacyParam === 'true' || legacyParam === 'yes') {
+    const legacyParam = String(req.query.legacy || "").toLowerCase();
+    if (
+      legacyParam === "1" ||
+      legacyParam === "true" ||
+      legacyParam === "yes"
+    ) {
       return true;
     }
-    const viewParam = String(req.query.view || '').toLowerCase();
+    const viewParam = String(req.query.view || "").toLowerCase();
     // Legacy shell still handles older specialized view links.
-    return viewParam === 'timeline' || viewParam === 'current-sprint' || viewParam === 'live-activity';
+    return (
+      viewParam === "timeline" ||
+      viewParam === "current-sprint" ||
+      viewParam === "live-activity"
+    );
   }
 
   private isLocalRequest(req: Request): boolean {
-    const remoteAddress = req.socket?.remoteAddress || req.ip || '';
+    const remoteAddress = req.socket?.remoteAddress || req.ip || "";
     const normalized = String(remoteAddress).trim();
     return (
-      normalized === '127.0.0.1' ||
-      normalized === '::1' ||
-      normalized === '::ffff:127.0.0.1'
+      normalized === "127.0.0.1" ||
+      normalized === "::1" ||
+      normalized === "::ffff:127.0.0.1"
     );
   }
 
@@ -550,14 +674,18 @@ export class RoadmapServer {
     if (this.isLocalRequest(req)) {
       return false;
     }
-    res.status(403).json({ error: 'Forbidden: local access only' });
+    res.status(403).json({ error: "Forbidden: local access only" });
     return true;
   }
 
   /**
    * Returns true (and sends 402) if the given feature is not enabled in the current configuration.
    */
-  private rejectIfProRequired(feature: FeatureFlag, _req: Request, res: Response): boolean {
+  private rejectIfProRequired(
+    feature: FeatureFlag,
+    _req: Request,
+    res: Response,
+  ): boolean {
     if (!this.featureGate || this.featureGate.isEnabled(feature)) {
       return false;
     }
@@ -565,19 +693,21 @@ export class RoadmapServer {
       error: `Feature '${feature}' is not enabled in current configuration`,
       upgrade: true,
       currentTier: this.featureGate.getTier(),
-      requiredTier: 'pro',
+      requiredTier: "pro",
     });
     return true;
   }
 
   private setupWebSocket(): void {
-    if (!this.server) { return; }
+    if (!this.server) {
+      return;
+    }
     this.wss = new WebSocketServer({ server: this.server });
 
-    this.wss.on('connection', (ws) => {
+    this.wss.on("connection", (ws) => {
       // Send initial state on connection
       this.buildHubSnapshot().then((hub) => {
-        ws.send(JSON.stringify({ type: 'init', payload: hub }));
+        ws.send(JSON.stringify({ type: "init", payload: hub }));
       });
     });
   }
@@ -586,7 +716,9 @@ export class RoadmapServer {
    * Broadcast a message to all connected WebSocket clients.
    */
   private broadcast(data: Record<string, unknown>): void {
-    if (!this.wss) { return; }
+    if (!this.wss) {
+      return;
+    }
     const message = JSON.stringify(data);
     this.wss.clients.forEach((client) => {
       if (client.readyState === WebSocket.OPEN) {
@@ -596,13 +728,18 @@ export class RoadmapServer {
   }
 
   /** v4.2.0: Set dependencies for console UI routes (deferred wiring) */
-  setConsoleDeps(enforcement: EnforcementEngine, perm: PermissionScopeManager): void {
+  setConsoleDeps(
+    enforcement: EnforcementEngine,
+    perm: PermissionScopeManager,
+  ): void {
     this.enforcementEngine = enforcement;
     this.permissionManager = perm;
   }
 
   /** v4.2.0: Set SystemRegistry for agent coverage route */
-  setSystemRegistry(registry: import('../qorelogic/SystemRegistry').SystemRegistry): void {
+  setSystemRegistry(
+    registry: import("../qorelogic/SystemRegistry").SystemRegistry,
+  ): void {
     this.systemRegistry = registry;
   }
 
@@ -622,97 +759,131 @@ export class RoadmapServer {
 
   private setupConsoleRoutes(): void {
     const deps = () => this.buildRouteDeps();
-    this.app.get('/console/home', async (req, res) => HomeRoute.render(req, res, deps()));
-    this.app.get('/console/run/:runId', (req, res) => RunDetailRoute.render(req, res, deps()));
-    this.app.get('/console/workflows', (req, res) => WorkflowsRoute.render(req, res, deps()));
-    this.app.get('/console/skills', (req, res) => SkillsRoute.render(req, res, deps()));
-    this.app.get('/console/genome', async (req, res) => GenomeRoute.render(req, res, deps()));
-    this.app.get('/console/reports', async (req, res) => ReportsRoute.render(req, res, deps()));
-    this.app.get('/console/settings', (req, res) => SettingsRoute.render(req, res, deps()));
-    this.app.get('/console/kpi', async (req, res) => GovernanceKPIRoute.render(req, res, { ledgerManager: deps().ledgerManager }));
-    this.app.get('/console/agents', async (req, res) => {
-      if (!this.systemRegistry) { res.status(503).send('SystemRegistry not available'); return; }
-      AgentCoverageRoute.render(req, res, { systemRegistry: this.systemRegistry });
+    this.app.get("/console/home", async (req, res) =>
+      HomeRoute.render(req, res, deps()),
+    );
+    this.app.get("/console/run/:runId", (req, res) =>
+      RunDetailRoute.render(req, res, deps()),
+    );
+    this.app.get("/console/workflows", (req, res) =>
+      WorkflowsRoute.render(req, res, deps()),
+    );
+    this.app.get("/console/skills", (req, res) =>
+      SkillsRoute.render(req, res, deps()),
+    );
+    this.app.get("/console/genome", async (req, res) =>
+      GenomeRoute.render(req, res, deps()),
+    );
+    this.app.get("/console/reports", async (req, res) =>
+      ReportsRoute.render(req, res, deps()),
+    );
+    this.app.get("/console/settings", (req, res) =>
+      SettingsRoute.render(req, res, deps()),
+    );
+    this.app.get("/console/kpi", async (req, res) =>
+      GovernanceKPIRoute.render(req, res, {
+        ledgerManager: deps().ledgerManager,
+      }),
+    );
+    this.app.get("/console/agents", async (req, res) => {
+      if (!this.systemRegistry) {
+        res.status(503).send("SystemRegistry not available");
+        return;
+      }
+      AgentCoverageRoute.render(req, res, {
+        systemRegistry: this.systemRegistry,
+      });
     });
     if (this.permissionManager) {
       const pm = this.permissionManager;
-      this.app.get('/console/preflight', (req, res) => PreflightRoute.render(req, res, { permissionManager: pm }));
-      this.app.post('/console/preflight/grant', (req, res) => PreflightRoute.handleGrant(req, res, { permissionManager: pm }));
-      this.app.post('/console/preflight/deny', (req, res) => PreflightRoute.handleDeny(req, res, { permissionManager: pm }));
+      this.app.get("/console/preflight", (req, res) =>
+        PreflightRoute.render(req, res, { permissionManager: pm }),
+      );
+      this.app.post("/console/preflight/grant", (req, res) =>
+        PreflightRoute.handleGrant(req, res, { permissionManager: pm }),
+      );
+      this.app.post("/console/preflight/deny", (req, res) =>
+        PreflightRoute.handleDeny(req, res, { permissionManager: pm }),
+      );
     }
   }
 
   private subscribeToEvents(): void {
     // Stream plan events to connected clients
-    this.eventBus.on('genesis.streamEvent' as never, (event: unknown) => {
+    this.eventBus.on("genesis.streamEvent" as never, (event: unknown) => {
       const streamPayload = this.extractEventPayload(event);
       this.maybeRecordSubstantiateCompletion(streamPayload);
-      this.broadcast({ type: 'event', payload: event });
+      this.broadcast({ type: "event", payload: event });
       this.recordCheckpoint({
-        checkpointType: 'event.stream',
-        actor: 'engine',
+        checkpointType: "event.stream",
+        actor: "engine",
         phase: this.inferPhaseKeyFromPlan(this.planManager.getActivePlan()),
-        status: 'validated',
-        policyVerdict: 'PASS',
+        status: "validated",
+        policyVerdict: "PASS",
         evidenceRefs: [],
         payload: streamPayload,
       });
     });
 
     // Stream sentinel verdicts
-    this.eventBus.on('sentinel.verdict' as never, (event: { payload: unknown }) => {
-      const verdict = event.payload as SentinelVerdict;
-      this.recentVerdicts.unshift(verdict);
-      if (this.recentVerdicts.length > 10) {
-        this.recentVerdicts.pop();
-      }
-      this.recordCheckpoint({
-        checkpointType: 'policy.checked',
-        actor: verdict.agentDid || 'sentinel',
-        phase: this.inferPhaseKeyFromPlan(this.planManager.getActivePlan()),
-        status: 'validated',
-        policyVerdict: String(verdict.decision || 'UNKNOWN'),
-        evidenceRefs: [],
-        payload: {
-          decision: verdict.decision,
-          riskGrade: verdict.riskGrade,
-          summary: verdict.summary,
-        },
-      });
-      this.maybeRecordAuditPassCheckpoint(verdict);
-      this.broadcast({ type: 'verdict', payload: event.payload });
-      this.broadcast({ type: 'hub.refresh' });
-    });
+    this.eventBus.on(
+      "sentinel.verdict" as never,
+      (event: { payload: unknown }) => {
+        const verdict = event.payload as SentinelVerdict;
+        this.recentVerdicts.unshift(verdict);
+        if (this.recentVerdicts.length > 10) {
+          this.recentVerdicts.pop();
+        }
+        this.recordCheckpoint({
+          checkpointType: "policy.checked",
+          actor: verdict.agentDid || "sentinel",
+          phase: this.inferPhaseKeyFromPlan(this.planManager.getActivePlan()),
+          status: "validated",
+          policyVerdict: String(verdict.decision || "UNKNOWN"),
+          evidenceRefs: [],
+          payload: {
+            decision: verdict.decision,
+            riskGrade: verdict.riskGrade,
+            summary: verdict.summary,
+          },
+        });
+        this.maybeRecordAuditPassCheckpoint(verdict);
+        this.broadcast({ type: "verdict", payload: event.payload });
+        this.broadcast({ type: "hub.refresh" });
+      },
+    );
 
-    this.eventBus.on('qorelogic.l3Queued' as never, (event: unknown) => {
+    this.eventBus.on("qorelogic.l3Queued" as never, (event: unknown) => {
       this.recordCheckpoint({
-        checkpointType: 'override.requested',
-        actor: 'qorelogic',
+        checkpointType: "override.requested",
+        actor: "qorelogic",
         phase: this.inferPhaseKeyFromPlan(this.planManager.getActivePlan()),
-        status: 'proposed',
-        policyVerdict: 'ESCALATE',
+        status: "proposed",
+        policyVerdict: "ESCALATE",
         evidenceRefs: [],
         payload: event,
       });
-      this.broadcast({ type: 'hub.refresh' });
+      this.broadcast({ type: "hub.refresh" });
     });
-    this.eventBus.on('qorelogic.l3Decided' as never, (event: unknown) => {
+    this.eventBus.on("qorelogic.l3Decided" as never, (event: unknown) => {
       this.recordCheckpoint({
-        checkpointType: 'override.approved',
-        actor: 'qorelogic',
+        checkpointType: "override.approved",
+        actor: "qorelogic",
         phase: this.inferPhaseKeyFromPlan(this.planManager.getActivePlan()),
-        status: 'sealed',
-        policyVerdict: 'PASS',
+        status: "sealed",
+        policyVerdict: "PASS",
         evidenceRefs: [],
         payload: event,
       });
-      this.broadcast({ type: 'hub.refresh' });
+      this.broadcast({ type: "hub.refresh" });
     });
-    this.eventBus.on('qorelogic.trustUpdate' as never, () => this.broadcast({ type: 'hub.refresh' }));
+    this.eventBus.on("qorelogic.trustUpdate" as never, () =>
+      this.broadcast({ type: "hub.refresh" }),
+    );
   }
 
   private extractEventPayload(event: unknown): unknown {
-    if (!event || typeof event !== 'object') {
+    if (!event || typeof event !== "object") {
       return event;
     }
     const value = event as { payload?: unknown };
@@ -720,18 +891,18 @@ export class RoadmapServer {
   }
 
   private maybeRecordAuditPassCheckpoint(verdict: SentinelVerdict): void {
-    if (String(verdict.decision || '').toUpperCase() !== 'PASS') {
+    if (String(verdict.decision || "").toUpperCase() !== "PASS") {
       return;
     }
     this.recordCheckpoint({
-      checkpointType: 'attempt.committed',
-      actor: verdict.agentDid || 'sentinel',
-      phase: 'audit',
-      status: 'sealed',
-      policyVerdict: 'PASS',
+      checkpointType: "attempt.committed",
+      actor: verdict.agentDid || "sentinel",
+      phase: "audit",
+      status: "sealed",
+      policyVerdict: "PASS",
       evidenceRefs: [],
       payload: {
-        trigger: 'audit.pass',
+        trigger: "audit.pass",
         riskGrade: verdict.riskGrade,
         summary: verdict.summary,
       },
@@ -739,7 +910,7 @@ export class RoadmapServer {
   }
 
   private maybeRecordSubstantiateCompletion(streamPayload: unknown): void {
-    if (!streamPayload || typeof streamPayload !== 'object') {
+    if (!streamPayload || typeof streamPayload !== "object") {
       return;
     }
     const payload = streamPayload as {
@@ -750,12 +921,12 @@ export class RoadmapServer {
       };
     };
     const planEvent = payload.planEvent;
-    if (!planEvent || String(planEvent.type || '') !== 'phase.completed') {
+    if (!planEvent || String(planEvent.type || "") !== "phase.completed") {
       return;
     }
 
-    const planId = String(planEvent.planId || '');
-    const phaseId = String(planEvent.payload?.phaseId || '');
+    const planId = String(planEvent.planId || "");
+    const phaseId = String(planEvent.payload?.phaseId || "");
     if (!planId || !phaseId) {
       return;
     }
@@ -766,27 +937,28 @@ export class RoadmapServer {
 
     const plan = this.planManager.getPlan(planId);
     const phase = plan?.phases.find((item) => item.id === phaseId);
-    const phaseTitle = String(phase?.title || '').toLowerCase();
-    const isSubstantiate = phaseTitle.includes('substantiat')
-      || phaseTitle.includes('release')
-      || phaseTitle.includes('ship');
+    const phaseTitle = String(phase?.title || "").toLowerCase();
+    const isSubstantiate =
+      phaseTitle.includes("substantiat") ||
+      phaseTitle.includes("release") ||
+      phaseTitle.includes("ship");
     if (!isSubstantiate) {
       return;
     }
 
     this.sealedSubstantiateCompletions.add(dedupeKey);
     this.recordCheckpoint({
-      checkpointType: 'phase.exited',
-      actor: 'plan-manager',
-      phase: 'substantiate',
-      status: 'sealed',
-      policyVerdict: 'PASS',
+      checkpointType: "phase.exited",
+      actor: "plan-manager",
+      phase: "substantiate",
+      status: "sealed",
+      policyVerdict: "PASS",
       evidenceRefs: [],
       payload: {
-        trigger: 'phase.completed',
+        trigger: "phase.completed",
         planId,
         phaseId,
-        phaseTitle: phase?.title || 'Substantiate',
+        phaseTitle: phase?.title || "Substantiate",
       },
     });
   }
@@ -799,12 +971,12 @@ export class RoadmapServer {
         connected: false,
         baseUrl: this.qoreRuntime.baseUrl,
         lastCheckedAt: checkedAt,
-        error: 'disabled',
+        error: "disabled",
       };
     }
 
     const startedAt = Date.now();
-    const health = await this.fetchQoreJson('/health');
+    const health = await this.fetchQoreJson("/health");
     if (!health.ok) {
       return {
         enabled: true,
@@ -812,16 +984,20 @@ export class RoadmapServer {
         baseUrl: this.qoreRuntime.baseUrl,
         latencyMs: Date.now() - startedAt,
         lastCheckedAt: checkedAt,
-        error: health.error || 'runtime_unreachable',
+        error: health.error || "runtime_unreachable",
       };
     }
 
-    const policy = await this.fetchQoreJson('/policy/version');
+    const policy = await this.fetchQoreJson("/policy/version");
     return {
       enabled: true,
       connected: true,
       baseUrl: this.qoreRuntime.baseUrl,
-      policyVersion: policy.ok ? String((policy.body as { policyVersion?: string }).policyVersion || '') : undefined,
+      policyVersion: policy.ok
+        ? String(
+            (policy.body as { policyVersion?: string }).policyVersion || "",
+          )
+        : undefined,
       latencyMs: Date.now() - startedAt,
       lastCheckedAt: checkedAt,
     };
@@ -829,23 +1005,27 @@ export class RoadmapServer {
 
   private async fetchQoreJson(
     endpoint: string,
-    options?: { method?: 'GET' | 'POST'; body?: unknown },
-  ): Promise<{ ok: true; body: unknown } | { ok: false; error: string; detail?: string }> {
+    options?: { method?: "GET" | "POST"; body?: unknown },
+  ): Promise<
+    { ok: true; body: unknown } | { ok: false; error: string; detail?: string }
+  > {
     if (!this.qoreRuntime.enabled) {
-      return { ok: false, error: 'disabled' };
+      return { ok: false, error: "disabled" };
     }
 
     const timeout = this.qoreRuntime.timeoutMs;
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeout);
-    const headers: Record<string, string> = { 'content-type': 'application/json' };
+    const headers: Record<string, string> = {
+      "content-type": "application/json",
+    };
     if (this.qoreRuntime.apiKey) {
-      headers['x-qore-api-key'] = this.qoreRuntime.apiKey;
+      headers["x-qore-api-key"] = this.qoreRuntime.apiKey;
     }
 
     try {
       const response = await fetch(`${this.qoreRuntime.baseUrl}${endpoint}`, {
-        method: options?.method || 'GET',
+        method: options?.method || "GET",
         headers,
         body: options?.body ? JSON.stringify(options.body) : undefined,
         signal: controller.signal,
@@ -862,7 +1042,7 @@ export class RoadmapServer {
     } catch (error) {
       clearTimeout(timer);
       const detail = error instanceof Error ? error.message : String(error);
-      return { ok: false, error: 'request_failed', detail };
+      return { ok: false, error: "request_failed", detail };
     }
   }
 
@@ -875,9 +1055,11 @@ export class RoadmapServer {
 
     const agents = await this.qorelogicManager.getTrustEngine().getAllAgents();
     const totalAgents = agents.length;
-    const avgTrust = totalAgents === 0
-      ? 0
-      : agents.reduce((sum, agent) => sum + agent.trustScore, 0) / totalAgents;
+    const avgTrust =
+      totalAgents === 0
+        ? 0
+        : agents.reduce((sum, agent) => sum + agent.trustScore, 0) /
+          totalAgents;
     const quarantined = agents.filter((agent) => agent.isQuarantined).length;
     const stageCounts = agents.reduce(
       (counts, agent) => {
@@ -890,31 +1072,38 @@ export class RoadmapServer {
 
     const nodeStatus = [
       {
-        id: 'workspace-core',
-        label: 'Workspace Core',
-        state: sentinelStatus.running ? 'nominal' : 'paused',
+        id: "workspace-core",
+        label: "Workspace Core",
+        state: sentinelStatus.running ? "nominal" : "paused",
         signal: `${sentinelStatus.filesWatched || 0} files watched`,
       },
       {
-        id: 'verification-queue',
-        label: 'Verification Queue',
-        state: (l3Queue.length || sentinelStatus.queueDepth > 0) ? 'reviewing' : 'nominal',
+        id: "verification-queue",
+        label: "Verification Queue",
+        state:
+          l3Queue.length || sentinelStatus.queueDepth > 0
+            ? "reviewing"
+            : "nominal",
         signal: `${l3Queue.length || 0} pending approvals`,
       },
       {
-        id: 'trust-engine',
-        label: 'Trust Engine',
-        state: quarantined > 0 ? 'degraded' : 'nominal',
+        id: "trust-engine",
+        label: "Trust Engine",
+        state: quarantined > 0 ? "degraded" : "nominal",
         signal: `${Math.round(avgTrust * 100)}% avg trust`,
       },
       {
-        id: 'qore-runtime',
-        label: 'Qore Runtime',
-        state: !qoreRuntime.enabled ? 'paused' : qoreRuntime.connected ? 'nominal' : 'degraded',
-        signal: !qoreRuntime.enabled
-          ? 'integration disabled'
+        id: "qore-runtime",
+        label: "Qore Runtime",
+        state: !qoreRuntime.enabled
+          ? "paused"
           : qoreRuntime.connected
-            ? `connected (${qoreRuntime.policyVersion || 'unknown policy'})`
+            ? "nominal"
+            : "degraded",
+        signal: !qoreRuntime.enabled
+          ? "integration disabled"
+          : qoreRuntime.connected
+            ? `connected (${qoreRuntime.policyVersion || "unknown policy"})`
             : `unreachable (${qoreRuntime.baseUrl})`,
       },
     ];
@@ -940,19 +1129,22 @@ export class RoadmapServer {
     };
   }
 
-  start(): void {
-    this.server = this.app.listen(PORT, HOST, () => {
-      console.log(`Roadmap server: http://localhost:${PORT}`);
+  private actualPort: number = PORT;
+
+  async start(): Promise<void> {
+    this.actualPort = await this.findAvailablePort(PORT);
+    this.server = this.app.listen(this.actualPort, HOST, () => {
+      console.log(`Roadmap server: http://localhost:${this.actualPort}`);
     });
     this.setupWebSocket();
     this.recordCheckpoint({
-      checkpointType: 'snapshot.created',
-      actor: 'system',
+      checkpointType: "snapshot.created",
+      actor: "system",
       phase: this.inferPhaseKeyFromPlan(this.planManager.getActivePlan()),
-      status: 'validated',
-      policyVerdict: 'PASS',
+      status: "validated",
+      policyVerdict: "PASS",
       evidenceRefs: [],
-      payload: { source: 'roadmap-server.start' },
+      payload: { source: "roadmap-server.start" },
     });
   }
 
@@ -962,7 +1154,32 @@ export class RoadmapServer {
   }
 
   getPort(): number {
-    return PORT;
+    return this.actualPort;
+  }
+
+  private async findAvailablePort(preferred: number): Promise<number> {
+    if (await this.isPortAvailable(preferred)) {
+      return preferred;
+    }
+    for (let offset = 1; offset <= 10; offset++) {
+      const candidate = preferred + offset;
+      if (await this.isPortAvailable(candidate)) {
+        console.log(`Port ${preferred} in use, using ${candidate}`);
+        return candidate;
+      }
+    }
+    return preferred;
+  }
+
+  private isPortAvailable(port: number): Promise<boolean> {
+    return new Promise((resolve) => {
+      const server = net.createServer();
+      server.once("error", () => resolve(false));
+      server.once("listening", () => {
+        server.close(() => resolve(true));
+      });
+      server.listen(port, HOST);
+    });
   }
 
   private getInstalledSkills(): InstalledSkill[] {
@@ -973,10 +1190,13 @@ export class RoadmapServer {
       if (!fs.existsSync(root.root)) continue;
       const markdownFiles = this.collectSkillMarkdownFiles(root.root);
       for (const markdown of markdownFiles) {
-        const isRegistryApproved = approvedSkillFiles.has(this.toComparablePath(markdown));
-        const isSystemApproved = root.sourceType === 'project-canonical';
-        const isAutoDiscoveredLocal = root.sourceType === 'project-local';
-        if (!isRegistryApproved && !isSystemApproved && !isAutoDiscoveredLocal) continue;
+        const isRegistryApproved = approvedSkillFiles.has(
+          this.toComparablePath(markdown),
+        );
+        const isSystemApproved = root.sourceType === "project-canonical";
+        const isAutoDiscoveredLocal = root.sourceType === "project-local";
+        if (!isRegistryApproved && !isSystemApproved && !isAutoDiscoveredLocal)
+          continue;
         const parsed = this.parseSkillFile(markdown, root);
         if (!parsed) continue;
         const existing = discovered.get(parsed.key);
@@ -991,7 +1211,8 @@ export class RoadmapServer {
       }
     }
     return Array.from(discovered.values()).sort((a, b) => {
-      if (a.sourcePriority !== b.sourcePriority) return a.sourcePriority - b.sourcePriority;
+      if (a.sourcePriority !== b.sourcePriority)
+        return a.sourcePriority - b.sourcePriority;
       return a.label.localeCompare(b.label);
     });
   }
@@ -1010,24 +1231,49 @@ export class RoadmapServer {
       }
     };
     addAncestors(workspaceRoot);
-    addAncestors(path.resolve(__dirname, '..'));
-    addAncestors(path.resolve(__dirname, '../..'));
+    addAncestors(path.resolve(__dirname, ".."));
+    addAncestors(path.resolve(__dirname, "../.."));
 
     const roots: SkillRoot[] = [];
-    const add = (rootPath: string, sourceType: string, sourcePriority: number, admissionState: string): void => {
+    const add = (
+      rootPath: string,
+      sourceType: string,
+      sourcePriority: number,
+      admissionState: string,
+    ): void => {
       const normalized = path.resolve(rootPath);
       if (roots.some((item) => item.root === normalized)) return;
-      roots.push({ root: normalized, sourceType, sourcePriority, admissionState });
+      roots.push({
+        root: normalized,
+        sourceType,
+        sourcePriority,
+        admissionState,
+      });
     };
 
     for (const base of bases) {
-      add(path.join(base, 'FailSafe', 'VSCode', 'skills'), 'project-canonical', 1, 'admitted');
-      add(path.join(base, 'VSCode', 'skills'), 'project-canonical', 1, 'admitted');
-      add(path.join(base, '.agent', 'skills'), 'project-local', 2, 'admitted');
-      add(path.join(base, '.claude', 'skills'), 'project-local', 2, 'admitted');
-      add(path.join(base, '.codex', 'skills'), 'project-local', 2, 'admitted');
-      add(path.join(base, '.github', 'skills'), 'project-local', 2, 'admitted');
-      add(path.join(base, '.failsafe', 'manual-skills'), 'manual-import', 3, 'conditional');
+      add(
+        path.join(base, "FailSafe", "VSCode", "skills"),
+        "project-canonical",
+        1,
+        "admitted",
+      );
+      add(
+        path.join(base, "VSCode", "skills"),
+        "project-canonical",
+        1,
+        "admitted",
+      );
+      add(path.join(base, ".agent", "skills"), "project-local", 2, "admitted");
+      add(path.join(base, ".claude", "skills"), "project-local", 2, "admitted");
+      add(path.join(base, ".codex", "skills"), "project-local", 2, "admitted");
+      add(path.join(base, ".github", "skills"), "project-local", 2, "admitted");
+      add(
+        path.join(base, ".failsafe", "manual-skills"),
+        "manual-import",
+        3,
+        "conditional",
+      );
     }
 
     return roots;
@@ -1036,14 +1282,16 @@ export class RoadmapServer {
   private getEmergencyDiscoveredSkills(): InstalledSkill[] {
     const workspaceRoot = this.getWorkspaceRoot();
     const emergencyRoots = [
-      path.join(workspaceRoot, 'FailSafe', 'VSCode', 'skills'),
-      path.join(workspaceRoot, 'VSCode', 'skills'),
-      path.resolve(workspaceRoot, '..', 'VSCode', 'skills'),
-      path.resolve(workspaceRoot, '..', 'FailSafe', 'VSCode', 'skills'),
-      path.resolve(__dirname, '../../../../VSCode/skills'),
-      path.resolve(__dirname, '../../../../../FailSafe/VSCode/skills'),
+      path.join(workspaceRoot, "FailSafe", "VSCode", "skills"),
+      path.join(workspaceRoot, "VSCode", "skills"),
+      path.resolve(workspaceRoot, "..", "VSCode", "skills"),
+      path.resolve(workspaceRoot, "..", "FailSafe", "VSCode", "skills"),
+      path.resolve(__dirname, "../../../../VSCode/skills"),
+      path.resolve(__dirname, "../../../../../FailSafe/VSCode/skills"),
     ];
-    const unique = Array.from(new Set(emergencyRoots.map((item) => path.resolve(item))));
+    const unique = Array.from(
+      new Set(emergencyRoots.map((item) => path.resolve(item))),
+    );
     const output = new Map<string, InstalledSkill>();
     for (const root of unique) {
       if (!fs.existsSync(root)) continue;
@@ -1051,9 +1299,9 @@ export class RoadmapServer {
       for (const file of markdown) {
         const parsed = this.parseSkillFile(file, {
           root,
-          sourceType: 'project-canonical',
+          sourceType: "project-canonical",
           sourcePriority: 1,
-          admissionState: 'admitted',
+          admissionState: "admitted",
         });
         if (!parsed) continue;
         if (!output.has(parsed.key)) output.set(parsed.key, parsed);
@@ -1077,13 +1325,13 @@ export class RoadmapServer {
         const full = path.join(current, entry.name);
         if (entry.isDirectory()) {
           // Ignore disabled/hidden skill trees (for example, quarantine buckets).
-          if (entry.name.startsWith('.') || entry.name.startsWith('_')) {
+          if (entry.name.startsWith(".") || entry.name.startsWith("_")) {
             continue;
           }
           stack.push(full);
           continue;
         }
-        if (entry.isFile() && entry.name.toLowerCase() === 'skill.md') {
+        if (entry.isFile() && entry.name.toLowerCase() === "skill.md") {
           files.push(full);
         }
       }
@@ -1091,62 +1339,84 @@ export class RoadmapServer {
     return files;
   }
 
-  private parseSkillFile(filePath: string, rootMeta: SkillRoot): InstalledSkill | null {
-    let content = '';
+  private parseSkillFile(
+    filePath: string,
+    rootMeta: SkillRoot,
+  ): InstalledSkill | null {
+    let content = "";
     try {
-      content = fs.readFileSync(filePath, 'utf8');
+      content = fs.readFileSync(filePath, "utf8");
     } catch {
       return null;
     }
     const frontmatterMatch = content.match(/^---\s*([\s\S]*?)\s*---/);
-    const frontmatter = frontmatterMatch ? frontmatterMatch[1] : '';
-    const rawName = (this.readFrontmatterValue(frontmatter, 'name') || path.basename(path.dirname(filePath))).trim();
-    const desc = (this.readFrontmatterValue(frontmatter, 'description') || 'Installed skill').trim();
-    const metadataAuthor = this.readFrontmatterValue(frontmatter, 'author')
-      || this.readFrontmatterValue(frontmatter, 'publisher')
-      || this.readFrontmatterValue(frontmatter, 'metadata.author')
-      || 'Unknown';
-    const versionPin = this.readFrontmatterValue(frontmatter, 'version')
-      || this.readFrontmatterValue(frontmatter, 'metadata.version')
-      || 'unversioned';
-    const trustTier = this.readFrontmatterValue(frontmatter, 'trustTier')
-      || this.readFrontmatterValue(frontmatter, 'trust_tier')
-      || 'conditional';
-    const requiredPermissions = this.readFrontmatterList(frontmatter, 'requiredPermissions')
-      .concat(this.readFrontmatterList(frontmatter, 'required_permissions'));
+    const frontmatter = frontmatterMatch ? frontmatterMatch[1] : "";
+    const rawName = (
+      this.readFrontmatterValue(frontmatter, "name") ||
+      path.basename(path.dirname(filePath))
+    ).trim();
+    const desc = (
+      this.readFrontmatterValue(frontmatter, "description") || "Installed skill"
+    ).trim();
+    const metadataAuthor =
+      this.readFrontmatterValue(frontmatter, "author") ||
+      this.readFrontmatterValue(frontmatter, "publisher") ||
+      this.readFrontmatterValue(frontmatter, "metadata.author") ||
+      "Unknown";
+    const versionPin =
+      this.readFrontmatterValue(frontmatter, "version") ||
+      this.readFrontmatterValue(frontmatter, "metadata.version") ||
+      "unversioned";
+    const trustTier =
+      this.readFrontmatterValue(frontmatter, "trustTier") ||
+      this.readFrontmatterValue(frontmatter, "trust_tier") ||
+      "conditional";
+    const requiredPermissions = this.readFrontmatterList(
+      frontmatter,
+      "requiredPermissions",
+    ).concat(this.readFrontmatterList(frontmatter, "required_permissions"));
     const sourceMeta = this.readSourceMetadata(path.dirname(filePath));
 
-    const sourceRepo = sourceMeta.sourceRepo
-      || this.readFrontmatterValue(frontmatter, 'sourceRepo')
-      || this.readFrontmatterValue(frontmatter, 'source_repo')
-      || 'unknown';
-    const sourcePath = sourceMeta.sourcePath
-      || this.readFrontmatterValue(frontmatter, 'sourcePath')
-      || this.readFrontmatterValue(frontmatter, 'source_path')
-      || filePath;
+    const sourceRepo =
+      sourceMeta.sourceRepo ||
+      this.readFrontmatterValue(frontmatter, "sourceRepo") ||
+      this.readFrontmatterValue(frontmatter, "source_repo") ||
+      "unknown";
+    const sourcePath =
+      sourceMeta.sourcePath ||
+      this.readFrontmatterValue(frontmatter, "sourcePath") ||
+      this.readFrontmatterValue(frontmatter, "source_path") ||
+      filePath;
     const creator = sourceMeta.creator || metadataAuthor;
-    const admissionState = sourceMeta.admissionState
-      || this.readFrontmatterValue(frontmatter, 'admissionState')
-      || this.readFrontmatterValue(frontmatter, 'admission_state')
-      || rootMeta.admissionState;
-    const sourceType = sourceMeta.sourceType
-      || this.readFrontmatterValue(frontmatter, 'sourceType')
-      || this.readFrontmatterValue(frontmatter, 'source_type')
-      || rootMeta.sourceType;
-    const sourcePriorityRaw = sourceMeta.sourcePriority
-      || this.readFrontmatterValue(frontmatter, 'sourcePriority')
-      || this.readFrontmatterValue(frontmatter, 'source_priority');
+    const admissionState =
+      sourceMeta.admissionState ||
+      this.readFrontmatterValue(frontmatter, "admissionState") ||
+      this.readFrontmatterValue(frontmatter, "admission_state") ||
+      rootMeta.admissionState;
+    const sourceType =
+      sourceMeta.sourceType ||
+      this.readFrontmatterValue(frontmatter, "sourceType") ||
+      this.readFrontmatterValue(frontmatter, "source_type") ||
+      rootMeta.sourceType;
+    const sourcePriorityRaw =
+      sourceMeta.sourcePriority ||
+      this.readFrontmatterValue(frontmatter, "sourcePriority") ||
+      this.readFrontmatterValue(frontmatter, "source_priority");
     const sourcePriorityNum = Number.parseInt(sourcePriorityRaw, 10);
-    const sourcePriority = Number.isFinite(sourcePriorityNum) ? sourcePriorityNum : rootMeta.sourcePriority;
-    const explicitSkillId = this.readFrontmatterValue(frontmatter, 'id')
-      || this.readFrontmatterValue(frontmatter, 'skill_id')
-      || this.readFrontmatterValue(frontmatter, 'qore_id');
-    const displayName = this.readFrontmatterValue(frontmatter, 'displayName')
-      || this.readFrontmatterValue(frontmatter, 'display_name')
-      || this.humanizeSkillName(rawName);
+    const sourcePriority = Number.isFinite(sourcePriorityNum)
+      ? sourcePriorityNum
+      : rootMeta.sourcePriority;
+    const explicitSkillId =
+      this.readFrontmatterValue(frontmatter, "id") ||
+      this.readFrontmatterValue(frontmatter, "skill_id") ||
+      this.readFrontmatterValue(frontmatter, "qore_id");
+    const displayName =
+      this.readFrontmatterValue(frontmatter, "displayName") ||
+      this.readFrontmatterValue(frontmatter, "display_name") ||
+      this.humanizeSkillName(rawName);
     const resolvedId = this.resolveQoreSkillId(explicitSkillId || rawName, {
-      creator: String(creator || '').trim(),
-      sourceRepo: String(sourceRepo || '').trim(),
+      creator: String(creator || "").trim(),
+      sourceRepo: String(sourceRepo || "").trim(),
       desc,
     });
     if (!resolvedId) return null;
@@ -1158,15 +1428,17 @@ export class RoadmapServer {
       key: resolvedId,
       label: String(displayName || rawName || resolvedId).trim(),
       desc,
-      creator: String(creator || 'Unknown').trim(),
-      sourceRepo: String(sourceRepo || 'unknown').trim(),
+      creator: String(creator || "Unknown").trim(),
+      sourceRepo: String(sourceRepo || "unknown").trim(),
       sourcePath: String(sourcePath || filePath).trim(),
-      versionPin: String(versionPin || 'unversioned').trim(),
-      trustTier: String(trustTier || 'conditional').trim(),
+      versionPin: String(versionPin || "unversioned").trim(),
+      trustTier: String(trustTier || "conditional").trim(),
       sourceType: String(sourceType || rootMeta.sourceType).trim(),
       sourcePriority,
       admissionState: String(admissionState || rootMeta.admissionState).trim(),
-      requiredPermissions: Array.from(new Set(requiredPermissions.map((item) => item.trim()).filter(Boolean))),
+      requiredPermissions: Array.from(
+        new Set(requiredPermissions.map((item) => item.trim()).filter(Boolean)),
+      ),
     };
   }
 
@@ -1175,19 +1447,19 @@ export class RoadmapServer {
   }
 
   private getSkillRegistryDir(): string {
-    return path.join(this.getWorkspaceRoot(), '.failsafe', 'skill-registry');
+    return path.join(this.getWorkspaceRoot(), ".failsafe", "skill-registry");
   }
 
   private getLegacySkillRegistryPath(): string {
-    return path.join(this.getSkillRegistryDir(), 'registry.json');
+    return path.join(this.getSkillRegistryDir(), "registry.json");
   }
 
   private getAppSkillManifestPath(): string {
-    return path.join(this.getSkillRegistryDir(), 'app-manifest.json');
+    return path.join(this.getSkillRegistryDir(), "app-manifest.json");
   }
 
   private getPersonalSkillManifestPath(): string {
-    return path.join(this.getSkillRegistryDir(), 'personal-manifest.json');
+    return path.join(this.getSkillRegistryDir(), "personal-manifest.json");
   }
 
   private ensureAppSkillManifest(): void {
@@ -1195,25 +1467,36 @@ export class RoadmapServer {
     fs.mkdirSync(registryDir, { recursive: true });
     const now = new Date().toISOString();
     const entries: SkillRegistryEntry[] = [];
-    const roots = this.getSkillRoots().filter((root) => root.sourceType === 'project-canonical' && fs.existsSync(root.root));
+    const roots = this.getSkillRoots().filter(
+      (root) =>
+        root.sourceType === "project-canonical" && fs.existsSync(root.root),
+    );
     for (const root of roots) {
       const markdownFiles = this.collectSkillMarkdownFiles(root.root);
       for (const skillFile of markdownFiles) {
         const relPath = path.relative(this.getWorkspaceRoot(), skillFile);
         entries.push({
-          id: crypto.createHash('sha1').update(skillFile).digest('hex').slice(0, 12),
+          id: crypto
+            .createHash("sha1")
+            .update(skillFile)
+            .digest("hex")
+            .slice(0, 12),
           timestamp: now,
           skillName: path.basename(path.dirname(skillFile)),
           skillPath: relPath,
-          source: 'app',
-          owner: 'FailSafe',
-          trustTier: 'verified',
-          runtimeEligibility: 'allowed',
+          source: "app",
+          owner: "FailSafe",
+          trustTier: "verified",
+          runtimeEligibility: "allowed",
         });
       }
     }
     try {
-      fs.writeFileSync(this.getAppSkillManifestPath(), JSON.stringify(entries, null, 2), 'utf8');
+      fs.writeFileSync(
+        this.getAppSkillManifestPath(),
+        JSON.stringify(entries, null, 2),
+        "utf8",
+      );
     } catch {
       // Non-fatal. Canonical skills are still admitted by sourceType.
     }
@@ -1223,15 +1506,17 @@ export class RoadmapServer {
     const entries: SkillRegistryEntry[] = [];
     for (const registryPath of paths) {
       if (!fs.existsSync(registryPath)) continue;
-      let raw = '';
+      let raw = "";
       try {
-        raw = fs.readFileSync(registryPath, 'utf8');
+        raw = fs.readFileSync(registryPath, "utf8");
       } catch {
         continue;
       }
       if (!raw.trim()) continue;
       try {
-        const parsed = JSON.parse(raw) as SkillRegistryEntry[] | SkillRegistryEntry;
+        const parsed = JSON.parse(raw) as
+          | SkillRegistryEntry[]
+          | SkillRegistryEntry;
         const list = Array.isArray(parsed) ? parsed : [parsed];
         entries.push(...list);
       } catch {
@@ -1243,8 +1528,8 @@ export class RoadmapServer {
 
   private toComparablePath(inputPath: string): string {
     const normalized = path.resolve(inputPath);
-    return process.platform === 'win32'
-      ? normalized.replace(/\//g, '\\').toLowerCase()
+    return process.platform === "win32"
+      ? normalized.replace(/\//g, "\\").toLowerCase()
       : normalized;
   }
 
@@ -1259,24 +1544,31 @@ export class RoadmapServer {
 
     const latestByPath = new Map<string, SkillRegistryEntry>();
     for (const entry of parsed) {
-      const rel = String(entry?.skillPath || '').trim();
+      const rel = String(entry?.skillPath || "").trim();
       if (!rel) continue;
       const abs = path.resolve(this.getWorkspaceRoot(), rel);
       const key = this.toComparablePath(abs);
       const existing = latestByPath.get(key);
-      const existingTs = Date.parse(String(existing?.timestamp || ''));
-      const nextTs = Date.parse(String(entry?.timestamp || ''));
-      if (!existing || (Number.isFinite(nextTs) && (!Number.isFinite(existingTs) || nextTs > existingTs))) {
+      const existingTs = Date.parse(String(existing?.timestamp || ""));
+      const nextTs = Date.parse(String(entry?.timestamp || ""));
+      if (
+        !existing ||
+        (Number.isFinite(nextTs) &&
+          (!Number.isFinite(existingTs) || nextTs > existingTs))
+      ) {
         latestByPath.set(key, entry);
       }
     }
 
     const approved = new Set<string>();
     for (const [absPath, entry] of latestByPath.entries()) {
-      const trustTier = String(entry.trustTier || '').toLowerCase();
-      const runtimeEligibility = String(entry.runtimeEligibility || '').toLowerCase();
-      const approvedTier = trustTier === 'verified' || trustTier === 'conditional';
-      const allowed = runtimeEligibility === 'allowed';
+      const trustTier = String(entry.trustTier || "").toLowerCase();
+      const runtimeEligibility = String(
+        entry.runtimeEligibility || "",
+      ).toLowerCase();
+      const approvedTier =
+        trustTier === "verified" || trustTier === "conditional";
+      const allowed = runtimeEligibility === "allowed";
       if (!approvedTier || !allowed) continue;
       approved.add(this.toComparablePath(absPath));
     }
@@ -1286,20 +1578,24 @@ export class RoadmapServer {
   private getWorkspaceDiscoveryRoots(): string[] {
     const base = this.getWorkspaceRoot();
     const roots = [
-      path.join(base, '.agent', 'skills'),
-      path.join(base, '.claude', 'skills'),
-      path.join(base, '.codex', 'skills'),
-      path.join(base, '.github', 'skills'),
-      path.join(base, 'FailSafe', 'VSCode', 'skills'),
-      path.join(base, 'VSCode', 'skills'),
-      path.join(base, '.failsafe', 'manual-skills'),
+      path.join(base, ".agent", "skills"),
+      path.join(base, ".claude", "skills"),
+      path.join(base, ".codex", "skills"),
+      path.join(base, ".github", "skills"),
+      path.join(base, "FailSafe", "VSCode", "skills"),
+      path.join(base, "VSCode", "skills"),
+      path.join(base, ".failsafe", "manual-skills"),
     ];
     return Array.from(new Set(roots.map((item) => path.resolve(item))));
   }
 
   private autoIngestWorkspaceSkills(): Record<string, unknown> {
-    const roots = this.getWorkspaceDiscoveryRoots().filter((root) => fs.existsSync(root));
-    const skillFiles = roots.flatMap((root) => this.collectSkillMarkdownFiles(root));
+    const roots = this.getWorkspaceDiscoveryRoots().filter((root) =>
+      fs.existsSync(root),
+    );
+    const skillFiles = roots.flatMap((root) =>
+      this.collectSkillMarkdownFiles(root),
+    );
     const approved = this.getApprovedSkillFileSet();
     const failures: Array<{ file: string; error: string }> = [];
     let admitted = 0;
@@ -1311,7 +1607,7 @@ export class RoadmapServer {
         skipped += 1;
         continue;
       }
-      const result = this.admitSkill(skillFile, 'workspace');
+      const result = this.admitSkill(skillFile, "workspace");
       if (result.ok) {
         admitted += 1;
       } else {
@@ -1321,7 +1617,7 @@ export class RoadmapServer {
 
     return {
       ok: true,
-      mode: 'auto',
+      mode: "auto",
       rootsScanned: roots,
       discovered: skillFiles.length,
       admitted,
@@ -1332,26 +1628,29 @@ export class RoadmapServer {
     };
   }
 
-  private manualIngestSkillPayload(items: unknown[], mode: 'file' | 'folder'): Record<string, unknown> {
+  private manualIngestSkillPayload(
+    items: unknown[],
+    mode: "file" | "folder",
+  ): Record<string, unknown> {
     const normalizedItems = items
       .map((item) => ({
-        path: String((item as { path?: unknown }).path || '').trim(),
-        content: String((item as { content?: unknown }).content || ''),
+        path: String((item as { path?: unknown }).path || "").trim(),
+        content: String((item as { content?: unknown }).content || ""),
       }))
       .filter((item) => item.path.length > 0);
 
     if (normalizedItems.length === 0) {
-      throw new Error('No files were provided for manual ingest.');
+      throw new Error("No files were provided for manual ingest.");
     }
     if (normalizedItems.length > 300) {
-      throw new Error('Manual ingest payload is too large.');
+      throw new Error("Manual ingest payload is too large.");
     }
 
     const batchRoot = path.join(
       this.getWorkspaceRoot(),
-      '.failsafe',
-      'manual-skills',
-      `manual-${new Date().toISOString().replace(/[:.]/g, '-')}`,
+      ".failsafe",
+      "manual-skills",
+      `manual-${new Date().toISOString().replace(/[:.]/g, "-")}`,
     );
     fs.mkdirSync(batchRoot, { recursive: true });
 
@@ -1361,26 +1660,29 @@ export class RoadmapServer {
       if (!safeRelative) continue;
       const target = path.join(batchRoot, safeRelative);
       fs.mkdirSync(path.dirname(target), { recursive: true });
-      fs.writeFileSync(target, item.content, 'utf8');
-      if (path.basename(target).toLowerCase() === 'skill.md') {
+      fs.writeFileSync(target, item.content, "utf8");
+      if (path.basename(target).toLowerCase() === "skill.md") {
         writtenSkillFiles.push(target);
       }
     }
     if (writtenSkillFiles.length === 0) {
-      throw new Error('Manual ingest did not include any SKILL.md files.');
+      throw new Error("Manual ingest did not include any SKILL.md files.");
     }
 
     const failures: Array<{ file: string; error: string }> = [];
     let admitted = 0;
     for (const skillFile of writtenSkillFiles) {
-      const result = this.admitSkill(skillFile, mode === 'folder' ? 'manual-folder' : 'manual-file');
+      const result = this.admitSkill(
+        skillFile,
+        mode === "folder" ? "manual-folder" : "manual-file",
+      );
       if (result.ok) admitted += 1;
       else failures.push({ file: skillFile, error: result.error });
     }
 
     return {
       ok: true,
-      mode: 'manual',
+      mode: "manual",
       importedTo: batchRoot,
       filesWritten: normalizedItems.length,
       discovered: writtenSkillFiles.length,
@@ -1392,80 +1694,99 @@ export class RoadmapServer {
   }
 
   private sanitizeRelativePath(relativePath: string): string {
-    const normalized = relativePath.replace(/\\/g, '/').replace(/^[A-Za-z]:/, '');
+    const normalized = relativePath
+      .replace(/\\/g, "/")
+      .replace(/^[A-Za-z]:/, "");
     const segments = normalized
-      .split('/')
+      .split("/")
       .map((segment) => segment.trim())
-      .filter((segment) => segment.length > 0 && segment !== '.' && segment !== '..');
+      .filter(
+        (segment) => segment.length > 0 && segment !== "." && segment !== "..",
+      );
     return segments.join(path.sep);
   }
 
-  private admitSkill(skillFile: string, source: string): { ok: boolean; error: string } {
-    const scriptPath = path.join(this.getWorkspaceRoot(), 'tools', 'reliability', 'admit-skill.ps1');
+  private admitSkill(
+    skillFile: string,
+    source: string,
+  ): { ok: boolean; error: string } {
+    const scriptPath = path.join(
+      this.getWorkspaceRoot(),
+      "tools",
+      "reliability",
+      "admit-skill.ps1",
+    );
     if (!fs.existsSync(scriptPath)) {
       return { ok: false, error: `admission script not found: ${scriptPath}` };
     }
 
-    const shell = process.platform === 'win32' ? 'powershell.exe' : 'pwsh';
+    const shell = process.platform === "win32" ? "powershell.exe" : "pwsh";
     const args = [
-      '-NoProfile',
-      '-ExecutionPolicy',
-      'Bypass',
-      '-File',
+      "-NoProfile",
+      "-ExecutionPolicy",
+      "Bypass",
+      "-File",
       scriptPath,
-      '-SkillPath',
+      "-SkillPath",
       skillFile,
-      '-Source',
+      "-Source",
       source,
-      '-Owner',
-      'FailSafe',
-      '-VersionPin',
-      'local-main',
-      '-RegistryPath',
+      "-Owner",
+      "FailSafe",
+      "-VersionPin",
+      "local-main",
+      "-RegistryPath",
       this.getPersonalSkillManifestPath(),
     ];
     const result = spawnSync(shell, args, {
       cwd: this.getWorkspaceRoot(),
-      encoding: 'utf8',
+      encoding: "utf8",
     });
     const ok = result.status === 0;
-    const stdErr = String(result.stderr || '').trim();
-    const stdOut = String(result.stdout || '').trim();
+    const stdErr = String(result.stderr || "").trim();
+    const stdOut = String(result.stdout || "").trim();
     return {
       ok,
-      error: ok ? '' : (stdErr || stdOut || `admit-skill exited with code ${String(result.status ?? 'unknown')}`),
+      error: ok
+        ? ""
+        : stdErr ||
+          stdOut ||
+          `admit-skill exited with code ${String(result.status ?? "unknown")}`,
     };
   }
 
   private toSlug(value: string): string {
-    return String(value || '')
+    return String(value || "")
       .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-+|-+$/g, '');
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-+|-+$/g, "");
   }
 
   private humanizeSkillName(value: string): string {
     const slug = this.toSlug(value);
     const alias: Record<string, string> = {
-      'music': 'Generate Music',
-      'sound-effects': 'Generate Sound Effects',
-      'speech-to-text': 'Transcribe Speech',
-      'text-to-speech': 'Synthesize Speech',
-      'agents': 'Intent Assistant',
+      music: "Generate Music",
+      "sound-effects": "Generate Sound Effects",
+      "speech-to-text": "Transcribe Speech",
+      "text-to-speech": "Synthesize Speech",
+      agents: "Intent Assistant",
     };
     if (alias[slug]) return alias[slug];
     return slug
-      .split('-')
+      .split("-")
       .filter(Boolean)
       .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-      .join(' ');
+      .join(" ");
   }
 
-  private resolveQoreSkillId(base: string, context: { creator: string; sourceRepo: string; desc: string }): string {
+  private resolveQoreSkillId(
+    base: string,
+    context: { creator: string; sourceRepo: string; desc: string },
+  ): string {
     const slug = this.toSlug(base);
-    if (!slug) return '';
-    const segments = slug.split('-').filter(Boolean);
+    if (!slug) return "";
+    const segments = slug.split("-").filter(Boolean);
     if (segments.length >= 3) {
       return slug;
     }
@@ -1477,72 +1798,103 @@ export class RoadmapServer {
     return this.toSlug(synthesized);
   }
 
-  private deriveSkillSourceToken(context: { creator: string; sourceRepo: string; desc: string }): string {
-    const repo = String(context.sourceRepo || '');
-    const creator = String(context.creator || '');
-    if (repo.includes('/')) {
-      const owner = this.toSlug(repo.split('/')[0] || '');
+  private deriveSkillSourceToken(context: {
+    creator: string;
+    sourceRepo: string;
+    desc: string;
+  }): string {
+    const repo = String(context.sourceRepo || "");
+    const creator = String(context.creator || "");
+    if (repo.includes("/")) {
+      const owner = this.toSlug(repo.split("/")[0] || "");
       if (owner) return owner;
     }
     const creatorSlug = this.toSlug(creator);
     if (creatorSlug) return creatorSlug;
-    return 'local';
+    return "local";
   }
 
-  private deriveSkillDomainToken(skillSlug: string, description: string): string {
+  private deriveSkillDomainToken(
+    skillSlug: string,
+    description: string,
+  ): string {
     const text = `${skillSlug} ${description}`.toLowerCase();
-    if (text.includes('tauri')) return 'tauri2';
-    if (text.includes('governance') || text.includes('compliance')) return 'governance';
-    if (text.includes('meta') || text.includes('ledger') || text.includes('shadow')) return 'meta';
-    if (text.includes('docs') || text.includes('writing')) return 'docs';
-    if (text.includes('web') || text.includes('wcag')) return 'web';
-    if (text.includes('audio') || text.includes('voice') || text.includes('speech') || text.includes('music') || text.includes('sound')) return 'audio';
-    return 'general';
+    if (text.includes("tauri")) return "tauri2";
+    if (text.includes("governance") || text.includes("compliance"))
+      return "governance";
+    if (
+      text.includes("meta") ||
+      text.includes("ledger") ||
+      text.includes("shadow")
+    )
+      return "meta";
+    if (text.includes("docs") || text.includes("writing")) return "docs";
+    if (text.includes("web") || text.includes("wcag")) return "web";
+    if (
+      text.includes("audio") ||
+      text.includes("voice") ||
+      text.includes("speech") ||
+      text.includes("music") ||
+      text.includes("sound")
+    )
+      return "audio";
+    return "general";
   }
 
   private deriveSkillActionToken(skillSlug: string, domain: string): string {
     const directMap: Record<string, string> = {
-      'music': 'generate-music',
-      'sound-effects': 'generate-sound-effects',
-      'speech-to-text': 'transcribe-speech',
-      'text-to-speech': 'synthesize-speech',
-      'agents': 'build-intent-assistant',
+      music: "generate-music",
+      "sound-effects": "generate-sound-effects",
+      "speech-to-text": "transcribe-speech",
+      "text-to-speech": "synthesize-speech",
+      agents: "build-intent-assistant",
     };
     if (directMap[skillSlug]) return directMap[skillSlug];
-    if (domain === 'general') return `use-${skillSlug}`;
+    if (domain === "general") return `use-${skillSlug}`;
     return skillSlug;
   }
 
   private readFrontmatterValue(frontmatter: string, key: string): string {
-    const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const dotted = escaped.replace('\\.', '\\s*\\.\\s*');
-    const match = frontmatter.match(new RegExp(`^\\s*${dotted}\\s*:\\s*(.+)$`, 'mi'));
-    if (!match?.[1]) return '';
-    return String(match[1]).trim().replace(/^['"]|['"]$/g, '');
+    const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const dotted = escaped.replace("\\.", "\\s*\\.\\s*");
+    const match = frontmatter.match(
+      new RegExp(`^\\s*${dotted}\\s*:\\s*(.+)$`, "mi"),
+    );
+    if (!match?.[1]) return "";
+    return String(match[1])
+      .trim()
+      .replace(/^['"]|['"]$/g, "");
   }
 
   private readFrontmatterList(frontmatter: string, key: string): string[] {
-    const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const headerMatch = frontmatter.match(new RegExp(`^\\s*${escaped}\\s*:\\s*(.+)?$`, 'mi'));
+    const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const headerMatch = frontmatter.match(
+      new RegExp(`^\\s*${escaped}\\s*:\\s*(.+)?$`, "mi"),
+    );
     if (!headerMatch) return [];
-    const trailing = String(headerMatch[1] || '').trim();
-    if (trailing.startsWith('[') && trailing.endsWith(']')) {
+    const trailing = String(headerMatch[1] || "").trim();
+    if (trailing.startsWith("[") && trailing.endsWith("]")) {
       return trailing
         .slice(1, -1)
-        .split(',')
-        .map((item) => item.trim().replace(/^['"]|['"]$/g, ''))
+        .split(",")
+        .map((item) => item.trim().replace(/^['"]|['"]$/g, ""))
         .filter(Boolean);
     }
     const start = headerMatch.index ?? -1;
     if (start < 0) return [];
-    const rest = frontmatter.slice(start + headerMatch[0].length).split('\n');
+    const rest = frontmatter.slice(start + headerMatch[0].length).split("\n");
     const items: string[] = [];
     for (const line of rest) {
       if (!/^\s*-/.test(line)) {
         if (line.trim().length > 0) break;
         continue;
       }
-      items.push(line.replace(/^\s*-\s*/, '').trim().replace(/^['"]|['"]$/g, ''));
+      items.push(
+        line
+          .replace(/^\s*-\s*/, "")
+          .trim()
+          .replace(/^['"]|['"]$/g, ""),
+      );
     }
     return items;
   }
@@ -1555,31 +1907,32 @@ export class RoadmapServer {
     sourcePriority: string;
     admissionState: string;
   } {
-    const sourceFile = path.join(skillDir, 'SOURCE.yml');
+    const sourceFile = path.join(skillDir, "SOURCE.yml");
     if (!fs.existsSync(sourceFile)) {
       return {
-        creator: '',
-        sourceRepo: '',
-        sourcePath: '',
-        sourceType: '',
-        sourcePriority: '',
-        admissionState: '',
+        creator: "",
+        sourceRepo: "",
+        sourcePath: "",
+        sourceType: "",
+        sourcePriority: "",
+        admissionState: "",
       };
     }
-    let content = '';
+    let content = "";
     try {
-      content = fs.readFileSync(sourceFile, 'utf8');
+      content = fs.readFileSync(sourceFile, "utf8");
     } catch {
       return {
-        creator: '',
-        sourceRepo: '',
-        sourcePath: '',
-        sourceType: '',
-        sourcePriority: '',
-        admissionState: '',
+        creator: "",
+        sourceRepo: "",
+        sourcePath: "",
+        sourceType: "",
+        sourcePriority: "",
+        admissionState: "",
       };
     }
-    const read = (pattern: RegExp) => (content.match(pattern)?.[1] || '').trim().replace(/^['"]|['"]$/g, '');
+    const read = (pattern: RegExp) =>
+      (content.match(pattern)?.[1] || "").trim().replace(/^['"]|['"]$/g, "");
     const parsed = (() => {
       try {
         return yaml.load(content) as Record<string, unknown> | null;
@@ -1587,70 +1940,106 @@ export class RoadmapServer {
         return null;
       }
     })();
-    const source = (parsed?.source && typeof parsed.source === 'object')
-      ? (parsed.source as Record<string, unknown>)
-      : {};
-    const creatorNode = (parsed?.creator && typeof parsed.creator === 'object')
-      ? (parsed.creator as Record<string, unknown>)
-      : {};
-    const authorNode = (parsed?.author && typeof parsed.author === 'object')
-      ? (parsed.author as Record<string, unknown>)
-      : {};
-    const imported = (parsed?.imported && typeof parsed.imported === 'object')
-      ? (parsed.imported as Record<string, unknown>)
-      : {};
+    const source =
+      parsed?.source && typeof parsed.source === "object"
+        ? (parsed.source as Record<string, unknown>)
+        : {};
+    const creatorNode =
+      parsed?.creator && typeof parsed.creator === "object"
+        ? (parsed.creator as Record<string, unknown>)
+        : {};
+    const authorNode =
+      parsed?.author && typeof parsed.author === "object"
+        ? (parsed.author as Record<string, unknown>)
+        : {};
+    const imported =
+      parsed?.imported && typeof parsed.imported === "object"
+        ? (parsed.imported as Record<string, unknown>)
+        : {};
     const pick = (...values: Array<unknown>) => {
       for (const value of values) {
-        if (typeof value === 'string' && value.trim().length > 0) {
+        if (typeof value === "string" && value.trim().length > 0) {
           return value.trim();
         }
       }
-      return '';
+      return "";
     };
     return {
       creator: pick(
         creatorNode.name,
         parsed?.creator,
         authorNode.name,
-        read(/^\s*creator\s*:\s*(.+)$/mi),
+        read(/^\s*creator\s*:\s*(.+)$/im),
       ),
       sourceRepo: pick(
         source.repo,
         source.repository,
         parsed?.source_repo,
-        read(/^\s*source_repo\s*:\s*(.+)$/mi),
+        read(/^\s*source_repo\s*:\s*(.+)$/im),
       ),
       sourcePath: pick(
         source.path,
         source.url,
         parsed?.source_path,
-        read(/^\s*source_path\s*:\s*(.+)$/mi),
+        read(/^\s*source_path\s*:\s*(.+)$/im),
       ),
       sourceType: pick(
         source.type,
         parsed?.source_type,
-        read(/^\s*source_type\s*:\s*(.+)$/mi),
+        read(/^\s*source_type\s*:\s*(.+)$/im),
       ),
       sourcePriority: pick(
         source.source_priority,
         parsed?.source_priority,
-        read(/^\s*source_priority\s*:\s*(.+)$/mi),
+        read(/^\s*source_priority\s*:\s*(.+)$/im),
       ),
       admissionState: pick(
         imported.admission_state,
         parsed?.admission_state,
-        read(/^\s*admission_state\s*:\s*(.+)$/mi),
+        read(/^\s*admission_state\s*:\s*(.+)$/im),
       ),
     };
   }
 
-  private rankSkillForPhase(skill: InstalledSkill, phase: string): SkillRelevance {
+  private rankSkillForPhase(
+    skill: InstalledSkill,
+    phase: string,
+  ): SkillRelevance {
     const phaseKeywordMap: Record<string, string[]> = {
-      plan: ['plan', 'strategy', 'architecture', 'design', 'router', 'flow'],
-      audit: ['audit', 'review', 'security', 'permission', 'verify', 'compliance'],
-      implement: ['implement', 'integration', 'wiring', 'state', 'plugin', 'build'],
-      debug: ['debug', 'error', 'test', 'validation', 'fix', 'mock', 'performance'],
-      substantiate: ['documentation', 'release', 'narrative', 'governance', 'evidence', 'lifecycle'],
+      plan: ["plan", "strategy", "architecture", "design", "router", "flow"],
+      audit: [
+        "audit",
+        "review",
+        "security",
+        "permission",
+        "verify",
+        "compliance",
+      ],
+      implement: [
+        "implement",
+        "integration",
+        "wiring",
+        "state",
+        "plugin",
+        "build",
+      ],
+      debug: [
+        "debug",
+        "error",
+        "test",
+        "validation",
+        "fix",
+        "mock",
+        "performance",
+      ],
+      substantiate: [
+        "documentation",
+        "release",
+        "narrative",
+        "governance",
+        "evidence",
+        "lifecycle",
+      ],
     };
     const text = `${skill.key} ${skill.label} ${skill.desc}`.toLowerCase();
     const keywords = phaseKeywordMap[phase] || [];
@@ -1662,26 +2051,26 @@ export class RoadmapServer {
         reasons.push(`keyword:${keyword}`);
       }
     }
-    if (skill.trustTier.toLowerCase() === 'verified') {
+    if (skill.trustTier.toLowerCase() === "verified") {
       score += 1;
-      reasons.push('trust:verified');
+      reasons.push("trust:verified");
     }
     const admission = skill.admissionState.toLowerCase();
-    if (admission === 'admitted') {
+    if (admission === "admitted") {
       score += 1;
-      reasons.push('admission:admitted');
-    } else if (admission === 'conditional') {
-      reasons.push('admission:conditional');
-    } else if (admission === 'quarantined') {
+      reasons.push("admission:admitted");
+    } else if (admission === "conditional") {
+      reasons.push("admission:conditional");
+    } else if (admission === "quarantined") {
       score -= 5;
-      reasons.push('admission:quarantined');
+      reasons.push("admission:quarantined");
     }
     if (skill.sourcePriority <= 1) {
       score += 2;
-      reasons.push('source:project-canonical');
+      reasons.push("source:project-canonical");
     } else if (skill.sourcePriority === 2) {
       score += 1;
-      reasons.push('source:preferred');
+      reasons.push("source:preferred");
     } else {
       reasons.push(`source:priority-${skill.sourcePriority}`);
     }
@@ -1689,20 +2078,23 @@ export class RoadmapServer {
       reasons.push(`permissions:${skill.requiredPermissions.length}`);
     }
     if (reasons.length === 0) {
-      reasons.push('baseline');
+      reasons.push("baseline");
     }
     return { ...skill, score, reasons };
   }
 
-  private isPreferredSkill(candidate: InstalledSkill, current: InstalledSkill): boolean {
+  private isPreferredSkill(
+    candidate: InstalledSkill,
+    current: InstalledSkill,
+  ): boolean {
     if (candidate.sourcePriority !== current.sourcePriority) {
       return candidate.sourcePriority < current.sourcePriority;
     }
     const admissionWeight = (value: string): number => {
       const normalized = value.toLowerCase();
-      if (normalized === 'admitted') return 3;
-      if (normalized === 'conditional') return 2;
-      if (normalized === 'quarantined') return 1;
+      if (normalized === "admitted") return 3;
+      if (normalized === "conditional") return 2;
+      if (normalized === "quarantined") return 1;
       return 0;
     };
     const candidateAdmission = admissionWeight(candidate.admissionState);
@@ -1710,8 +2102,8 @@ export class RoadmapServer {
     if (candidateAdmission !== currentAdmission) {
       return candidateAdmission > currentAdmission;
     }
-    const candidatePinned = candidate.versionPin !== 'unversioned';
-    const currentPinned = current.versionPin !== 'unversioned';
+    const candidatePinned = candidate.versionPin !== "unversioned";
+    const currentPinned = current.versionPin !== "unversioned";
     if (candidatePinned !== currentPinned) {
       return candidatePinned;
     }
@@ -1720,9 +2112,15 @@ export class RoadmapServer {
 
   private initializeCheckpointStore(): void {
     try {
-      const ledgerDb = this.qorelogicManager.getLedgerManager().getDatabase() as unknown as {
+      const ledgerDb = this.qorelogicManager
+        .getLedgerManager()
+        .getDatabase() as unknown as {
         exec: (sql: string) => void;
-        prepare: (sql: string) => { run: (...args: unknown[]) => unknown; get: (...args: unknown[]) => unknown; all: (...args: unknown[]) => unknown };
+        prepare: (sql: string) => {
+          run: (...args: unknown[]) => unknown;
+          get: (...args: unknown[]) => unknown;
+          all: (...args: unknown[]) => unknown;
+        };
       };
       ledgerDb.exec(`
         CREATE TABLE IF NOT EXISTS failsafe_checkpoints (
@@ -1751,7 +2149,7 @@ export class RoadmapServer {
       this.checkpointDb = ledgerDb;
     } catch (error) {
       this.checkpointDb = null;
-      console.warn('Checkpoint store running in memory fallback mode:', error);
+      console.warn("Checkpoint store running in memory fallback mode:", error);
     }
   }
 
@@ -1762,11 +2160,11 @@ export class RoadmapServer {
       purgeRagAfter: () => 0,
       recordRevertCheckpoint: (request: RevertRequest) => {
         this.recordCheckpoint({
-          checkpointType: 'governance.revert',
+          checkpointType: "governance.revert",
           actor: request.actor,
-          phase: 'revert',
-          status: 'sealed',
-          policyVerdict: 'PASS',
+          phase: "revert",
+          status: "sealed",
+          policyVerdict: "PASS",
           evidenceRefs: [],
           payload: {
             targetCheckpointId: request.targetCheckpoint.checkpointId,
@@ -1784,9 +2182,19 @@ export class RoadmapServer {
   private getCheckpointById(id: string): CheckpointRef | null {
     if (this.checkpointDb) {
       try {
-        const row = this.checkpointDb.prepare(
-          'SELECT checkpoint_id, git_hash, timestamp, phase, status FROM failsafe_checkpoints WHERE checkpoint_id = ?',
-        ).get(id) as { checkpoint_id: string; git_hash: string; timestamp: string; phase: string; status: string } | undefined;
+        const row = this.checkpointDb
+          .prepare(
+            "SELECT checkpoint_id, git_hash, timestamp, phase, status FROM failsafe_checkpoints WHERE checkpoint_id = ?",
+          )
+          .get(id) as
+          | {
+              checkpoint_id: string;
+              git_hash: string;
+              timestamp: string;
+              phase: string;
+              status: string;
+            }
+          | undefined;
         if (!row) return null;
         return {
           checkpointId: row.checkpoint_id,
@@ -1795,7 +2203,9 @@ export class RoadmapServer {
           phase: row.phase,
           status: row.status,
         };
-      } catch { /* fall through */ }
+      } catch {
+        /* fall through */
+      }
     }
     const mem = this.checkpointMemory.find((r) => r.checkpointId === id);
     if (!mem) return null;
@@ -1809,20 +2219,48 @@ export class RoadmapServer {
   }
 
   private inferPhaseKeyFromPlan(plan: unknown): string {
-    const phases = Array.isArray((plan as { phases?: unknown[] } | null)?.phases)
-      ? (plan as { phases: Array<{ id?: string; title?: string; status?: string }> }).phases
+    const phases = Array.isArray(
+      (plan as { phases?: unknown[] } | null)?.phases,
+    )
+      ? (
+          plan as {
+            phases: Array<{ id?: string; title?: string; status?: string }>;
+          }
+        ).phases
       : [];
-    const currentPhaseId = (plan as { currentPhaseId?: string } | null)?.currentPhaseId;
-    const active = phases.find((phase) => phase.id === currentPhaseId)
-      || phases.find((phase) => phase.status === 'active')
-      || phases[0]
-      || null;
-    const title = String(active?.title || '').toLowerCase();
-    if (title.includes('substantiat') || title.includes('release') || title.includes('ship')) return 'substantiate';
-    if (title.includes('debug') || title.includes('fix') || title.includes('stabil')) return 'debug';
-    if (title.includes('implement') || title.includes('build') || title.includes('develop')) return 'implement';
-    if (title.includes('audit') || title.includes('review') || title.includes('verify')) return 'audit';
-    return 'plan';
+    const currentPhaseId = (plan as { currentPhaseId?: string } | null)
+      ?.currentPhaseId;
+    const active =
+      phases.find((phase) => phase.id === currentPhaseId) ||
+      phases.find((phase) => phase.status === "active") ||
+      phases[0] ||
+      null;
+    const title = String(active?.title || "").toLowerCase();
+    if (
+      title.includes("substantiat") ||
+      title.includes("release") ||
+      title.includes("ship")
+    )
+      return "substantiate";
+    if (
+      title.includes("debug") ||
+      title.includes("fix") ||
+      title.includes("stabil")
+    )
+      return "debug";
+    if (
+      title.includes("implement") ||
+      title.includes("build") ||
+      title.includes("develop")
+    )
+      return "implement";
+    if (
+      title.includes("audit") ||
+      title.includes("review") ||
+      title.includes("verify")
+    )
+      return "audit";
+    return "plan";
   }
 
   private stableStringify(value: unknown): string {
@@ -1830,7 +2268,7 @@ export class RoadmapServer {
       if (Array.isArray(input)) {
         return input.map((item) => normalize(item));
       }
-      if (input && typeof input === 'object') {
+      if (input && typeof input === "object") {
         const obj = input as Record<string, unknown>;
         return Object.keys(obj)
           .sort()
@@ -1845,23 +2283,23 @@ export class RoadmapServer {
   }
 
   private hash(value: string): string {
-    return crypto.createHash('sha256').update(value).digest('hex');
+    return crypto.createHash("sha256").update(value).digest("hex");
   }
 
   private tryGetGitHead(): string {
     const candidates = [
-      path.resolve(process.cwd(), '.git', 'HEAD'),
-      path.resolve(process.cwd(), '..', '.git', 'HEAD'),
+      path.resolve(process.cwd(), ".git", "HEAD"),
+      path.resolve(process.cwd(), "..", ".git", "HEAD"),
     ];
     for (const headFile of candidates) {
       if (!fs.existsSync(headFile)) continue;
       try {
-        const head = fs.readFileSync(headFile, 'utf8').trim();
-        if (head.startsWith('ref:')) {
-          const refPath = head.replace(/^ref:\s*/, '').trim();
+        const head = fs.readFileSync(headFile, "utf8").trim();
+        if (head.startsWith("ref:")) {
+          const refPath = head.replace(/^ref:\s*/, "").trim();
           const refFile = path.resolve(path.dirname(headFile), refPath);
           if (fs.existsSync(refFile)) {
-            return fs.readFileSync(refFile, 'utf8').trim();
+            return fs.readFileSync(refFile, "utf8").trim();
           }
           return refPath;
         }
@@ -1870,7 +2308,7 @@ export class RoadmapServer {
         continue;
       }
     }
-    return 'unknown';
+    return "unknown";
   }
 
   private recordCheckpoint(input: {
@@ -1890,34 +2328,42 @@ export class RoadmapServer {
     // Auto-populate evidenceRefs from recent sentinel observations
     if (input.evidenceRefs.length === 0) {
       const since = new Date(Date.now() - 60_000).toISOString();
-      input.evidenceRefs = this.sentinelDaemon.getRecentObservationIds(since, 10);
+      input.evidenceRefs = this.sentinelDaemon.getRecentObservationIds(
+        since,
+        10,
+      );
     }
-    const runId = this.planManager.getActivePlan()?.id
-      || this.planManager.getCurrentSprint()?.id
-      || 'global';
+    const runId =
+      this.planManager.getActivePlan()?.id ||
+      this.planManager.getCurrentSprint()?.id ||
+      "global";
     const payloadJson = this.stableStringify(input.payload || {});
     const payloadHash = this.hash(payloadJson);
     const gitHash = this.tryGetGitHead();
 
-    const previous = this.getRecentCheckpoints(1)[0] as CheckpointRecord | undefined;
-    const prevHash = previous?.entryHash || 'GENESIS_CHECKPOINT';
+    const previous = this.getRecentCheckpoints(1)[0] as
+      | CheckpointRecord
+      | undefined;
+    const prevHash = previous?.entryHash || "GENESIS_CHECKPOINT";
     const checkpointId = crypto.randomUUID();
     const parentId = previous?.checkpointId || null;
-    const entryHash = this.hash(this.stableStringify({
-      checkpointId,
-      runId,
-      checkpointType: input.checkpointType,
-      phase: input.phase,
-      status: input.status,
-      timestamp,
-      parentId,
-      gitHash,
-      policyVerdict: input.policyVerdict,
-      evidenceRefs: input.evidenceRefs.slice().sort(),
-      actor: input.actor,
-      payloadHash,
-      prevHash,
-    }));
+    const entryHash = this.hash(
+      this.stableStringify({
+        checkpointId,
+        runId,
+        checkpointType: input.checkpointType,
+        phase: input.phase,
+        status: input.status,
+        timestamp,
+        parentId,
+        gitHash,
+        policyVerdict: input.policyVerdict,
+        evidenceRefs: input.evidenceRefs.slice().sort(),
+        actor: input.actor,
+        payloadHash,
+        prevHash,
+      }),
+    );
 
     const record: CheckpointRecord = {
       checkpointId,
@@ -1939,32 +2385,39 @@ export class RoadmapServer {
 
     if (this.checkpointDb) {
       try {
-        this.checkpointDb.prepare(`
+        this.checkpointDb
+          .prepare(
+            `
           INSERT INTO failsafe_checkpoints (
             checkpoint_id, run_id, checkpoint_type, phase, status, timestamp,
             parent_id, git_hash, policy_verdict, evidence_refs, actor,
             payload_json, payload_hash, entry_hash, prev_hash
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(
-          record.checkpointId,
-          record.runId,
-          record.checkpointType,
-          record.phase,
-          record.status,
-          record.timestamp,
-          record.parentId,
-          record.gitHash,
-          record.policyVerdict,
-          JSON.stringify(record.evidenceRefs),
-          record.actor,
-          record.payloadJson,
-          record.payloadHash,
-          record.entryHash,
-          record.prevHash,
-        );
+        `,
+          )
+          .run(
+            record.checkpointId,
+            record.runId,
+            record.checkpointType,
+            record.phase,
+            record.status,
+            record.timestamp,
+            record.parentId,
+            record.gitHash,
+            record.policyVerdict,
+            JSON.stringify(record.evidenceRefs),
+            record.actor,
+            record.payloadJson,
+            record.payloadHash,
+            record.entryHash,
+            record.prevHash,
+          );
         return;
       } catch (error) {
-        console.warn('Checkpoint persistence failed, using memory fallback:', error);
+        console.warn(
+          "Checkpoint persistence failed, using memory fallback:",
+          error,
+        );
       }
     }
 
@@ -1977,7 +2430,7 @@ export class RoadmapServer {
   private mapCheckpointRow(row: Record<string, unknown>): CheckpointRecord {
     const evidence = (() => {
       const raw = row.evidence_refs;
-      if (typeof raw !== 'string' || raw.length === 0) return [];
+      if (typeof raw !== "string" || raw.length === 0) return [];
       try {
         const parsed = JSON.parse(raw);
         return Array.isArray(parsed) ? parsed.map((item) => String(item)) : [];
@@ -1987,35 +2440,39 @@ export class RoadmapServer {
     })();
 
     return {
-      checkpointId: String(row.checkpoint_id || ''),
-      runId: String(row.run_id || ''),
-      checkpointType: String(row.checkpoint_type || ''),
-      phase: String(row.phase || ''),
-      status: String(row.status || 'validated') as CheckpointStatus,
-      timestamp: String(row.timestamp || ''),
+      checkpointId: String(row.checkpoint_id || ""),
+      runId: String(row.run_id || ""),
+      checkpointType: String(row.checkpoint_type || ""),
+      phase: String(row.phase || ""),
+      status: String(row.status || "validated") as CheckpointStatus,
+      timestamp: String(row.timestamp || ""),
       parentId: row.parent_id ? String(row.parent_id) : null,
-      gitHash: String(row.git_hash || 'unknown'),
-      policyVerdict: String(row.policy_verdict || 'UNKNOWN'),
+      gitHash: String(row.git_hash || "unknown"),
+      policyVerdict: String(row.policy_verdict || "UNKNOWN"),
       evidenceRefs: evidence,
-      actor: String(row.actor || 'system'),
-      payloadJson: String(row.payload_json || '{}'),
-      payloadHash: String(row.payload_hash || ''),
-      entryHash: String(row.entry_hash || ''),
-      prevHash: String(row.prev_hash || 'GENESIS_CHECKPOINT'),
+      actor: String(row.actor || "system"),
+      payloadJson: String(row.payload_json || "{}"),
+      payloadHash: String(row.payload_hash || ""),
+      entryHash: String(row.entry_hash || ""),
+      prevHash: String(row.prev_hash || "GENESIS_CHECKPOINT"),
     };
   }
 
   private getRecentCheckpoints(limit: number): CheckpointRecord[] {
     if (this.checkpointDb) {
       try {
-        const rows = this.checkpointDb.prepare(`
+        const rows = this.checkpointDb
+          .prepare(
+            `
           SELECT checkpoint_id, run_id, checkpoint_type, phase, status, timestamp,
                  parent_id, git_hash, policy_verdict, evidence_refs, actor,
                  payload_json, payload_hash, entry_hash, prev_hash
           FROM failsafe_checkpoints
           ORDER BY id DESC
           LIMIT ?
-        `).all(limit) as Record<string, unknown>[];
+        `,
+          )
+          .all(limit) as Record<string, unknown>[];
         return rows.map((row) => this.mapCheckpointRow(row));
       } catch {
         // fall through to memory
@@ -2028,13 +2485,17 @@ export class RoadmapServer {
     const records = this.checkpointDb
       ? (() => {
           try {
-            const rows = this.checkpointDb.prepare(`
+            const rows = this.checkpointDb
+              .prepare(
+                `
               SELECT checkpoint_id, run_id, checkpoint_type, phase, status, timestamp,
                      parent_id, git_hash, policy_verdict, evidence_refs, actor,
                      payload_json, payload_hash, entry_hash, prev_hash
               FROM failsafe_checkpoints
               ORDER BY id ASC
-            `).all() as Record<string, unknown>[];
+            `,
+              )
+              .all() as Record<string, unknown>[];
             return rows.map((row) => this.mapCheckpointRow(row));
           } catch {
             return this.checkpointMemory.slice().reverse();
@@ -2043,27 +2504,29 @@ export class RoadmapServer {
       : this.checkpointMemory.slice().reverse();
 
     if (records.length === 0) return true;
-    let prevHash = 'GENESIS_CHECKPOINT';
+    let prevHash = "GENESIS_CHECKPOINT";
     for (const record of records) {
       const recomputedPayloadHash = this.hash(record.payloadJson);
       if (recomputedPayloadHash !== record.payloadHash) {
         return false;
       }
-      const recomputedEntryHash = this.hash(this.stableStringify({
-        checkpointId: record.checkpointId,
-        runId: record.runId,
-        checkpointType: record.checkpointType,
-        phase: record.phase,
-        status: record.status,
-        timestamp: record.timestamp,
-        parentId: record.parentId,
-        gitHash: record.gitHash,
-        policyVerdict: record.policyVerdict,
-        evidenceRefs: record.evidenceRefs.slice().sort(),
-        actor: record.actor,
-        payloadHash: record.payloadHash,
-        prevHash: record.prevHash,
-      }));
+      const recomputedEntryHash = this.hash(
+        this.stableStringify({
+          checkpointId: record.checkpointId,
+          runId: record.runId,
+          checkpointType: record.checkpointType,
+          phase: record.phase,
+          status: record.status,
+          timestamp: record.timestamp,
+          parentId: record.parentId,
+          gitHash: record.gitHash,
+          policyVerdict: record.policyVerdict,
+          evidenceRefs: record.evidenceRefs.slice().sort(),
+          actor: record.actor,
+          payloadHash: record.payloadHash,
+          prevHash: record.prevHash,
+        }),
+      );
       if (recomputedEntryHash !== record.entryHash) {
         return false;
       }
@@ -2075,14 +2538,37 @@ export class RoadmapServer {
     return true;
   }
 
+  /**
+   * Incremental verification of only the latest checkpoint against its parent.
+   * Used by heartbeat polling to detect chain breaks without full traversal.
+   */
+  private verifyLatestCheckpoint(): boolean {
+    const records = this.getRecentCheckpoints(2);
+    if (records.length === 0) return true;
+
+    const latest = records[0];
+    const recomputedPayloadHash = this.hash(latest.payloadJson);
+    if (recomputedPayloadHash !== latest.payloadHash) {
+      return false;
+    }
+
+    const expectedPrev =
+      records.length > 1 ? records[1].entryHash : "GENESIS_CHECKPOINT";
+    return latest.prevHash === expectedPrev;
+  }
+
   private getCheckpointSummary(): Record<string, unknown> {
     const recent = this.getRecentCheckpoints(1)[0];
-    const chainValid = this.verifyCheckpointChain();
+    // Use cached chain validity from last manual verification; only do incremental check
+    const latestValid = this.verifyLatestCheckpoint();
+    const chainValid = this.cachedChainValid && latestValid;
     return {
       total: this.checkpointDb
         ? (() => {
             try {
-              const row = this.checkpointDb?.prepare('SELECT count(*) as c FROM failsafe_checkpoints').get() as { c: number };
+              const row = this.checkpointDb
+                ?.prepare("SELECT count(*) as c FROM failsafe_checkpoints")
+                .get() as { c: number };
               return Number(row?.c || 0);
             } catch {
               return this.checkpointMemory.length;
@@ -2090,6 +2576,7 @@ export class RoadmapServer {
           })()
         : this.checkpointMemory.length,
       chainValid,
+      chainValidAt: this.chainValidAt,
       latestType: recent?.checkpointType || null,
       latestAt: recent?.timestamp || null,
       latestVerdict: recent?.policyVerdict || null,
@@ -2102,13 +2589,18 @@ export class RoadmapServer {
    */
   private getTransparencyEvents(limit: number): Array<Record<string, unknown>> {
     // Read from the transparency log file if it exists
-    const logPath = path.join(this.workspaceRoot, '.failsafe', 'logs', 'transparency.jsonl');
+    const logPath = path.join(
+      this.workspaceRoot,
+      ".failsafe",
+      "logs",
+      "transparency.jsonl",
+    );
     const events: Array<Record<string, unknown>> = [];
-    
+
     try {
       if (fs.existsSync(logPath)) {
-        const content = fs.readFileSync(logPath, 'utf-8');
-        const lines = content.trim().split('\n').filter(Boolean);
+        const content = fs.readFileSync(logPath, "utf-8");
+        const lines = content.trim().split("\n").filter(Boolean);
         const recentLines = lines.slice(-limit);
         for (const line of recentLines) {
           try {
@@ -2121,7 +2613,7 @@ export class RoadmapServer {
     } catch {
       // Return empty array on error
     }
-    
+
     return events;
   }
 
@@ -2130,18 +2622,23 @@ export class RoadmapServer {
    */
   private getRiskRegister(): Array<Record<string, unknown>> {
     // The RiskManager stores risks in .failsafe/risks/risks.json
-    const risksPath = path.join(this.workspaceRoot, '.failsafe', 'risks', 'risks.json');
-    
+    const risksPath = path.join(
+      this.workspaceRoot,
+      ".failsafe",
+      "risks",
+      "risks.json",
+    );
+
     try {
       if (fs.existsSync(risksPath)) {
-        const content = fs.readFileSync(risksPath, 'utf-8');
+        const content = fs.readFileSync(risksPath, "utf-8");
         const data = JSON.parse(content);
         return Array.isArray(data.risks) ? data.risks : [];
       }
     } catch {
       // Return empty array on error
     }
-    
+
     return [];
   }
 }

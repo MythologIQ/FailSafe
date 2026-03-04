@@ -20,7 +20,6 @@ import { GovernanceStatusBar } from "../governance/GovernanceStatusBar";
 import { LedgerManager } from "../qorelogic/ledger/LedgerManager";
 import { ShadowGenomeManager } from "../qorelogic/shadow/ShadowGenomeManager";
 import { RoadmapServer } from "../roadmap";
-import { FailSafeApiServer } from "../api";
 import { CheckpointManager } from "../qorelogic/checkpoint/CheckpointManager";
 import type { ICheckpointMetrics } from "../core/interfaces";
 
@@ -34,6 +33,7 @@ import { bootstrapMCP } from "./bootstrapMCP";
 import { bootstrapServers } from "./bootstrapServers";
 import { registerAdvancedCommands } from "./bootstrapAdvancedCommands";
 import { registerCommands } from "./commands";
+import { createVscodeFeatureGate } from "../core/adapters/vscode";
 
 let genesisManager: GenesisManager;
 let qorelogicManager: QoreLogicManager;
@@ -46,7 +46,9 @@ let ledgerManager: LedgerManager;
 let shadowGenomeManager: ShadowGenomeManager;
 let mcpServer: FailSafeMCPServer | undefined;
 let roadmapServer: RoadmapServer | undefined;
-let apiServer: FailSafeApiServer | undefined;
+let featureGate:
+  | import("../core/FeatureGateService").FeatureGateService
+  | undefined;
 
 export async function activate(
   context: vscode.ExtensionContext,
@@ -59,6 +61,7 @@ export async function activate(
     // 1. Core
     const core = await bootstrapCore(context, logger, logSink);
     eventBus = core.eventBus;
+    featureGate = createVscodeFeatureGate(core.configManager);
 
     // Hygiene Automation
     await WorkspaceMigration.checkAndRepair(context);
@@ -136,7 +139,7 @@ export async function activate(
       logger.error("Failed to register chat participant", e);
     }
 
-    // 8. Servers (Roadmap, API, Webview providers) - extracted to bootstrapServers
+    // 8. Servers (Roadmap + Webview providers) - single server on port 9376
     const servers = await bootstrapServers(
       context,
       {
@@ -144,18 +147,12 @@ export async function activate(
         qorelogicManager,
         sentinelDaemon,
         eventBus,
-        configManager: core.configManager,
         workspaceRoot: core.workspaceRoot,
         systemRegistry: qore.systemRegistry,
-        enforcementEngine: gov.enforcementEngine,
-        intentService: gov.intentService,
-        commitGuard: gov.commitGuard,
-        ledgerManager: qore.ledgerManager,
       },
       logger,
     );
     roadmapServer = servers.roadmapServer;
-    apiServer = servers.apiServer;
 
     // 9. Commands
     registerCommands(
@@ -172,7 +169,10 @@ export async function activate(
     // 10. Startup Checks
     setTimeout(async () => {
       const { FrameworkSync } = await import("../qorelogic/FrameworkSync");
-      const frameworkSync = new FrameworkSync(core.workspaceRoot, qore.systemRegistry);
+      const frameworkSync = new FrameworkSync(
+        core.workspaceRoot,
+        qore.systemRegistry,
+      );
       const systems = await frameworkSync.detectSystems();
       const ungoverned = systems.filter(
         (s) => s.isInstalled && !s.hasGovernance,
@@ -208,7 +208,6 @@ export async function activate(
 
 export async function deactivate(): Promise<void> {
   logger?.info("Deactivating FailSafe...");
-  apiServer?.stop();
   roadmapServer?.stop();
   ledgerManager?.close();
   shadowGenomeManager?.close();

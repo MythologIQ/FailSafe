@@ -175,18 +175,6 @@
           "name": "FailSafe Monitor",
           "type": "webview",
           "icon": "media/failsafe-icon.png"
-        },
-        {
-          "id": "failsafe.riskRegister",
-          "name": "Risk Register",
-          "type": "webview",
-          "icon": "media/failsafe-icon.png"
-        },
-        {
-          "id": "failsafe.transparencyPanel",
-          "name": "Transparency Stream",
-          "type": "webview",
-          "icon": "media/failsafe-icon.png"
         }
       ]
     },

@@ -2128,3 +2128,31 @@ summary:focus-visible {
     grid-template-columns: 1fr;
   }
 }
+
+/* Embedded mode - hide chrome when loaded in unified Command Center */
+html.embedded #header,
+html.embedded #footer {
+  display: none !important;
+}
+
+html.embedded #main {
+  padding-top: 16px;
+}
+
+html.embedded .bg-layer-logo,
+html.embedded .bg-layer-overlay {
+  display: none;
+}
+
+/* Embedded Mode Styles */
+html.embedded #header,
+html.embedded #footer,
+html.embedded .bg-layer-logo,
+html.embedded .bg-layer-overlay {
+  display: none !important;
+}
+
+html.embedded #main { padding-top: 0; }
+html.embedded #app { background: var(--bg); }
+.panel-iframe { width: 100%; height: 100%; border: none; background: transparent; }
+.route-panel:has(.panel-iframe) { padding: 0; }

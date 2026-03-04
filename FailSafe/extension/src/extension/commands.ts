@@ -12,11 +12,11 @@ import { ProjectOverviewPanel } from "../genesis/panels/ProjectOverviewPanel";
 import { EventBus } from "../shared/EventBus";
 import * as http from "http";
 
-const ROADMAP_BASE_URL = "http://localhost:7777/ui/console";
+const ROADMAP_BASE_URL = "http://localhost:9376";
 
 function checkRoadmapServerReady(timeoutMs = 1200): Promise<boolean> {
   return new Promise((resolve) => {
-    const req = http.get("http://localhost:7777/api/v1/health", (res) => {
+    const req = http.get("http://localhost:9376/api/roadmap", (res) => {
       res.resume();
       resolve((res.statusCode || 500) >= 200 && (res.statusCode || 500) < 400);
     });
@@ -45,9 +45,8 @@ async function waitForRoadmapServerReady(
 }
 
 async function openRoadmapExternal(view?: string): Promise<void> {
-  const targetUrl = new URL(ROADMAP_BASE_URL);
-  // Popout should always open the extensive console shell.
-  targetUrl.searchParams.set("ui", "console");
+  // Open the new Command Center UI
+  const targetUrl = new URL(`${ROADMAP_BASE_URL}/ui/console`);
   if (view) {
     targetUrl.searchParams.set("view", view);
   }

@@ -4,6 +4,12 @@ import * as fs from "fs";
 import * as crypto from "crypto";
 import { ensureFailsafeGitignoreEntry } from "../shared/gitignore";
 
+type ConfigLoadResult = {
+  config: Record<string, unknown>;
+  exists: boolean;
+  corrupted: boolean;
+};
+
 export class WorkspaceMigration {
   private static readonly PROPRIETARY_INDICATORS = [
     "src/Genesis/workflows",
@@ -40,19 +46,22 @@ export class WorkspaceMigration {
     for (const folder of workspaceFolders) {
       const rootPath = folder.uri.fsPath;
 
-      if (this.isProprietaryWorkspace(rootPath)) {
+      if (await this.isProprietaryWorkspace(rootPath)) {
         await this.repairConfig(rootPath);
       }
-      // B66/B68: Migrate Intent schema v1 -> v2
       await this.migrateIntentSchema(rootPath);
     }
   }
 
-  private static isProprietaryWorkspace(rootPath: string): boolean {
-    // Check for FailSafe Dev indicators
-    return this.PROPRIETARY_INDICATORS.every((indicator) =>
-      fs.existsSync(path.join(rootPath, indicator)),
-    );
+  private static async isProprietaryWorkspace(rootPath: string): Promise<boolean> {
+    for (const indicator of this.PROPRIETARY_INDICATORS) {
+      try {
+        await fs.promises.access(path.join(rootPath, indicator));
+      } catch {
+        return false;
+      }
+    }
+    return true;
   }
 
   private static calculateHash(config: Record<string, unknown>): string {
@@ -62,87 +71,93 @@ export class WorkspaceMigration {
     return crypto.createHash("sha256").update(data).digest("hex");
   }
 
+  private static async loadExistingConfig(configFile: string): Promise<ConfigLoadResult> {
+    try {
+      const content = await fs.promises.readFile(configFile, "utf8");
+      const config = JSON.parse(content) as Record<string, unknown>;
+      return { config, exists: true, corrupted: false };
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+        return { config: {}, exists: false, corrupted: false };
+      }
+      return { config: {}, exists: true, corrupted: true };
+    }
+  }
+
+  private static validateConfigIntegrity(config: Record<string, unknown>): boolean {
+    const existingHash = typeof config.configHash === "string" ? config.configHash : null;
+    if (!existingHash) return true;
+    const computedHash = this.calculateHash(config);
+    return existingHash === computedHash;
+  }
+
+  private static checkConfigAlignment(config: Record<string, unknown>): boolean {
+    const existingExclusions = Array.isArray(config.organizationExclusions)
+      ? config.organizationExclusions
+      : [];
+    const existingWorkspaceType = typeof config.workspaceType === "string"
+      ? config.workspaceType
+      : "";
+    return (
+      JSON.stringify(existingExclusions) ===
+        JSON.stringify(this.FAILSAFE_DEV_CONFIG.organizationExclusions) &&
+      existingWorkspaceType === this.FAILSAFE_DEV_CONFIG.workspaceType
+    );
+  }
+
+  private static async promptUserForAlignment(isTampered: boolean): Promise<string | undefined> {
+    const message = isTampered
+      ? "⚠️ Workspace governance configuration has been modified or corrupted."
+      : "🛡️ Proprietary workspace structure detected. Governance alignment required.";
+
+    const action = isTampered ? "Align Workspace" : "Align Now";
+    const selection = await vscode.window.showWarningMessage(
+      `${message} Would you like to align the workspace to the prescribed structure?`,
+      action,
+      "Keep Current",
+    );
+
+    if (selection === action) return "align";
+    if (selection === "Keep Current") return "keep";
+    return undefined;
+  }
+
+  private static async writeAlignedConfig(configFile: string): Promise<void> {
+    const finalConfig: Record<string, unknown> = {
+      ...this.FAILSAFE_DEV_CONFIG,
+      detectedAt: new Date().toISOString(),
+    };
+    finalConfig.configHash = this.calculateHash(finalConfig);
+    await fs.promises.writeFile(configFile, JSON.stringify(finalConfig, null, 2));
+    vscode.window.showInformationMessage(
+      `✅ Workspace aligned: '.failsafe/workspace-config.json' has been updated.`,
+    );
+  }
+
   private static async repairConfig(rootPath: string): Promise<void> {
     const configDir = path.join(rootPath, ".failsafe");
     const configFile = path.join(configDir, "workspace-config.json");
 
-    if (!fs.existsSync(configDir)) {
-      fs.mkdirSync(configDir, { recursive: true });
-    }
+    await fs.promises.mkdir(configDir, { recursive: true });
     this.ensureGitignoreExclusion(rootPath);
 
-    let isMisaligned = false;
+    const { config, exists, corrupted } = await this.loadExistingConfig(configFile);
+
     let isTampered = false;
+    let isMisaligned = false;
 
-    if (fs.existsSync(configFile)) {
-      try {
-        const content = fs.readFileSync(configFile, "utf8");
-        const parsedConfig = JSON.parse(content) as Record<string, unknown>;
-        const existingExclusions = Array.isArray(
-          parsedConfig.organizationExclusions,
-        )
-          ? parsedConfig.organizationExclusions
-          : [];
-        const existingWorkspaceType =
-          typeof parsedConfig.workspaceType === "string"
-            ? parsedConfig.workspaceType
-            : "";
-        const existingConfigHash =
-          typeof parsedConfig.configHash === "string"
-            ? parsedConfig.configHash
-            : null;
-
-        // 1. Check for integrity (tampering check)
-        const computedHash = this.calculateHash(parsedConfig);
-        if (existingConfigHash && existingConfigHash !== computedHash) {
-          isTampered = true;
-        }
-
-        // 2. Check for alignment (structural check against canonical config)
-        if (
-          JSON.stringify(existingExclusions) !==
-            JSON.stringify(this.FAILSAFE_DEV_CONFIG.organizationExclusions) ||
-          existingWorkspaceType !== this.FAILSAFE_DEV_CONFIG.workspaceType
-        ) {
-          isMisaligned = true;
-        }
-      } catch (_error) {
-        isMisaligned = true; // Corrupt config
-      }
+    if (exists && !corrupted) {
+      isTampered = !this.validateConfigIntegrity(config);
+      isMisaligned = !this.checkConfigAlignment(config);
     } else {
       isMisaligned = true;
     }
 
     if (isTampered || isMisaligned) {
-      const message = isTampered
-        ? "⚠️ Workspace governance configuration has been modified or corrupted."
-        : "🛡️ Proprietary workspace structure detected. Governance alignment required.";
-
-      const action = isTampered ? "Align Workspace" : "Align Now";
-
-      const selection = await vscode.window.showWarningMessage(
-        `${message} Would you like to align the workspace to the prescribed structure?`,
-        action,
-        "Keep Current",
-      );
-
-      if (selection === action) {
-        const finalConfig: Record<string, unknown> = {
-          ...this.FAILSAFE_DEV_CONFIG,
-          detectedAt: new Date().toISOString(),
-        };
-
-        // Calculate hash for the new config
-        finalConfig.configHash = this.calculateHash(finalConfig);
-
-        fs.writeFileSync(configFile, JSON.stringify(finalConfig, null, 2));
-        vscode.window.showInformationMessage(
-          `✅ Workspace aligned: '.failsafe/workspace-config.json' has been updated.`,
-        );
-      } else if (selection === "Keep Current" && isTampered) {
-        // If tampered but user wants to keep, we should at least update the hash to acknowledge the change
-        // to stop annoying prompts, but only if they explicitly choose to persist it.
-        // For now, we follow the "User Sovereignty" rule but log the override.
+      const selection = await this.promptUserForAlignment(isTampered);
+      if (selection === "align") {
+        await this.writeAlignedConfig(configFile);
+      } else if (selection === "keep" && isTampered) {
         vscode.window.showWarningMessage(
           "User override: Keeping custom workspace structure. Integrity checks may show warnings.",
         );
@@ -155,22 +170,32 @@ export class WorkspaceMigration {
    * Adds planId and agentIdentity defaults to archived intents.
    */
   public static async migrateIntentSchema(rootPath: string): Promise<void> {
-    const intentsDir = path.join(rootPath, '.failsafe', 'manifest', 'intents');
-    if (!fs.existsSync(intentsDir)) return;
-    const files = fs.readdirSync(intentsDir).filter(f => f.endsWith('.json'));
+    const intentsDir = path.join(rootPath, ".failsafe", "manifest", "intents");
+    try {
+      await fs.promises.access(intentsDir);
+    } catch {
+      return;
+    }
+    const files = (await fs.promises.readdir(intentsDir)).filter((f) =>
+      f.endsWith(".json"),
+    );
     for (const file of files) {
       const filePath = path.join(intentsDir, file);
-      const raw = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      const content = await fs.promises.readFile(filePath, "utf8");
+      const raw = JSON.parse(content);
       if (!raw.schemaVersion || raw.schemaVersion < 2) {
         raw.schemaVersion = 2;
         raw.planId = raw.planId ?? null;
         if (!raw.metadata?.agentIdentity) {
           raw.metadata = {
             ...raw.metadata,
-            agentIdentity: { agentDid: raw.metadata?.author ?? 'unknown', workflow: 'manual' },
+            agentIdentity: {
+              agentDid: raw.metadata?.author ?? "unknown",
+              workflow: "manual",
+            },
           };
         }
-        fs.writeFileSync(filePath, JSON.stringify(raw, null, 2), 'utf8');
+        await fs.promises.writeFile(filePath, JSON.stringify(raw, null, 2), "utf8");
       }
     }
   }

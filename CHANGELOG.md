@@ -9,7 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- Post-4.3.1 scope to be scheduled.
+- Post-4.3.2 scope to be scheduled.
+
+---
+
+## [4.3.2] - 2026-03-04
+
+> _"Performance & Polish"_
+
+### Changed
+
+- **Checkpoint Integrity Flow** - Full chain verification moved out of heartbeat-critical paths and exposed through explicit verify actions in Console UI.
+- **Robust Local Server Startup** - API and roadmap server startup paths now resolve available ports within fallback ranges to reduce activation failures.
+- **Message-Driven Webview Refresh** - Transparency and Economics panels now update incrementally via postMessage after initial render.
+- **Operator Docs Rewrite** - Bundled extension help documents now align to the unified Console tab model and current command surface.
+
+### Documentation
+
+- Voice-brainstorm docs now reflect shipped voice + manual workflows and document runtime vendor prerequisites.
 
 ---
 

@@ -72,10 +72,14 @@ export class SkillsRenderer {
       if (text) navigator.clipboard.writeText(text);
     });
     this.container.querySelector('.cc-skill-auto')?.addEventListener('click', async () => {
-      if (this.client) await this.client.postAction('/api/skills/ingest/auto');
+      try {
+        if (this.client) await this.client.postAction('/api/skills/ingest/auto');
+      } catch (_) { /* logged by postAction */ }
     });
     this.container.querySelector('.cc-skill-manual')?.addEventListener('click', async () => {
-      if (this.client) await this.client.postAction('/api/skills/ingest/manual', { skills: [] });
+      try {
+        if (this.client) await this.client.postAction('/api/skills/ingest/manual', { items: [], mode: 'file' });
+      } catch (_) { /* logged by postAction */ }
     });
     this.container.querySelector('.cc-skill-phase')?.addEventListener('change', async (e) => {
       if (!this.client) return;

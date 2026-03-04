@@ -11,7 +11,7 @@ _Local-first safety for AI coding assistants._
 [![GitHub Stars](https://img.shields.io/github/stars/MythologIQ/FailSafe?style=social)](https://github.com/MythologIQ/FailSafe/stargazers)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/status-stable-green)](https://github.com/MythologIQ/FailSafe)
-[![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.3.1?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.3.1?platform=universal)
+[![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.3.2?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.3.2?platform=universal)
 [![Node](https://img.shields.io/badge/node-18+-green.svg)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue.svg)](https://www.typescriptlang.org)
 [![VS Code Extension](https://img.shields.io/badge/VS%20Code-Extension-007ACC?logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe)
@@ -19,7 +19,7 @@ _Local-first safety for AI coding assistants._
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Commands-8B5CF6)](https://github.com/MythologIQ/FailSafe/releases)
 [![Documentation](https://img.shields.io/badge/docs-FAILSAFE_SPECIFICATION-blue)](docs/FAILSAFE_SPECIFICATION.md)
 
-**Current Release**: v4.3.1 (2026-03-03)
+**Current Release**: v4.3.2 (2026-03-04)
 
 > **If this project helps you, please star it!** It helps others discover FailSafe.
 
@@ -326,28 +326,29 @@ npm run compile
 
 ---
 
-## What's New in v4.3.1 "Security Hardening"
+## What's New in v4.3.2 "Performance & Polish"
 
-> _Security hardening, SQL injection protection, and XSS prevention across governance UI surfaces._
+> _Operational smoothness, safer UI update paths, and activation resilience._
 
 ### Release Focus
 
-`v4.3.1` addresses security audit findings by adding input validation, HTML escaping, and table whitelisting. All changes are defensive hardening for existing surfaces.
+`v4.3.2` improves runtime responsiveness and operator clarity. Integrity verification is now explicit in UI flows, startup behavior is more robust under local port contention, and help content has been rewritten to match the current Console model.
 
 ### Highlights
 
-New in `v4.3.1`:
+New in `v4.3.2`:
 
-- **SQL Injection Protection** - `SchemaVersionManager` now validates table names against a strict whitelist before PRAGMA queries.
-- **XSS Prevention** - `LivingGraphTemplate` and `RevertTemplate` now escape all dynamic content before innerHTML assignment.
-- **README Logo Update** - Corrected logo path to reference the current FailSafe branding.
+- **Checkpoint Integrity Flow** - Full chain verification moved out of heartbeat-critical paths and surfaced as explicit verify actions.
+- **Robust Local Startup** - API and Console startup resolve available local ports when preferred ports are occupied.
+- **Message-Driven Panels** - Transparency and Economics panels update incrementally after initial render.
+- **Bundled Help Rewrite** - Packaged component and process guides now align with the unified Console UX.
 
-Retained from `v4.3.0`:
+Retained from `v4.3.1`:
 
-- **Pre-Commit Guard** - `FailSafe: Install Commit Hook` installs a thin git hook that asks the local FailSafe API whether a commit should proceed.
-- **AI Provenance Tracking** - Save events can emit `PROVENANCE_RECORDED` ledger entries with artifact path, detected agent type, confidence, and active intent.
-- **CI Governance Context Export** - Release automation now uploads a governance-context artifact built from public repository state.
-- **Bundled Operator Docs** - The packaged extension now ships clear component and process guides for installed users.
+- **SQL Injection Protection** - Schema table checks are validated against a whitelist.
+- **XSS Prevention** - Dynamic values are escaped before rendering in hardening targets.
+- **Branding Path Correction** - README asset path aligned to active extension assets.
+- **Bundled Operator Docs** - Packaged component and process guides now align with the unified Console UX.
 
 - **Governance Ceremony** — Opt-in/opt-out injection across all detected AI agents.
 - **First-Run Onboarding** — Guided setup for multi-agent governance on first activation.
@@ -356,6 +357,11 @@ Retained from `v4.3.0`:
 - **Discovery Phase Governance** — DRAFT → CONCEIVED status gate with ledger graduation markers.
 - **Intent Schema v2** — Agent identity binding, plan references, and auto-migration from v1.
 - **Verdict Replay Batch** — Bulk re-execution of past governance decisions with timing-safe comparison.
+
+Voice brainstorm status:
+
+- **Implemented** - Voice + manual brainstorm flows (mic capture, transcript extraction, confidence rendering, and TTS feedback) in Console.
+- **Runtime Prerequisite** - Vendor runtime files are required under `FailSafe/extension/src/roadmap/ui/vendor/` (see `VENDOR.md` docs).
 
 ### Also Included
 

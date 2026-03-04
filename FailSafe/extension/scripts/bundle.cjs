@@ -16,6 +16,24 @@ function copyDir(source, target) {
   fs.cpSync(source, target, { recursive: true });
 }
 
+function vendorWhisper() {
+  const srcDir = path.join(root, "node_modules", "@xenova", "transformers", "dist");
+  const destDir = path.join(root, "src", "roadmap", "ui", "vendor", "whisper");
+  const files = ["transformers.min.js", "ort-wasm-simd.wasm", "ort-wasm-simd-threaded.wasm"];
+
+  fs.mkdirSync(destDir, { recursive: true });
+  let copied = 0;
+  for (const file of files) {
+    const src = path.join(srcDir, file);
+    const dest = path.join(destDir, file);
+    if (!fs.existsSync(dest) && fs.existsSync(src)) {
+      fs.copyFileSync(src, dest);
+      copied++;
+    }
+  }
+  if (copied > 0) console.log(`  Vendored ${copied} Whisper file(s)`);
+}
+
 async function main() {
   resetDist();
 
@@ -30,6 +48,9 @@ async function main() {
     external: ["vscode", "better-sqlite3"],
     logLevel: "info",
   });
+
+  // Auto-vendor Whisper (Transformers.js) files before UI copy
+  vendorWhisper();
 
   copyDir(
     path.join(root, "src", "roadmap", "ui"),

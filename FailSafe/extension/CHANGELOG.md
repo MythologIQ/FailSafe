@@ -9,7 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- Post-4.3.1 scope to be scheduled.
+- Post-4.3.2 scope to be scheduled.
+
+## [4.3.2] - 2026-03-04
+
+### Changed
+
+- **Performance & Polish** - Checkpoint integrity verification moved to cached + on-demand flows with explicit `Verify Integrity` actions in Console UI surfaces.
+- **Server Activation Robustness** - API and Console server startup now resolves available ports dynamically with graceful fallback behavior when preferred ports are occupied.
+- **Webview Update Path** - Transparency and Economics panels now use message-driven updates after initial render to reduce full-HTML redraw churn.
+- **Bundled Help Rewrite** - `docs/COMPONENT_HELP.md` and `docs/PROCESS_GUIDE.md` rewritten for unified Console UX and `v4.3.2` operator workflows.
+
+### Documentation
+
+- Clarified Brainstorm status: voice + manual workflows are shipped in `v4.3.2`, with vendor runtime prerequisites documented in `vendor/*/VENDOR.md`.
 
 ## [4.3.1] - 2026-03-03
 

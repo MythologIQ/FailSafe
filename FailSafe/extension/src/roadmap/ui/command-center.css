@@ -12,6 +12,7 @@
   --accent-gold: #facc15;
   --accent-green: #34d399;
   --accent-red: #f87171;
+  --accent-orange: #e67e22;
   --glass-bg: rgba(20, 25, 45, 0.7);
   --glass-border: rgba(99, 102, 241, 0.25);
   --text-main: #e2e8f0;
@@ -361,6 +362,58 @@ body {
 }
 
 .cc-canvas { background: var(--console-bg); border: 1px solid var(--border-rim); border-radius: 8px; }
+
+/* ═══════════════════════════ Brainstorm ═══════════════════════════ */
+
+.cc-bs-toolbar { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.cc-bs-input-row { display: flex; gap: 6px; align-items: center; }
+.cc-bs-actions-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+
+.cc-bs-label-input {
+  flex: 1; min-width: 120px; padding: 6px 10px; border-radius: 6px;
+  border: 1px solid var(--border-rim); background: var(--console-bg);
+  color: var(--text-main); font-family: var(--font-body); font-size: 0.85rem;
+}
+.cc-bs-label-input:focus { outline: none; border-color: var(--primary); }
+
+.cc-bs-type-select, .cc-bs-stt {
+  padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border-rim);
+  background: var(--console-bg); color: var(--text-main);
+  font-family: var(--font-body); font-size: 0.8rem;
+}
+
+.cc-bs-chat {
+  margin-bottom: 8px; border-radius: 6px;
+  background: var(--console-bg);
+}
+.cc-bs-chat-status {
+  display: none; padding: 4px 12px; font-size: 0.75rem;
+  color: var(--text-muted); border-left: 3px solid var(--accent-cyan);
+  border-radius: 6px 6px 0 0;
+}
+.cc-bs-chat-input-row {
+  display: flex; gap: 6px; padding: 6px;
+}
+.cc-bs-chat-input {
+  flex: 1; padding: 8px 12px; border-radius: 6px;
+  background: var(--bg-deep); border: 1px solid var(--border-rim);
+  color: var(--text-main); font-size: 0.85rem;
+  font-family: var(--font-body);
+}
+.cc-bs-chat-input:focus {
+  outline: none; border-color: var(--primary);
+}
+.cc-bs-chat-send {
+  white-space: nowrap;
+}
+
+.cc-bs-node-info {
+  margin-top: 8px; padding: 6px 12px; border-radius: 6px;
+  background: var(--console-bg); color: var(--text-muted);
+  font-size: 0.8rem; border-left: 3px solid var(--primary);
+}
+
+.cc-bs-voice.active { background: var(--accent-red); border-color: var(--accent-red); color: #fff; }
 
 /* ═══════════════════════════ Animations ═══════════════════════════ */
 

@@ -3,7 +3,7 @@
   "displayName": "FailSafe (feat. QoreLogic)",
   "description": "Complete AI governance for modern development. Genesis visualization + QoreLogic framework + Sentinel monitoring.",
   "icon": "icon.png",
-  "version": "4.3.1",
+  "version": "4.3.2",
   "publisher": "MythologIQ",
   "license": "MIT",
   "repository": {
@@ -337,6 +337,8 @@
     "test:all": "npm run lint && npm test && npm run test:ui",
     "benchmark:novelty": "node ./scripts/novelty_benchmark.js",
     "test:novelty": "node ./scripts/novelty_smoke_test.js",
+    "docs:validate": "powershell -File ../../tools/reliability/validate-docs-coherence.ps1 -RepoRoot ../..",
+    "prepush:validate": "powershell -File ../../validate.ps1",
     "lint": "eslint src --ext ts",
     "validate:vsix": "node ./scripts/validate-vsix.cjs",
     "package": "vsce package",
@@ -357,6 +359,7 @@
     "@vscode/test-cli": "^0.0.11",
     "@vscode/test-electron": "^2.3.8",
     "@vscode/vsce": "^2.22.0",
+    "@xenova/transformers": "^2.17.2",
     "esbuild": "^0.27.3",
     "eslint": "^8.50.0",
     "typescript": "^5.2.0"

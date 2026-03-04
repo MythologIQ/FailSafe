@@ -10,6 +10,7 @@ export class OperationsRenderer {
 
   async render(hubData) {
     if (!this.container) return;
+    this.hubData = hubData;
     if (!this.roadmap && this.client) {
       this.roadmap = await this.client.fetchRoadmap();
     }
@@ -100,7 +101,7 @@ export class OperationsRenderer {
         <button class="cc-btn cc-btn--primary" data-action="/api/actions/resume-monitoring">Resume</button>
         <button class="cc-btn cc-btn--danger" data-action="/api/actions/panic-stop">Panic Stop</button>
         <button class="cc-btn" data-action="/api/actions/verify-integrity">Verify Chain</button>
-        <button class="cc-btn" data-action="/api/actions/rollback">Rollback</button>
+        <button class="cc-btn cc-rollback-btn">Rollback</button>
       </div>`;
   }
 
@@ -111,10 +112,20 @@ export class OperationsRenderer {
         btn.disabled = true;
         try {
           await this.client.postAction(btn.dataset.action);
-        } finally {
-          btn.disabled = false;
-        }
+        } catch (_) { /* logged by postAction */ }
+        finally { btn.disabled = false; }
       });
+    });
+    this.container.querySelector('.cc-rollback-btn')?.addEventListener('click', async (e) => {
+      const checkpoints = this.hubData?.checkpoints;
+      const latest = Array.isArray(checkpoints) ? checkpoints[0] : null;
+      const id = latest?.id || prompt('Enter checkpoint ID to rollback to:');
+      if (!id) return;
+      e.target.disabled = true;
+      try {
+        await this.client.postAction('/api/actions/rollback', { checkpointId: id });
+      } catch (_) { /* logged by postAction */ }
+      finally { e.target.disabled = false; }
     });
   }
 

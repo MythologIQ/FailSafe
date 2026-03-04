@@ -42,6 +42,7 @@ import { ConfigurationProfile } from "../genesis/ConfigurationProfile";
 import type { RouteDeps } from "./routes";
 import type { PermissionScopeManager } from "../governance/PermissionScopeManager";
 import type { EnforcementEngine } from "../governance/EnforcementEngine";
+import { BrainstormService } from "./services/BrainstormService";
 
 const PORT = 9376;
 const HOST = "127.0.0.1";
@@ -161,6 +162,7 @@ export class ConsoleServer {
   private gitResetService: GitResetService;
   private chainValidAt: string | null = null;
   private cachedChainValid: boolean = true;
+  private brainstormService: BrainstormService;
   private enforcementEngine: EnforcementEngine | null = null;
   private permissionManager: PermissionScopeManager | null = null;
   private systemRegistry:
@@ -203,6 +205,14 @@ export class ConsoleServer {
     this.initializeCheckpointStore();
     this.gitResetService = new GitResetService();
     this.initializeRevertService();
+    this.brainstormService = new BrainstormService(async (prompt, payload) => {
+      const res = await this.fetchQoreJson("/evaluate", {
+        method: "POST",
+        body: { prompt, payload },
+      });
+      if (!res.ok) throw new Error(res.error);
+      return String((res.body as Record<string, unknown>).result || res.body);
+    });
     this.setupRoutes();
     this.subscribeToEvents();
   }
@@ -480,6 +490,82 @@ export class ConsoleServer {
       }
       this.writeRiskRegister(filtered);
       this.broadcast({ type: "risk.deleted", payload: { id } });
+      res.json({ ok: true });
+    });
+
+    // API: Brainstorm — process voice transcript via LLM extraction
+    this.app.post("/api/v1/brainstorm/transcript", async (req: Request, res: Response) => {
+      if (this.rejectIfRemote(req, res)) return;
+      const transcript = String(req.body.transcript || "").slice(0, 10000).trim();
+      if (!transcript) {
+        res.status(400).json({ error: "Empty transcript" });
+        return;
+      }
+      try {
+        const extraction = await this.brainstormService.processTranscript(transcript);
+        this.broadcast({ type: "brainstorm.update", payload: extraction });
+        res.json(extraction);
+      } catch (err) {
+        const detail = err instanceof Error ? err.message : String(err);
+        res.status(502).json({ error: "extraction_failed", detail });
+      }
+    });
+
+    // API: Brainstorm — add manual node
+    this.app.post("/api/v1/brainstorm/node", (req: Request, res: Response) => {
+      if (this.rejectIfRemote(req, res)) return;
+      const label = String(req.body.label || "").slice(0, 200).trim();
+      if (!label) {
+        res.status(400).json({ error: "Label required" });
+        return;
+      }
+      const type = String(req.body.type || "Feature").slice(0, 50);
+      const node = this.brainstormService.addNode(label, type);
+      this.broadcast({ type: "brainstorm.update", payload: { nodes: [node], edges: [] } });
+      res.json(node);
+    });
+
+    // API: Brainstorm — update a node
+    this.app.patch("/api/v1/brainstorm/node/:id", (req: Request, res: Response) => {
+      if (this.rejectIfRemote(req, res)) return;
+      const label = String(req.body.label || "").slice(0, 200).trim();
+      const type = String(req.body.type || "Feature").slice(0, 50);
+      if (!label) {
+        res.status(400).json({ error: "Label required" });
+        return;
+      }
+      const node = this.brainstormService.updateNode(String(req.params.id), label, type);
+      if (!node) {
+        res.status(404).json({ error: "Node not found" });
+        return;
+      }
+      this.broadcast({ type: "brainstorm.update", payload: { nodes: [node], edges: [] } });
+      res.json(node);
+    });
+
+    // API: Brainstorm — remove a node
+    this.app.delete("/api/v1/brainstorm/node/:id", (req: Request, res: Response) => {
+      if (this.rejectIfRemote(req, res)) return;
+      const removed = this.brainstormService.removeNode(String(req.params.id));
+      if (!removed) {
+        res.status(404).json({ error: "Node not found" });
+        return;
+      }
+      this.broadcast({ type: "brainstorm.node-removed", payload: { id: String(req.params.id) } });
+      res.json({ ok: true });
+    });
+
+    // API: Brainstorm — get full graph
+    this.app.get("/api/v1/brainstorm/graph", (req: Request, res: Response) => {
+      if (this.rejectIfRemote(req, res)) return;
+      res.json(this.brainstormService.getGraph());
+    });
+
+    // API: Brainstorm — clear graph
+    this.app.delete("/api/v1/brainstorm/graph", (req: Request, res: Response) => {
+      if (this.rejectIfRemote(req, res)) return;
+      this.brainstormService.reset();
+      this.broadcast({ type: "brainstorm.reset" });
       res.json({ ok: true });
     });
 

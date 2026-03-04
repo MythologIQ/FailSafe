@@ -1,115 +1,149 @@
 # FailSafe Process Guide
 
-Audience: operators who need clear, short instructions for common FailSafe workflows.
+Audience: operators who need fast, accurate workflows for the shipped `v4.3.2` UI and governance stack.
 
-## First Run
+## First Run (Recommended Path)
 
 1. Install the extension.
 2. Open a git-backed workspace.
-3. Run `FailSafe: Open Command Center (Browser Popout)`.
+3. Run `FailSafe: Open Command Center (Browser Popout)` or `FailSafe: Open Command Center (Editor Tab)`.
 4. Run `FailSafe: Set Up Agent Governance`.
-5. Set `FailSafe: Set Governance Mode` to `observe` first unless you already need strict gating.
+5. Set `FailSafe: Set Governance Mode` to `observe` first.
+
+## Daily Operator Loop
+
+1. Keep `FailSafe Monitor` visible while coding.
+2. Use Console `Overview` to confirm trust posture and chain status.
+3. Use `Operations` for `Resume`, `Panic Stop`, `Verify Chain`, and rollback flows.
+4. Review `Transparency` if behavior is unexpected.
+5. Process L3 items in `Governance` before high-risk merges.
 
 ## Governance Modes
 
-| Mode | What it does | Use it when |
+| Mode | Behavior | Use It When |
 | --- | --- | --- |
-| `observe` | records and shows activity without blocking | you are learning the system or auditing passively |
-| `assist` | adds guidance and smart defaults with light friction | you want help without hard stops |
-| `enforce` | blocks or gates work according to policy and intent state | you need strong governance controls |
+| `observe` | Logs and reports without hard stops | onboarding, baseline visibility |
+| `assist` | Guidance and lightweight friction | normal development with guardrails |
+| `enforce` | Strict policy gating | compliance-critical workflows |
 
-## Audit a File
+## Core Procedures
+
+### Audit Current File
 
 1. Open the file.
 2. Run `FailSafe: Audit Current File`.
-3. Read the verdict.
-4. If the result is `WARN`, inspect details before proceeding.
-5. If the result is `BLOCK` or `ESCALATE`, resolve the issue or move through the required approval path.
+3. Inspect verdict details.
+4. Resolve `BLOCK`/`ESCALATE` before proceeding.
 
-## Install Commit-Time Guardrails
+### Verify Checkpoint Chain
+
+1. Open Console `Operations` or `Governance`.
+2. Click `Verify Chain` / `Verify Integrity`.
+3. Wait for result and re-check status cards.
+
+Use this for integrity confirmation before release or after unusual events.
+
+### Install Commit-Time Guardrails
 
 Prerequisites:
 
-- the workspace is a git repository
+- workspace is a git repository
 - `curl` is available on the machine
-- FailSafe is running locally
+- FailSafe is running
 
 Steps:
 
 1. Run `FailSafe: Install Commit Hook`.
-2. Confirm `.git/hooks/pre-commit` and `.git/failsafe-hook-token` were created.
-3. Make a test commit.
-4. If governance blocks the commit, resolve the reported reason and try again.
+2. Confirm `.git/hooks/pre-commit` and `.git/failsafe-hook-token` exist.
+3. Run a test commit.
 
 Removal:
 
 1. Run `FailSafe: Remove Commit Hook`.
-2. Confirm the hook and token were removed or restored to the prior chained state.
+2. Confirm hook/token removal (or chained restoration) in `.git/hooks`.
 
-## Review Provenance
-
-Use provenance when you need to know which agent likely authored or touched an artifact.
-
-What to expect:
-
-- attribution is ledger-based
-- confidence may be lower when only terminal heuristics are available
-- provenance is not a replacement for commit history or code review
-
-## Use Break-Glass Safely
-
-Break-glass is for urgent exceptions, not convenience.
+### Use Break-Glass Safely
 
 1. Run `FailSafe: Activate Break-Glass Override`.
-2. Enter a justification of at least 10 characters.
-3. Choose the shortest duration that solves the urgent need.
-4. Finish the required work.
-5. Revoke the override early if the urgent window closes.
+2. Enter a justification (minimum 10 characters).
+3. Pick the shortest valid duration.
+4. Complete urgent work.
+5. Run `FailSafe: Revoke Break-Glass Override` when done.
 
-## Replay a Past Verdict
+### Replay a Verdict
 
-1. Find the ledger entry ID you want to inspect.
+1. Locate the ledger entry ID.
 2. Run `FailSafe: Replay Verdict (Audit)`.
 3. Enter the entry ID.
-4. Compare the replay result with the original decision.
+4. Compare replay output with original decision.
 
-Use this when you suspect policy drift, artifact drift, or a regression in deterministic behavior.
+### Revert to a Checkpoint
 
-## Roll Back with a Checkpoint
-
-1. Identify the checkpoint you trust.
+1. Identify a trusted checkpoint.
 2. Run `FailSafe: Revert to Checkpoint (Time-Travel)`.
-3. Enter the checkpoint ID.
-4. Review the restored state and ledger evidence before continuing work.
+3. Enter checkpoint ID.
+4. Validate restored state and ledger evidence.
+
+## Skills Workflow (Console)
+
+1. Open `Skills` tab.
+2. Run `Auto Ingest` (or use manual ingest).
+3. Filter by phase when needed.
+4. Review `Recommended` first, then `All Relevant`.
+5. Use copied intent text to drive governed execution.
+
+## Brainstorm Workflow (Current Release)
+
+`v4.3.2` supports voice-assisted and manual ideation in Console `Brainstorm`:
+
+1. Click the mic button and speak your idea.
+2. Let transcript extraction update graph nodes/edges.
+3. Review confidence colors and spoken response.
+4. Add/edit nodes manually when needed.
+5. Export JSON snapshot.
+
+Prerequisite: vendor runtime files for Whisper/Piper must be staged per `src/roadmap/ui/vendor/*/VENDOR.md`.
 
 ## Troubleshooting
 
-### Commit hook did not block anything
+### Console shows disconnected state
 
-Check these first:
+Check:
 
-- FailSafe is running
-- the workspace is the same repository where the hook was installed
-- `curl` is available
-- governance mode and intent state actually require blocking
+- local server startup in extension logs
+- local port occupancy conflicts
+- browser tab still pointing to active local instance
 
-### Provenance history is missing
+### Commit hook does not block
 
-Check these first:
+Check:
 
-- the file was saved while FailSafe was active
-- the activity was in scope
-- a detectable agent signal was present
-- the local ledger is writable and not in a degraded path
+- FailSafe runtime active
+- hook installed in the same repo
+- `curl` available on PATH
+- current governance mode/intent actually requires blocking
 
-### The UI shows metrics but they are unclear
+### L3 queue appears stale
 
-Hover the metric labels in the Monitor or Command Center. `v4.3.0` expanded the bundled help text and ships this guide inside the extension package.
+Check:
+
+- current governance mode and policy inputs
+- recent transparency events for queue updates
+- workspace path is the expected governed root
+
+### Brainstorm voice controls are missing
+
+Check:
+
+- vendor runtime assets were staged per `src/roadmap/ui/vendor/*/VENDOR.md`
+- browser allows microphone access
+- Console server is reachable at the current local runtime URL
 
 ## Claim Map
 
 | Claim | Status | Source |
 | --- | --- | --- |
-| `observe`, `assist`, and `enforce` are shipped governance modes | implemented | `package.json` |
-| Commit hook install and removal commands are shipped | implemented | `package.json`, `src/extension/main.ts` |
-| Verdict replay and break-glass flows are shipped commands | implemented | `src/extension/main.ts`, `package.json` |
+| Command palette exposes audit, mode, break-glass, replay, rollback, and hook lifecycle commands | implemented | `FailSafe/extension/package.json` |
+| Console operations include integrity verification and rollback actions | implemented | `FailSafe/extension/src/roadmap/ui/modules/operations.js`, `FailSafe/extension/src/roadmap/ui/modules/governance.js` |
+| Brainstorm tab supports voice + manual node workflows | implemented | `FailSafe/extension/src/roadmap/ui/modules/brainstorm.js`, `FailSafe/extension/src/roadmap/ui/modules/stt-engine.js`, `FailSafe/extension/src/roadmap/ui/modules/tts-engine.js` |
+| Transcript-to-graph API is shipped | implemented | `FailSafe/extension/src/roadmap/ConsoleServer.ts` (`POST /api/v1/brainstorm/transcript`) |

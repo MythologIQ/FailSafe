@@ -1,27 +1,32 @@
-[![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.3.1?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.3.1?platform=universal)
+[![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.3.2?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.3.2?platform=universal)
 
 # MythologIQ FailSafe for VS Code
 
 FailSafe is a local-first governance extension for AI-assisted development in VS Code and Cursor. It applies deterministic checks at the editor boundary, records decisions to a local ledger, and provides dedicated surfaces for audits, checkpoints, and agent governance.
 
-**Current Release**: v4.3.1 (2026-03-03)
+**Current Release**: v4.3.2 (2026-03-04)
 
 ![FailSafe Banner](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/extension/FailSafe%20Banner.png)
 
-## What's New in v4.3.1
+## What's New in v4.3.2
 
-### Security Hardening
+### Performance & Polish
 
-- **SQL Injection Protection**: `SchemaVersionManager.hasColumn()` now validates table names against a strict whitelist before PRAGMA queries.
-- **XSS Prevention**: `LivingGraphTemplate` and `RevertTemplate` now HTML-escape all dynamic values before rendering.
-- **README Logo**: Corrected logo path to reference current FailSafe branding.
+- **Checkpoint Verification Flow**: full chain verification now runs on explicit verification actions, with cached state surfaced in Console views.
+- **Activation Robustness**: local API and Console startup now perform dynamic port resolution when preferred ports are unavailable.
+- **Lower Webview Churn**: Transparency and Economics panels update through message-driven refresh after initial render.
+- **Operator Doc Refresh**: packaged `COMPONENT_HELP.md` and `PROCESS_GUIDE.md` are rewritten for the unified Console UX.
 
-### Retained from v4.3.0
+### Security Hardening from v4.3.1
 
-- **Pre-Commit Guard**: `FailSafe: Install Commit Hook` installs a git hook that calls FailSafe's authenticated `commit-check` API before commit.
-- **AI Provenance Tracking**: saved artifacts can be traced through `PROVENANCE_RECORDED` ledger events and the provenance API route.
-- **CI Governance Context Export**: release workflow exports `CHANGELOG.md`, `docs/SYSTEM_STATE.md`, and commit context as a downloadable artifact.
-- **Bundled Help Docs**: packaged `COMPONENT_HELP.md` and `PROCESS_GUIDE.md` now ship inside the extension for offline operator reference.
+- **SQL Injection Protection**: `SchemaVersionManager.hasColumn()` validates table names against a strict whitelist before PRAGMA queries.
+- **XSS Prevention**: `LivingGraphTemplate` and `RevertTemplate` HTML-escape dynamic values before rendering.
+- **README Logo Path**: corrected to the current FailSafe branding asset.
+
+### Voice-Brainstorm Status
+
+- **Implemented**: Brainstorm tab includes mic capture, STT transcript extraction, backend graph updates, confidence-colored rendering, force-directed layout, and TTS playback.
+- **Runtime Prerequisite**: vendor runtime files must exist under `src/roadmap/ui/vendor/{whisper,piper}/` as documented in each `VENDOR.md`.
 
 ### Under the Hood
 
@@ -293,7 +298,7 @@ Open Settings and search for `FailSafe`:
 
 If `.failsafe/config/sentinel.yaml` exists, it overrides settings. The initializer seeds it with `mode: hybrid` unless you change it.
 
-The `v4.3.1` release also introduces commit-time governance through the local FailSafe API on `http://127.0.0.1:7777` when the optional git hook is installed.
+Commit-time governance is available through the local FailSafe API on `http://127.0.0.1:7777` when the optional git hook is installed.
 
 ## Workspace Files
 
@@ -314,7 +319,7 @@ FailSafe seeds a `.failsafe/` directory in your workspace for configuration, led
 - `curl` (required only if you install the commit hook)
 - Ollama (optional, for LLM-assisted mode)
 
-> **v4.3.1 "Security Hardening"** - SQL injection protection, XSS prevention, and README logo correction now harden the governance surfaces for safer operation.
+> **v4.3.2 "Performance & Polish"** - checkpoint integrity flow updates, message-driven panel refresh, and activation resilience improve day-to-day operator experience while retaining prior security hardening.
 
 > **We'd love your review!** If FailSafe is useful to you, please leave a review on the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe) or [Open VSX](https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe). Your feedback helps other developers discover FailSafe and directly shapes its roadmap. Bug reports and feature requests welcome on [GitHub Issues](https://github.com/MythologIQ/FailSafe/issues).
 

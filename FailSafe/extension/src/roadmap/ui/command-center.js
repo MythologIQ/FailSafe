@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
     risks:        new RisksRenderer('risks', { client }),
     skills:       new SkillsRenderer('skills', { client }),
     governance:   new GovernanceRenderer('governance', { client }),
-    brainstorm:   new BrainstormRenderer('brainstorm', { store }),
+    brainstorm:   new BrainstormRenderer('brainstorm', { store, client }),
     settings:     new SettingsRenderer('settings', { store }),
   };
 
@@ -49,6 +49,8 @@ document.addEventListener('DOMContentLoaded', () => {
     renderers.operations.onEvent?.(evt);
     renderers.governance.onEvent?.(evt);
     renderers.risks.onEvent?.(evt);
+    if (evt.type?.startsWith('brainstorm.'))
+      renderers.brainstorm.onEvent(evt);
   });
 
   client.on('verdict', (v) => {

@@ -1,7 +1,7 @@
 # SYSTEM STATE
 
-**Last Updated:** 2026-03-04T05:30:00Z
-**Version:** Unified Command Center UI SUBSTANTIATED
+**Last Updated:** 2026-03-04T20:05:00Z
+**Version:** v4.3.2 Performance & Polish + Voice Brainstorm SUBSTANTIATED
 
 ## v4.3.2 "Performance & Polish" — Implementation State
 
@@ -65,6 +65,22 @@
 - 382 passing, 0 failing
 - TypeScript: 0 errors
 - ESLint: 0 errors (3 pre-existing warnings)
+
+### Voice Brainstorm Addendum (v4.3.2)
+
+| Entry | Phase | Verdict |
+|-------|-------|---------|
+| #130 | GATE TRIBUNAL (RE-AUDIT) | PASS |
+| #131 | IMPLEMENT | Complete |
+| #132 | SUBSTANTIATE | SEALED |
+
+Shipped in this addendum:
+
+- `BrainstormService` backend graph orchestration
+- STT engine (`whisper` + Web Speech fallback)
+- TTS engine (Piper runtime)
+- Force-directed layout + confidence-colored canvas rendering
+- Brainstorm transcript/node/graph REST route set and WS updates
 
 ---
 

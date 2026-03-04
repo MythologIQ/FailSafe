@@ -10,6 +10,7 @@ param(
   [switch]$SkipContainerValidation,
   [switch]$SkipReliabilityValidation,
   [switch]$SkipGitHubStandardsValidation,
+  [switch]$SkipDocsValidation,
   [switch]$AllowMainBranch
 )
 
@@ -212,11 +213,35 @@ function Validate-ReleaseVersionCoherence {
   }
 }
 
+function Validate-DocsCoherence {
+  if ($SkipDocsValidation) {
+    Write-Log "Skipping docs coherence validation by request." -Level Warning
+    return
+  }
+
+  Write-Log "Validating docs coherence against shipped implementation..."
+  $docsValidator = Join-Path $RepoRoot "tools/reliability/validate-docs-coherence.ps1"
+  if (!(Test-Path $docsValidator)) {
+    $script:violations += @{ File = "tools/reliability/validate-docs-coherence.ps1"; Rule = "Missing docs coherence validator" }
+    Write-Log "FAIL: Missing tools/reliability/validate-docs-coherence.ps1" -Level Error
+    return
+  }
+
+  & $docsValidator -RepoRoot $RepoRoot | Out-Null
+  if ($LASTEXITCODE -ne 0) {
+    $script:violations += @{ File = "docs-coherence"; Rule = "Docs coherence validation failed" }
+    Write-Log "FAIL: docs coherence gate" -Level Error
+  } else {
+    Write-Log "PASS: docs coherence gate" -Level Success
+  }
+}
+
 Write-Log "Repository Validation (Gold Standard + Container)" -Level Info
 Validate-GoldStandardArtifacts
 Validate-ReliabilityHardening
 Validate-GitHubStandards
 Validate-ReleaseVersionCoherence
+Validate-DocsCoherence
 Validate-ContainerChecks
 
 if ($violations.Count -gt 0) {

@@ -1,5 +1,5 @@
 ---
-title: QoreLogic A.E.G.I.S. Project Seeder
+title: QoreLogic S.H.I.E.L.D. Project Seeder
 description: Physically seeds the Merkle-chain DNA and scaffolding for a new dataset.
 tags:
 tool: false

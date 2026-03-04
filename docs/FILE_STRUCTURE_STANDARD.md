@@ -336,7 +336,7 @@ Every workspace must have a `README.md` at the root level with:
 
 ## Organization Method
 
-Organized using /ql-organize skill from QoreLogic A.E.G.I.S. framework.
+Organized using /ql-organize skill from QoreLogic S.H.I.E.L.D. framework.
 ```
 
 ### FILE_INDEX.md

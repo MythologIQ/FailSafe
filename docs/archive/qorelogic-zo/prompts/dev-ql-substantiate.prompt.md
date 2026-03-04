@@ -1,5 +1,5 @@
 ---
-title: "QoreLogic A.E.G.I.S. Substantiation & Session Seal"
+title: "QoreLogic S.H.I.E.L.D. Substantiation & Session Seal"
 description: Verifies implementation against the blueprint and cryptographically seals the session.
 tags:
 tool: false

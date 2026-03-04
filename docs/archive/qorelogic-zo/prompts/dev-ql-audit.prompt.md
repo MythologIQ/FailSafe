@@ -1,5 +1,5 @@
 ---
-title: QoreLogic A.E.G.I.S. Gate Tribunal
+title: QoreLogic S.H.I.E.L.D. Gate Tribunal
 description: An adversarial audit of the blueprint to generate the mandatory PASS/VETO verdict.
 tags:
 tool: false

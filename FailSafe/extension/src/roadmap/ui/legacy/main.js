@@ -7,6 +7,27 @@ import { ActivityPanel } from './activity-panel.js';
 import { resolveGovernanceState } from './governance-model.js';
 import { capitalize } from './utils.js';
 
+// Dynamic fragment loading — inject skills and governance panels before DOM resolution
+async function loadFragment(url, targetId) {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return;
+    const html = await res.text();
+    const target = document.getElementById(targetId);
+    if (target) {
+      const temp = document.createElement('div');
+      temp.innerHTML = html;
+      const fragment = temp.firstElementChild;
+      if (fragment) target.replaceWith(fragment);
+    }
+  } catch { /* fragment load failed — stub remains */ }
+}
+
+await Promise.all([
+  loadFragment('/legacy-skills-panel.html', 'panel-skills'),
+  loadFragment('/legacy-governance-panel.html', 'panel-governance'),
+]);
+
 const stateStore = new UiStateStore();
 
 const elements = {

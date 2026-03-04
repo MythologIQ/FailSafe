@@ -163,3 +163,20 @@ To prevent overwhelming the 3D Mindmap with fragmented or accidental logic, voic
    - Alongside the Staging Canvas is a dropdown or list (e.g., `0 thoughts`) functioning as a localized history cache.
    - It displays timestamps and short snippets of the last 5-10 submitted thoughts, allowing the user to seamlessly pick up where they left off without needing to scan the massive 3D architecture.
 4. **State Indicators**: The footer of the Prep Bay clearly telegraphs the background agents: `• AI analyzing connections...` or `• Checking integrity...`.
+
+### 9.6 Mental Haptic Feedback & Autonomous Ideation
+
+The 3D Mindmap is not a passive whiteboard. It is a living, reactive entity that provides "mental haptic feedback" through the physical mutation of its graph nodes, allowing users to intuitively _feel_ the health of their architectural landscape at a glance.
+
+#### Emergent Visual Morphology:
+
+1. **Gravitational Emphasis (Mass/Size Caching)**: When an idea, entity, or feature is repeatedly mentioned across multiple Brainstorm sessions, its underlying node **grows in physical size and mass**. High-gravity nodes will naturally warp the force-directed layout, pulling dependent concepts into a tighter orbit and visually indicating core structural load-bearing components.
+2. **Ambiguity Dilution (Visual Strain)**: If a single concept becomes overloaded with too many disparate, conflicting, or loosely-defined connections (e.g., 50 different "Question" or "Orange" nodes attached to a single "Database" node), it undergoes visual strain. The node will pulse irregularly, its edges will fray, and its sphere will become cloudy/diluted—signaling that this architectural piece is bloated and requires refactoring or clarification.
+3. **The 'Outer Rim' Isolation**: Radical, unconnected "what if" thoughts do not snap to the core S.H.I.E.L.D. logic center. They are pushed by algorithmic repulsion to the outer rim of the 3D void. However, as more isolated thoughts are dumped over time, the algorithm watches for latent similarities. If remote thoughts begin to overlap in semantic intent, they will inherently drift together, **forming new geometric shapes/clusters** on the fringes.
+
+#### System-Initiated Autonomy (v6.0+ Roadmap):
+
+As these fringe clusters form or core nodes undergo "Ambiguity Dilution," FailSafe transitions from a reactive mapper to a proactive architect.
+
+- **Targeted Brainstorm Prompts**: The Console will flag emerging patterns and organically prompt the user via the Prep Bay: _"I notice a strong cluster forming around isolated auth logic. Shall we initiate a targeted Brainstorm to solidify this into a formal Auth Service?"_
+- **Autonomous System Ideation (Premium Tier)**: In advanced iterations, FailSafe will spawn its own background sub-agents. While the user is offline or working elsewhere, the system will independently analyze strained nodes or isolated clusters, run its own "synthetic brainstorms" in the background, and dynamically populate the graph with its own generated nodes (distinctly colored, e.g., Purple or Blue) presenting fully-formed, S.H.I.E.L.D.-compliant solutions for the user's review upon their return.

@@ -47,53 +47,63 @@ export class SettingsRenderer {
   }
 
   _renderVoiceSettings() {
-    const pttKey = this.store?.get('ptt-key') || 'Space';
-    const wakeEnabled = this.store?.get('wake-word-enabled') === 'true' || this.store?.get('wake-word-enabled') === true;
-    const wakePhrase = this.store?.get('wake-word-phrase') || 'hey failsafe';
-    const timeout = Number(this.store?.get('stt-silence-timeout') || 5000);
-    const timeoutSec = Math.round(timeout / 1000);
-
     return `
       <div class="cc-card" style="margin-top:16px">
         <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;
           letter-spacing:0.08em;margin-bottom:12px">Voice Settings</div>
         <div style="font-size:0.85rem;display:flex;flex-direction:column;gap:12px">
-
-          <div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--border-rim)">
-            <span style="min-width:120px">STT Engine:</span>
-            <span style="color:var(--text-main)">Whisper (local)</span>
-            <span class="cc-settings-whisper-model-status" style="font-size:0.75rem;color:var(--text-muted)"></span>
-          </div>
-
-          <div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--border-rim)">
-            <span style="min-width:120px">Push-to-Talk Key:</span>
-            <code class="cc-settings-ptt-display" style="padding:2px 10px;border-radius:4px;
-              background:var(--bg-deep);border:1px solid var(--border-rim);font-size:0.85rem">${pttKey}</code>
-            <button class="cc-btn cc-settings-ptt-record" style="font-size:0.75rem">Record New Key</button>
-          </div>
-
-          <div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--border-rim)">
-            <span style="min-width:120px">Wake Word:</span>
-            <label style="display:flex;align-items:center;gap:4px;cursor:pointer">
-              <input type="checkbox" class="cc-settings-wake-toggle"${wakeEnabled ? ' checked' : ''} />
-              <span style="font-size:0.75rem">${wakeEnabled ? 'On' : 'Off'}</span>
-            </label>
-            <input type="text" class="cc-settings-wake-phrase" value="${wakePhrase}"
-              placeholder="hey failsafe" maxlength="60"
-              style="flex:1;padding:4px 8px;border-radius:6px;background:var(--bg-mid);
-                border:1px solid var(--border-rim);color:var(--text-main);font-size:0.85rem" />
-          </div>
-
-          <div style="display:flex;align-items:center;gap:8px;padding:4px 0">
-            <span style="min-width:120px">Silence Timeout:</span>
-            <input type="range" class="cc-settings-silence-range" min="1" max="15" value="${timeoutSec}"
-              style="flex:1" />
-            <span class="cc-settings-silence-value" style="min-width:30px;text-align:right;font-size:0.85rem">
-              ${timeoutSec}s</span>
-          </div>
-
+          ${this._renderSttStatus()}
+          ${this._renderPttKey()}
+          ${this._renderWakeWord()}
+          ${this._renderSilenceTimeout()}
         </div>
       </div>`;
+  }
+
+  _renderSttStatus() {
+    return `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--border-rim)">
+      <span style="min-width:120px">STT Engine:</span>
+      <span style="color:var(--text-main)">Whisper (local)</span>
+      <span class="cc-settings-whisper-model-status" style="font-size:0.75rem;color:var(--text-muted)"></span>
+    </div>`;
+  }
+
+  _renderPttKey() {
+    const pttKey = this.store?.get('ptt-key') || 'Space';
+    return `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--border-rim)">
+      <span style="min-width:120px">Push-to-Talk Key:</span>
+      <code class="cc-settings-ptt-display" style="padding:2px 10px;border-radius:4px;
+        background:var(--bg-deep);border:1px solid var(--border-rim);font-size:0.85rem">${pttKey}</code>
+      <button class="cc-btn cc-settings-ptt-record" style="font-size:0.75rem">Record New Key</button>
+    </div>`;
+  }
+
+  _renderWakeWord() {
+    const wakeEnabled = this.store?.get('wake-word-enabled') === 'true' || this.store?.get('wake-word-enabled') === true;
+    const wakePhrase = this.store?.get('wake-word-phrase') || 'hey failsafe';
+    return `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--border-rim)">
+      <span style="min-width:120px">Wake Word:</span>
+      <label style="display:flex;align-items:center;gap:4px;cursor:pointer">
+        <input type="checkbox" class="cc-settings-wake-toggle"${wakeEnabled ? ' checked' : ''} />
+        <span style="font-size:0.75rem">${wakeEnabled ? 'On' : 'Off'}</span>
+      </label>
+      <input type="text" class="cc-settings-wake-phrase" value="${wakePhrase}"
+        placeholder="hey failsafe" maxlength="60"
+        style="flex:1;padding:4px 8px;border-radius:6px;background:var(--bg-mid);
+          border:1px solid var(--border-rim);color:var(--text-main);font-size:0.85rem" />
+    </div>`;
+  }
+
+  _renderSilenceTimeout() {
+    const timeout = Number(this.store?.get('stt-silence-timeout') || 5000);
+    const timeoutSec = Math.round(timeout / 1000);
+    return `<div style="display:flex;align-items:center;gap:8px;padding:4px 0">
+      <span style="min-width:120px">Silence Timeout:</span>
+      <input type="range" class="cc-settings-silence-range" min="1" max="15" value="${timeoutSec}"
+        style="flex:1" />
+      <span class="cc-settings-silence-value" style="min-width:30px;text-align:right;font-size:0.85rem">
+        ${timeoutSec}s</span>
+    </div>`;
   }
 
   renderChip(theme, current) {
@@ -109,15 +119,15 @@ export class SettingsRenderer {
   }
 
   _bindVoiceSettings() {
-    const el = this.container;
+    this._checkWhisperModel(this.container.querySelector('.cc-settings-whisper-model-status'));
+    this._bindPttRecorder();
+    this._bindWakeWord();
+    this._bindSilenceSlider();
+  }
 
-    // -- Whisper model status --
-    const modelStatus = el.querySelector('.cc-settings-whisper-model-status');
-    this._checkWhisperModel(modelStatus);
-
-    // -- PTT key recorder --
-    const pttDisplay = el.querySelector('.cc-settings-ptt-display');
-    const pttRecordBtn = el.querySelector('.cc-settings-ptt-record');
+  _bindPttRecorder() {
+    const pttDisplay = this.container.querySelector('.cc-settings-ptt-display');
+    const pttRecordBtn = this.container.querySelector('.cc-settings-ptt-record');
     pttRecordBtn?.addEventListener('click', () => {
       pttRecordBtn.textContent = 'Press a key...';
       pttRecordBtn.disabled = true;
@@ -125,26 +135,24 @@ export class SettingsRenderer {
         e.preventDefault();
         e.stopPropagation();
         document.removeEventListener('keydown', handler, true);
-        const code = e.code;
-        pttDisplay.textContent = code;
+        pttDisplay.textContent = e.code;
         pttRecordBtn.textContent = 'Record New Key';
         pttRecordBtn.disabled = false;
-        this.store?.set('ptt-key', code);
+        this.store?.set('ptt-key', e.code);
       };
       document.addEventListener('keydown', handler, true);
     });
+  }
 
-    // -- Wake word toggle + phrase --
-    const wakeToggle = el.querySelector('.cc-settings-wake-toggle');
+  _bindWakeWord() {
+    const wakeToggle = this.container.querySelector('.cc-settings-wake-toggle');
     const wakeLabel = wakeToggle?.nextElementSibling;
-    const wakePhrase = el.querySelector('.cc-settings-wake-phrase');
-
+    const wakePhrase = this.container.querySelector('.cc-settings-wake-phrase');
     wakeToggle?.addEventListener('change', () => {
       const enabled = wakeToggle.checked;
       this.store?.set('wake-word-enabled', enabled);
       if (wakeLabel) wakeLabel.textContent = enabled ? 'On' : 'Off';
     });
-
     let phraseTimer = null;
     wakePhrase?.addEventListener('input', () => {
       clearTimeout(phraseTimer);
@@ -152,10 +160,11 @@ export class SettingsRenderer {
         this.store?.set('wake-word-phrase', wakePhrase.value.trim().toLowerCase());
       }, 500);
     });
+  }
 
-    // -- Silence timeout slider --
-    const silenceRange = el.querySelector('.cc-settings-silence-range');
-    const silenceValue = el.querySelector('.cc-settings-silence-value');
+  _bindSilenceSlider() {
+    const silenceRange = this.container.querySelector('.cc-settings-silence-range');
+    const silenceValue = this.container.querySelector('.cc-settings-silence-value');
     silenceRange?.addEventListener('input', () => {
       const sec = Number(silenceRange.value);
       silenceValue.textContent = `${sec}s`;

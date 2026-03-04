@@ -1,7 +1,7 @@
 # SYSTEM STATE
 
-**Last Updated:** 2026-03-04T20:05:00Z
-**Version:** v4.3.2 Performance & Polish + Voice Brainstorm SUBSTANTIATED
+**Last Updated:** 2026-03-05T01:15:00Z
+**Version:** v4.3.2 Performance & Polish + Voice Brainstorm + Voice UI (PTT/Wake Word/Chat Box) SUBSTANTIATED
 
 ## v4.3.2 "Performance & Polish" — Implementation State
 
@@ -81,6 +81,64 @@ Shipped in this addendum:
 - TTS engine (Piper runtime)
 - Force-directed layout + confidence-colored canvas rendering
 - Brainstorm transcript/node/graph REST route set and WS updates
+
+### Voice UI Addendum: PTT, Wake Word, Silence Timeout, Chat Box, Whisper Auto-Vendor
+
+| Entry | Phase | Verdict |
+|-------|-------|---------|
+| #134 | GATE TRIBUNAL | VETO (5 violations: XSS, dead code, God module, function size, file size) |
+| #135 | RE-AUDIT | VETO (1 new Razor violation: _renderVoiceSettings 49 lines) |
+| #136 | RE-AUDIT | PASS (all 6 violations resolved) |
+| #137 | IMPLEMENT | Complete |
+| #138 | SUBSTANTIATE | SEALED |
+
+#### Files Modified/Created (10)
+
+| File | Lines | Action |
+|------|-------|--------|
+| `ui/modules/brainstorm.js` | 240 | Refactored — extracted graph, voice, keyboard; escapeHtml; chat box |
+| `ui/modules/brainstorm-graph.js` | 121 | New — node CRUD, transcript, graph fetch/export/clear, WS events |
+| `ui/modules/voice-controller.js` | 103 | New — voice toggle, PTT, model progress, wake word UI wiring |
+| `ui/modules/keyboard-manager.js` | 51 | New — PTT hotkey with text input guard |
+| `ui/modules/settings.js` | 198 | Modified — 4 render + 4 bind sub-functions for voice settings |
+| `ui/modules/stt-engine.js` | 248 | Modified — silence timeout, wake word, Whisper-only STT |
+| `ui/modules/tts-engine.js` | 77 | Existing — Piper TTS via vendored WASM |
+| `ui/command-center.css` | — | Modified — chat box styles replacing transcript bar |
+| `scripts/bundle.cjs` | 68 | Modified — vendorWhisper() auto-copy step |
+| `package.json` | — | Modified — @xenova/transformers@2.17.2 devDependency |
+
+#### Features Delivered (7)
+
+1. **Push-to-Talk (PTT)**: Configurable hotkey (default: Space), hold to record, release to stop
+2. **Wake Word**: "Hey FailSafe" always-listening via Web Speech API, auto-starts Whisper
+3. **Silence Timeout**: Configurable 1-15s, auto-stops recording on inactivity
+4. **Chat Box**: Dual-purpose input — type or speak, with status strip
+5. **Whisper Auto-Vendor**: Bundle step copies ONNX runtime from node_modules
+6. **Settings UI**: Voice card with STT status, PTT recorder, wake word toggle, silence slider
+7. **XSS Protection**: `escapeHtml()` on all server/user data before innerHTML
+
+#### Section 4 Razor Compliance
+
+| File | Lines | Longest Fn | Nesting | Status |
+|------|-------|-----------|---------|--------|
+| brainstorm.js | 240 | renderShell: 30 | 3 | PASS |
+| brainstorm-graph.js | 121 | onEvent: 17 | 3 | PASS |
+| voice-controller.js | 103 | loadSettings: 22 | 3 | PASS |
+| keyboard-manager.js | 51 | bind: 20 | 3 | PASS |
+| settings.js | 198 | render: 29 | 3 | PASS |
+| stt-engine.js | 248 | startWakeWordListener: 34 | 3 | PASS |
+| tts-engine.js | 77 | speak: 28 | 3 | PASS |
+
+#### Security Hardening (VETO Violations Resolved: 6/6)
+
+| ID | Violation | Fix | Status |
+|----|-----------|-----|--------|
+| #134 V1 | XSS in node label innerHTML | `escapeHtml()` at brainstorm.js:12-15 | RESOLVED |
+| #134 V2 | Dead `cats` variable | Deleted | RESOLVED |
+| #134 V3 | brainstorm.js 452 lines | Decomposed to 4 files (240+121+103+51) | RESOLVED |
+| #134 V4 | `_bindVoiceSettings` 53 lines | Split to 4 functions | RESOLVED |
+| #134 V5 | stt-engine.js 251 lines | Removed unused `_lastSpeechAt`, trimmed to 248 | RESOLVED |
+| #135 V1 | `_renderVoiceSettings` 49 lines | Split to 5 functions (13+7+9+15+11) | RESOLVED |
 
 ---
 

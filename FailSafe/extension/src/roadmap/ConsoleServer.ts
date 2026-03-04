@@ -270,27 +270,8 @@ export class ConsoleServer {
     });
 
     // Unified UI routes - serve webui/pages from this server
-    const pagesDir = path.join(__dirname, "../webui/pages");
-    this.app.use("/pages", express.static(pagesDir));
-    this.app.get("/legacy-skills-panel.html", (_req, res) =>
-      res.sendFile(path.join(this.uiDir, "legacy-skills-panel.html")),
-    );
-    this.app.get("/legacy-governance-panel.html", (_req, res) =>
-      res.sendFile(path.join(this.uiDir, "legacy-governance-panel.html")),
-    );
-    // Direct routes for pages (used by unified Command Center iframe)
-    this.app.get("/dashboard.html", (_req, res) =>
-      res.sendFile(path.join(pagesDir, "dashboard.html")),
-    );
-    this.app.get("/risk-register.html", (_req, res) =>
-      res.sendFile(path.join(pagesDir, "risk-register.html")),
-    );
-    this.app.get("/transparency.html", (_req, res) =>
-      res.sendFile(path.join(pagesDir, "transparency.html")),
-    );
-    this.app.get("/brainstorm.html", (_req, res) =>
-      res.sendFile(path.join(pagesDir, "brainstorm.html")),
-    );
+    // Legacy fragment overrides removed (legacy UI deleted)
+    // Unified UI routes removed from pages/ since they are consolidating.
 
     // API: Get full roadmap state
     this.app.get("/api/roadmap", (_req: Request, res: Response) => {

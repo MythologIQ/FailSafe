@@ -46,7 +46,8 @@ async function waitForRoadmapServerReady(
 
 async function openRoadmapExternal(view?: string): Promise<void> {
   // Open the new Command Center UI
-  const targetUrl = new URL(`${ROADMAP_BASE_URL}/ui/console`);
+  const targetUrl = new URL(ROADMAP_BASE_URL);
+  targetUrl.searchParams.set("ui", "console");
   if (view) {
     targetUrl.searchParams.set("view", view);
   }

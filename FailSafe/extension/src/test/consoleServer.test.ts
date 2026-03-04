@@ -1,33 +1,33 @@
-import { describe, it } from 'mocha';
-import * as assert from 'assert';
-import * as fs from 'fs';
-import * as os from 'os';
-import * as path from 'path';
-import { EventBus } from '../shared/EventBus';
-import { RoadmapServer } from '../roadmap/RoadmapServer';
+import { describe, it } from "mocha";
+import * as assert from "assert";
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
+import { EventBus } from "../shared/EventBus";
+import { ConsoleServer } from "../roadmap/ConsoleServer";
 
 function mkTempDir(prefix: string): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
 }
 
-describe('RoadmapServer workspace-root scoped reads', () => {
-  it('reads risks and transparency logs from configured workspace root', () => {
-    const workspaceRoot = mkTempDir('failsafe-roadmap-root-');
+describe("ConsoleServer workspace-root scoped reads", () => {
+  it("reads risks and transparency logs from configured workspace root", () => {
+    const workspaceRoot = mkTempDir("failsafe-roadmap-root-");
     try {
-      const transparencyDir = path.join(workspaceRoot, '.failsafe', 'logs');
-      const risksDir = path.join(workspaceRoot, '.failsafe', 'risks');
+      const transparencyDir = path.join(workspaceRoot, ".failsafe", "logs");
+      const risksDir = path.join(workspaceRoot, ".failsafe", "risks");
       fs.mkdirSync(transparencyDir, { recursive: true });
       fs.mkdirSync(risksDir, { recursive: true });
 
       fs.writeFileSync(
-        path.join(transparencyDir, 'transparency.jsonl'),
-        `${JSON.stringify({ id: 'evt-1', type: 'prompt.dispatched' })}\n`,
-        'utf8',
+        path.join(transparencyDir, "transparency.jsonl"),
+        `${JSON.stringify({ id: "evt-1", type: "prompt.dispatched" })}\n`,
+        "utf8",
       );
       fs.writeFileSync(
-        path.join(risksDir, 'risks.json'),
-        JSON.stringify({ risks: [{ id: 'risk-1', title: 'Example risk' }] }),
-        'utf8',
+        path.join(risksDir, "risks.json"),
+        JSON.stringify({ risks: [{ id: "risk-1", title: "Example risk" }] }),
+        "utf8",
       );
 
       const eventBus = new EventBus();
@@ -38,21 +38,23 @@ describe('RoadmapServer workspace-root scoped reads', () => {
       };
       const fakeQorelogicManager = {
         getLedgerManager: () => {
-          throw new Error('test ledger unavailable');
+          throw new Error("test ledger unavailable");
         },
       };
       const fakeSentinelDaemon = {
         getStatus: () => ({ running: false, queueDepth: 0 }),
       };
 
-      const server = new RoadmapServer(
+      const server = new ConsoleServer(
         fakePlanManager as never,
         fakeQorelogicManager as never,
         fakeSentinelDaemon as never,
         eventBus,
         { workspaceRoot },
       ) as unknown as {
-        getTransparencyEvents: (limit: number) => Array<Record<string, unknown>>;
+        getTransparencyEvents: (
+          limit: number,
+        ) => Array<Record<string, unknown>>;
         getRiskRegister: () => Array<Record<string, unknown>>;
       };
 
@@ -60,13 +62,12 @@ describe('RoadmapServer workspace-root scoped reads', () => {
       const risks = server.getRiskRegister();
 
       assert.strictEqual(events.length, 1);
-      assert.strictEqual(String(events[0].id), 'evt-1');
+      assert.strictEqual(String(events[0].id), "evt-1");
       assert.strictEqual(risks.length, 1);
-      assert.strictEqual(String(risks[0].id), 'risk-1');
+      assert.strictEqual(String(risks[0].id), "risk-1");
       eventBus.dispose();
     } finally {
       fs.rmSync(workspaceRoot, { recursive: true, force: true });
     }
   });
 });
-

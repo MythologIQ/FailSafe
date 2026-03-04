@@ -1,5 +1,5 @@
 /**
- * RoadmapServer - Express HTTP + WebSocket server for Cumulative Roadmap
+ * ConsoleServer - Express HTTP + WebSocket server for Cumulative Roadmap
  *
  * Serves the external browser-based roadmap visualization on port 9376.
  * Provides real-time updates via WebSocket for live activity streaming.
@@ -119,7 +119,7 @@ type QoreRuntimeOptions = {
   timeoutMs: number;
 };
 
-type RoadmapServerOptions = {
+type ConsoleServerOptions = {
   qoreRuntime?: Partial<QoreRuntimeOptions>;
   workspaceRoot?: string;
   featureGate?: IFeatureGate;
@@ -135,7 +135,7 @@ type QoreRuntimeSnapshot = {
   error?: string;
 };
 
-export class RoadmapServer {
+export class ConsoleServer {
   private app: express.Application;
   private server: HttpServer | null = null;
   private wss: WebSocketServer | null = null;
@@ -189,7 +189,7 @@ export class RoadmapServer {
     qorelogicManager: QoreLogicManager,
     sentinelDaemon: SentinelDaemon,
     eventBus: EventBus,
-    options: RoadmapServerOptions = {},
+    options: ConsoleServerOptions = {},
   ) {
     this.planManager = planManager;
     this.qorelogicManager = qorelogicManager;

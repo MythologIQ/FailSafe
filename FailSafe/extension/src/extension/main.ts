@@ -19,7 +19,7 @@ import { EventBus } from "../shared/EventBus";
 import { GovernanceStatusBar } from "../governance/GovernanceStatusBar";
 import { LedgerManager } from "../qorelogic/ledger/LedgerManager";
 import { ShadowGenomeManager } from "../qorelogic/shadow/ShadowGenomeManager";
-import { RoadmapServer } from "../roadmap";
+import { ConsoleServer } from "../roadmap";
 import { CheckpointManager } from "../qorelogic/checkpoint/CheckpointManager";
 import type { ICheckpointMetrics } from "../core/interfaces";
 
@@ -45,7 +45,7 @@ let governanceStatusBar: GovernanceStatusBar;
 let ledgerManager: LedgerManager;
 let shadowGenomeManager: ShadowGenomeManager;
 let mcpServer: FailSafeMCPServer | undefined;
-let roadmapServer: RoadmapServer | undefined;
+let consoleServer: ConsoleServer | undefined;
 let featureGate:
   | import("../core/FeatureGateService").FeatureGateService
   | undefined;
@@ -152,7 +152,7 @@ export async function activate(
       },
       logger,
     );
-    roadmapServer = servers.roadmapServer;
+    consoleServer = servers.consoleServer;
 
     // 9. Commands
     registerCommands(
@@ -208,7 +208,7 @@ export async function activate(
 
 export async function deactivate(): Promise<void> {
   logger?.info("Deactivating FailSafe...");
-  roadmapServer?.stop();
+  consoleServer?.stop();
   ledgerManager?.close();
   shadowGenomeManager?.close();
   sentinelDaemon?.stop();

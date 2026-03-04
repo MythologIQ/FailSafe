@@ -1,13 +1,13 @@
 /**
  * Servers Bootstrap Module
  *
- * Sets up RoadmapServer and webview providers.
+ * Sets up ConsoleServer and webview providers.
  * All UI and API served from single server on port 9376.
  */
 
 import * as vscode from "vscode";
 import { Logger } from "../shared/Logger";
-import { RoadmapServer } from "../roadmap";
+import { ConsoleServer } from "../roadmap";
 import { FailSafeSidebarProvider } from "../roadmap/FailSafeSidebarProvider";
 import { RiskManager } from "../qorelogic/risk";
 import type { EventBus } from "../shared/EventBus";
@@ -26,7 +26,7 @@ export interface ServerDeps {
 }
 
 export interface ServerResult {
-  roadmapServer: RoadmapServer;
+  consoleServer: ConsoleServer;
   riskManager: RiskManager;
 }
 
@@ -42,16 +42,16 @@ export async function bootstrapServers(
   );
 
   // Single unified server on port 9376
-  const roadmapServer = new RoadmapServer(
+  const consoleServer = new ConsoleServer(
     deps.planManager,
     deps.qorelogicManager,
     deps.sentinelDaemon,
     deps.eventBus,
     { workspaceRoot: deps.workspaceRoot },
   );
-  roadmapServer.setSystemRegistry(deps.systemRegistry);
-  await roadmapServer.start();
-  context.subscriptions.push({ dispose: () => roadmapServer?.stop() });
+  consoleServer.setSystemRegistry(deps.systemRegistry);
+  await consoleServer.start();
+  context.subscriptions.push({ dispose: () => consoleServer?.stop() });
 
   // Webview Providers
   context.subscriptions.push(
@@ -61,5 +61,5 @@ export async function bootstrapServers(
     ),
   );
 
-  return { roadmapServer, riskManager };
+  return { consoleServer, riskManager };
 }

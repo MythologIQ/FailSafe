@@ -5,7 +5,7 @@ import * as os from "os";
 import * as path from "path";
 import * as vscode from "vscode";
 import { EventBus } from "../shared/EventBus";
-import { RoadmapServer } from "../roadmap/RoadmapServer";
+import { ConsoleServer } from "../roadmap/ConsoleServer";
 import { ProjectOverviewPanel } from "../genesis/panels/ProjectOverviewPanel";
 import { RiskRegisterProvider } from "../genesis/views/RiskRegisterProvider";
 
@@ -14,7 +14,7 @@ function mkTempDir(prefix: string): string {
 }
 
 describe("Security hardening coverage", () => {
-  it("enforces local-only request checks in RoadmapServer guard methods", () => {
+  it("enforces local-only request checks in ConsoleServer guard methods", () => {
     const workspaceRoot = mkTempDir("failsafe-sec-guard-");
     try {
       const eventBus = new EventBus();
@@ -32,7 +32,7 @@ describe("Security hardening coverage", () => {
         getStatus: () => ({ running: false, queueDepth: 0 }),
       };
 
-      const server = new RoadmapServer(
+      const server = new ConsoleServer(
         fakePlanManager as never,
         fakeQorelogicManager as never,
         fakeSentinelDaemon as never,
@@ -117,7 +117,10 @@ describe("Security hardening coverage", () => {
 
     assert.strictEqual(html.includes("acquireVsCodeApi()"), true);
     assert.strictEqual(html.includes("proj-<img"), false);
-    assert.strictEqual(html.includes('plan-<script>alert("x")</script>'), false);
+    assert.strictEqual(
+      html.includes('plan-<script>alert("x")</script>'),
+      false,
+    );
     assert.strictEqual(html.includes('phase-<svg onload=alert("x")>'), false);
     assert.strictEqual(html.includes("&lt;img"), true);
     assert.strictEqual(html.includes("&lt;script&gt;"), true);
@@ -148,7 +151,10 @@ describe("Security hardening coverage", () => {
         }),
       } as never,
       eventBus,
-    ) as never as { renderRiskItem: (risk: unknown) => string; dispose: () => void };
+    ) as never as {
+      renderRiskItem: (risk: unknown) => string;
+      dispose: () => void;
+    };
 
     const cardHtml = provider.renderRiskItem({
       id: "risk-'x'\"y",
@@ -180,10 +186,10 @@ describe("Security hardening coverage", () => {
     assert.strictEqual(commands.has("failsafe.openRiskRegister"), true);
     assert.strictEqual(commands.has("failsafe.addRisk"), true);
 
-    const sidebarViews = manifest.contributes?.views?.["failsafe-sidebar-container"] || [];
+    const sidebarViews =
+      manifest.contributes?.views?.["failsafe-sidebar-container"] || [];
     const viewIds = new Set(sidebarViews.map((v) => v.id || ""));
     assert.strictEqual(viewIds.has("failsafe.riskRegister"), true);
     assert.strictEqual(viewIds.has("failsafe.transparencyPanel"), true);
   });
 });
-

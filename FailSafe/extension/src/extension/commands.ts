@@ -14,7 +14,7 @@ import * as http from "http";
 
 const ROADMAP_BASE_URL = "http://localhost:9376";
 
-function checkRoadmapServerReady(timeoutMs = 1200): Promise<boolean> {
+function checkConsoleServerReady(timeoutMs = 1200): Promise<boolean> {
   return new Promise((resolve) => {
     const req = http.get("http://localhost:9376/api/roadmap", (res) => {
       res.resume();
@@ -30,13 +30,13 @@ function checkRoadmapServerReady(timeoutMs = 1200): Promise<boolean> {
   });
 }
 
-async function waitForRoadmapServerReady(
+async function waitForConsoleServerReady(
   attempts = 6,
   delayMs = 250,
 ): Promise<boolean> {
   for (let i = 0; i < attempts; i += 1) {
     // eslint-disable-next-line no-await-in-loop
-    const ready = await checkRoadmapServerReady(900);
+    const ready = await checkConsoleServerReady(900);
     if (ready) return true;
     // eslint-disable-next-line no-await-in-loop
     await new Promise((resolve) => setTimeout(resolve, delayMs));
@@ -63,7 +63,7 @@ async function openRoadmapExternal(view?: string): Promise<void> {
   targetUrl.searchParams.set("theme", themeParam);
 
   const target = targetUrl.toString();
-  const ready = await waitForRoadmapServerReady();
+  const ready = await waitForConsoleServerReady();
   if (!ready) {
     vscode.window.showWarningMessage(
       "FailSafe Command Center is starting. Opening browser now; refresh in a moment if needed.",
@@ -95,7 +95,7 @@ async function openRoadmapCompactEditor(): Promise<void> {
         : "dark";
   targetUrl.searchParams.set("theme", themeParam);
 
-  const ready = await waitForRoadmapServerReady();
+  const ready = await waitForConsoleServerReady();
   if (!ready) {
     vscode.window.showWarningMessage(
       "FailSafe webpanel is starting. Opened compact hub in editor; refresh shortly if needed.",

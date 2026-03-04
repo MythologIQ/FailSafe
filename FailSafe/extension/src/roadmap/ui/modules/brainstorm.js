@@ -76,16 +76,17 @@ export class BrainstormRenderer {
           <button class="cc-btn cc-btn--danger cc-bs-clear">Clear All</button>
         </div>
       </div>
+      <svg class="cc-canvas cc-brainstorm-svg"></svg>
+      <div class="cc-bs-empty-state">Type an idea above and click Add, or use the chat below</div>
       <div class="cc-bs-chat">
         <div class="cc-bs-chat-status"></div>
         <div class="cc-bs-chat-input-row">
           <input class="cc-bs-chat-input" type="text"
             placeholder="Type or speak an idea..." maxlength="500" />
           <button class="cc-btn cc-btn--primary cc-bs-chat-send">Send</button>
-          <button class="cc-btn cc-bs-voice" title="Hold to speak">&#x1F399; Mic</button>
+          <button class="cc-btn cc-bs-voice" title="Click to speak">&#x1F399; Mic</button>
         </div>
       </div>
-      <svg class="cc-canvas cc-brainstorm-svg" style="width:100%;height:400px"></svg>
       <div class="cc-bs-node-info" style="display:none"></div>`;
   }
 
@@ -94,6 +95,12 @@ export class BrainstormRenderer {
     if (!svg) return;
     const canvas = new BrainstormCanvas(svg);
     this.graph.setCanvas(canvas);
+    this._updateEmptyState = () => {
+      const el = this.container?.querySelector('.cc-bs-empty-state');
+      if (el) el.style.display = this.graph.nodes.length ? 'none' : 'block';
+    };
+    const origSetNodes = canvas.setNodes.bind(canvas);
+    canvas.setNodes = (nodes) => { origSetNodes(nodes); this._updateEmptyState(); };
     canvas.setNodes(this.graph.nodes);
     canvas.setEdges(this.graph.edges, this.graph.nodes);
     canvas.onNodeMove((id, x, y) => {

@@ -601,8 +601,6 @@ export class ConsoleServer {
     });
 
     // v4.2.0: Console UI routes (HTML server-rendered)
-    this.setupConsoleRoutes();
-
     // SPA fallback for deep links or unknown non-API routes.
     this.app.use((req: Request, res: Response) => {
       if (req.path.startsWith("/api/") || req.path === "/health") {
@@ -615,11 +613,13 @@ export class ConsoleServer {
         res.sendFile(target);
         return;
       }
-      res.sendFile(path.join(this.uiDir, "legacy-index.html"));
+      res.sendFile(path.join(this.uiDir, "command-center.html"));
     });
   }
 
-  private getUiEntryFile(req: Request): "legacy-index.html" | "index.html" {
+  private getUiEntryFile(
+    req: Request,
+  ): "command-center.html" | "legacy-index.html" | "index.html" {
     const uiMode = String(req.query.ui || "").toLowerCase();
     const compactParam = String(req.query.compact || "").toLowerCase();
 
@@ -627,8 +627,11 @@ export class ConsoleServer {
     if (uiMode === "compact") {
       return "index.html";
     }
-    if (uiMode === "console" || uiMode === "extended" || uiMode === "popout") {
+    if (uiMode === "legacy") {
       return "legacy-index.html";
+    }
+    if (uiMode === "console" || uiMode === "extended" || uiMode === "popout") {
+      return "command-center.html";
     }
 
     // Backward-compatible compact toggle.
@@ -639,7 +642,7 @@ export class ConsoleServer {
     ) {
       return "index.html";
     }
-    return "legacy-index.html";
+    return "command-center.html";
   }
 
   private shouldServeLegacyUi(req: Request): boolean {

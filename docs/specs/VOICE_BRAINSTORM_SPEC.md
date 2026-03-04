@@ -147,3 +147,19 @@ Voice-captured audio is a highly sensitive telemetry stream. The system must enf
 - **Retention & Playback GUI**: The Brainstorm HUD (or `Settings` tab) will feature an **Audio Management Element**:
   - **Retention Controls**: A selector allowing users to set auto-purge policies (e.g. `Purge after 24 hours`, `Purge after 7 days`, `Keep forever`).
   - **Playback Scrubbing**: An embedded audio player bound to nodes. When a user selects a voice-generated node on the 3D map, the Context Menu will feature a "Play Original Audio" button, allowing them to hear their exact spoken dictation alongside the LLM's abstraction.
+
+### 9.5 The Ideation Prep Bay (Staging Area)
+
+To prevent overwhelming the 3D Mindmap with fragmented or accidental logic, voice captures and manual entries will first enter an **Ideation Prep Bay** rather than being instantly injected into the physics graph.
+
+#### Layout & Workflow:
+
+1. **The Staging Canvas**: A dedicated, sleek "HUD Panel" sitting above the 3D map (or accessible via a toggle). It features a large text area (`What's on your mind? Add ideas, questions, or goals...`).
+2. **Recording Controls (Right Panel)**:
+   - A prominent `[ RECORD ]` button. When pressed, the user can speak freely.
+   - The STT Engine transcribes the audio in real-time directly into the Staging Canvas. Users can mentally prepare multiple ideations within a single continuous thought, pause, and manually edit the transcript.
+   - A distinct `[ SEND TO MIND MAP ]` button. This triggers the QoreLogic LLM extraction. Only upon pressing this do the concepts become atomic 3D nodes.
+3. **Recent Thoughts Ledger**:
+   - Alongside the Staging Canvas is a dropdown or list (e.g., `0 thoughts`) functioning as a localized history cache.
+   - It displays timestamps and short snippets of the last 5-10 submitted thoughts, allowing the user to seamlessly pick up where they left off without needing to scan the massive 3D architecture.
+4. **State Indicators**: The footer of the Prep Bay clearly telegraphs the background agents: `• AI analyzing connections...` or `• Checking integrity...`.

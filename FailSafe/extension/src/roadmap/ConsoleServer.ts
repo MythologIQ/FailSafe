@@ -43,6 +43,8 @@ import type { RouteDeps } from "./routes";
 import type { PermissionScopeManager } from "../governance/PermissionScopeManager";
 import type { EnforcementEngine } from "../governance/EnforcementEngine";
 import { BrainstormService } from "./services/BrainstormService";
+import type { IConfigProvider } from "../core/interfaces/IConfigProvider";
+import { LLMClient } from "../sentinel/utils/LLMClient";
 
 const PORT = 9376;
 const HOST = "127.0.0.1";
@@ -124,6 +126,7 @@ type ConsoleServerOptions = {
   qoreRuntime?: Partial<QoreRuntimeOptions>;
   workspaceRoot?: string;
   featureGate?: IFeatureGate;
+  configProvider?: IConfigProvider;
 };
 
 type QoreRuntimeSnapshot = {
@@ -163,6 +166,7 @@ export class ConsoleServer {
   private chainValidAt: string | null = null;
   private cachedChainValid: boolean = true;
   private brainstormService: BrainstormService;
+  private configProvider: IConfigProvider | undefined;
   private enforcementEngine: EnforcementEngine | null = null;
   private permissionManager: PermissionScopeManager | null = null;
   private systemRegistry:
@@ -201,17 +205,42 @@ export class ConsoleServer {
     this.qoreRuntime = this.resolveQoreRuntimeOptions(options.qoreRuntime);
     this.workspaceRoot = options.workspaceRoot || process.cwd();
     this.featureGate = options.featureGate;
+    this.configProvider = options.configProvider;
     this.uiDir = this.resolveUiDir();
     this.initializeCheckpointStore();
     this.gitResetService = new GitResetService();
     this.initializeRevertService();
     this.brainstormService = new BrainstormService(async (prompt, payload) => {
-      const res = await this.fetchQoreJson("/evaluate", {
-        method: "POST",
-        body: { prompt, payload },
-      });
-      if (!res.ok) throw new Error(res.error);
-      return String((res.body as Record<string, unknown>).result || res.body);
+      const fullPrompt = `${prompt}\n\nTranscript:\n${payload}`;
+
+      // Try Ollama first via LLMClient
+      if (this.configProvider) {
+        const llm = new LLMClient(this.configProvider);
+        const available = await llm.checkAvailability();
+        if (available) {
+          const result = await llm.callEndpoint(fullPrompt, 15000);
+          return result.response;
+        }
+      }
+
+      // Fallback: VS Code Language Model API (Copilot / IDE-provided LLM)
+      try {
+        const vscode = await import("vscode");
+        const models = await vscode.lm.selectChatModels();
+        if (models.length > 0) {
+          const messages = [vscode.LanguageModelChatMessage.User(fullPrompt)];
+          const chatResponse = await models[0].sendRequest(messages);
+          let text = "";
+          for await (const chunk of chatResponse.text) {
+            text += chunk;
+          }
+          return text;
+        }
+      } catch {
+        // VS Code LM API not available or no models registered
+      }
+
+      throw new Error("No LLM available — start Ollama or enable a VS Code language model");
     });
     this.setupRoutes();
     this.subscribeToEvents();
@@ -502,9 +531,17 @@ export class ConsoleServer {
         return;
       }
       try {
-        const extraction = await this.brainstormService.processTranscript(transcript);
-        this.broadcast({ type: "brainstorm.update", payload: extraction });
-        res.json(extraction);
+        const result = await this.brainstormService.processTranscript(transcript);
+        if (result.extraction) {
+          this.broadcast({ type: "brainstorm.update", payload: result.extraction });
+          res.json(result.extraction);
+        } else if (result.queued) {
+          res.status(202).json({
+            status: "queued",
+            message: "No LLM available — transcript stored for later processing",
+            queued: result.queued,
+          });
+        }
       } catch (err) {
         const detail = err instanceof Error ? err.message : String(err);
         res.status(502).json({ error: "extraction_failed", detail });
@@ -567,6 +604,29 @@ export class ConsoleServer {
       this.brainstormService.reset();
       this.broadcast({ type: "brainstorm.reset" });
       res.json({ ok: true });
+    });
+
+    // API: Brainstorm — list queued transcripts awaiting LLM
+    this.app.get("/api/v1/brainstorm/pending", (req: Request, res: Response) => {
+      if (this.rejectIfRemote(req, res)) return;
+      res.json({ pending: this.brainstormService.getPendingTranscripts() });
+    });
+
+    // API: Brainstorm — retry all pending transcripts
+    this.app.post("/api/v1/brainstorm/retry", async (req: Request, res: Response) => {
+      if (this.rejectIfRemote(req, res)) return;
+      try {
+        const results = await this.brainstormService.retryPending();
+        for (const r of results) {
+          if (r.extraction) {
+            this.broadcast({ type: "brainstorm.update", payload: r.extraction });
+          }
+        }
+        res.json({ processed: results.length, results });
+      } catch (err) {
+        const detail = err instanceof Error ? err.message : String(err);
+        res.status(502).json({ error: "retry_failed", detail });
+      }
     });
 
     this.app.get("/api/checkpoints", (req: Request, res: Response) => {

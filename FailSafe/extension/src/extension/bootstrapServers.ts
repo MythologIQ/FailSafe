@@ -15,6 +15,7 @@ import type { PlanManager } from "../qorelogic/planning/PlanManager";
 import type { QoreLogicManager } from "../qorelogic/QoreLogicManager";
 import type { SentinelDaemon } from "../sentinel/SentinelDaemon";
 import type { SystemRegistry } from "../qorelogic/SystemRegistry";
+import type { ConfigManager } from "../shared/ConfigManager";
 
 export interface ServerDeps {
   planManager: PlanManager;
@@ -23,6 +24,7 @@ export interface ServerDeps {
   eventBus: EventBus;
   workspaceRoot: string;
   systemRegistry: SystemRegistry;
+  configManager: ConfigManager;
 }
 
 export interface ServerResult {
@@ -47,7 +49,7 @@ export async function bootstrapServers(
     deps.qorelogicManager,
     deps.sentinelDaemon,
     deps.eventBus,
-    { workspaceRoot: deps.workspaceRoot },
+    { workspaceRoot: deps.workspaceRoot, configProvider: deps.configManager },
   );
   consoleServer.setSystemRegistry(deps.systemRegistry);
   await consoleServer.start();

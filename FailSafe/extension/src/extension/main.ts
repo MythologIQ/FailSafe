@@ -149,6 +149,7 @@ export async function activate(
         eventBus,
         workspaceRoot: core.workspaceRoot,
         systemRegistry: qore.systemRegistry,
+        configManager: core.configManager,
       },
       logger,
     );

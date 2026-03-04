@@ -40,24 +40,70 @@ Do NOT wrap the JSON in markdown code fences.`;
 
 type LlmEvaluateFn = (prompt: string, payload: string) => Promise<string>;
 
+export interface QueuedTranscript {
+  id: string;
+  transcript: string;
+  queuedAt: string;
+}
+
+export interface TranscriptResult {
+  extraction?: ExtractionResult;
+  queued?: QueuedTranscript;
+}
+
 export class BrainstormService {
   private nodes: Map<string, BrainstormNode> = new Map();
   private edges: BrainstormEdge[] = [];
+  private pendingTranscripts: QueuedTranscript[] = [];
 
   constructor(private llmEvaluate: LlmEvaluateFn) {}
 
-  async processTranscript(transcript: string): Promise<ExtractionResult> {
-    const raw = await this.llmEvaluate(MINDMAP_EXTRACTOR_PROMPT, transcript);
-    const parsed = this.parseExtraction(raw);
-    for (const node of parsed.nodes) {
-      if (!this.nodes.has(node.id)) {
-        this.nodes.set(node.id, node);
+  async processTranscript(transcript: string): Promise<TranscriptResult> {
+    try {
+      const raw = await this.llmEvaluate(MINDMAP_EXTRACTOR_PROMPT, transcript);
+      const parsed = this.parseExtraction(raw);
+      for (const node of parsed.nodes) {
+        if (!this.nodes.has(node.id)) {
+          this.nodes.set(node.id, node);
+        }
       }
+      for (const edge of parsed.edges) {
+        this.edges.push(edge);
+      }
+      return { extraction: parsed };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes("No LLM available") || msg.includes("not reachable") || msg.includes("not configured")) {
+        const queued = this.queueTranscript(transcript);
+        return { queued };
+      }
+      throw err;
     }
-    for (const edge of parsed.edges) {
-      this.edges.push(edge);
+  }
+
+  queueTranscript(transcript: string): QueuedTranscript {
+    const entry: QueuedTranscript = {
+      id: `q-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      transcript,
+      queuedAt: new Date().toISOString(),
+    };
+    this.pendingTranscripts.push(entry);
+    return entry;
+  }
+
+  getPendingTranscripts(): QueuedTranscript[] {
+    return [...this.pendingTranscripts];
+  }
+
+  async retryPending(): Promise<TranscriptResult[]> {
+    const pending = [...this.pendingTranscripts];
+    this.pendingTranscripts = [];
+    const results: TranscriptResult[] = [];
+    for (const entry of pending) {
+      const result = await this.processTranscript(entry.transcript);
+      results.push(result);
     }
-    return parsed;
+    return results;
   }
 
   addNode(label: string, type: string): BrainstormNode {

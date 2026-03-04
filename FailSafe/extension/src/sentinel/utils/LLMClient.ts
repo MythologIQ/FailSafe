@@ -118,7 +118,7 @@ Respond with:
      * Send a prompt to the LLM endpoint and return the raw response text.
      * Throws on network or timeout errors.
      */
-    async callEndpoint(prompt: string): Promise<{ response: string; totalDuration: number }> {
+    async callEndpoint(prompt: string, timeoutMs = 5000): Promise<{ response: string; totalDuration: number }> {
         const config = this.configProvider.getConfig();
         const endpoint = config.sentinel.ollamaEndpoint;
         const model = config.sentinel.localModel;
@@ -131,7 +131,7 @@ Respond with:
                 prompt,
                 stream: false
             }),
-            signal: AbortSignal.timeout(5000)
+            signal: AbortSignal.timeout(timeoutMs)
         });
 
         if (!httpResponse.ok) {

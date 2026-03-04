@@ -260,7 +260,7 @@ export class ConsoleServer {
         res.sendFile(target);
         return;
       }
-      res.sendFile(path.join(this.uiDir, "legacy-index.html"));
+      res.sendFile(path.join(this.uiDir, "command-center.html"));
     });
 
     // Readiness endpoint for command-side launch checks.
@@ -725,16 +725,13 @@ export class ConsoleServer {
 
   private getUiEntryFile(
     req: Request,
-  ): "command-center.html" | "legacy-index.html" | "index.html" {
+  ): "command-center.html" | "index.html" {
     const uiMode = String(req.query.ui || "").toLowerCase();
     const compactParam = String(req.query.compact || "").toLowerCase();
 
     // Explicit modes.
     if (uiMode === "compact") {
       return "index.html";
-    }
-    if (uiMode === "legacy") {
-      return "legacy-index.html";
     }
     if (uiMode === "console" || uiMode === "extended" || uiMode === "popout") {
       return "command-center.html";
@@ -749,24 +746,6 @@ export class ConsoleServer {
       return "index.html";
     }
     return "command-center.html";
-  }
-
-  private shouldServeLegacyUi(req: Request): boolean {
-    const legacyParam = String(req.query.legacy || "").toLowerCase();
-    if (
-      legacyParam === "1" ||
-      legacyParam === "true" ||
-      legacyParam === "yes"
-    ) {
-      return true;
-    }
-    const viewParam = String(req.query.view || "").toLowerCase();
-    // Legacy shell still handles older specialized view links.
-    return (
-      viewParam === "timeline" ||
-      viewParam === "current-sprint" ||
-      viewParam === "live-activity"
-    );
   }
 
   private isLocalRequest(req: Request): boolean {

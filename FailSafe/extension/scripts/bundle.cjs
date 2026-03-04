@@ -35,10 +35,10 @@ async function main() {
     path.join(root, "src", "roadmap", "ui"),
     path.join(distDir, "extension", "ui"),
   );
-  copyDir(
-    path.join(root, "src", "webui", "pages"),
-    path.join(distDir, "webui", "pages"),
-  );
+  const webuiPages = path.join(root, "src", "webui", "pages");
+  if (fs.existsSync(webuiPages)) {
+    copyDir(webuiPages, path.join(distDir, "webui", "pages"));
+  }
 }
 
 main().catch((error) => {

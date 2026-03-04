@@ -95,6 +95,6 @@ function updateTickers(data) {
     sent.innerHTML = `SENTINEL <span style="color:${c}">${live ? 'Active' : 'Halted'}</span>`;
   }
   if (lat) {
-    lat.innerHTML = `API <span style="font-family:var(--font-mono)">${data.qoreStatus?.latencyMs || '??'}ms</span>`;
+    lat.innerHTML = `API <span style="font-family:var(--font-mono)">${data.qoreRuntime?.latencyMs || '??'}ms</span>`;
   }
 }

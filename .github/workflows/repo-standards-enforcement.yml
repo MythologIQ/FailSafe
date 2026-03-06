@@ -52,5 +52,5 @@ jobs:
       - name: Repository validation
         shell: pwsh
         run: |
-          pwsh -File validate.ps1 -SkipContainerValidation
+          pwsh -File scripts/validate.ps1 -SkipContainerValidation
 

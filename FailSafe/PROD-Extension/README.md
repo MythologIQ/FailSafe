@@ -1,4 +1,4 @@
-[![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.2.1?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.2.1?platform=universal)
+[![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.4.0?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.4.0?platform=universal)
 
 # PROD-Extension
 
@@ -42,7 +42,7 @@ Or use the environment-specific install scripts in each package.
 <!-- CHECKPOINT-DEEP-DIVE:START -->
 ## UI Snapshot
 
-![FailSafe UI Preview](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/ScreenShots/UI-Preview.png)
+![FailSafe UI Preview](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/extension/media/FailSafe-Overview.PNG)
 
 ## Checkpoint Integrity and Local Memory
 
@@ -78,3 +78,4 @@ FailSafe tracks more than Git state. It records governance checkpoints as signed
 | Checkpoint and Sentinel RAG tables are independent (no foreign-key link). | **false** | Confirmed: `failsafe_checkpoints` (ledger DB) and `sentinel_observations` (RAG DB) are in separate databases with no shared keys. `evidenceRefs` is always `[]`. |
 
 <!-- CHECKPOINT-DEEP-DIVE:END -->
+

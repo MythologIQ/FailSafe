@@ -5,7 +5,7 @@
  */
 
 import { SecurityReplayGuard, processSignedRequest } from "../SecurityReplayGuard";
-import type { GovernanceAction, DecisionRequest, DecisionResponse } from "../GovernanceAdapter";
+import type { DecisionRequest, DecisionResponse } from "../GovernanceAdapter";
 import { Logger } from "../../shared/Logger";
 
 export interface NonceResolverConfig {

@@ -22,7 +22,7 @@ function canRun(command, args = ["--help"]) {
   return !result.error;
 }
 
-function resolveVsixPath(explicit) {
+function resolveVsixPath(explicit, expectedVersion) {
   if (explicit) {
     const resolved = path.resolve(process.cwd(), explicit);
     if (fs.existsSync(resolved)) {
@@ -49,6 +49,14 @@ function resolveVsixPath(explicit) {
 
   if (files.length === 0) {
     fail("No VSIX found. Pass a path or run packaging first.");
+  }
+
+  if (expectedVersion) {
+    const exactName = `mythologiq-failsafe-${expectedVersion}.vsix`;
+    const exactMatch = files.find((filePath) => path.basename(filePath) === exactName);
+    if (exactMatch) {
+      return exactMatch;
+    }
   }
 
   return files[0];
@@ -118,7 +126,7 @@ function main() {
     return;
   }
 
-  const vsixPath = resolveVsixPath(explicitVsix);
+  const vsixPath = resolveVsixPath(explicitVsix, sourcePkg.version);
   if (!fs.existsSync(vsixPath)) {
     fail(`VSIX not found: ${vsixPath}`);
   }

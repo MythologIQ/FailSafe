@@ -1,10 +1,10 @@
 version: 2
 issueRules:
   shellAccess:
-    action: defer
+    action: ignore
   networkAccess:
-    action: defer
+    action: ignore
   broadActivationEvents:
-    action: defer
+    action: ignore
   dynamicCodeExecution:
-    action: defer
+    action: ignore

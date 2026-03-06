@@ -1,14 +1,14 @@
-[![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.4.0?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.4.0?platform=universal)
+[![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.4.1?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.4.1?platform=universal)
 
 # MythologIQ FailSafe for VS Code
 
 FailSafe is a local-first governance extension for AI-assisted development in VS Code and Cursor. It applies deterministic checks at the editor boundary, records decisions to a local ledger, and provides dedicated surfaces for audits, checkpoints, and agent governance.
 
-**Current Release**: v4.4.0 (2026-03-06)
+**Current Release**: v4.4.1 (2026-03-06)
 
 ![FailSafe Banner](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/extension/FailSafe%20Banner.png)
 
-## What's New in v4.4.0
+## What's New in v4.4.1
 
 ### Mindmap and Console Evolution
 
@@ -178,7 +178,7 @@ FailSafe evaluates save operations against the active Intent and can block write
 
 ### FailSafe Monitor UI (v3.5.2)
 
-![FailSafe Monitor UI v3.5.2](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/extension/media/sidebar-ui-3.5.2.png)
+![FailSafe Monitor UI v3.5.2](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/extension/media/FailSafe-Sidebar.PNG)
 
 ### 5. Command Center UX (UI-02 + Extended Popout)
 
@@ -367,7 +367,7 @@ python FailSafe/build/publish.py
 
 ## UI Snapshot
 
-![FailSafe UI Preview](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/ScreenShots/UI-Preview.png)
+![FailSafe UI Preview](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/extension/media/FailSafe-Overview.PNG)
 
 ## Checkpoint Integrity and Local Memory
 

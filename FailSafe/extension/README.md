@@ -178,7 +178,7 @@ FailSafe evaluates save operations against the active Intent and can block write
 
 ### FailSafe Monitor UI (v3.5.2)
 
-![FailSafe Monitor UI v3.5.2](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/extension/media/sidebar-ui-3.5.2.png)
+![FailSafe Monitor UI v3.5.2](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/extension/media/FailSafe-Sidebar.PNG)
 
 ### 5. Command Center UX (UI-02 + Extended Popout)
 
@@ -367,7 +367,7 @@ python FailSafe/build/publish.py
 
 ## UI Snapshot
 
-![FailSafe UI Preview](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/ScreenShots/UI-Preview.png)
+![FailSafe UI Preview](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/extension/media/FailSafe-Overview.PNG)
 
 ## Checkpoint Integrity and Local Memory
 

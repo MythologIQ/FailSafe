@@ -77,7 +77,7 @@ No transformation needed - these are ready for direct deployment to `.github/` d
 
 ## UI Snapshot
 
-![FailSafe UI Preview](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/ScreenShots/UI-Preview.png)
+![FailSafe UI Preview](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/extension/media/FailSafe-Overview.PNG)
 
 ## Checkpoint Integrity and Local Memory
 

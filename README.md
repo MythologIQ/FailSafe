@@ -41,7 +41,7 @@ _FailSafe is open source. Fork it, open issues, and submit pull requests._
 
 ## UI Preview
 
-![FailSafe UI Preview](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/ScreenShots/UI-Preview.png)
+![FailSafe UI Preview](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/extension/media/FailSafe-Overview.PNG)
 
 ---
 
@@ -85,19 +85,19 @@ Primary UI surfaces in the current release:
 
 ### Monitor
 
-![FailSafe Monitor](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/ScreenShots/FailSafe-Monitor.PNG)
+![FailSafe Monitor](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/extension/media/FailSafe-Sidebar.PNG)
 
 ### Home
 
-![FailSafe Command Center Home](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/ScreenShots/FailSafe-CommandCenter-Home.PNG)
+![FailSafe Command Center Home](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/extension/media/FailSafe-Overview.PNG)
 
 ### Skills
 
-![FailSafe Command Center Skills](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/ScreenShots/FailSafe-CommandCenter-Skills.PNG)
+![FailSafe Command Center Skills](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/extension/media/FailSafe-Skills.png)
 
 ### Governance
 
-![FailSafe Command Center Governance](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/ScreenShots/FailSafe-CommandCenter-Governance.PNG)
+![FailSafe Command Center Governance](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/extension/media/FailSafe-AuditLog.PNG)
 
 ---
 
@@ -445,7 +445,7 @@ MIT - See [LICENSE](LICENSE)
 
 ## UI Snapshot
 
-![FailSafe UI Preview](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/ScreenShots/UI-Preview.png)
+![FailSafe UI Preview](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/extension/media/FailSafe-Overview.PNG)
 
 ## Checkpoint Integrity and Local Memory
 

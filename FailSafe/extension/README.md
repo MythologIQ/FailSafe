@@ -183,7 +183,7 @@ FailSafe evaluates save operations against the active Intent and can block write
 ### 5. Command Center UX (UI-02 + Extended Popout)
 
 - Compact `FailSafe Monitor` webpanel (`UI-02`) provides phase status, prioritized feature counters, Sentinel state, and workspace health at-a-glance.
-- `Open FailSafe Command Center` opens the extended popout console for deeper workflow views (Home, Run, Skills, Governance, Activity, Reports, Settings).
+- `Open FailSafe Command Center` opens the extended popout console for deeper workflow views (Overview, Operations, Audit, Risks, Skills, Laws, Mindmap, Config).
 - Branding is consistent across shell surfaces, including FailSafe icon usage in header and favicon contexts.
 - Optional external Qore runtime integration can display live runtime state, policy version, endpoint, and latency in the compact monitor.
 

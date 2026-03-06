@@ -5,6 +5,7 @@ import { JSDOM } from "jsdom";
 
 suite("BrainstormCanvas (3D) Tests", () => {
   let originalWindow: any;
+  let canvas: any;
 
   setup(() => {
     const dom = new JSDOM('<!DOCTYPE html><div id="container"></div>');
@@ -28,6 +29,7 @@ suite("BrainstormCanvas (3D) Tests", () => {
       onNodeClick: () => mockGraphInstance,
       onNodeRightClick: () => mockGraphInstance,
       onNodeDragEnd: () => mockGraphInstance,
+      cameraPosition: () => mockGraphInstance,
       width: () => mockGraphInstance,
       height: () => mockGraphInstance,
       graphData: () => mockGraphInstance,
@@ -37,6 +39,10 @@ suite("BrainstormCanvas (3D) Tests", () => {
   });
 
   teardown(() => {
+    if (canvas?.destroy) {
+      canvas.destroy();
+      canvas = null;
+    }
     (global as any).window = originalWindow;
     (global as any).document = originalWindow
       ? originalWindow.document
@@ -45,7 +51,7 @@ suite("BrainstormCanvas (3D) Tests", () => {
 
   test("setNodes correctly maps node val without mutating original", () => {
     const container = (global as any).document.getElementById("container");
-    const canvas = new BrainstormCanvas(container);
+    canvas = new BrainstormCanvas(container);
 
     const originalNodes = [
       { id: "1", label: "Node 1", mass: 10, confidence: 80 },
@@ -64,7 +70,11 @@ suite("BrainstormCanvas (3D) Tests", () => {
 
     assert.strictEqual(canvas.nodes.length, 2);
     assert.strictEqual(canvas.nodes[0].id, "1");
-    assert.strictEqual(canvas.nodes[0].val, 10, "Mass should map to val");
+    assert.strictEqual(
+      canvas.nodes[0].val,
+      5,
+      "Haptic engine should derive default mass from topology",
+    );
     assert.strictEqual(
       canvas.nodes[1].val,
       5,

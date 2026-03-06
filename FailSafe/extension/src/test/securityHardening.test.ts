@@ -1,4 +1,3 @@
-import { describe, it } from "mocha";
 import * as assert from "assert";
 import * as fs from "fs";
 import * as os from "os";
@@ -13,8 +12,8 @@ function mkTempDir(prefix: string): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
 }
 
-describe("Security hardening coverage", () => {
-  it("enforces local-only request checks in ConsoleServer guard methods", () => {
+suite("Security hardening coverage", () => {
+  test("enforces local-only request checks in ConsoleServer guard methods", () => {
     const workspaceRoot = mkTempDir("failsafe-sec-guard-");
     try {
       const eventBus = new EventBus();
@@ -85,7 +84,7 @@ describe("Security hardening coverage", () => {
     }
   });
 
-  it("renders ProjectOverviewPanel HTML with escaped dynamic values and vscode API bridge", async () => {
+  test("renders ProjectOverviewPanel HTML with escaped dynamic values and vscode API bridge", async () => {
     const html = await (
       ProjectOverviewPanel as never as {
         prototype: { getHtmlContent: (this: unknown) => Promise<string> };
@@ -127,7 +126,7 @@ describe("Security hardening coverage", () => {
     assert.strictEqual(html.includes("&lt;svg"), true);
   });
 
-  it("escapes risk IDs before embedding them into inline JS handlers", () => {
+  test("escapes risk IDs before embedding them into inline JS handlers", () => {
     const eventBus = new EventBus();
     const provider = new RiskRegisterProvider(
       vscode.Uri.file(path.join(os.tmpdir(), "failsafe-test")),
@@ -171,7 +170,7 @@ describe("Security hardening coverage", () => {
     eventBus.dispose();
   });
 
-  it("contributes risk commands and views in extension manifest", () => {
+  test("contributes risk commands and sidebar view in extension manifest", () => {
     const manifestPath = path.resolve(__dirname, "../../package.json");
     const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8")) as {
       contributes?: {
@@ -186,10 +185,8 @@ describe("Security hardening coverage", () => {
     assert.strictEqual(commands.has("failsafe.openRiskRegister"), true);
     assert.strictEqual(commands.has("failsafe.addRisk"), true);
 
-    const sidebarViews =
-      manifest.contributes?.views?.["failsafe-sidebar-container"] || [];
+    const sidebarViews = manifest.contributes?.views?.["failsafe-sidebar-container"] || [];
     const viewIds = new Set(sidebarViews.map((v) => v.id || ""));
-    assert.strictEqual(viewIds.has("failsafe.riskRegister"), true);
-    assert.strictEqual(viewIds.has("failsafe.transparencyPanel"), true);
+    assert.strictEqual(viewIds.has("failsafe.sidebarView"), true);
   });
 });

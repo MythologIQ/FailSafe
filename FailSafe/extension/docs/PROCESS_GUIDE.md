@@ -18,6 +18,24 @@ Audience: operators who need fast, accurate workflows for the shipped `v4.4.0` U
 4. Review `Transparency` if behavior is unexpected.
 5. Process L3 items in `Governance` before high-risk merges.
 
+## Local Pre-Push Gate (Before GitHub CI)
+
+FailSafe runs deterministic local pre-push checks through `.githooks/pre-push` before `git push`.
+
+Default checks:
+
+1. Branch policy validation (`tools/reliability/validate-branch-policy.ps1`).
+2. Extension compile (`npm run compile`).
+3. Release metadata preflight (`node ./scripts/validate-vsix.cjs --source-only`).
+4. Full test stack (`npm run test:all`).
+5. VSIX package + artifact validation (`npx @vscode/vsce package` and `npm run validate:vsix`).
+
+Manual invocation:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools/reliability/prepush-validate.ps1
+```
+
 ## Governance Modes
 
 | Mode | Behavior | Use It When |
@@ -138,6 +156,15 @@ Check:
 - vendor runtime assets were staged per `src/roadmap/ui/vendor/*/VENDOR.md`
 - browser allows microphone access
 - Console server is reachable at the current local runtime URL
+
+### UI tests fail due to missing legacy route or selectors
+
+Current Playwright UI tests target:
+
+- Monitor shell: `index.html`
+- Command Center shell: `command-center.html`
+
+If local scripts still reference `legacy-index.html`, update them to the current route and selector contracts.
 
 ## Claim Map
 

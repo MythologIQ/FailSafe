@@ -1,10 +1,9 @@
-import { describe, it } from 'mocha';
 import { strict as assert } from 'assert';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
 
-describe('Skill Discovery: collectCommandMarkdownFiles equivalent logic', () => {
+suite('Skill Discovery: collectCommandMarkdownFiles equivalent logic', () => {
   let tmpDir: string;
 
   function collectCommandMarkdownFiles(root: string): string[] {
@@ -33,7 +32,7 @@ describe('Skill Discovery: collectCommandMarkdownFiles equivalent logic', () => 
     return files;
   }
 
-  beforeEach(() => {
+  setup(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'skill-disc-'));
     fs.writeFileSync(path.join(tmpDir, 'ql-plan.md'), '# Plan skill');
     fs.writeFileSync(path.join(tmpDir, 'ql-audit.md'), '# Audit skill');
@@ -43,11 +42,11 @@ describe('Skill Discovery: collectCommandMarkdownFiles equivalent logic', () => 
     fs.writeFileSync(path.join(tmpDir, '_quarantine', 'blocked.md'), '# Blocked');
   });
 
-  afterEach(() => {
+  teardown(() => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  it('finds .md files in root and nested directories', () => {
+  test('finds .md files in root and nested directories', () => {
     const found = collectCommandMarkdownFiles(tmpDir);
     const names = found.map(f => path.basename(f)).sort();
     assert.ok(names.includes('ql-plan.md'), 'Should find ql-plan.md');
@@ -55,15 +54,15 @@ describe('Skill Discovery: collectCommandMarkdownFiles equivalent logic', () => 
     assert.ok(names.includes('ql-governor.md'), 'Should find nested ql-governor.md');
   });
 
-  it('skips directories prefixed with _ or .', () => {
+  test('skips directories prefixed with _ or .', () => {
     const found = collectCommandMarkdownFiles(tmpDir);
     const names = found.map(f => path.basename(f));
     assert.ok(!names.includes('blocked.md'), 'Should skip _quarantine/blocked.md');
   });
 });
 
-describe('parseCommandFile category derivation', () => {
-  it('assigns governance category to ql-* prefixed files', () => {
+suite('parseCommandFile category derivation', () => {
+  test('assigns governance category to ql-* prefixed files', () => {
     const baseName = 'ql-plan';
     const isGovernance = baseName.startsWith('ql-');
     assert.strictEqual(isGovernance, true);
@@ -71,7 +70,7 @@ describe('parseCommandFile category derivation', () => {
     assert.strictEqual(category, 'governance');
   });
 
-  it('derives category from directory name for non-ql files', () => {
+  test('derives category from directory name for non-ql files', () => {
     const baseName = 'backend-developer';
     const dirName = 'agents';
     const isGovernance = baseName.startsWith('ql-');

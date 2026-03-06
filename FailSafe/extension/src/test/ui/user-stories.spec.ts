@@ -4,6 +4,7 @@ import path from 'path';
 import { test, expect } from '@playwright/test';
 
 type HubPayload = {
+  runState?: { currentPhase?: string };
   activePlan: {
     id: string;
     currentPhaseId: string;
@@ -62,6 +63,7 @@ function baseHub(overrides?: Partial<HubPayload>): HubPayload {
       { checkpointType: 'policy.checked', policyVerdict: 'PASS', timestamp: '2026-02-11T10:00:00.000Z' },
     ],
     generatedAt: '2026-02-11T10:01:00.000Z',
+    runState: { currentPhase: 'Plan' },
     ...overrides,
   };
 }
@@ -101,12 +103,13 @@ function defaultSkills() {
 
 async function withUiServer(
   handler: (baseUrl: string) => Promise<void>,
-  options?: { hub?: HubPayload; skills?: unknown[]; relevance?: Record<string, unknown> },
+  options?: { hub?: HubPayload; skills?: unknown[]; relevance?: Record<string, unknown>; onAction?: (path: string) => void },
 ): Promise<void> {
   const root = path.resolve(__dirname, '../../roadmap/ui');
   const hubPayload = options?.hub || baseHub();
   const skills = options?.skills || defaultSkills();
   const relevance = options?.relevance || {};
+  const onAction = options?.onAction || (() => {});
 
   const server = http.createServer((req, res) => {
     const url = new URL(req.url || '/', 'http://127.0.0.1');
@@ -132,14 +135,33 @@ async function withUiServer(
       }));
       return;
     }
+    if (url.pathname === '/api/roadmap' && req.method === 'GET') {
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      res.end(JSON.stringify({
+        phases: hubPayload.activePlan.phases.map((phase) => ({
+          id: phase.id,
+          name: phase.title,
+          status: phase.status,
+        })),
+      }));
+      return;
+    }
     if (url.pathname === '/api/actions/resume-monitoring' && req.method === 'POST') {
+      onAction(url.pathname);
       res.setHeader('Content-Type', 'application/json; charset=utf-8');
       res.end(JSON.stringify({ ok: true, status: { running: true } }));
       return;
     }
     if (url.pathname === '/api/actions/panic-stop' && req.method === 'POST') {
+      onAction(url.pathname);
       res.setHeader('Content-Type', 'application/json; charset=utf-8');
       res.end(JSON.stringify({ ok: true, status: { running: false } }));
+      return;
+    }
+    if (url.pathname === '/api/actions/verify-integrity' && req.method === 'POST') {
+      onAction(url.pathname);
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      res.end(JSON.stringify({ ok: true, chainValid: true }));
       return;
     }
     if (url.pathname === '/api/skills/ingest/auto' && req.method === 'POST') {
@@ -154,7 +176,9 @@ async function withUiServer(
     }
 
     const requestPath = decodeURIComponent(url.pathname);
-    const relative = requestPath === '/' ? 'legacy-index.html' : requestPath.replace(/^\/+/, '');
+    const relative = requestPath === '/'
+      ? 'command-center.html'
+      : (requestPath === '/legacy-index.html' ? 'command-center.html' : requestPath.replace(/^\/+/, ''));
     const filePath = path.join(root, relative);
     if (!filePath.startsWith(root) || !fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
       res.statusCode = 404;
@@ -189,25 +213,23 @@ async function withUiServer(
 
 test('US: Command Center branding and skills tabs default behavior', async ({ page }) => {
   await withUiServer(async (baseUrl) => {
-    await page.goto(`${baseUrl}/legacy-index.html`);
-    await expect(page).toHaveTitle(/FailSafe Command Center/);
-    await expect(page.locator('h1')).toHaveText('FAILSAFE');
-    await expect(page.locator('.brand-subtitle')).toHaveText('Command Center');
+    await page.goto(`${baseUrl}/command-center.html`);
+    await expect(page).toHaveTitle(/FAILSAFE Console/);
+    await expect(page.locator('.app-name')).toHaveText('FAILSAFE');
 
-    await page.locator('.tab[data-route="skills"]').click();
-    await expect(page.locator('[data-skill-tab="recommended"]')).toHaveClass(/active/);
-    await expect(page.locator('[data-skill-panel="recommended"]')).toHaveClass(/active/);
+    await page.locator('.tab-btn[data-target="skills"]').click();
+    await expect(page.locator('.cc-skill-tab[data-tab="Recommended"]')).toHaveClass(/active/);
+    await expect(page.locator('.cc-intent-input')).toBeVisible();
 
-    await page.locator('[data-skill-tab="allInstalled"]').click();
-    await expect(page.locator('[data-skill-tab="allInstalled"]')).toHaveClass(/active/);
-    await expect(page.locator('[data-skill-panel="allInstalled"]')).toHaveClass(/active/);
+    await page.locator('.cc-skill-tab[data-tab="Installed"]').click();
+    await expect(page.locator('.cc-skill-tab[data-tab="Installed"]')).toHaveClass(/active/);
   });
 });
 
-test('US: sentinel pause state is reflected in the status strip', async ({ page }) => {
+test('US: sentinel halted state is reflected in the ticker strip', async ({ page }) => {
   await withUiServer(async (baseUrl) => {
-    await page.goto(`${baseUrl}/legacy-index.html`);
-    await expect(page.locator('#status-sentinel')).toHaveText('Paused');
+    await page.goto(`${baseUrl}/command-center.html`);
+    await expect(page.locator('#ticker-sentinel')).toContainText('Halted');
   }, {
     hub: baseHub({
       sentinelStatus: { running: false, mode: 'heuristic', filesWatched: 10, queueDepth: 0 },
@@ -215,79 +237,54 @@ test('US: sentinel pause state is reflected in the status strip', async ({ page 
   });
 });
 
-test('US: critical verdicts elevate sentinel status', async ({ page }) => {
+test('US: protocol ticker reflects active sentinel mode', async ({ page }) => {
   await withUiServer(async (baseUrl) => {
-    await page.goto(`${baseUrl}/legacy-index.html`);
-    await expect(page.locator('#status-sentinel')).toHaveText('Critical');
+    await page.goto(`${baseUrl}/command-center.html`);
+    await expect(page.locator('#ticker-protocol')).toContainText('hybrid');
   }, {
     hub: baseHub({
       sentinelStatus: {
         running: true,
-        mode: 'heuristic',
+        mode: 'hybrid',
         filesWatched: 10,
         queueDepth: 2,
-        lastVerdict: { decision: 'BLOCK' },
-      },
-      recentVerdicts: [{ decision: 'BLOCK', summary: 'Critical policy violation' }],
-      activePlan: {
-        ...baseHub().activePlan,
-        blockers: [{ title: 'Danger blocker', severity: 'hard' }, { title: 'Second blocker', severity: 'hard' }],
       },
     }),
   });
 });
 
-test('US: audit queue surfaces reviewing status and active audit phase', async ({ page }) => {
+test('US: operations view shows roadmap phases and active context', async ({ page }) => {
   const hub = baseHub();
-  hub.activePlan.currentPhaseId = 'phase-audit';
+  hub.runState = { currentPhase: 'Implement' };
+  hub.activePlan.currentPhaseId = 'phase-implement';
   hub.activePlan.phases = hub.activePlan.phases.map((phase) => ({
-    ...phase,
-    status: phase.id === 'phase-audit' ? 'active' : 'pending',
-  }));
-  hub.sentinelStatus.queueDepth = 3;
-
-  await withUiServer(async (baseUrl) => {
-    await page.goto(`${baseUrl}/legacy-index.html`);
-    await expect(page.locator('#status-sentinel')).toHaveText('Reviewing');
-    await page.locator('.tab[data-route="run"]').click();
-    await expect(page.locator('#phase-grid .phase-card.active .phase-title')).toHaveText('Audit');
-  }, { hub });
-});
-
-test('US: run view reflects implement and plan phase context', async ({ page }) => {
-  const buildHub = baseHub();
-  buildHub.activePlan.currentPhaseId = 'phase-implement';
-  buildHub.activePlan.phases = buildHub.activePlan.phases.map((phase) => ({
     ...phase,
     status: phase.id === 'phase-implement' ? 'active' : 'pending',
   }));
 
   await withUiServer(async (baseUrl) => {
-    await page.goto(`${baseUrl}/legacy-index.html`);
-    await page.locator('.tab[data-route="run"]').click();
-    await expect(page.locator('#phase-grid .phase-card.active .phase-title')).toHaveText('Implement');
-    await expect(page.locator('#status-sentinel')).toHaveText('Nominal');
-  }, { hub: buildHub });
-
-  await withUiServer(async (baseUrl) => {
-    await page.goto(`${baseUrl}/legacy-index.html`);
-    await page.locator('.tab[data-route="run"]').click();
-    await expect(page.locator('#phase-grid .phase-card.active .phase-title')).toHaveText('Plan');
-    await expect(page.locator('#sprint-info')).toContainText('phase-plan');
-  }, { hub: baseHub() });
+    await page.goto(`${baseUrl}/command-center.html`);
+    await page.locator('.tab-btn[data-target="operations"]').click();
+    await expect(page.locator('#operations')).toHaveClass(/active/);
+    await expect(page.locator('#operations')).toContainText('Phases');
+    await expect(page.locator('#operations')).toContainText('Implement');
+  }, { hub });
 });
 
-test('US: action feedback confirms cause and effect', async ({ page }) => {
+test('US: operations actions post to API endpoints', async ({ page }) => {
+  const called: string[] = [];
   await withUiServer(async (baseUrl) => {
-    await page.goto(`${baseUrl}/legacy-index.html`);
-    await page.locator('.tab[data-route="run"]').click();
+    await page.goto(`${baseUrl}/command-center.html`);
+    await page.locator('.tab-btn[data-target="operations"]').click();
 
-    await page.locator('[data-action="resume"]').click();
-    await expect(page.locator('#action-feedback')).toContainText('Run started');
+    await page.locator('[data-action="/api/actions/resume-monitoring"]').click();
+    await page.locator('[data-action="/api/actions/panic-stop"]').click();
+    await page.locator('[data-action="/api/actions/verify-integrity"]').click();
+  }, { onAction: (route) => called.push(route) });
 
-    await page.locator('[data-action="panic"]').click();
-    await expect(page.locator('#action-feedback')).toContainText('Monitoring stopped');
-  });
+  expect(called).toContain('/api/actions/resume-monitoring');
+  expect(called).toContain('/api/actions/panic-stop');
+  expect(called).toContain('/api/actions/verify-integrity');
 });
 
 test('US: Monitor compact layout keeps 4 workspace tiles in 2x2 at sidebar width', async ({ page }) => {

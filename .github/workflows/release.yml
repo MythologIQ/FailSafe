@@ -59,6 +59,7 @@ jobs:
         with:
           name: governance-context
           path: .failsafe-ci-context/
+          if-no-files-found: ignore
           retention-days: 30
       - name: Release metadata preflight
         run: node ./scripts/validate-vsix.cjs --source-only

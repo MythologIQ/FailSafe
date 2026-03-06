@@ -531,7 +531,7 @@ export class ConsoleServer {
       if (this.rejectIfRemote(req, res)) return;
       const id = req.params.id;
       const risks = this.getRiskRegister();
-      const idx = risks.findIndex((r) => String(r.id || "") === id);
+      const idx = risks.findIndex((r: any) => r.id === id);
       if (idx === -1) {
         res.status(404).json({ ok: false, error: "risk not found" });
         return;
@@ -548,7 +548,7 @@ export class ConsoleServer {
       if (this.rejectIfRemote(req, res)) return;
       const id = req.params.id;
       const risks = this.getRiskRegister();
-      const filtered = risks.filter((r) => String(r.id || "") !== id);
+      const filtered = risks.filter((r: any) => r.id !== id);
       if (filtered.length === risks.length) {
         res.status(404).json({ ok: false, error: "risk not found" });
         return;
@@ -928,9 +928,8 @@ export class ConsoleServer {
               conditions,
             );
             results.push({ id: item.id, ok: true });
-          } catch (e: unknown) {
-            const message = e instanceof Error ? e.message : String(e);
-            results.push({ id: item.id, ok: false, error: message });
+          } catch (e: any) {
+            results.push({ id: item.id, ok: false, error: e.message });
           }
         }
         this.broadcast({ type: "l3.batch_processed", payload: { results } });
@@ -990,7 +989,7 @@ export class ConsoleServer {
       );
       const total = checkpoints.length || 1;
       const passed = checkpoints.filter(
-        (c) => (c as { policyVerdict?: string }).policyVerdict !== "VIOLATION",
+        (c: any) => c.policyVerdict !== "VIOLATION",
       ).length;
       res.json({
         overall: Math.round((passed / total) * 100),

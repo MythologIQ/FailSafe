@@ -11,8 +11,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Post-4.4.0 scope to be scheduled.
 
----
-
 ## [4.4.1] - 2026-03-06
 
 ### Changed
@@ -22,7 +20,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Socket badge/version markers aligned to `4.4.1` across docs.
 
 ---
-
 ## [4.4.0] - 2026-03-06
 
 ### Changed

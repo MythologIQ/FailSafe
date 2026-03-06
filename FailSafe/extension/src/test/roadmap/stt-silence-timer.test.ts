@@ -100,7 +100,7 @@ function useFakeTimers() {
   return {
     tick(ms: number) {
       const target = now + ms;
-      while (timers.length > 0) {
+      while (true) {
         const next = timers.filter((t) => t.at <= target).sort((a, b) => a.at - b.at)[0];
         if (!next) break;
         now = next.at;

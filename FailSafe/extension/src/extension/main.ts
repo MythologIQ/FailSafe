@@ -46,6 +46,9 @@ let ledgerManager: LedgerManager;
 let shadowGenomeManager: ShadowGenomeManager;
 let mcpServer: FailSafeMCPServer | undefined;
 let consoleServer: ConsoleServer | undefined;
+let featureGate:
+  | import("../core/FeatureGateService").FeatureGateService
+  | undefined;
 
 export async function activate(
   context: vscode.ExtensionContext,
@@ -58,7 +61,7 @@ export async function activate(
     // 1. Core
     const core = await bootstrapCore(context, logger, logSink);
     eventBus = core.eventBus;
-    createVscodeFeatureGate(core.configManager);
+    featureGate = createVscodeFeatureGate(core.configManager);
 
     // Hygiene Automation
     await WorkspaceMigration.checkAndRepair(context);

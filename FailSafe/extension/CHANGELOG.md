@@ -18,7 +18,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Activation Surface Hardening** - Replaced startup-wide activation with explicit command/view/chat activation events to reduce runtime exposure.
 - **Socket Policy Enforcement** - Updated tracked Socket policy manifests to explicitly ignore accepted capability classes used by design.
 - **Docs Badge Consistency** - Aligned Socket badge references across workspace documentation to `4.4.1`.
-
 ## [4.4.0] - 2026-03-06
 
 ### Added

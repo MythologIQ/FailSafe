@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+script_path="$repo_root/tools/reliability/prepush-validate.ps1"
+
+if [ ! -f "$script_path" ]; then
+  echo "[FAIL] Missing pre-push validator: $script_path" >&2
+  exit 1
+fi
+
+if command -v pwsh >/dev/null 2>&1; then
+  ps_cmd="pwsh"
+elif command -v powershell >/dev/null 2>&1; then
+  ps_cmd="powershell"
+else
+  echo "[FAIL] PowerShell not found. Install PowerShell to run pre-push checks." >&2
+  exit 1
+fi
+
+"$ps_cmd" -NoProfile -ExecutionPolicy Bypass -File "$script_path"

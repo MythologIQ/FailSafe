@@ -9,7 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- Post-4.3.2 scope to be scheduled.
+- Post-4.4.0 scope to be scheduled.
+
+---
+
+## [4.4.0] - 2026-03-06
+
+### Changed
+
+- Version synchronization with extension/package release markers and marketplace documentation.
+- Mindmap terminology alignment across operator-facing documentation and Command Center navigation.
 
 ---
 

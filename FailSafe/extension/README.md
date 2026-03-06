@@ -1,21 +1,21 @@
-[![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.3.2?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.3.2?platform=universal)
+[![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.4.0?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.4.0?platform=universal)
 
 # MythologIQ FailSafe for VS Code
 
 FailSafe is a local-first governance extension for AI-assisted development in VS Code and Cursor. It applies deterministic checks at the editor boundary, records decisions to a local ledger, and provides dedicated surfaces for audits, checkpoints, and agent governance.
 
-**Current Release**: v4.3.2 (2026-03-04)
+**Current Release**: v4.4.0 (2026-03-06)
 
 ![FailSafe Banner](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/extension/FailSafe%20Banner.png)
 
-## What's New in v4.3.2
+## What's New in v4.4.0
 
-### Performance & Polish
+### Mindmap and Console Evolution
 
-- **Checkpoint Verification Flow**: full chain verification now runs on explicit verification actions, with cached state surfaced in Console views.
-- **Activation Robustness**: local API and Console startup now perform dynamic port resolution when preferred ports are unavailable.
-- **Lower Webview Churn**: Transparency and Economics panels update through message-driven refresh after initial render.
-- **Operator Doc Refresh**: packaged `COMPONENT_HELP.md` and `PROCESS_GUIDE.md` are rewritten for the unified Console UX.
+- **Mindmap Surface Upgrade**: brainstorm workflows now ship with expanded modules for STT/TTS orchestration, extraction heuristics, and interactive node editing flows.
+- **UI Asset Expansion**: module-specific visuals (`overview`, `operations`, `audit`, `risks`, `skills`, `laws`, `mindmap`, `config`) are now bundled in the Command Center UI layer.
+- **Console Integration Depth**: Command Center modules now share richer runtime state and routing coordination for ideation-driven operations.
+- **Operator Documentation Refresh**: packaged docs are aligned with current Console terminology and workflow coverage.
 
 ### Security Hardening from v4.3.1
 
@@ -23,10 +23,14 @@ FailSafe is a local-first governance extension for AI-assisted development in VS
 - **XSS Prevention**: `LivingGraphTemplate` and `RevertTemplate` HTML-escape dynamic values before rendering.
 - **README Logo Path**: corrected to the current FailSafe branding asset.
 
-### Voice-Brainstorm Status
+### Voice + Mindmap Status
 
-- **Implemented**: Brainstorm tab includes mic capture, STT transcript extraction, backend graph updates, confidence-colored rendering, force-directed layout, and TTS playback.
+- **Implemented**: Mindmap tab includes mic capture, STT transcript extraction, backend graph updates, confidence-colored rendering, force-directed layout, and TTS playback.
 - **Runtime Prerequisite**: vendor runtime files must exist under `src/roadmap/ui/vendor/{whisper,piper}/` as documented in each `VENDOR.md`.
+
+### Voice-Brainstorm Status (Legacy Alias)
+
+- **Implemented**: Voice-assisted ideation and manual graph workflows are shipped in the current Mindmap surface.
 
 ### Under the Hood
 
@@ -319,7 +323,7 @@ FailSafe seeds a `.failsafe/` directory in your workspace for configuration, led
 - `curl` (required only if you install the commit hook)
 - Ollama (optional, for LLM-assisted mode)
 
-> **v4.3.2 "Performance & Polish"** - checkpoint integrity flow updates, message-driven panel refresh, and activation resilience improve day-to-day operator experience while retaining prior security hardening.
+> **v4.4.0 "Mindmap and Console Evolution"** - expanded ideation tooling, richer command-center module coordination, and documentation alignment for current operator workflows.
 
 > **We'd love your review!** If FailSafe is useful to you, please leave a review on the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe) or [Open VSX](https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe). Your feedback helps other developers discover FailSafe and directly shapes its roadmap. Bug reports and feature requests welcome on [GitHub Issues](https://github.com/MythologIQ/FailSafe/issues).
 

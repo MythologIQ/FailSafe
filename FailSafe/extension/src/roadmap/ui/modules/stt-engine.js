@@ -1,18 +1,36 @@
 // FailSafe Command Center — Speech-to-Text Engine
 // Whisper via vendored Transformers.js. Web Speech API used only for wake word.
 
-const WHISPER_MODULE = '../../vendor/whisper/transformers.min.js';
+const WHISPER_MODULE = '../vendor/whisper/transformers.min.js';
 
-async function loadPipeline(...args) {
-  const mod = await import(WHISPER_MODULE);
-  return mod.pipeline(...args);
+async function checkVendorAvailable() {
+  try {
+    const check = await fetch(WHISPER_MODULE, { method: 'HEAD' });
+    if (!check.ok) return false;
+    const ct = (check.headers.get('content-type') || '').toLowerCase();
+    return ct.includes('javascript') || ct.includes('application/octet-stream');
+  } catch {
+    return false;
+  }
 }
 
-async function isWhisperAvailable() {
-  try {
-    const res = await fetch(WHISPER_MODULE, { method: 'HEAD' });
-    return res.ok;
-  } catch { return false; }
+async function loadPipeline(...args) {
+  const available = await checkVendorAvailable();
+  if (!available) {
+    throw new Error('Whisper Transformers.js not vendored at ' + WHISPER_MODULE);
+  }
+
+  const mod = await import(WHISPER_MODULE);
+
+  // v4.3.2: Configure environment — fetch models from HuggingFace CDN, not local paths
+  if (mod.env) {
+    mod.env.allowRemoteModels = true;
+    mod.env.allowLocalModels = false;
+    // Tell transformers where to find its own WASM helpers
+    mod.env.backends.onnx.wasm.wasmPaths = '../vendor/whisper/';
+  }
+
+  return mod.pipeline(...args);
 }
 
 const SpeechRecognitionCtor =
@@ -33,6 +51,7 @@ export class SttEngine {
     this._chunks = [];
     this._stream = null;
     this.modelReady = false;
+    this.loadingStatus = 'idle';
 
     // Silence timeout
     this.silenceTimeoutMs = 5000;
@@ -41,25 +60,56 @@ export class SttEngine {
     this.wakeWordEnabled = false;
     this.wakePhrase = 'hey failsafe';
     this._wakeRecognition = null;
+    
+    // Live interim transcription (Web Speech API companion)
+    this._liveRecognition = null;
+    this._liveAccumulated = '';
+    // Audio device selection
+    this.micDeviceId = null;
   }
 
   async init() {
+    console.log('FailSafe STT: Initialization started');
     this._loadSettings();
-    const available = await isWhisperAvailable();
-    if (!available) return;
-    this.onModelProgress?.('loading');
+    // Path check removed as it can cause hangs; we rely on catch block below.
+
+    let hasMic = false;
     try {
-      this._whisperPipeline = await loadPipeline(
-        'automatic-speech-recognition',
-        'Xenova/whisper-tiny.en',
-        {
-          progress_callback: (p) => {
-            if (p.status === 'progress') {
-              this.onModelProgress?.('downloading', Math.round(p.progress));
-            }
-          },
-        }
-      );
+      if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        hasMic = devices.some(d => d.kind === 'audioinput');
+      }
+    } catch {
+      hasMic = false;
+    }
+
+    if (!hasMic) {
+      console.warn('FailSafe STT: No microphone found');
+      this.onModelProgress?.('error');
+      return;
+    }
+
+    this.loadingStatus = 'loading';
+    this.onModelProgress?.('loading');
+    console.log('FailSafe STT: Loading machine learning pipeline...');
+    try {
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 30000));
+      this._whisperPipeline = await Promise.race([
+        loadPipeline(
+          'automatic-speech-recognition',
+          'Xenova/whisper-tiny.en',
+          {
+            progress_callback: (p) => {
+              if (p.status === 'initiate') this.loadingStatus = 'downloading';
+              if (p.status === 'progress') {
+                this.loadingStatus = 'downloading';
+                this.onModelProgress?.('downloading', Math.round(p.progress));
+              }
+            },
+          }
+        ),
+        timeoutPromise
+      ]);
       this._whisperReady = true;
       this.modelReady = true;
       this.onModelProgress?.('ready');
@@ -77,6 +127,8 @@ export class SttEngine {
     if (wakeEnabled === 'true' || wakeEnabled === true) this.wakeWordEnabled = true;
     const phrase = this.store?.get('wake-word-phrase');
     if (phrase) this.wakePhrase = phrase.toLowerCase();
+    const mic = this.store?.get('audio-input-device');
+    if (mic) this.micDeviceId = mic;
   }
 
   async startListening() {
@@ -124,6 +176,11 @@ export class SttEngine {
     this.wakeWordEnabled = !!enabled;
     this.store?.set('wake-word-enabled', this.wakeWordEnabled);
     if (!enabled) this.stopWakeWordListener();
+  }
+
+  setMicDevice(deviceId) {
+    this.micDeviceId = deviceId || null;
+    this.store?.set('audio-input-device', this.micDeviceId || '');
   }
 
   setWakeWord(phrase) {
@@ -189,8 +246,19 @@ export class SttEngine {
 
     this._chunks = [];
     try {
-      this._stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch {
+      const audioConstraint = this.micDeviceId ? { deviceId: { exact: this.micDeviceId } } : true;
+      this._stream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraint });
+      
+      // Live Analysis for UI
+      this._audioCtx = new (globalThis.AudioContext || globalThis.webkitAudioContext)();
+      this._analyser = this._audioCtx.createAnalyser();
+      this._analyser.fftSize = 256;
+      const source = this._audioCtx.createMediaStreamSource(this._stream);
+      source.connect(this._analyser);
+      this.onAnalyserCreated?.(this._analyser);
+      
+    } catch (err) {
+      console.error('STT mic error:', err);
       this._setState('idle');
       return;
     }
@@ -199,6 +267,10 @@ export class SttEngine {
       if (e.data.size > 0) this._chunks.push(e.data);
     });
     this._recorder.start();
+    this._resetSilenceTimer();
+
+    // Start live interim transcription via Web Speech API (if available)
+    this._startLiveTranscription();
   }
 
   async _stopWhisper() {
@@ -209,9 +281,13 @@ export class SttEngine {
     });
     this._recorder.stop();
     await stopped;
+    this._stopLiveTranscription();
     this._releaseStream();
 
     const blob = new Blob(this._chunks, { type: 'audio/webm' });
+    if (this.onAudioCaptured) {
+      this.onAudioCaptured(blob);
+    }
     const arrayBuf = await blob.arrayBuffer();
     const ctx = new (globalThis.AudioContext || globalThis.webkitAudioContext)();
     const decoded = await ctx.decodeAudioData(arrayBuf);
@@ -236,9 +312,61 @@ export class SttEngine {
     this._chunks = [];
   }
 
+  // -- Live Transcription (Web Speech API) ------------------------------------
+
+  _startLiveTranscription() {
+    if (!SpeechRecognitionCtor || this._liveRecognition) return;
+    try {
+      this._liveRecognition = new SpeechRecognitionCtor();
+      this._liveRecognition.continuous = true;
+      this._liveRecognition.interimResults = true;
+      this._liveRecognition.lang = 'en-US';
+
+      this._liveRecognition.addEventListener('result', (e) => {
+        let current = '';
+        for (let i = 0; i < e.results.length; i++) {
+          current += e.results[i][0].transcript;
+        }
+        if (current) {
+          this._liveAccumulated = current;
+          this.onTranscript?.(this._liveAccumulated, false);
+          this._resetSilenceTimer();
+        }
+      });
+
+      this._liveRecognition.addEventListener('end', () => {
+        // Restart if still recording (Web Speech auto-stops periodically)
+        if (this.state === 'listening' && this._liveRecognition) {
+          try { this._liveRecognition.start(); } catch { /* already started */ }
+        }
+      });
+
+      this._liveRecognition.addEventListener('error', () => {
+        // Silently ignore — this is a supplementary feature
+      });
+
+      this._liveRecognition.start();
+    } catch {
+      // Web Speech not available — no live preview, Whisper still works
+      this._liveRecognition = null;
+    }
+  }
+
+  _stopLiveTranscription() {
+    if (!this._liveRecognition) return;
+    try { this._liveRecognition.stop(); } catch { /* already stopped */ }
+    this._liveRecognition = null;
+    this._liveAccumulated = '';
+  }
+
   _releaseStream() {
     this._stream?.getTracks().forEach((t) => t.stop());
     this._stream = null;
+    if (this._audioCtx) {
+      this._audioCtx.close().catch(() => {});
+      this._audioCtx = null;
+    }
+    this._analyser = null;
   }
 
   _setState(state) {

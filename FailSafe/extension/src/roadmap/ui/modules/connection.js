@@ -12,9 +12,19 @@ export class ConnectionClient {
     this.callbacks = {
       hub: [],           // (hubData) => {}
       event: [],         // (eventData) => {}
-      verdict: [],       // (verdictData) => {}
       connection: [],    // ('connecting'|'connected'|'disconnected') => {}
-      skillRelevance: [] // (relevanceData) => {}
+      skillRelevance: [], // (relevanceData) => {}
+      webLlmStatus: []   // (statusData) => {}
+    };
+
+    const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
+    const isEdge = /Edg/.test(navigator.userAgent);
+    
+    this.webLlmState = { 
+      nativeAvailable: false, 
+      wasmReady: false, 
+      loading: false,
+      browserSupported: isChrome || isEdge
     };
 
     this.ws = null;
@@ -220,5 +230,10 @@ export class ConnectionClient {
       console.error(e);
       throw e;
     }
+  }
+
+  setWebLlmStatus(status) {
+    this.webLlmState = { ...this.webLlmState, ...status };
+    this.notify('webLlmStatus', this.webLlmState);
   }
 }

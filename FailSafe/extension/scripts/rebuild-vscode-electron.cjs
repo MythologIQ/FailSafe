@@ -58,6 +58,10 @@ function readElectronVersion(appRoot) {
   throw new Error('Electron version not found in VS Code package.json or bootstrap-fork.js');
 }
 
+function sleep(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
 function rebuildBetterSqlite3(electronVersion) {
   const npmExecPath = process.env.npm_execpath;
   const npmCmd = npmExecPath
@@ -73,12 +77,39 @@ function rebuildBetterSqlite3(electronVersion) {
     '--dist-url=https://electronjs.org/headers'
   ];
   const npmArgs = npmExecPath ? [npmExecPath, ...args] : args;
-  const result = spawnSync(npmCmd, npmArgs, { stdio: 'inherit' });
-  if (result.error) {
-    throw result.error;
-  }
-  if (result.status !== 0) {
-    throw new Error(`better-sqlite3 rebuild failed with exit code ${result.status}`);
+  const maxAttempts = Number.parseInt(process.env.FAILSAFE_REBUILD_RETRIES ?? '3', 10);
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    if (attempt > 1) {
+      const waitMs = (attempt - 1) * 5000;
+      console.warn(`Retrying better-sqlite3 rebuild (${attempt}/${maxAttempts}) after ${waitMs}ms...`);
+      sleep(waitMs);
+    }
+
+    const result = spawnSync(npmCmd, npmArgs, {
+      stdio: 'inherit',
+      env: {
+        ...process.env,
+        NPM_CONFIG_FETCH_RETRIES: process.env.NPM_CONFIG_FETCH_RETRIES ?? '5',
+        NPM_CONFIG_FETCH_RETRY_MINTIMEOUT: process.env.NPM_CONFIG_FETCH_RETRY_MINTIMEOUT ?? '20000',
+        NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT: process.env.NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT ?? '120000'
+      }
+    });
+
+    if (result.error) {
+      if (attempt === maxAttempts) {
+        throw result.error;
+      }
+      continue;
+    }
+
+    if (result.status === 0) {
+      return;
+    }
+
+    if (attempt === maxAttempts) {
+      throw new Error(`better-sqlite3 rebuild failed with exit code ${result.status}`);
+    }
   }
 }
 

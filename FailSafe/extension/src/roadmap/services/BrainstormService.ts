@@ -61,7 +61,20 @@ export class BrainstormService {
   async processTranscript(transcript: string): Promise<TranscriptResult> {
     try {
       const raw = await this.llmEvaluate(MINDMAP_EXTRACTOR_PROMPT, transcript);
-      const parsed = this.parseExtraction(raw);
+      let parsed: ExtractionResult;
+      try {
+        parsed = this.parseExtraction(raw);
+      } catch {
+        // First parse failed — retry with stricter prompt
+        console.warn(
+          "[BrainstormService] First extraction parse failed, retrying with strict prompt...",
+        );
+        const strictPrompt =
+          MINDMAP_EXTRACTOR_PROMPT +
+          "\n\nCRITICAL: Your response MUST be raw JSON only. Do NOT wrap it in markdown code fences. Do NOT include any text before or after the JSON object.";
+        const retryRaw = await this.llmEvaluate(strictPrompt, transcript);
+        parsed = this.parseExtraction(retryRaw);
+      }
       for (const node of parsed.nodes) {
         if (!this.nodes.has(node.id)) {
           this.nodes.set(node.id, node);
@@ -72,12 +85,9 @@ export class BrainstormService {
       }
       return { extraction: parsed };
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes("No LLM available") || msg.includes("not reachable") || msg.includes("not configured")) {
-        const queued = this.queueTranscript(transcript);
-        return { queued };
-      }
-      throw err;
+      console.warn("[BrainstormService] All extraction attempts failed:", err);
+      const queued = this.queueTranscript(transcript);
+      return { queued };
     }
   }
 
@@ -106,14 +116,11 @@ export class BrainstormService {
     return results;
   }
 
-  addNode(label: string, type: string): BrainstormNode {
-    const node: BrainstormNode = {
-      id: `n-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      label,
-      type,
-      confidence: -1,
-    };
-    this.nodes.set(node.id, node);
+  addNode(label: string, type: string, clientId?: string): BrainstormNode {
+    const id = clientId || `n-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    if (this.nodes.has(id)) return this.nodes.get(id)!;
+    const node: BrainstormNode = { id, label, type, confidence: -1 };
+    this.nodes.set(id, node);
     return node;
   }
 
@@ -127,7 +134,7 @@ export class BrainstormService {
 
   removeNode(id: string): boolean {
     if (!this.nodes.delete(id)) return false;
-    this.edges = this.edges.filter(e => e.source !== id && e.target !== id);
+    this.edges = this.edges.filter((e) => e.source !== id && e.target !== id);
     return true;
   }
 

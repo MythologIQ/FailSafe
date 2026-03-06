@@ -26,16 +26,17 @@
 | **4.1.0** | Governance Gaps | Break-glass, artifact hash, verdict replay, mode-change audit |
 | **4.2.0** | The Answer | Multi-agent governance fabric, intent schema v2, discovery phase |
 
-### Architecture Change (v3.0.0) - Claude Unified Build
+### Architecture Change (v3.0.0) - Three-Build Model
 
-**Decision**: Claude Code is no longer a separate build. Claude-specific skills, commands, and file structures are folded into both Antigravity and VSCode extensions.
+**Decision**: Three PROD-Extension builds target different AI toolchains. Claude Code commands and SHIELD skills are maintained in the Claude build. Antigravity and VSCode builds use their native AI integrations (Gemini and Copilot respectively) without Claude Code commands.
 
 | Build | Contents | Destination |
 |-------|----------|-------------|
-| **Antigravity** | Gemini workflows + Claude commands | OpenVSX |
-| **VSCode** | Copilot prompts + Claude commands | VS Code Marketplace |
+| **Antigravity** | Gemini workflows | OpenVSX |
+| **VSCode** | Copilot prompts | VS Code Marketplace |
+| **Claude** | Claude commands + SHIELD skills | Claude Code CLI |
 
-Both PROD-Extension folders include `.claude/commands/` for unified governance.
+`.claude/commands/` exists only under `PROD-Extension/Claude/`.
 
 **Planning Sources**:
 - `plan-roadmap-visualization.md` - Roadmap & accountability layer
@@ -134,10 +135,9 @@ FailSafe/extension/src/qorelogic/planning/    # IMPLEMENTED
 ```
 FailSafe/extension/src/genesis/views/
 `-- RoadmapViewProvider.ts           # IMPLEMENTED: SVG road visualization
-
-FailSafe/extension/src/genesis/panels/
-`-- RoadmapPanel.ts                  # DEFERRED: Full panel version
 ```
+
+RoadmapPanel.ts was deferred indefinitely; roadmap UI is served by RoadmapViewProvider.
 
 ### Planned Additions (v1.3.0 Autopilot - Phase C) ✅ IMPLEMENTED
 
@@ -208,14 +208,14 @@ FailSafe/extension/src/qorelogic/planning/
 **Build Architecture Change**:
 ```
 FailSafe/PROD-Extension/
-|-- Antigravity/                     # Gemini + Claude (unified)
+|-- Antigravity/                     # Gemini workflows
 |   |-- .agent/workflows/
-|   |-- .qorelogic/orbits/
-|   `-- .claude/commands/            # NEW: Claude commands merged
-`-- VSCode/                          # Copilot + Claude (unified)
+|   `-- .qorelogic/orbits/
+|-- Claude/                          # Claude commands (existing)
+|   `-- .claude/commands/
+`-- VSCode/                          # Copilot prompts
     |-- .github/prompts/
-    |-- .github/copilot-instructions/
-    `-- .claude/commands/            # NEW: Claude commands merged
+    `-- .github/copilot-instructions/
 ```
 
 ### Planned Additions (UI Clarity Enhancement) ✅ IMPLEMENTED
@@ -313,16 +313,33 @@ FailSafe/extension/src/shared/
 | vscode | Extension API | No - required for VSCode extension |
 | js-yaml | Plan persistence (v1.1.0+) | No - standard YAML library |
 | d3 | Visualization (existing) | No - required for graphs |
-| uuid | Unique identifiers | No - standard library |
 | zod | Schema validation | No - runtime type safety |
 
 ---
 
 ## Section 4 Razor Pre-Check
 
-- [x] All planned functions <= 40 lines
-- [x] All planned files <= 250 lines
-- [x] No planned nesting > 3 levels
+**Limits**: Functions <= 40 lines | Files <= 250 lines | Nesting <= 3 levels
+
+### Compliant Files
+
+| File | Max Fn Lines | File Lines | Max Nesting | Status |
+|------|-------------|------------|-------------|--------|
+| `governance/IntentService.ts` | 26 | 105 | 2 | PASS |
+| `qorelogic/planning/validation.ts` | 37 | 224 | 3 | PASS |
+
+### Grandfathered Files (pre-existing, exceed limits)
+
+These files existed before the Razor contract was adopted. They are acknowledged as over-limit and tracked for future decomposition. No new code may increase their line counts or max function lengths.
+
+| File | Max Fn Lines | File Lines | Violation | Freeze Rule |
+|------|-------------|------------|-----------|-------------|
+| `qorelogic/planning/PlanManager.ts` | 122 (applyEvent) | 490 | File +240, Fn +82 | No growth. applyEvent must be split before next feature addition. |
+| `qorelogic/planning/events.ts` | 63 (applyEvent) | 353 | File +103, Fn +23 | No growth. applyEvent switch must be decomposed. |
+| `qorelogic/planning/types.ts` | 0 (types only) | 282 | File +32 | No growth. Type-only file; split when next type group added. |
+| `genesis/views/RoadmapViewProvider.ts` | 54 (getStyles) | 350 | File +100, Fn +14 | No growth. getStyles must be extracted to CSS constant. |
+
+All values measured via `wc -l` and manual method-boundary counting on 2026-03-05.
 
 ---
 
@@ -335,4 +352,4 @@ FailSafe/extension/src/shared/
 - [x] **Fail fast**: Dependency cycle detection before plan creation
 
 ---
-*Blueprint sealed. Awaiting GATE tribunal.*
+*Blueprint amended per Entry #141 GATE PASS. Remediation of V1-V8 applied.*

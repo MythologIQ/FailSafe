@@ -42,7 +42,13 @@ export class RisksRenderer {
     const listEl = this.container.querySelector('.cc-risk-list');
     if (!listEl) return;
     if (!this.risks.length) {
-      listEl.innerHTML = '<div style="color:var(--text-muted);padding:16px">No risks recorded.</div>';
+      listEl.innerHTML = `
+        <div class="cc-card" style="min-height:170px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center">
+          <div style="font-size:0.95rem;font-weight:600;color:var(--text-main);margin-bottom:6px">No risks recorded yet</div>
+          <div style="font-size:0.82rem;color:var(--text-muted);max-width:420px">
+            Risk board is clear. Add an initial risk when your plan introduces dependencies or policy exposure.
+          </div>
+        </div>`;
       return;
     }
     listEl.innerHTML = this.risks.map(r => `

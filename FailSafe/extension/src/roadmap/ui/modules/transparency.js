@@ -27,13 +27,25 @@ export class TransparencyRenderer {
     this.container.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <div class="cc-filter-bar" style="display:flex;gap:6px;flex-wrap:wrap"></div>
-        <button class="cc-btn cc-transparency-pause">Pause</button>
+        <button class="cc-btn cc-transparency-pause">Freeze</button>
       </div>
-      <div class="cc-transparency-stream" style="max-height:calc(100vh - 280px);overflow-y:auto"></div>`;
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
+        <label style="font-size:0.75rem;color:var(--text-muted)">From:</label>
+        <input type="datetime-local" class="cc-audit-from"
+          style="padding:4px 8px;background:var(--bg-dark);border:1px solid var(--border-rim);
+            border-radius:6px;color:var(--text-main);font-size:0.8rem" />
+        <label style="font-size:0.75rem;color:var(--text-muted)">To:</label>
+        <input type="datetime-local" class="cc-audit-to"
+          style="padding:4px 8px;background:var(--bg-dark);border:1px solid var(--border-rim);
+            border-radius:6px;color:var(--text-main);font-size:0.8rem" />
+      </div>
+      <div class="cc-transparency-stream" style="max-height:calc(100vh - 320px);overflow-y:auto"></div>`;
 
     this.streamEl = this.container.querySelector('.cc-transparency-stream');
     this.renderFilterBar();
+    this.renderEmptyState();
     this.bindPause();
+    this.bindDateFilters();
   }
 
   renderFilterBar() {
@@ -56,19 +68,22 @@ export class TransparencyRenderer {
     if (!btn) return;
     btn.addEventListener('click', () => {
       this.paused = !this.paused;
-      btn.textContent = this.paused ? 'Resume' : 'Pause';
+      btn.textContent = this.paused ? 'Unfreeze' : 'Freeze';
       if (!this.paused) this.flushBuffer();
     });
   }
 
   onEvent(event) {
     if (!event) return;
+    const now = new Date();
     const entry = {
-      time: event.time || event.payload?.timestamp || new Date().toLocaleTimeString(),
+      time: event.time || event.payload?.timestamp || now.toISOString().slice(0, 16),
+      displayTime: event.time || event.payload?.timestamp || now.toLocaleTimeString(),
       type: event.type || event.payload?.type || 'unknown',
       payload: event.payload || event,
       summary: event.payload?.message || this.summarize(event),
     };
+    if (this.events.length === 0 && this.streamEl) this.streamEl.innerHTML = '';
     this.events.push(entry);
     if (this.paused) {
       this.buffer.push(entry);
@@ -84,9 +99,14 @@ export class TransparencyRenderer {
   }
 
   matchesFilter(entry) {
-    if (this.activeFilter === 'All') return true;
-    const pattern = CATEGORY_PATTERNS[this.activeFilter];
-    return pattern ? pattern.test(entry.type) : false;
+    if (this.activeFilter !== 'All') {
+      const pattern = CATEGORY_PATTERNS[this.activeFilter];
+      if (pattern && !pattern.test(entry.type)) return false;
+    }
+    const { from, to } = this.getDateRange();
+    if (from && entry.time < from) return false;
+    if (to && entry.time > to) return false;
+    return true;
   }
 
   appendCard(entry) {
@@ -97,7 +117,7 @@ export class TransparencyRenderer {
     card.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center">
         <span class="cc-badge" style="background:var(--primary);color:#fff">${this.esc(entry.type)}</span>
-        <span style="color:var(--text-muted);font-size:0.7rem">${this.esc(entry.time)}</span>
+        <span style="color:var(--text-muted);font-size:0.7rem">${this.esc(entry.displayTime || entry.time)}</span>
       </div>
       <div style="color:var(--text-muted);margin-top:4px">${this.esc(entry.summary)}</div>
       <pre class="cc-payload-detail" style="display:none;margin-top:8px;font-size:0.7rem;
@@ -130,7 +150,71 @@ export class TransparencyRenderer {
     }
   }
 
+  renderEmptyState() {
+    if (!this.streamEl || this.events.length) return;
+    this.streamEl.innerHTML = `<div class="cc-card" style="min-height:200px;display:flex;flex-direction:column;
+      justify-content:center;align-items:center;text-align:center;padding:24px">
+      <div style="font-size:1.1rem;margin-bottom:8px;color:var(--text-main)">Audit Stream</div>
+      <div style="font-size:0.85rem;color:var(--text-muted);max-width:400px">
+        Events appear here as governance actions occur — verdicts, policy evaluations,
+        trust changes, and sentinel alerts stream in real time.
+      </div>
+    </div>`;
+  }
+
+  bindDateFilters() {
+    const from = this.container.querySelector('.cc-audit-from');
+    const to = this.container.querySelector('.cc-audit-to');
+    const handler = () => this.refilter();
+    from?.addEventListener('change', handler);
+    to?.addEventListener('change', handler);
+  }
+
+  getDateRange() {
+    const from = this.container.querySelector('.cc-audit-from')?.value || '';
+    const to = this.container.querySelector('.cc-audit-to')?.value || '';
+    return { from, to };
+  }
+
+  exportCsv() {
+    const rows = this.events.map(e =>
+      [e.time, e.type, JSON.stringify(e.payload || '')].join(',')
+    );
+    const csv = 'Timestamp,Type,Payload\n' + rows.join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `failsafe-audit-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
   esc(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
+
+  renderRightPanel() {
+    return `
+      <div class="cc-trans-side cc-card" style="padding: 16px;">
+        <h3 style="margin: 0 0 16px 0; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;">Stream Analysis</h3>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="font-size: 11px; color: var(--text-muted);">
+            Stream buffer limit: <strong style="color: var(--text-main);">${this.maxItems} items</strong>
+          </div>
+          <div style="font-size: 11px; color: var(--text-muted);">
+            Active Filter: <span class="cc-badge" style="background: var(--primary); color: #fff; font-size: 9px; padding: 2px 6px;">${this.activeFilter}</span>
+          </div>
+          <div style="margin-top: 8px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); display:flex; flex-direction:column; gap:8px;">
+             <button class="cc-btn cc-audit-export" style="width: 100%; font-size: 11px; padding: 6px;">Export CSV</button>
+             <button class="cc-btn cc-btn--danger" style="width: 100%; font-size: 11px; padding: 6px;" onclick="location.reload()">Clear Stream</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  bindToolbar() {
+    const hub = document.getElementById('context-hub');
+    hub?.querySelector('.cc-audit-export')?.addEventListener('click', () => this.exportCsv());
+  }
 
   destroy() {
     this.events = [];

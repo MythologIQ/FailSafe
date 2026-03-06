@@ -12,18 +12,23 @@ export class VoiceController {
     // UI callbacks (set by consumer)
     this.onMicButton = null;
     this.onStatus = null;
+    this.onAnalyser = null;
+
+    this.stt.onAnalyserCreated = (analyser) => {
+      this.onAnalyser?.(analyser);
+    };
   }
 
   wireModelProgress() {
     this.stt.onModelProgress = (status, progress) => {
       if (status === 'downloading') {
-        this._setMicContent(`${progress}%`, true, `Downloading Whisper model... ${progress}%`);
+        this._setMicContent('🎙️ PREPARING', true, 'Preparing security model...');
       } else if (status === 'loading') {
-        this._setMicContent('&#x23F3;', true, 'Loading Whisper model...');
+        this._setMicContent('⏳ LOADING', true, 'Loading Whisper model...');
       } else if (status === 'ready') {
-        this._setMicContent('&#x1F399; Mic', false, 'Click to speak');
+        this._setMicContent('🎙️ LISTEN', false, 'Click to speak');
       } else if (status === 'error') {
-        this._setMicContent('&#x1F399; Mic', false, 'Whisper unavailable — mic disabled');
+        this._setMicContent('❌ NO MIC', true, 'Whisper unavailable — check permissions');
       }
     };
   }
@@ -35,13 +40,13 @@ export class VoiceController {
     this.stt.onAutoStop = () => {
       this.voiceActive = false;
       this.pttActive = false;
-      this.onMicButton?.('&#x1F399; Mic', false);
+      this.onMicButton?.('🎙️ LISTEN', false);
       this.onStatus?.('Auto-stopped (silence)', 'var(--accent-cyan)');
     };
 
     this.stt.onWakeWordTriggered = () => {
       this.voiceActive = true;
-      this.onMicButton?.('&#x23F9; Stop', true);
+      this.onMicButton?.('⏹️ STOP', true);
       this.onStatus?.('Wake word detected \u2014 recording...', 'var(--accent-red)');
     };
 
@@ -54,17 +59,20 @@ export class VoiceController {
   async toggle() {
     if (this.pttActive) return;
     if (!this.stt.modelReady) {
-      this.onStatus?.('Voice model not available — type your ideas instead', 'var(--accent-gold)');
+      const msg = this.stt.loadingStatus === 'downloading' || this.stt.loadingStatus === 'loading'
+        ? 'Security model is still preparing — please wait...'
+        : 'Voice model not available — type your ideas instead';
+      this.onStatus?.(msg, 'var(--accent-gold)');
       return;
     }
     if (this.voiceActive) {
       this.voiceActive = false;
-      this.onMicButton?.('&#x1F399; Mic', false);
+      this.onMicButton?.('🎙️ LISTEN', false);
       this.onStatus?.('Processing...', 'var(--accent-cyan)');
       await this.stt.stopListening();
     } else {
       this.voiceActive = true;
-      this.onMicButton?.('&#x23F9; Stop', true);
+      this.onMicButton?.('⏹️ STOP', true);
       this.onStatus?.('Recording...', 'var(--accent-red)');
       this.stt.startListening();
     }
@@ -74,7 +82,7 @@ export class VoiceController {
     if (this.voiceActive || this.pttActive || !this.stt.modelReady) return false;
     this.pttActive = true;
     this.voiceActive = true;
-    this.onMicButton?.('&#x23F9; Stop', true);
+    this.onMicButton?.('⏹️ STOP', true);
     this.onStatus?.('Recording (PTT)...', 'var(--accent-red)');
     this.stt.startListening();
     return true;
@@ -84,7 +92,7 @@ export class VoiceController {
     if (!this.pttActive) return;
     this.pttActive = false;
     this.voiceActive = false;
-    this.onMicButton?.('&#x1F399; Mic', false);
+    this.onMicButton?.('🎙️ LISTEN', false);
     this.onStatus?.('Processing...', 'var(--accent-cyan)');
     this.stt.stopListening();
   }
@@ -100,7 +108,7 @@ export class VoiceController {
     this.onMicButton?.(null, false, disabled, title);
   }
 
-  _setMicContent(html, active, title) {
-    this.onMicButton?.(html, active, !active && html !== '&#x1F399; Mic', title);
+  _setMicContent(html, disabled, title) {
+    this.onMicButton?.(html, !disabled, disabled, title);
   }
 }

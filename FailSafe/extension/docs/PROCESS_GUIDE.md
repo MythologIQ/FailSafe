@@ -1,6 +1,6 @@
 # FailSafe Process Guide
 
-Audience: operators who need fast, accurate workflows for the shipped `v4.3.2` UI and governance stack.
+Audience: operators who need fast, accurate workflows for the shipped `v4.4.0` UI and governance stack.
 
 ## First Run (Recommended Path)
 
@@ -92,9 +92,9 @@ Removal:
 4. Review `Recommended` first, then `All Relevant`.
 5. Use copied intent text to drive governed execution.
 
-## Brainstorm Workflow (Current Release)
+## Mindmap Workflow (Current Release)
 
-`v4.3.2` supports voice-assisted and manual ideation in Console `Brainstorm`:
+`v4.4.0` supports voice-assisted and manual ideation in Console `Mindmap`:
 
 1. Click the mic button and speak your idea.
 2. Let transcript extraction update graph nodes/edges.
@@ -131,7 +131,7 @@ Check:
 - recent transparency events for queue updates
 - workspace path is the expected governed root
 
-### Brainstorm voice controls are missing
+### Mindmap voice controls are missing
 
 Check:
 
@@ -145,5 +145,5 @@ Check:
 | --- | --- | --- |
 | Command palette exposes audit, mode, break-glass, replay, rollback, and hook lifecycle commands | implemented | `FailSafe/extension/package.json` |
 | Console operations include integrity verification and rollback actions | implemented | `FailSafe/extension/src/roadmap/ui/modules/operations.js`, `FailSafe/extension/src/roadmap/ui/modules/governance.js` |
-| Brainstorm tab supports voice + manual node workflows | implemented | `FailSafe/extension/src/roadmap/ui/modules/brainstorm.js`, `FailSafe/extension/src/roadmap/ui/modules/stt-engine.js`, `FailSafe/extension/src/roadmap/ui/modules/tts-engine.js` |
+| Mindmap tab supports voice + manual node workflows | implemented | `FailSafe/extension/src/roadmap/ui/modules/brainstorm.js`, `FailSafe/extension/src/roadmap/ui/modules/stt-engine.js`, `FailSafe/extension/src/roadmap/ui/modules/tts-engine.js` |
 | Transcript-to-graph API is shipped | implemented | `FailSafe/extension/src/roadmap/ConsoleServer.ts` (`POST /api/v1/brainstorm/transcript`) |

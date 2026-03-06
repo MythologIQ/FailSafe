@@ -60,6 +60,9 @@ jobs:
           name: governance-context
           path: .failsafe-ci-context/
           retention-days: 30
+      - name: Release metadata preflight
+        run: node ./scripts/validate-vsix.cjs --source-only
+        working-directory: FailSafe/extension
       - run: npx @vscode/vsce package
         working-directory: FailSafe/extension
       - run: npm run validate:vsix

@@ -1,8 +1,8 @@
 # FailSafe Component Help
 
-Audience: operators using the packaged VS Code extension (`v4.3.2`).
+Audience: operators using the packaged VS Code extension (`v4.4.0`).
 
-Scope: shipped UI surfaces, governance components, and voice-brainstorm status in the current release.
+Scope: shipped UI surfaces, governance components, and Voice + Mindmap Status in the current release.
 
 ## At a Glance
 
@@ -16,7 +16,7 @@ Scope: shipped UI surfaces, governance components, and voice-brainstorm status i
 | Console: Risks | Risk register CRUD | You are tracking durable project risks |
 | Console: Skills | Skill discovery, relevance, and intent shell | You are selecting governance-aware execution skills |
 | Console: Governance | Sentinel status, policies, L3 queue, protocol audit log | You are reviewing control and approval state |
-| Console: Brainstorm | Manual node-based ideation canvas with local session export | You are mapping ideas before implementation |
+| Console: Mindmap | Manual node-based ideation canvas with local session export | You are mapping ideas before implementation |
 | Console: Settings | Theme and local console preferences | You need presentation or workspace preference changes |
 
 ## Monitor vs Console
@@ -92,7 +92,7 @@ Combines:
 
 Use this tab when decisions require human review, overrides, or chain verification.
 
-### Brainstorm
+### Mindmap
 
 Current release behavior is manual ideation:
 
@@ -101,7 +101,7 @@ Current release behavior is manual ideation:
 - save session in local state
 - export JSON
 
-Voice capture and spoken response are shipped in `v4.3.2` when vendor runtime assets are present.
+Voice capture and spoken response are shipped in `v4.4.0` when vendor runtime assets are present.
 
 ### Settings
 
@@ -132,14 +132,14 @@ The local ledger is the audit source of truth for decisions, overrides, checkpoi
 
 If a claim is not traceable to code plus ledger evidence, treat it as unverified.
 
-## Voice-Brainstorm Status
+## Voice + Mindmap Status
 
 | Capability | Status | Notes |
 | --- | --- | --- |
-| Brainstorm tab shell in Console | implemented | Shipped in `command-center.html` + `modules/brainstorm*.js` |
+| Mindmap tab shell in Console | implemented | Shipped in `command-center.html` + `modules/brainstorm*.js` |
 | Manual node canvas + export | implemented | Local ideation and JSON export are active |
 | Mic capture (MediaRecorder) | implemented | `SttEngine` records audio in browser and drives transcript flow |
-| STT/TTS roundtrip | implemented | `stt-engine.js` + `tts-engine.js` integrated in Brainstorm renderer |
+| STT/TTS roundtrip | implemented | `stt-engine.js` + `tts-engine.js` integrated in the Mindmap (`brainstorm`) renderer |
 | Confidence-based node coloring by extraction | implemented | `brainstorm-canvas.js` maps `confidence` to semantic colors |
 
 ## Claim Map
@@ -147,7 +147,7 @@ If a claim is not traceable to code plus ledger evidence, treat it as unverified
 | Claim | Status | Source |
 | --- | --- | --- |
 | Monitor and Console are both shipped UI surfaces | implemented | `FailSafe/extension/package.json`, `FailSafe/extension/src/roadmap/FailSafeSidebarProvider.ts`, `FailSafe/extension/src/extension/commands.ts` |
-| Console includes 8 tabs including Brainstorm and Governance | implemented | `FailSafe/extension/src/roadmap/ui/command-center.html`, `FailSafe/extension/src/roadmap/ui/command-center.js` |
-| Brainstorm in `v4.3.2` supports voice + manual flows | implemented | `FailSafe/extension/src/roadmap/ui/modules/brainstorm.js`, `FailSafe/extension/src/roadmap/ui/modules/stt-engine.js`, `FailSafe/extension/src/roadmap/ui/modules/tts-engine.js` |
+| Console includes 8 tabs including Mindmap and Governance | implemented | `FailSafe/extension/src/roadmap/ui/command-center.html`, `FailSafe/extension/src/roadmap/ui/command-center.js` |
+| Mindmap in `v4.4.0` supports voice + manual flows | implemented | `FailSafe/extension/src/roadmap/ui/modules/brainstorm.js`, `FailSafe/extension/src/roadmap/ui/modules/stt-engine.js`, `FailSafe/extension/src/roadmap/ui/modules/tts-engine.js` |
 | Transcript-backed graph extraction endpoint is shipped | implemented | `FailSafe/extension/src/roadmap/ConsoleServer.ts` (`POST /api/v1/brainstorm/transcript`) |
 | Voice runtime needs vendored engine assets | implemented | `FailSafe/extension/src/roadmap/ui/vendor/whisper/VENDOR.md`, `FailSafe/extension/src/roadmap/ui/vendor/piper/VENDOR.md` |

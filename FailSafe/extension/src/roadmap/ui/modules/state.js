@@ -34,4 +34,11 @@ export class StateStore {
     this.set('theme', theme);
     document.documentElement.setAttribute('data-theme', theme);
   }
+
+  getLlmPriority() {
+    return this.getJSON('llm-priority') || ['server', 'native', 'wasm'];
+  }
+  setLlmPriority(list) {
+    this.setJSON('llm-priority', list);
+  }
 }

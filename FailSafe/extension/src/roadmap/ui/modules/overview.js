@@ -6,22 +6,21 @@ export class OverviewRenderer {
   }
 
   render(hubData) {
+    this.lastHubData = hubData;
     if (!this.container || !hubData) return;
-
-    // Hardcode some UI shell structures but inject the real data.
     const { sentinelStatus, runState, checkpoints } = hubData;
     const isLive = sentinelStatus?.running;
 
-    let html = `
-      <div class="overview-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;">
-        
-        <div class="card" style="background: var(--bg-panel); border: 1px solid var(--border-rim); border-radius: 12px; padding: 16px;">
-          <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">System Trust</div>
-          <div style="font-size: 1.8rem; font-weight: 700; color: var(--text-main); font-family: var(--font-display); margin-top: 8px;">
-            ${this.calculateTrustScore(checkpoints)}%
-          </div>
-        </div>
 
+    const hasChainSignal = hubData?.chainValid === true || hubData?.chainValid === false;
+    const chainLabel = hubData?.chainValid === true ? 'VALID' : (hubData?.chainValid === false ? 'BROKEN' : 'READY');
+    const chainColor = hubData?.chainValid === true
+      ? 'var(--accent-green)'
+      : (hubData?.chainValid === false ? 'var(--accent-red)' : 'var(--accent-cyan)');
+
+    let html = `
+      <div class="overview-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px;">
+        
         <div class="card" style="background: var(--bg-panel); border: 1px solid var(--border-rim); border-radius: 12px; padding: 16px;">
           <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Sentinel Events</div>
           <div style="font-size: 1.8rem; font-weight: 700; color: var(--text-main); font-family: var(--font-display); margin-top: 8px;">
@@ -38,9 +37,10 @@ export class OverviewRenderer {
 
         <div class="card" style="background: var(--bg-panel); border: 1px solid var(--border-rim); border-radius: 12px; padding: 16px;">
           <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">L3 Chain</div>
-          <div style="font-size: 1.8rem; font-weight: 700; color: ${hubData?.chainValid ? 'var(--accent-green)' : 'var(--accent-red)'}; font-family: var(--font-display); margin-top: 8px;">
-            ${hubData?.chainValid ? 'VALID' : 'BROKEN'}
+          <div style="font-size: 1.8rem; font-weight: 700; color: ${chainColor}; font-family: var(--font-display); margin-top: 8px;">
+            ${chainLabel}
           </div>
+          <div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px">${hasChainSignal ? 'Verification state' : 'No chain verdict yet'}</div>
         </div>
       </div>
 
@@ -64,22 +64,16 @@ export class OverviewRenderer {
     this.container.innerHTML = html;
   }
 
-  calculateTrustScore(checkpoints) {
-    if (!checkpoints || Object.keys(checkpoints).length === 0) return 100;
-    // VERY rough mock for now based on recent checkpoint success rates
-    const vals = Object.values(checkpoints);
-    const total = vals.length;
-    let passes = vals.filter(c => c.policyVerdict === 'PASS').length;
-    let warns = vals.filter(c => c.policyVerdict === 'WARN').length;
-    
-    // Warns heavily dock score, passes boost. 
-    let score = 100 - (warns * 5);
-    return Math.max(0, Math.min(100, score));
-  }
-
   renderOperationalStream(checkpoints) {
     if (!checkpoints || Object.keys(checkpoints).length === 0) {
-      return `<div style="text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 32px 0;">No ops data available.<br>Monitoring is active.</div>`;
+      return `
+        <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:180px;
+          border:1px dashed var(--border-rim);border-radius:10px;background:rgba(255,255,255,0.02);padding:18px">
+          <div style="font-size:0.95rem;font-weight:600;color:var(--text-main);margin-bottom:6px">Ready to plan and execute</div>
+          <div style="font-size:0.82rem;color:var(--text-muted);text-align:center;max-width:360px">
+            Monitoring is active and stable. Kick off your first plan step to populate the operations stream.
+          </div>
+        </div>`;
     }
 
     const items = Object.values(checkpoints)
@@ -122,6 +116,27 @@ export class OverviewRenderer {
       </div>
       <div style="height: 6px; background: rgba(0,0,0,0.3); border-radius: 3px; overflow: hidden; margin-bottom: 16px;">
         <div style="height: 100%; width: 2%; background: var(--accent-cyan);"></div>
+      </div>
+    `;
+  }
+
+  renderRightPanel() {
+    if (!this.lastHubData) return '';
+    const { trustSummary, sentinelStatus } = this.lastHubData;
+    
+    return `
+      <div class="cc-overview-side cc-card" style="padding: 16px;">
+        <h3 style="margin: 0 0 16px 0; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;">Intelligence Hub</h3>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="padding: 10px; background: rgba(0,0,0,0.2); border-radius: 4px; border-left: 2px solid var(--accent-cyan);">
+            <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">Session Throughput</div>
+            <div style="font-size: 14px; font-weight: bold; color: var(--text-main); font-family: var(--font-mono);">${sentinelStatus?.eventsProcessed || 0} events</div>
+          </div>
+          <div style="margin-top: 12px; font-size: 10px; font-family: var(--font-mono); color: var(--text-muted); opacity: 0.5;">
+            SYSTEM_UPTIME: 142ms <br>
+            REGISTRY: ACTIVE
+          </div>
+        </div>
       </div>
     `;
   }

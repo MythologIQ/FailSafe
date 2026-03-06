@@ -28,7 +28,7 @@ export class OperationsRenderer {
   }
 
   renderMissionStrip(run, sentinel) {
-    const phase = run.currentPhase || 'Unknown';
+    const phase = run.currentPhase || 'Plan';
     const mode = sentinel.mode || 'observe';
     const running = sentinel.running ? 'Active' : 'Halted';
     const color = sentinel.running ? 'var(--accent-green)' : 'var(--accent-red)';
@@ -82,7 +82,14 @@ export class OperationsRenderer {
 
   renderPhaseGrid() {
     const phases = this.roadmap?.phases || [];
-    if (!phases.length) return '';
+    if (!phases.length) {
+      return `<div class="cc-card" style="margin-bottom:16px;min-height:170px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center">
+        <div style="font-size:0.95rem;font-weight:600;color:var(--text-main);margin-bottom:6px">Plan phase is ready</div>
+        <div style="font-size:0.82rem;color:var(--text-muted);max-width:420px">
+          Mission metrics are live. Define or ingest roadmap phases to move from planning into execution.
+        </div>
+      </div>`;
+    }
     const rows = phases.map(p => {
       const badge = p.status === 'complete' ? 'var(--accent-green)' : 'var(--text-muted)';
       return `<div class="cc-card" style="display:flex;justify-content:space-between;align-items:center;
@@ -130,5 +137,30 @@ export class OperationsRenderer {
   }
 
   onEvent() {}
+  
+  renderRightPanel() {
+    if (!this.hubData) return '';
+    const { sentinelStatus, l3Queue } = this.hubData;
+    const queueLen = l3Queue?.length || 0;
+    
+    return `
+      <div class="cc-ops-side cc-card" style="padding: 16px;">
+        <h3 style="margin: 0 0 16px 0; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;">Governance Queue</h3>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="padding: 10px; background: rgba(0,0,0,0.2); border-radius: 4px; border-left: 2px solid ${queueLen > 0 ? 'var(--accent-red)' : 'var(--accent-green)'};">
+            <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">Pending L3 Approvals</div>
+            <div style="font-size: 14px; font-weight: bold; color: var(--text-main); font-family: var(--font-mono);">${queueLen} items</div>
+          </div>
+          <div style="font-size: 11px; color: var(--text-muted); line-height: 1.5;">
+            Sentinel is operating in <strong>${sentinelStatus?.mode || 'observe'}</strong> mode. System integrity is checked against the last verified block.
+          </div>
+          <button class="cc-btn cc-btn--primary" style="font-size: 11px; padding: 6px;" onclick="window._failsafe_client.postAction('/api/actions/approve-l3-batch').then(() => window.location.reload())">
+            Approve All
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
   destroy() { if (this.container) this.container.innerHTML = ''; }
 }

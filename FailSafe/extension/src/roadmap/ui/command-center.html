@@ -5,59 +5,110 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FAILSAFE Console</title>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="command-center.css">
+  <base href="/">
+  <link rel="icon" type="image/png" href="/failsafe-icon.png">
+  <link rel="stylesheet" href="/command-center.css">
 </head>
 <body>
 
-  <!-- Dynamic Blur Header Mask -->
-  <div class="header-blur-mask"></div>
+  <div class="app-layout">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="sidebar-top">
+        <img src="/failsafe-icon.png" class="app-logo" alt="FailSafe Logo">
+        <div class="app-name">FAILSAFE</div>
+      </div>
 
-  <!-- Header Content -->
-  <header class="header-container">
-    <div class="header-left">
-      <img src="failsafe-icon.png" class="app-logo" alt="FailSafe Logo">
-      <div class="app-name">FAILSAFE CONSOLE</div>
-    </div>
+      <nav class="tab-nav">
+        <button class="tab-btn active" data-target="overview" title="Console Overview">
+          <div class="tab-icon"><img src="/overview.png" alt="Overview"></div>
+          Overview
+        </button>
+        <button class="tab-btn" data-target="operations" title="Mission Logs">
+          <div class="tab-icon"><img src="/operations.png" alt="Operations"></div>
+          Operations
+        </button>
+        <button class="tab-btn" data-target="transparency" title="Audit Trails">
+          <div class="tab-icon"><img src="/audit.png" alt="Audit"></div>
+          Audit
+        </button>
+        <button class="tab-btn" data-target="risks" title="Threat Register">
+          <div class="tab-icon"><img src="/risks.png" alt="Risks"></div>
+          Risks
+        </button>
+        <button class="tab-btn" data-target="skills" title="Agent Tooling">
+          <div class="tab-icon"><img src="/skills.png" alt="Skills"></div>
+          Skills
+        </button>
+        <button class="tab-btn" data-target="governance" title="Compliance Hub">
+          <div class="tab-icon"><img src="/laws.png" alt="Laws"></div>
+          Laws
+        </button>
+        <button class="tab-btn" data-target="brainstorm" title="Brainstorm / Mindmap">
+          <div class="tab-icon"><img src="/mindmap.png" alt="Mindmap"></div>
+          Mindmap <span class="beta-badge">Beta</span>
+        </button>
+        <button class="tab-btn" data-target="settings" title="System Config">
+          <div class="tab-icon"><img src="/config.png" alt="Config"></div>
+          Config
+        </button>
+      </nav>
 
-    <div class="header-right">
-      <div class="connection-status">
-        <span class="dot connected"></span>
-        <span class="label">Connected</span>
+      <div class="sidebar-footer">
+        <div class="connection-status">
+          <span class="dot connected"></span>
+          <span class="label">LIVE</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="main-view">
+      <!-- Header Content (Now Top Bar) -->
+      <header class="top-bar">
+        <div class="status-strip">
+          <div class="status-item" id="ticker-protocol">PROTOCOL <span>...</span></div>
+          <div class="status-item" id="ticker-sentinel">SENTINEL <span>...</span></div>
+          <div class="status-item" id="ticker-latency">API <span>...</span></div>
+        </div>
+        <div style="flex: 1;"></div>
+        <button id="panel-toggle" class="panel-toggle-btn" title="Toggle Right Panel">
+          <span class="btn-icon">▹</span> Hide Sidebar
+        </button>
+      </header>
+
+      <div id="bootstrap-banner" style="display:none;align-items:center;gap:8px;padding:8px 16px;
+        background:rgba(245,158,11,0.1);border:1px solid var(--accent-gold);border-radius:6px;margin:8px 16px 0">
+        <span style="color:var(--accent-gold);font-size:0.82rem;font-weight:600">Workspace not bootstrapped.</span>
+        <span style="color:var(--text-muted);font-size:0.78rem">Run <code style="padding:1px 5px;background:var(--bg-dark);border-radius:3px">/ql-bootstrap</code> to initialize governance.</span>
+      </div>
+
+      <div class="viewport-hub">
+        <!-- Main Viewport Area -->
+        <main class="content-area">
+          <div id="overview" class="tab-panel active"></div>
+          <div id="operations" class="tab-panel"></div>
+          <div id="transparency" class="tab-panel"></div>
+          <div id="risks" class="tab-panel"></div>
+          <div id="skills" class="tab-panel"></div>
+          <div id="governance" class="tab-panel"></div>
+          <div id="brainstorm" class="tab-panel"></div>
+          <div id="settings" class="tab-panel"></div>
+        </main>
+
+        <!-- Right Intelligence/Action Panel -->
+        <aside class="right-panel" id="context-hub">
+          <!-- Dynamically populated by renderers -->
+          <div class="panel-placeholder">
+             Select a module to view context intelligence.
+          </div>
+        </aside>
       </div>
     </div>
-  </header>
-
-  <!-- Navigation Tabs -->
-  <nav class="tab-nav">
-    <button class="tab-btn active" data-target="overview">Overview</button>
-    <button class="tab-btn" data-target="operations">Operations</button>
-    <button class="tab-btn" data-target="transparency">Transparency</button>
-    <button class="tab-btn" data-target="risks">Risks</button>
-    <button class="tab-btn" data-target="skills">Skills</button>
-    <button class="tab-btn" data-target="governance">Governance</button>
-    <button class="tab-btn" data-target="brainstorm">Brainstorm</button>
-    <button class="tab-btn" data-target="settings">Settings</button>
-  </nav>
-
-  <!-- Ticker / Status Strip -->
-  <div class="status-strip">
-    <div class="status-item" id="ticker-protocol">PROTOCOL <span>...</span></div>
-    <div class="status-item" id="ticker-sentinel">SENTINEL <span>...</span></div>
-    <div class="status-item" id="ticker-latency">API <span>...</span></div>
   </div>
-
-  <!-- Main Viewport Area -->
-  <main class="content-area">
-    <div id="overview" class="tab-panel active"></div>
-    <div id="operations" class="tab-panel"></div>
-    <div id="transparency" class="tab-panel"></div>
-    <div id="risks" class="tab-panel"></div>
-    <div id="skills" class="tab-panel"></div>
-    <div id="governance" class="tab-panel"></div>
-    <div id="brainstorm" class="tab-panel"></div>
-    <div id="settings" class="tab-panel"></div>
-  </main>
-
-  <script src="command-center.js" type="module"></script>
+  <!-- Vendor Scripts -->
+  <script src="/vendor/3d-force-graph/3d-force-graph.min.js"></script>
+  
+  <script src="/command-center.js" type="module"></script>
 </body>
 </html>

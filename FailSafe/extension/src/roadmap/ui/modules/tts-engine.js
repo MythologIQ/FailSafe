@@ -1,10 +1,11 @@
 // FailSafe Command Center — Text-to-Speech Engine
 // Piper TTS via vendored WASM for neural-quality voice synthesis.
 
-const PIPER_MODULE = '../../vendor/piper/piper.min.js';
+const PIPER_MODULE = '../vendor/piper/piper.min.js';
 
 export class TtsEngine {
-  constructor() {
+  constructor(store) {
+    this.store = store || null;
     this.tts = null;
     this.audio = null;
     this.onStateChange = null;
@@ -14,13 +15,27 @@ export class TtsEngine {
 
   async init(voiceId) {
     if (voiceId) this.voiceId = voiceId;
+    else if (this.store) {
+      const saved = this.store.get('tts-voice');
+      if (saved) this.voiceId = saved;
+    }
     try {
+      // Check if file is actually on server to avoid 404 HTML/MIME errors
       const check = await fetch(PIPER_MODULE, { method: 'HEAD' });
-      if (!check.ok) return;
+      if (!check.ok) {
+        console.info('Piper TTS: not vendored yet — speech synthesis disabled');
+        return;
+      }
+      const ct = (check.headers.get('content-type') || '').toLowerCase();
+      if (!ct.includes('javascript') && !ct.includes('application/octet-stream')) {
+        console.info('Piper TTS: vendor file has wrong MIME type — speech synthesis disabled');
+        return;
+      }
       const mod = await import(PIPER_MODULE);
       this.tts = new mod.PiperTTS({ voiceId: this.voiceId });
       await this.tts.init();
-    } catch {
+    } catch (err) {
+      console.warn('Failed to initialize Piper TTS:', err);
       this.tts = null;
     }
   }

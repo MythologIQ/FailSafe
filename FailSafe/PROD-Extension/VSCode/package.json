@@ -3,7 +3,7 @@
   "displayName": "FailSafe (feat. QoreLogic)",
   "description": "Local-first AI governance for audits, checkpoints, and agent workflows",
   "icon": "icon.png",
-  "version": "4.2.1",
+  "version": "4.4.0",
   "publisher": "MythologIQ",
   "license": "MIT",
   "repository": {

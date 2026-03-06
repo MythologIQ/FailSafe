@@ -6,6 +6,12 @@ export class GovernanceRenderer {
     this.container = document.getElementById(containerId);
     this.client = deps.client || null;
     this.verdictLog = [];
+    
+    if (this.client) {
+      this.client.on('webLlmStatus', () => {
+        if (this._lastHub) this.render(this._lastHub);
+      });
+    }
   }
 
   render(hubData) {
@@ -32,12 +38,30 @@ export class GovernanceRenderer {
     const statusText = running ? 'Active' : 'Halted';
     const chainLabels = { true: 'Valid', false: 'Broken' };
     const chainText = chainLabels[String(chainValid)] || 'Unknown';
-    const chainColor = chainValid === true ? 'var(--accent-green)' : 'var(--accent-red)';
+    const chainColor = chainValid === true
+      ? 'var(--accent-green)'
+      : (chainValid === false ? 'var(--accent-red)' : 'var(--text-muted)');
+    
+    // AI Badge for Sentinel
+    let aiBadge = '';
+    if (this.client?.webLlmState) {
+      const { nativeAvailable, wasmReady } = this.client.webLlmState;
+      if (nativeAvailable) {
+        aiBadge = `<span class="cc-badge" style="background:linear-gradient(90deg, #10b981, #059669); color: white; border: none; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);"><svg style="width:10px;height:10px;margin-right:4px;" viewBox="0 0 24 24" fill="currentColor"><path d="M12,2L4.5,20.29L5.21,21L12,18L18.79,21L19.5,20.29L12,2Z"/></svg>Gemini Nano</span>`;
+      } else if (wasmReady) {
+        aiBadge = `<span class="cc-badge" style="background:var(--primary); color: white;">WASM Core</span>`;
+      } else {
+        aiBadge = `<span class="cc-badge" style="background:rgba(255,255,255,0.1); color: var(--text-muted);">Hybrid Server</span>`;
+      }
+    }
 
     return `
       <div class="cc-card">
-        <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;
-          letter-spacing:0.08em;margin-bottom:8px">Sentinel</div>
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px">
+          <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;
+            letter-spacing:0.08em">Sentinel</div>
+          ${aiBadge}
+        </div>
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
           <span style="width:8px;height:8px;border-radius:50%;background:${statusColor}"></span>
           <span style="font-weight:600">${statusText}</span>
@@ -103,10 +127,17 @@ export class GovernanceRenderer {
       </div>`;
     }).join('');
     return `
-      <div>
+      <div style="padding:0 10px 8px 10px">
         <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;
           letter-spacing:0.08em;margin-bottom:8px">Protocol Audit Log</div>
-        <div style="max-height:200px;overflow-y:auto">${entries || '<div style="color:var(--text-muted);font-size:0.82rem">No verdicts yet</div>'}</div>
+        <div style="max-height:200px;overflow-y:auto">${entries || `
+          <div class="cc-card" style="min-height:150px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:14px">
+            <div style="font-size:0.9rem;font-weight:600;color:var(--text-main);margin-bottom:6px">Governance chain ready</div>
+            <div style="font-size:0.8rem;color:var(--text-muted);max-width:360px">
+              No verdicts yet because no policy decisions have been executed in this cycle.
+            </div>
+          </div>
+        `}</div>
       </div>`;
   }
 

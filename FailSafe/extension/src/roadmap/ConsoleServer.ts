@@ -43,6 +43,7 @@ import type { RouteDeps } from "./routes";
 import type { PermissionScopeManager } from "../governance/PermissionScopeManager";
 import type { EnforcementEngine } from "../governance/EnforcementEngine";
 import { BrainstormService } from "./services/BrainstormService";
+import { AudioVaultService } from "./services/AudioVaultService";
 import type { IConfigProvider } from "../core/interfaces/IConfigProvider";
 import { LLMClient } from "../sentinel/utils/LLMClient";
 
@@ -64,6 +65,11 @@ type InstalledSkill = {
   sourcePriority: number;
   admissionState: string;
   requiredPermissions: string[];
+  category: string;
+  name: string;
+  description: string;
+  installed: boolean;
+  origin: string;
 };
 
 type SkillRelevance = InstalledSkill & {
@@ -166,6 +172,7 @@ export class ConsoleServer {
   private chainValidAt: string | null = null;
   private cachedChainValid: boolean = true;
   private brainstormService: BrainstormService;
+  private audioVaultService: AudioVaultService;
   private configProvider: IConfigProvider | undefined;
   private enforcementEngine: EnforcementEngine | null = null;
   private permissionManager: PermissionScopeManager | null = null;
@@ -210,16 +217,41 @@ export class ConsoleServer {
     this.initializeCheckpointStore();
     this.gitResetService = new GitResetService();
     this.initializeRevertService();
+    this.audioVaultService = new AudioVaultService(this.workspaceRoot);
+    this.audioVaultService
+      .init()
+      .catch((err) => console.error("AudioVaultService init error:", err));
     this.brainstormService = new BrainstormService(async (prompt, payload) => {
       const fullPrompt = `${prompt}\n\nTranscript:\n${payload}`;
 
-      // Try Ollama first via LLMClient
+      // Helper: strip markdown fences and clean up LLM response for JSON
+      const cleanJsonResponse = (raw: string): string => {
+        let cleaned = raw.trim();
+        // Remove ```json ... ``` or ``` ... ```
+        cleaned = cleaned
+          .replace(/^```(?:json)?\s*/i, "")
+          .replace(/\s*```$/i, "");
+        // If still wrapped, try to extract first JSON object
+        const firstBrace = cleaned.indexOf("{");
+        const lastBrace = cleaned.lastIndexOf("}");
+        if (firstBrace >= 0 && lastBrace > firstBrace) {
+          cleaned = cleaned.slice(firstBrace, lastBrace + 1);
+        }
+        return cleaned;
+      };
+
+      // Try Ollama first via LLMClient (60s timeout for complex JSON extraction)
       if (this.configProvider) {
         const llm = new LLMClient(this.configProvider);
         const available = await llm.checkAvailability();
         if (available) {
-          const result = await llm.callEndpoint(fullPrompt, 15000);
-          return result.response;
+          try {
+            const result = await llm.callEndpoint(fullPrompt, 60000);
+            return cleanJsonResponse(result.response);
+          } catch (ollamaErr) {
+            console.warn("[Brainstorm] Ollama callEndpoint failed:", ollamaErr);
+            // Fall through to VS Code LM
+          }
         }
       }
 
@@ -234,13 +266,15 @@ export class ConsoleServer {
           for await (const chunk of chatResponse.text) {
             text += chunk;
           }
-          return text;
+          return cleanJsonResponse(text);
         }
       } catch {
         // VS Code LM API not available or no models registered
       }
 
-      throw new Error("No LLM available — start Ollama or enable a VS Code language model");
+      throw new Error(
+        "No LLM available — start Ollama or enable a VS Code language model",
+      );
     });
     this.setupRoutes();
     this.subscribeToEvents();
@@ -472,7 +506,9 @@ export class ConsoleServer {
       if (this.rejectIfRemote(req, res)) return;
       const { title, severity, status, description } = req.body;
       if (!title || !severity) {
-        res.status(400).json({ ok: false, error: "title and severity required" });
+        res
+          .status(400)
+          .json({ ok: false, error: "title and severity required" });
         return;
       }
       const risk = {
@@ -523,74 +559,168 @@ export class ConsoleServer {
     });
 
     // API: Brainstorm — process voice transcript via LLM extraction
-    this.app.post("/api/v1/brainstorm/transcript", async (req: Request, res: Response) => {
-      if (this.rejectIfRemote(req, res)) return;
-      const transcript = String(req.body.transcript || "").slice(0, 10000).trim();
-      if (!transcript) {
-        res.status(400).json({ error: "Empty transcript" });
-        return;
-      }
-      try {
-        const result = await this.brainstormService.processTranscript(transcript);
-        if (result.extraction) {
-          this.broadcast({ type: "brainstorm.update", payload: result.extraction });
-          res.json(result.extraction);
-        } else if (result.queued) {
-          res.status(202).json({
-            status: "queued",
-            message: "No LLM available — transcript stored for later processing",
-            queued: result.queued,
-          });
+    this.app.post(
+      "/api/v1/brainstorm/transcript",
+      async (req: Request, res: Response) => {
+        if (this.rejectIfRemote(req, res)) return;
+        const transcript = String(req.body.transcript || "")
+          .slice(0, 10000)
+          .trim();
+        if (!transcript) {
+          res.status(400).json({ error: "Empty transcript" });
+          return;
         }
-      } catch (err) {
-        const detail = err instanceof Error ? err.message : String(err);
-        res.status(502).json({ error: "extraction_failed", detail });
-      }
-    });
+        try {
+          const result =
+            await this.brainstormService.processTranscript(transcript);
+          if (result.extraction) {
+            this.broadcast({
+              type: "brainstorm.update",
+              payload: result.extraction,
+            });
+            res.json(result.extraction);
+          } else if (result.queued) {
+            res.status(202).json({
+              status: "queued",
+              message:
+                "LLM returned invalid output or is unavailable — transcript queued",
+              queued: result.queued,
+            });
+          }
+        } catch (err) {
+          const detail = err instanceof Error ? err.message : String(err);
+          console.error("[Brainstorm] Transcript processing error:", detail);
+          // If it's a connectivity error, queue instead of 502
+          if (
+            detail.includes("ECONNREFUSED") ||
+            detail.includes("reachable") ||
+            detail.includes("not available") ||
+            detail.includes("No LLM")
+          ) {
+            const queued = this.brainstormService.queueTranscript(transcript);
+            res.status(202).json({
+              status: "queued",
+              message: "LLM unavailable — transcript queued",
+              queued,
+            });
+            return;
+          }
+          res.status(502).json({ error: "extraction_failed", detail });
+        }
+      },
+    );
+
+    // API: Brainstorm — add manual node
+    this.app.post(
+      "/api/v1/brainstorm/audio",
+      express.raw({ type: "audio/webm", limit: "50mb" }),
+      async (req: Request, res: Response) => {
+        if (this.rejectIfRemote(req, res)) return;
+        try {
+          const _buffer = Buffer.isBuffer(req.body)
+            ? req.body
+            : Buffer.from("");
+          if (_buffer.length === 0) {
+            res.status(400).json({ error: "Empty body" });
+            return;
+          }
+          const hash = await this.audioVaultService.storeAudio(_buffer);
+          res.json({ audioHash: hash });
+        } catch (err) {
+          res.status(500).json({ error: "Storage failed" });
+        }
+      },
+    );
+
+    this.app.get(
+      "/api/v1/brainstorm/audio/:hash",
+      async (req: Request, res: Response) => {
+        if (this.rejectIfRemote(req, res)) return;
+        try {
+          const audioBuffer = await this.audioVaultService.getAudio(
+            String(req.params.hash),
+          );
+          if (!audioBuffer) {
+            res.status(404).send("Not found");
+            return;
+          }
+          res.setHeader("Content-Type", "audio/webm");
+          res.send(audioBuffer);
+        } catch (err) {
+          res.status(500).send("Fetch error");
+        }
+      },
+    );
 
     // API: Brainstorm — add manual node
     this.app.post("/api/v1/brainstorm/node", (req: Request, res: Response) => {
       if (this.rejectIfRemote(req, res)) return;
-      const label = String(req.body.label || "").slice(0, 200).trim();
+      const label = String(req.body.label || "")
+        .slice(0, 200)
+        .trim();
       if (!label) {
         res.status(400).json({ error: "Label required" });
         return;
       }
       const type = String(req.body.type || "Feature").slice(0, 50);
-      const node = this.brainstormService.addNode(label, type);
-      this.broadcast({ type: "brainstorm.update", payload: { nodes: [node], edges: [] } });
+      const clientId = req.body.id ? String(req.body.id).slice(0, 100) : undefined;
+      const node = this.brainstormService.addNode(label, type, clientId);
+      this.broadcast({
+        type: "brainstorm.update",
+        payload: { nodes: [node], edges: [] },
+      });
       res.json(node);
     });
 
     // API: Brainstorm — update a node
-    this.app.patch("/api/v1/brainstorm/node/:id", (req: Request, res: Response) => {
-      if (this.rejectIfRemote(req, res)) return;
-      const label = String(req.body.label || "").slice(0, 200).trim();
-      const type = String(req.body.type || "Feature").slice(0, 50);
-      if (!label) {
-        res.status(400).json({ error: "Label required" });
-        return;
-      }
-      const node = this.brainstormService.updateNode(String(req.params.id), label, type);
-      if (!node) {
-        res.status(404).json({ error: "Node not found" });
-        return;
-      }
-      this.broadcast({ type: "brainstorm.update", payload: { nodes: [node], edges: [] } });
-      res.json(node);
-    });
+    this.app.patch(
+      "/api/v1/brainstorm/node/:id",
+      (req: Request, res: Response) => {
+        if (this.rejectIfRemote(req, res)) return;
+        const label = String(req.body.label || "")
+          .slice(0, 200)
+          .trim();
+        const type = String(req.body.type || "Feature").slice(0, 50);
+        if (!label) {
+          res.status(400).json({ error: "Label required" });
+          return;
+        }
+        const node = this.brainstormService.updateNode(
+          String(req.params.id),
+          label,
+          type,
+        );
+        if (!node) {
+          res.status(404).json({ error: "Node not found" });
+          return;
+        }
+        this.broadcast({
+          type: "brainstorm.update",
+          payload: { nodes: [node], edges: [] },
+        });
+        res.json(node);
+      },
+    );
 
     // API: Brainstorm — remove a node
-    this.app.delete("/api/v1/brainstorm/node/:id", (req: Request, res: Response) => {
-      if (this.rejectIfRemote(req, res)) return;
-      const removed = this.brainstormService.removeNode(String(req.params.id));
-      if (!removed) {
-        res.status(404).json({ error: "Node not found" });
-        return;
-      }
-      this.broadcast({ type: "brainstorm.node-removed", payload: { id: String(req.params.id) } });
-      res.json({ ok: true });
-    });
+    this.app.delete(
+      "/api/v1/brainstorm/node/:id",
+      (req: Request, res: Response) => {
+        if (this.rejectIfRemote(req, res)) return;
+        const removed = this.brainstormService.removeNode(
+          String(req.params.id),
+        );
+        if (!removed) {
+          res.status(404).json({ error: "Node not found" });
+          return;
+        }
+        this.broadcast({
+          type: "brainstorm.node-removed",
+          payload: { id: String(req.params.id) },
+        });
+        res.json({ ok: true });
+      },
+    );
 
     // API: Brainstorm — get full graph
     this.app.get("/api/v1/brainstorm/graph", (req: Request, res: Response) => {
@@ -599,35 +729,47 @@ export class ConsoleServer {
     });
 
     // API: Brainstorm — clear graph
-    this.app.delete("/api/v1/brainstorm/graph", (req: Request, res: Response) => {
-      if (this.rejectIfRemote(req, res)) return;
-      this.brainstormService.reset();
-      this.broadcast({ type: "brainstorm.reset" });
-      res.json({ ok: true });
-    });
+    this.app.delete(
+      "/api/v1/brainstorm/graph",
+      (req: Request, res: Response) => {
+        if (this.rejectIfRemote(req, res)) return;
+        this.brainstormService.reset();
+        this.broadcast({ type: "brainstorm.reset" });
+        res.json({ ok: true });
+      },
+    );
 
     // API: Brainstorm — list queued transcripts awaiting LLM
-    this.app.get("/api/v1/brainstorm/pending", (req: Request, res: Response) => {
-      if (this.rejectIfRemote(req, res)) return;
-      res.json({ pending: this.brainstormService.getPendingTranscripts() });
-    });
+    this.app.get(
+      "/api/v1/brainstorm/pending",
+      (req: Request, res: Response) => {
+        if (this.rejectIfRemote(req, res)) return;
+        res.json({ pending: this.brainstormService.getPendingTranscripts() });
+      },
+    );
 
     // API: Brainstorm — retry all pending transcripts
-    this.app.post("/api/v1/brainstorm/retry", async (req: Request, res: Response) => {
-      if (this.rejectIfRemote(req, res)) return;
-      try {
-        const results = await this.brainstormService.retryPending();
-        for (const r of results) {
-          if (r.extraction) {
-            this.broadcast({ type: "brainstorm.update", payload: r.extraction });
+    this.app.post(
+      "/api/v1/brainstorm/retry",
+      async (req: Request, res: Response) => {
+        if (this.rejectIfRemote(req, res)) return;
+        try {
+          const results = await this.brainstormService.retryPending();
+          for (const r of results) {
+            if (r.extraction) {
+              this.broadcast({
+                type: "brainstorm.update",
+                payload: r.extraction,
+              });
+            }
           }
+          res.json({ processed: results.length, results });
+        } catch (err) {
+          const detail = err instanceof Error ? err.message : String(err);
+          res.status(502).json({ error: "retry_failed", detail });
         }
-        res.json({ processed: results.length, results });
-      } catch (err) {
-        const detail = err instanceof Error ? err.message : String(err);
-        res.status(502).json({ error: "retry_failed", detail });
-      }
-    });
+      },
+    );
 
     this.app.get("/api/checkpoints", (req: Request, res: Response) => {
       const limitRaw = Number.parseInt(String(req.query.limit || "50"), 10);
@@ -818,7 +960,9 @@ export class ConsoleServer {
     // API: Unified system status
     this.app.get("/api/v1/status", async (_req: Request, res: Response) => {
       const hub = await this.buildHubSnapshot();
-      const sentinel = hub.sentinelStatus as Record<string, unknown> | undefined;
+      const sentinel = hub.sentinelStatus as
+        | Record<string, unknown>
+        | undefined;
       res.json({
         sentinel: {
           running: sentinel?.running ?? false,
@@ -840,7 +984,9 @@ export class ConsoleServer {
     // API: Trust scores from checkpoint analysis
     this.app.get("/api/v1/trust", async (_req: Request, res: Response) => {
       const hub = await this.buildHubSnapshot();
-      const checkpoints = Object.values((hub.checkpoints as Record<string, unknown>) || {});
+      const checkpoints = Object.values(
+        (hub.checkpoints as Record<string, unknown>) || {},
+      );
       const total = checkpoints.length || 1;
       const passed = checkpoints.filter(
         (c: any) => c.policyVerdict !== "VIOLATION",
@@ -859,6 +1005,27 @@ export class ConsoleServer {
         res.status(404).json({ error: "Not found" });
         return;
       }
+
+      // v4.3.2: If requesting a static asset that doesn't exist, return 404 instead of HTML fallback
+      // to avoid confusing the browser (MIME type / SyntaxError).
+      const staticExts = [
+        ".js",
+        ".mjs",
+        ".css",
+        ".wasm",
+        ".onnx",
+        ".png",
+        ".jpg",
+        ".svg",
+        ".data",
+        ".json",
+        ".bin",
+      ];
+      if (staticExts.some((ext) => req.path.toLowerCase().endsWith(ext))) {
+        res.status(404).type("text/plain").send("Not found");
+        return;
+      }
+
       const file = this.getUiEntryFile(req);
       const target = path.join(this.uiDir, file);
       if (fs.existsSync(target)) {
@@ -869,9 +1036,7 @@ export class ConsoleServer {
     });
   }
 
-  private getUiEntryFile(
-    req: Request,
-  ): "command-center.html" | "index.html" {
+  private getUiEntryFile(req: Request): "command-center.html" | "index.html" {
     const uiMode = String(req.query.ui || "").toLowerCase();
     const compactParam = String(req.query.compact || "").toLowerCase();
 
@@ -1343,6 +1508,7 @@ export class ConsoleServer {
     ];
 
     return {
+      version: '4.4.0',
       sprints,
       currentSprint,
       activePlan,
@@ -1359,6 +1525,9 @@ export class ConsoleServer {
       checkpointSummary: this.getCheckpointSummary(),
       recentCheckpoints: this.getRecentCheckpoints(12),
       qoreRuntime,
+      bootstrapComplete: fs.existsSync(
+        path.join(this.getWorkspaceRoot(), "docs", "CONCEPT.md"),
+      ),
       generatedAt: new Date().toISOString(),
     };
   }
@@ -1439,6 +1608,15 @@ export class ConsoleServer {
         }
       }
     }
+    for (const root of candidates.filter(r => r.sourceType === "project-commands")) {
+      if (!fs.existsSync(root.root)) continue;
+      for (const mdFile of this.collectCommandMarkdownFiles(root.root)) {
+        const parsed = this.parseCommandFile(mdFile, root);
+        if (parsed && !discovered.has(parsed.key)) {
+          discovered.set(parsed.key, parsed);
+        }
+      }
+    }
     if (discovered.size === 0) {
       for (const fallbackSkill of this.getEmergencyDiscoveredSkills()) {
         discovered.set(fallbackSkill.key, fallbackSkill);
@@ -1502,6 +1680,7 @@ export class ConsoleServer {
       add(path.join(base, ".claude", "skills"), "project-local", 2, "admitted");
       add(path.join(base, ".codex", "skills"), "project-local", 2, "admitted");
       add(path.join(base, ".github", "skills"), "project-local", 2, "admitted");
+      add(path.join(base, ".claude", "commands"), "project-commands", 2, "admitted");
       add(
         path.join(base, ".failsafe", "manual-skills"),
         "manual-import",
@@ -1571,6 +1750,82 @@ export class ConsoleServer {
       }
     }
     return files;
+  }
+
+  private collectCommandMarkdownFiles(root: string): string[] {
+    const files: string[] = [];
+    const stack = [root];
+    while (stack.length > 0) {
+      const current = stack.pop() as string;
+      let entries: fs.Dirent[];
+      try {
+        entries = fs.readdirSync(current, { withFileTypes: true });
+      } catch {
+        continue;
+      }
+      for (const entry of entries) {
+        const full = path.join(current, entry.name);
+        if (entry.isDirectory()) {
+          if (entry.name.startsWith(".") || entry.name.startsWith("_")) continue;
+          stack.push(full);
+          continue;
+        }
+        if (entry.isFile() && entry.name.endsWith(".md")) {
+          files.push(full);
+        }
+      }
+    }
+    return files;
+  }
+
+  private parseCommandFile(
+    filePath: string,
+    rootMeta: SkillRoot,
+  ): InstalledSkill | null {
+    let content = "";
+    try {
+      content = fs.readFileSync(filePath, "utf8");
+    } catch {
+      return null;
+    }
+    const baseName = path.basename(filePath, ".md");
+    const dirName = path.basename(path.dirname(filePath));
+    const isGovernance = baseName.startsWith("ql-");
+    const category = isGovernance ? "governance" : dirName;
+    const skillMatch = content.match(/<skill>[\s\S]*?<\/skill>/);
+    const triggerMatch = skillMatch
+      ? skillMatch[0].match(/<trigger>([^<]+)<\/trigger>/)
+      : null;
+    const displayName = triggerMatch
+      ? triggerMatch[1].replace(/^\//, "").trim()
+      : this.humanizeSkillName(baseName);
+    const descMatch = content.match(/^##\s+Purpose\s*\n+(.*)/m);
+    const desc = descMatch ? descMatch[1].trim().slice(0, 120) : "Command skill";
+    const resolvedId = `cmd:${baseName}`;
+    const wsRoot = this.getWorkspaceRoot();
+    const origin = path.relative(wsRoot, path.dirname(filePath)).replace(/\\/g, "/");
+    return {
+      id: resolvedId,
+      displayName,
+      localName: baseName,
+      key: resolvedId,
+      label: displayName,
+      desc,
+      creator: "QoreLogic",
+      sourceRepo: "local",
+      sourcePath: filePath,
+      versionPin: "unversioned",
+      trustTier: "admitted",
+      sourceType: rootMeta.sourceType,
+      sourcePriority: rootMeta.sourcePriority,
+      admissionState: rootMeta.admissionState,
+      requiredPermissions: [],
+      category,
+      name: displayName,
+      description: desc,
+      installed: true,
+      origin,
+    };
   }
 
   private parseSkillFile(
@@ -1654,6 +1909,11 @@ export class ConsoleServer {
       desc,
     });
     if (!resolvedId) return null;
+    const explicitCategory =
+      this.readFrontmatterValue(frontmatter, "category") ||
+      this.readFrontmatterValue(frontmatter, "domain");
+    const category = explicitCategory ||
+      this.deriveSkillDomainToken(this.toSlug(rawName), desc);
 
     return {
       id: resolvedId,
@@ -1673,6 +1933,11 @@ export class ConsoleServer {
       requiredPermissions: Array.from(
         new Set(requiredPermissions.map((item) => item.trim()).filter(Boolean)),
       ),
+      category,
+      name: String(displayName || rawName || resolvedId).trim(),
+      description: desc,
+      installed: true,
+      origin: path.relative(this.getWorkspaceRoot(), rootMeta.root).replace(/\\/g, "/"),
     };
   }
 

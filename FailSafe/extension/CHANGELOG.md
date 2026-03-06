@@ -9,7 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- Post-4.3.2 scope to be scheduled.
+- Post-4.4.0 scope to be scheduled.
+
+## [4.4.0] - 2026-03-06
+
+### Added
+
+- **Mindmap Runtime Modules** - Added ideation/runtime modules for extraction heuristics, node editing, prep bay flow, haptics support, voice settings, and local model status orchestration.
+- **Audio Vault Service** - Added `AudioVaultService` for local audio artifact lifecycle support in roadmap ideation flows.
+- **Mindmap Asset Pack** - Added dedicated UI assets for overview, operations, audit, risks, skills, laws, mindmap, and config surfaces.
+
+### Changed
+
+- **Version Synchronization** - Extension metadata, runtime version surfacing, packaged README/help docs, and validation scripts now align on `v4.4.0`.
+- **Mindmap Labeling** - Command Center navigation now labels the ideation tab as `Mindmap` while retaining internal `brainstorm` routing IDs.
+
+### Documentation
+
+- Updated `README.md`, `docs/COMPONENT_HELP.md`, and `docs/PROCESS_GUIDE.md` to reflect current `v4.4.0` terminology and shipped capability scope.
 
 ## [4.3.2] - 2026-03-04
 

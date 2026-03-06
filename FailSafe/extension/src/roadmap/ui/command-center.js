@@ -39,6 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Route hub data to tickers + all renderers
   client.on('hub', (data) => {
     updateTickers(data);
+    updateBootstrapBanner(data);
     Object.values(renderers).forEach(r => r.render(data));
   });
 
@@ -62,16 +63,76 @@ document.addEventListener('DOMContentLoaded', () => {
   // Tab navigation with persistence
   const tabs = document.querySelectorAll('.tab-btn');
   const panels = document.querySelectorAll('.tab-panel');
+  const contextHub = document.getElementById('context-hub');
+  const panelToggle = document.getElementById('panel-toggle');
+
+  let panelUserCollapsed = store.get('panel-collapsed') === 'true';
+
+  const updateUIForPanelState = () => {
+    const activeTab = document.querySelector('.tab-btn.active')?.dataset.target;
+    const renderer = renderers[activeTab];
+    const hasContext = renderer && !!renderer.renderRightPanel;
+
+    if (contextHub) {
+      if (panelUserCollapsed || !hasContext) {
+        contextHub.classList.add('hidden');
+      } else {
+        contextHub.classList.remove('hidden');
+        // Re-render panel content if shown
+        contextHub.innerHTML = renderer.renderRightPanel();
+        if (renderer.bindToolbar) renderer.bindToolbar();
+      }
+    }
+
+    if (panelToggle) {
+      panelToggle.classList.toggle('collapsed', panelUserCollapsed);
+      panelToggle.innerHTML = panelUserCollapsed 
+        ? '<span class="btn-icon">◂</span> Show Sidebar' 
+        : '<span class="btn-icon">▸</span> Hide Sidebar';
+      panelToggle.style.display = hasContext ? 'flex' : 'none';
+    }
+  };
+
+  panelToggle?.addEventListener('click', () => {
+    panelUserCollapsed = !panelUserCollapsed;
+    store.set('panel-collapsed', panelUserCollapsed);
+    updateUIForPanelState();
+    window.dispatchEvent(new Event('resize'));
+  });
 
   tabs.forEach(tab => {
     tab.addEventListener('click', () => {
       tabs.forEach(t => t.classList.remove('active'));
       panels.forEach(p => p.classList.remove('active'));
+      
       tab.classList.add('active');
-      const target = document.getElementById(tab.dataset.target);
+      const targetId = tab.dataset.target;
+      const target = document.getElementById(targetId);
       if (target) target.classList.add('active');
-      store.setActiveTab(tab.dataset.target);
+
+      // Brainstorm is a full-viewport canvas — no scrolling allowed
+      const contentArea = document.querySelector('.content-area');
+      if (contentArea) contentArea.style.overflowY = targetId === 'brainstorm' ? 'hidden' : 'auto';
+      
+      // Update Right Panel (Intelligence/Action)
+      updateUIForPanelState();
+      
+      // Initial render for tab activation
+      const renderer = renderers[targetId];
+      if (renderer) renderer.render?.({});
+      
+      store.setActiveTab(targetId);
     });
+  });
+
+  // Global listeners for LLM interactive tier list
+  window.addEventListener('fs-reorder-llm', (e) => {
+    const br = renderers.brainstorm;
+    if (br?.llmStatus) { br.llmStatus.reorderLlm(e.detail.index, e.detail.dir); br.llmStatus.render(br.client); }
+  });
+  window.addEventListener('fs-toggle-llm-help', () => {
+    const br = renderers.brainstorm;
+    if (br?.llmStatus) { br.llmStatus.toggleHelp(); br.llmStatus.render(br.client); }
   });
 
   // Restore saved tab
@@ -97,6 +158,19 @@ function updateTickers(data) {
     sent.innerHTML = `SENTINEL <span style="color:${c}">${live ? 'Active' : 'Halted'}</span>`;
   }
   if (lat) {
-    lat.innerHTML = `API <span style="font-family:var(--font-mono)">${data.qoreRuntime?.latencyMs || '??'}ms</span>`;
+    const latVal = data.qoreRuntime?.latencyMs;
+    const latLabel = latVal != null ? `${Math.round(latVal)}ms` : 'N/A';
+    const latColor = latVal != null ? '' : 'color:var(--text-muted)';
+    lat.innerHTML = `API <span style="font-family:var(--font-mono);${latColor}">${latLabel}</span>`;
+  }
+}
+
+function updateBootstrapBanner(data) {
+  const banner = document.getElementById('bootstrap-banner');
+  if (!banner) return;
+  if (data.bootstrapComplete) {
+    banner.style.display = 'none';
+  } else {
+    banner.style.display = 'flex';
   }
 }

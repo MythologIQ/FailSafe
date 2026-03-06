@@ -9,7 +9,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- Post-4.3.1 scope to be scheduled.
+- Post-4.4.0 scope to be scheduled.
+
+## [4.4.0] - 2026-03-06
+
+### Added
+
+- **Mindmap Runtime Modules** - Added ideation/runtime modules for extraction heuristics, node editing, prep bay flow, haptics support, voice settings, and local model status orchestration.
+- **Audio Vault Service** - Added `AudioVaultService` for local audio artifact lifecycle support in roadmap ideation flows.
+- **Mindmap Asset Pack** - Added dedicated UI assets for overview, operations, audit, risks, skills, laws, mindmap, and config surfaces.
+
+### Changed
+
+- **Version Synchronization** - Extension metadata, runtime version surfacing, packaged README/help docs, and validation scripts now align on `v4.4.0`.
+- **Mindmap Labeling** - Command Center navigation now labels the ideation tab as `Mindmap` while retaining internal `brainstorm` routing IDs.
+
+### Documentation
+
+- Updated `README.md`, `docs/COMPONENT_HELP.md`, and `docs/PROCESS_GUIDE.md` to reflect current `v4.4.0` terminology and shipped capability scope.
+
+## [4.3.2] - 2026-03-04
+
+### Changed
+
+- **Performance & Polish** - Checkpoint integrity verification moved to cached + on-demand flows with explicit `Verify Integrity` actions in Console UI surfaces.
+- **Server Activation Robustness** - API and Console server startup now resolves available ports dynamically with graceful fallback behavior when preferred ports are occupied.
+- **Webview Update Path** - Transparency and Economics panels now use message-driven updates after initial render to reduce full-HTML redraw churn.
+- **Bundled Help Rewrite** - `docs/COMPONENT_HELP.md` and `docs/PROCESS_GUIDE.md` rewritten for unified Console UX and `v4.3.2` operator workflows.
+
+### Documentation
+
+- Clarified Brainstorm status: voice + manual workflows are shipped in `v4.3.2`, with vendor runtime prerequisites documented in `vendor/*/VENDOR.md`.
 
 ## [4.3.1] - 2026-03-03
 

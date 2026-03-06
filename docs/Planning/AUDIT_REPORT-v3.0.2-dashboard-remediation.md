@@ -2,7 +2,7 @@
 
 **Plan File**: plan-v3.0.2-dashboard-remediation.md
 **Audit Date**: 2026-02-06
-**Auditor**: Judge (QoreLogic A.E.G.I.S.)
+**Auditor**: Judge (QoreLogic S.H.I.E.L.D.)
 
 ---
 

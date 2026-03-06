@@ -463,4 +463,28 @@ document.addEventListener('DOMContentLoaded', () => {
   if (riskRefresh) {
     riskRefresh.addEventListener('click', () => client.fetchRisks());
   }
+
+  // Verify Integrity button handler
+  const verifyBtn = document.getElementById('verify-integrity-btn');
+  if (verifyBtn) {
+    verifyBtn.addEventListener('click', async () => {
+      verifyBtn.disabled = true;
+      verifyBtn.textContent = 'Verifying...';
+      try {
+        const res = await fetch('/api/actions/verify-integrity', { method: 'POST' });
+        const data = await res.json();
+        verifyBtn.textContent = data.chainValid ? 'Verified OK' : 'Integrity Failed!';
+        setTimeout(() => {
+          verifyBtn.textContent = 'Verify Integrity';
+          verifyBtn.disabled = false;
+        }, 2000);
+      } catch {
+        verifyBtn.textContent = 'Error';
+        setTimeout(() => {
+          verifyBtn.textContent = 'Verify Integrity';
+          verifyBtn.disabled = false;
+        }, 2000);
+      }
+    });
+  }
 });

@@ -43,8 +43,14 @@ jobs:
         working-directory: FailSafe/extension
         run: npm run compile
 
+      - name: Package and validate VSIX contents
+        working-directory: FailSafe/extension
+        run: |
+          npx @vscode/vsce package
+          npm run validate:vsix
+
       - name: Repository validation
         shell: pwsh
         run: |
-          pwsh -File validate.ps1 -SkipContainerValidation
+          pwsh -File scripts/validate.ps1 -SkipContainerValidation
 

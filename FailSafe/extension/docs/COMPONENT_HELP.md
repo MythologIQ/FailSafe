@@ -1,123 +1,153 @@
 # FailSafe Component Help
 
-Audience: operators using the packaged VS Code extension.
+Audience: operators using the packaged VS Code extension (`v4.4.0`).
 
-Scope: shipped UI surfaces, governance components, and the metrics you see in normal use.
+Scope: shipped UI surfaces, governance components, and Voice + Mindmap Status in the current release.
 
 ## At a Glance
 
-| Component | Purpose | When to use it |
+| Surface | Purpose | Use It When |
 | --- | --- | --- |
-| FailSafe Monitor | Live status for Sentinel, trust, queues, and recent verdicts | Keep this open during active work |
-| Command Center | Main control surface for workflows, governance, skills, and reports | Use for setup, review, and deeper inspection |
-| Risk Register | Structured list of known project risks | Track non-transient risks and mitigation work |
-| Transparency Stream | Event feed of governance activity | Review what FailSafe just did and why |
-| SOA Ledger | Local audit trail | Verify decisions, provenance, and historical state |
-| Commit Guard | Pre-commit governance checkpoint | Add commit-time guardrails to git workflows |
-| Provenance Tracker | Ledgered AI authorship attribution | Review which agent likely touched which artifact |
-| Break-Glass | Time-limited override path | Use only for urgent work that cannot wait |
-| Checkpoints | Recovery and rollback substrate | Return to a known-good state after drift or failure |
+| FailSafe Monitor | Compact live status inside the VS Code sidebar | You need quick health and posture checks while coding |
+| FailSafe Console | Full control surface in browser or editor tab | You need actions, workflows, governance review, or history |
+| Console: Overview | Trust snapshot, operation stream, threat and chain status | You need fast situational awareness |
+| Console: Operations | Mission strip, phase progress, integrity and rollback actions | You are actively running execution workflows |
+| Console: Transparency | Real-time event stream | You are debugging why FailSafe did something |
+| Console: Risks | Risk register CRUD | You are tracking durable project risks |
+| Console: Skills | Skill discovery, relevance, and intent shell | You are selecting governance-aware execution skills |
+| Console: Governance | Sentinel status, policies, L3 queue, protocol audit log | You are reviewing control and approval state |
+| Console: Mindmap | Manual node-based ideation canvas with local session export | You are mapping ideas before implementation |
+| Console: Settings | Theme and local console preferences | You need presentation or workspace preference changes |
 
-## UI Surfaces
+## Monitor vs Console
 
 ### FailSafe Monitor
 
-The Monitor is the compact operational surface. It is for awareness, not deep workflow management.
+The Monitor is an awareness surface. Keep it open while editing to track status without context switching.
 
-Use it to answer four questions quickly:
+Expected use:
 
-1. Is Sentinel healthy?
-2. Is governance permissive or strict right now?
-3. Are high-risk items waiting for review?
-4. Did the last verdict pass, warn, block, or escalate?
+1. Confirm Sentinel is active.
+2. Watch queue and confidence-related indicators.
+3. Open Console when you need to act.
 
-### Command Center
+### FailSafe Console
 
-The Command Center is the primary control plane. Open it when you need to change state, inspect runs, review skills, or work through governance decisions.
+The Console is the control surface. Use it for actions, state transitions, governance work, and deeper inspection.
 
-Prefer the Command Center over the Monitor when you need action, history, or context.
+Open paths:
 
-### Risk Register
+- `FailSafe: Open Command Center (Browser Popout)`
+- `FailSafe: Open Command Center (Editor Tab)`
 
-The Risk Register is for durable project risks, not transient save-time warnings.
+## Console Tabs
 
-Add an entry when the issue needs ownership, mitigation, or follow-up beyond the current editing session.
+### Overview
 
-### Transparency Stream
+Shows a summary card layer (trust, events, threats, chain status) and a recent operations stream.
 
-The Transparency Stream shows recent governance events as they happen.
+Operator note: some secondary widgets are presentation-only and should not be treated as policy evidence.
 
-Use it when a save, audit, mode change, override, or workflow action behaved differently than expected.
+### Operations
+
+Shows phase and adherence metrics, then exposes key operational actions:
+
+- `Resume`
+- `Panic Stop`
+- `Verify Chain`
+- `Rollback`
+
+Use this tab as the day-to-day execution cockpit.
+
+### Transparency
+
+Streams runtime events for governance and prompt lifecycle visibility.
+
+Use this first when behavior seems unexpected before escalating to deeper audits.
+
+### Risks
+
+Stores durable risk records with severity and lifecycle fields.
+
+Use this for multi-session risk ownership, not transient warnings.
+
+### Skills
+
+Supports:
+
+- auto/manual ingest
+- phase-filtered relevance
+- tabbed skill views (`Recommended`, `All Relevant`, `Installed`, `Other`)
+
+Use this to choose execution scaffolds that match current phase and governance context.
+
+### Governance
+
+Combines:
+
+- Sentinel live status
+- active policy list
+- L3 verification queue
+- protocol audit log
+
+Use this tab when decisions require human review, overrides, or chain verification.
+
+### Mindmap
+
+Current release behavior is manual ideation:
+
+- add and categorize nodes
+- drag nodes on SVG canvas
+- save session in local state
+- export JSON
+
+Voice capture and spoken response are shipped in `v4.4.0` when vendor runtime assets are present.
+
+### Settings
+
+Applies console-level theme and tab preference persistence.
+
+Use this for UI preference only; governance policy configuration remains code/config based.
 
 ## Governance Components
 
 ### Sentinel
 
-Sentinel evaluates file activity and produces verdicts. It can run in `heuristic`, `llm-assisted`, or `hybrid` mode.
+Sentinel produces runtime verdicts with confidence and risk context.
 
-- `PASS`: the change cleared the current checks.
-- `WARN`: the change is allowed but worth review.
-- `BLOCK`: the change should not proceed as-is.
-- `ESCALATE`: human review is required.
-- `QUARANTINE`: the agent or session is isolated pending review.
+- `PASS`: no blocking issue detected
+- `WARN`: proceed with review
+- `BLOCK`: stop and remediate
+- `ESCALATE`: human review required
 
 ### QoreLogic
 
-QoreLogic is the deterministic governance layer. It decides by code, not by asking an LLM to follow policy.
+QoreLogic is deterministic governance logic (policy by code, not prompt compliance).
 
-Use QoreLogic settings to control mode, thresholds, and runtime behavior.
+Use governance settings for mode and thresholds, then use ledger and transparency views for validation.
 
 ### SOA Ledger
 
-The ledger is the local source of truth for governance history. It records decisions, overrides, replay activity, provenance, and release context.
+The local ledger is the audit source of truth for decisions, overrides, checkpoints, and provenance events.
 
-If a claim cannot be traced to the ledger or source code, treat it as unverified.
+If a claim is not traceable to code plus ledger evidence, treat it as unverified.
 
-## Release-Time Components
+## Voice + Mindmap Status
 
-### Commit Guard
-
-Commit Guard installs a thin pre-commit script in `.git/hooks/` and a per-session token in `.git/`.
-
-Important operator notes:
-
-- It calls FailSafe's local `commit-check` API.
-- It fails open if the local API is unavailable or the token is missing.
-- It is a workflow guardrail, not a hard security boundary.
-- `curl` must be available on the machine for the hook to work.
-
-### Provenance Tracker
-
-Provenance tracking records likely AI authorship to the ledger when files are saved.
-
-Important operator notes:
-
-- It is observational.
-- It does not write comments into source files.
-- Confidence reflects the quality of the attribution signal available at save time.
-- Provenance is filtered to relevant, in-scope activity.
-
-### Governance Context Export
-
-The release workflow exports public governance context for CI artifacts.
-
-This is for release review, not runtime enforcement. It packages public artifacts such as `CHANGELOG.md`, `docs/SYSTEM_STATE.md`, and a commit summary.
-
-## Metrics Reference
-
-| Metric | Meaning | Action |
+| Capability | Status | Notes |
 | --- | --- | --- |
-| Files Watched | Files Sentinel is actively monitoring | Sudden drops suggest scope or workspace changes |
-| Queue Depth | Pending save events awaiting review | Long queues suggest review load or backlog |
-| Events Processed | Total save events handled this session | Use as a rough activity indicator |
-| Avg Trust | Mean trust score across recorded agents | Falling values suggest recent governance failures |
-| L3 Queue | High-risk items waiting for human approval | Review before allowing regulated or critical work |
-| Cache Hits/Misses | Fingerprint and novelty reuse vs recompute | Use for performance inspection, not safety decisions |
+| Mindmap tab shell in Console | implemented | Shipped in `command-center.html` + `modules/brainstorm*.js` |
+| Manual node canvas + export | implemented | Local ideation and JSON export are active |
+| Mic capture (MediaRecorder) | implemented | `SttEngine` records audio in browser and drives transcript flow |
+| STT/TTS roundtrip | implemented | `stt-engine.js` + `tts-engine.js` integrated in the Mindmap (`brainstorm`) renderer |
+| Confidence-based node coloring by extraction | implemented | `brainstorm-canvas.js` maps `confidence` to semantic colors |
 
 ## Claim Map
 
 | Claim | Status | Source |
 | --- | --- | --- |
-| Commit Guard ships in `v4.3.0` | implemented | `src/extension/main.ts`, `package.json` |
-| Provenance is ledger-based, not file-injected | implemented | `src/governance/ProvenanceTracker.ts` |
-| Governance context export ships in release workflow | implemented | `tools/export-governance-context.sh`, `.github/workflows/release.yml` |
+| Monitor and Console are both shipped UI surfaces | implemented | `FailSafe/extension/package.json`, `FailSafe/extension/src/roadmap/FailSafeSidebarProvider.ts`, `FailSafe/extension/src/extension/commands.ts` |
+| Console includes 8 tabs including Mindmap and Governance | implemented | `FailSafe/extension/src/roadmap/ui/command-center.html`, `FailSafe/extension/src/roadmap/ui/command-center.js` |
+| Mindmap in `v4.4.0` supports voice + manual flows | implemented | `FailSafe/extension/src/roadmap/ui/modules/brainstorm.js`, `FailSafe/extension/src/roadmap/ui/modules/stt-engine.js`, `FailSafe/extension/src/roadmap/ui/modules/tts-engine.js` |
+| Transcript-backed graph extraction endpoint is shipped | implemented | `FailSafe/extension/src/roadmap/ConsoleServer.ts` (`POST /api/v1/brainstorm/transcript`) |
+| Voice runtime needs vendored engine assets | implemented | `FailSafe/extension/src/roadmap/ui/vendor/whisper/VENDOR.md`, `FailSafe/extension/src/roadmap/ui/vendor/piper/VENDOR.md` |

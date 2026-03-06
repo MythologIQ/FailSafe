@@ -1,5 +1,5 @@
 // File: extension/src/governance/IntentService.ts
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'node:crypto';
 import { Intent, IntentType, IntentScope, IntentMetadata, IntentStatus, IntentEvidence, IntentSchema } from './types/IntentTypes';
 import { IntentStore } from './IntentStore';
 import { IntentHistoryLog } from './IntentHistoryLog';
@@ -47,7 +47,7 @@ export class IntentService {
 
     const now = new Date().toISOString();
     const intent: Intent = {
-      id: uuidv4(), type: params.type, createdAt: now, purpose: params.purpose,
+      id: randomUUID(), type: params.type, createdAt: now, purpose: params.purpose,
       scope: params.scope, status: 'PULSE', blueprint: params.blueprint,
       planId: params.planId,
       metadata: params.metadata, updatedAt: now, schemaVersion: 2,

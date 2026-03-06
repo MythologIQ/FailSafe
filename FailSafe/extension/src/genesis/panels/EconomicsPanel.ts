@@ -18,6 +18,7 @@ export class EconomicsPanel {
   private readonly panel: vscode.WebviewPanel;
   private readonly tokenService: TokenAggregatorService;
   private readonly disposables: vscode.Disposable[] = [];
+  private initialized: boolean = false;
 
   private constructor(
     panel: vscode.WebviewPanel,
@@ -76,12 +77,25 @@ export class EconomicsPanel {
 
   private async update(): Promise<void> {
     const snapshot = this.tokenService.getSnapshot();
-    const model: EconomicsViewModel = {
-      nonce: getNonce(),
-      cspSource: this.panel.webview.cspSource,
-      snapshot,
-    };
-    this.panel.webview.html = renderEconomicsTemplate(model);
+    if (!this.initialized) {
+      const model: EconomicsViewModel = {
+        nonce: getNonce(),
+        cspSource: this.panel.webview.cspSource,
+        snapshot,
+      };
+      this.panel.webview.html = renderEconomicsTemplate(model);
+      this.initialized = true;
+      return;
+    }
+    // Send message-based update instead of full HTML rebuild
+    this.panel.webview.postMessage({
+      type: "updateDashboard",
+      snapshot: {
+        weeklyTokensSaved: snapshot.weeklyTokensSaved,
+        weeklyCostSaved: snapshot.weeklyCostSaved,
+        contextSyncRatio: snapshot.contextSyncRatio,
+      },
+    });
   }
 
   dispose(): void {

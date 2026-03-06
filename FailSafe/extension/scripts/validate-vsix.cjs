@@ -22,8 +22,7 @@ function canRun(command, args = ["--help"]) {
   return !result.error;
 }
 
-function resolveVsixPath() {
-  const explicit = process.argv[2];
+function resolveVsixPath(explicit) {
   if (explicit) {
     const resolved = path.resolve(process.cwd(), explicit);
     if (fs.existsSync(resolved)) {
@@ -61,6 +60,22 @@ function assertIncludes(haystack, needle, label) {
   }
 }
 
+function readJson(filePath) {
+  try {
+    return JSON.parse(fs.readFileSync(filePath, "utf8"));
+  } catch (error) {
+    fail(`Unable to parse JSON at ${filePath}: ${error.message}`);
+  }
+}
+
+function extractLatestRelease(changelogText) {
+  const releaseMatch = changelogText.match(/^## \[(?!Unreleased\])([^\]]+)\] - (\d{4}-\d{2}-\d{2})$/m);
+  if (!releaseMatch) {
+    fail("Unable to determine latest release from CHANGELOG.md. Expected heading like '## [x.y.z] - YYYY-MM-DD'.");
+  }
+  return { version: releaseMatch[1], date: releaseMatch[2] };
+}
+
 function createArchiveReader(vsixPath) {
   if (canRun("unzip")) {
     return {
@@ -76,7 +91,34 @@ function createArchiveReader(vsixPath) {
 }
 
 function main() {
-  const vsixPath = resolveVsixPath();
+  const args = process.argv.slice(2);
+  const sourceOnly = args.includes("--source-only");
+  const explicitVsix = args.find((arg) => !arg.startsWith("-"));
+
+  const sourcePkg = readJson(path.join(root, "package.json"));
+  const sourceReadme = fs.readFileSync(path.join(root, "README.md"), "utf8");
+  const sourceChangelog = fs.readFileSync(path.join(root, "CHANGELOG.md"), "utf8");
+  const latestRelease = extractLatestRelease(sourceChangelog);
+
+  if (sourcePkg.version !== latestRelease.version) {
+    fail(
+      `Version mismatch between package.json (${sourcePkg.version}) and latest CHANGELOG release (${latestRelease.version}).`
+    );
+  }
+
+  assertIncludes(
+    sourceReadme,
+    `**Current Release**: v${sourcePkg.version} (${latestRelease.date})`,
+    "Source README release marker"
+  );
+  assertIncludes(sourceReadme, `## What's New in v${sourcePkg.version}`, "Source README release notes heading");
+  console.log(`[PASS] Source release metadata validated: v${sourcePkg.version} (${latestRelease.date})`);
+
+  if (sourceOnly) {
+    return;
+  }
+
+  const vsixPath = resolveVsixPath(explicitVsix);
   if (!fs.existsSync(vsixPath)) {
     fail(`VSIX not found: ${vsixPath}`);
   }
@@ -92,27 +134,36 @@ function main() {
     "extension/docs/PROCESS_GUIDE.md",
     "extension/dist/extension/main.js",
     "extension/dist/extension/ui/index.html",
-    "extension/dist/extension/ui/legacy-index.html",
-    "extension/dist/webui/pages/index.html",
-    "extension/dist/webui/pages/dashboard.html",
+    "extension/dist/extension/ui/command-center.html",
+    "extension/dist/extension/ui/command-center.js",
+    "extension/dist/extension/ui/command-center.css",
   ].forEach((entry) => assertIncludes(list, entry, "Archive entry"));
 
-  const pkg = archive.read("extension/package.json");
-  assertIncludes(pkg, `"version": "4.3.1"`, "Packaged package.json version");
-  assertIncludes(pkg, `"main": "./dist/extension/main.js"`, "Packaged package.json main");
-  assertIncludes(pkg, `"command": "failsafe.installCommitHook"`, "Packaged command");
-  assertIncludes(pkg, `"command": "failsafe.removeCommitHook"`, "Packaged command");
+  const packagedPkg = JSON.parse(archive.read("extension/package.json"));
+  if (packagedPkg.version !== sourcePkg.version) {
+    fail(`Packaged package.json version mismatch: expected ${sourcePkg.version}, found ${packagedPkg.version}`);
+  }
+  if (packagedPkg.main !== "./dist/extension/main.js") {
+    fail(`Packaged package.json main mismatch: expected ./dist/extension/main.js, found ${packagedPkg.main}`);
+  }
+  const packagedCommands = JSON.stringify(packagedPkg.contributes?.commands ?? []);
+  assertIncludes(packagedCommands, `"failsafe.installCommitHook"`, "Packaged command");
+  assertIncludes(packagedCommands, `"failsafe.removeCommitHook"`, "Packaged command");
 
   const manifest = archive.read("extension.vsixmanifest");
-  assertIncludes(manifest, `Version="4.3.1"`, "VSIX manifest version");
-  assertIncludes(manifest, `DisplayName>FailSafe (feat. QoreLogic)<`, "VSIX display name");
+  assertIncludes(manifest, `Version="${sourcePkg.version}"`, "VSIX manifest version");
+  assertIncludes(manifest, `DisplayName>${sourcePkg.displayName}<`, "VSIX display name");
 
   const readme = archive.read("extension/README.md");
-  assertIncludes(readme, `**Current Release**: v4.3.1 (2026-03-03)`, "Packaged README release marker");
-  assertIncludes(readme, `## What's New in v4.3.1`, "Packaged README release notes");
+  assertIncludes(
+    readme,
+    `**Current Release**: v${sourcePkg.version} (${latestRelease.date})`,
+    "Packaged README release marker"
+  );
+  assertIncludes(readme, `## What's New in v${sourcePkg.version}`, "Packaged README release notes");
 
   const changelog = archive.read("extension/CHANGELOG.md");
-  assertIncludes(changelog, `## [4.3.1]`, "Packaged changelog release entry");
+  assertIncludes(changelog, `## [${sourcePkg.version}] - ${latestRelease.date}`, "Packaged changelog release entry");
 
   console.log(`[PASS] VSIX validated: ${vsixPath}`);
 }

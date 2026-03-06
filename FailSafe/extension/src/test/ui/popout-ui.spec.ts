@@ -7,7 +7,7 @@ test('popout UI shell renders required sections', async ({ page }) => {
   const root = path.resolve(__dirname, '../../roadmap/ui');
   const server = http.createServer((req, res) => {
     const requestPath = decodeURIComponent((req.url || '/').split('?')[0]);
-    const relative = requestPath === '/' ? 'legacy-index.html' : requestPath.replace(/^\/+/, '');
+    const relative = requestPath === '/' ? 'command-center.html' : requestPath.replace(/^\/+/, '');
     const filePath = path.join(root, relative);
     if (!filePath.startsWith(root) || !fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
       res.statusCode = 404;
@@ -29,34 +29,33 @@ test('popout UI shell renders required sections', async ({ page }) => {
   }
 
   try {
-    await page.goto(`http://127.0.0.1:${address.port}/legacy-index.html`);
+    await page.goto(`http://127.0.0.1:${address.port}/command-center.html`);
 
-    await expect(page.locator('.tab[data-route="home"]')).toBeVisible();
-    await expect(page.locator('.tab[data-route="run"]')).toBeVisible();
-    await expect(page.locator('.tab[data-route="skills"]')).toBeVisible();
-    await expect(page.locator('.tab[data-route="governance"]')).toBeVisible();
-    await expect(page.locator('.tab[data-route="activity"]')).toBeVisible();
-    await expect(page.locator('.tab[data-route="reports"]')).toBeVisible();
-    await expect(page.locator('.tab[data-route="settings"]')).toBeVisible();
+    await expect(page.locator('.tab-btn[data-target="overview"]')).toBeVisible();
+    await expect(page.locator('.tab-btn[data-target="operations"]')).toBeVisible();
+    await expect(page.locator('.tab-btn[data-target="skills"]')).toBeVisible();
+    await expect(page.locator('.tab-btn[data-target="governance"]')).toBeVisible();
+    await expect(page.locator('.tab-btn[data-target="transparency"]')).toBeVisible();
+    await expect(page.locator('.tab-btn[data-target="settings"]')).toBeVisible();
     await expect(page.locator('#theme-select')).toBeHidden();
 
-    await page.locator('.tab[data-route="skills"]').click();
-    await expect(page.locator('#panel-skills')).toHaveClass(/active-panel/);
-    await expect(page.locator('#intent-input')).toBeVisible();
-    await expect(page.locator('[data-skill-tab="allRelevant"]')).toBeVisible();
-    await expect(page.locator('#intent-output')).toBeVisible();
+    await page.locator('.tab-btn[data-target="skills"]').click();
+    await expect(page.locator('#skills')).toHaveClass(/active/);
+    await expect(page.locator('.cc-intent-input')).toBeVisible();
+    await expect(page.locator('.cc-skill-tab[data-tab="Recommended"]')).toBeVisible();
+    await expect(page.locator('.cc-skill-grid')).toBeVisible();
 
-    await page.locator('.tab[data-route="governance"]').click();
-    await expect(page.locator('#panel-governance')).toHaveClass(/active-panel/);
-    await expect(page.locator('#sentinel-status')).toBeVisible();
+    await page.locator('.tab-btn[data-target="governance"]').click();
+    await expect(page.locator('#governance')).toHaveClass(/active/);
+    await expect(page.locator('.cc-gov-verify')).toBeVisible();
 
-    await page.locator('.tab[data-route="activity"]').click();
-    await expect(page.locator('#panel-activity')).toHaveClass(/active-panel/);
-    await expect(page.locator('#focus-toggle')).toBeVisible();
+    await page.locator('.tab-btn[data-target="transparency"]').click();
+    await expect(page.locator('#transparency')).toHaveClass(/active/);
+    await expect(page.locator('.cc-transparency-pause')).toBeVisible();
 
-    await page.locator('.tab[data-route="settings"]').click();
-    await expect(page.locator('#panel-settings')).toHaveClass(/active-panel/);
-    await expect(page.locator('#theme-select')).toBeVisible();
+    await page.locator('.tab-btn[data-target="settings"]').click();
+    await expect(page.locator('#settings')).toHaveClass(/active/);
+    await expect(page.locator('.cc-theme-select')).toHaveCount(6);
   } finally {
     await new Promise<void>((resolve, reject) => server.close((err) => (err ? reject(err) : resolve())));
   }

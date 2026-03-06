@@ -1,5 +1,5 @@
 ---
-title: QoreLogic A.E.G.I.S. Lifecycle Diagnostic
+title: QoreLogic S.H.I.E.L.D. Lifecycle Diagnostic
 description: Analyzes physical file artifacts to determine the current project stage and required persona activation.
 tags:
 tool: false

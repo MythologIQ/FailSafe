@@ -1,6 +1,6 @@
-[![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.2.1?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.2.1?platform=universal)
+[![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.4.0?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.4.0?platform=universal)
 
-# FailSafe v4.2.1 (OpenVSX Package)
+# FailSafe v4.4.0 (OpenVSX Package)
 
 FailSafe is a local-first governance extension for AI-assisted development distributed through Open VSX. It applies deterministic checks at the editor boundary, records decisions to a local ledger, and provides dedicated surfaces for audits, checkpoints, and agent governance.
 
@@ -29,15 +29,13 @@ FailSafe is a local-first governance extension for AI-assisted development distr
 - `RoadmapServer` and `QoreLogicSubstrate` extended for registry-aware orchestration
 - Event taxonomy expanded with discovery tracking markers
 
-## What's New in v4.2.1
+## What's New in v4.4.0
 
-### Official Build "42" Release Notes
+### Release Synchronization
 
-FailSafe started as a solo passion project. Along the way, it has been shaped by painful first-hand lessons, generous feedback from users, sharp insights from industry leaders, and real support from Reddit and Discord communities that cared enough to push the work forward.
-
-Build 42 marks the arrival at a complex but functional system that reduces time, token waste, and friction across AI-assisted development workflows. The goal is to keep making FailSafe into what it can be, while also leaving behind something useful for anyone who wants to learn how to build something new with AI coding tools.
-
-> **We'd love your review!** If FailSafe is useful to you, please leave a review on [Open VSX](https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe). Your feedback helps other developers discover FailSafe and directly shapes its roadmap. Bug reports and feature requests welcome on [GitHub Issues](https://github.com/MythologIQ/FailSafe/issues).
+- Package metadata and release markers aligned with core `v4.4.0`.
+- Marketplace-facing documentation updated for current Mindmap/Console terminology.
+- Changelog and README version surfaces now match published artifact intent.
 
 ## Current Functionality
 

@@ -92,6 +92,15 @@ Grep: "console.log" in src/**/*
 
 Template: `.claude/commands/references/ql-substantiate-templates.md`.
 
+Step 4.5: Reliability Run Evidence Check (B48)
+- Execute `tools/reliability/validate-reliability-run.ps1` and require PASS evidence.
+
+Step 4.6: Skill Admission Evidence Check (B49)
+- Verify skill admission evidence via `tools/reliability/validate-skill-admission.ps1`.
+
+Step 4.7: Gate-to-Skill Matrix Evidence Check (B50)
+- Verify gate-to-skill evidence via `tools/reliability/validate-gate-skill-matrix.ps1`.
+
 ### Step 5: Section 4 Razor Final Check
 
 Template: `.claude/commands/references/ql-substantiate-templates.md`.
@@ -145,3 +154,4 @@ Template: `.claude/commands/references/ql-substantiate-templates.md`.
 - **ALWAYS** calculate proper chain hash
 - **ALWAYS** document any unplanned files in ledger
 - **ALWAYS** verify chain integrity before sealing
+

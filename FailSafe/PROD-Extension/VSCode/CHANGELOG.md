@@ -5,6 +5,13 @@ All notable changes to the FailSafe VSCode Copilot extension will be documented 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.4.0] - 2026-03-06
+
+### Changed
+
+- Version synchronization with core FailSafe `v4.4.0` release metadata.
+- README release markers updated for marketplace consistency.
+
 ## [4.2.0] - 2026-02-27
 
 ### Added

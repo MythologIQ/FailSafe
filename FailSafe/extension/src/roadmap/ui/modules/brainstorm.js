@@ -1,0 +1,245 @@
+// FailSafe Command Center — Brainstorm Voice MindMapper
+// Thin orchestrator: delegates to extracted sub-modules.
+import { IdeationBuffer } from './ideation-buffer.js';
+import { BrainstormCanvas } from './brainstorm-canvas.js';
+import { SttEngine } from './stt-engine.js';
+import { TtsEngine } from './tts-engine.js';
+import { VoiceController } from './voice-controller.js';
+import { KeyboardManager } from './keyboard-manager.js';
+import { BrainstormGraph } from './brainstorm-graph.js';
+import { WebLlmEngine } from './web-llm-engine.js';
+import { renderShell, renderRightPanel } from './brainstorm-templates.js';
+import { LlmStatusRenderer } from './llm-status.js';
+import { PrepBayController } from './prep-bay.js';
+import { NodeEditor } from './node-editor.js';
+
+export class BrainstormRenderer {
+  constructor(containerId, deps = {}) {
+    this.container = document.getElementById(containerId);
+    this.store = deps.store || null;
+    this.client = deps.client || null;
+
+    const stt = new SttEngine(this.store);
+    const tts = new TtsEngine(this.store);
+    this.voice = new VoiceController(stt, tts, this.store);
+    this.keyboard = new KeyboardManager(this.store);
+    this.graph = new BrainstormGraph();
+    this.ideationBuffer = new IdeationBuffer();
+    this.webLlm = new WebLlmEngine(this.store);
+
+    const getEl = (sel) => this._getEl(sel);
+    const showStatus = (t, c) => this.showStatus(t, c);
+    this.llmStatus = new LlmStatusRenderer(this.webLlm, this.store, showStatus);
+    this.prepBay = new PrepBayController(this.graph, this.webLlm, this.ideationBuffer, this.voice, getEl, showStatus);
+    this.nodeEditor = new NodeEditor(this.graph, getEl);
+  }
+
+  render() {
+    if (!this.container || this.graph.canvas) return;
+    this.container.innerHTML = renderShell();
+    this.graph.fetchGraph().then(() => this.initCanvas());
+    this._wireVoice();
+    this.voice.stt.init().finally(() => this.voice.loadSettings());
+    this.voice.tts.init().catch(() => {});
+    this.webLlm.onProgress = () => {
+      if (this.client) {
+        this.client.setWebLlmStatus({
+          nativeAvailable: this.webLlm.isNativeAiAvailable,
+          wasmReady: !!this.webLlm.pipeline,
+          loading: this.webLlm.loadingStatus === 'loading' || this.webLlm.loadingStatus === 'downloading'
+        });
+      }
+      this.llmStatus.render(this.client);
+    };
+    this.webLlm.onStatusChange = (reason) => {
+      this.llmStatus.render(this.client);
+      if (reason === 'native-lost') this.showStatus('Gemini Nano disconnected \u2014 falling back.', 'var(--accent-gold)');
+      if (reason === 'native-downloading') this.showStatus('Downloading Gemini Nano model...', 'var(--accent-cyan)');
+      if (reason === 'native-found') this.showStatus('Gemini Nano active!', 'var(--accent-green)');
+    };
+    this.webLlm.init().then(() => this.llmStatus.render(this.client)).catch(() => this.llmStatus.render(this.client));
+    this._heartbeatInterval = setInterval(() => {
+      this.webLlm.recheckNative().then(() => this.llmStatus.render(this.client));
+    }, 30000);
+    window.addEventListener('failsafe:audio-device-changed', (e) => {
+      if (e.detail.type === 'input') this.voice.stt.setMicDevice(e.detail.deviceId);
+    });
+  }
+
+  renderRightPanel() { return renderRightPanel(); }
+
+  _getEl(sel) {
+    if (!this.container) return null;
+    return this.container.querySelector(sel) || document.getElementById('context-hub')?.querySelector(sel);
+  }
+
+  _getAll(sel) {
+    const fromMain = Array.from(this.container?.querySelectorAll(sel) || []);
+    const fromHub = Array.from(document.getElementById('context-hub')?.querySelectorAll(sel) || []);
+    return [...fromMain, ...fromHub];
+  }
+
+  _wireVoice() {
+    this.voice.onMicButton = (html, active, disabled, title) => {
+      const el = this._getEl('.cc-bs-voice');
+      if (!el) return;
+      if (html !== null) el.innerHTML = html;
+      el.classList.toggle('active', !!active);
+      if (disabled !== undefined) el.disabled = !!disabled;
+      if (title) el.title = title;
+    };
+    this.voice.onStatus = (text, color) => this.showStatus(text, color);
+    this.voice.onAnalyser = (analyser) => this._initVisualizer(analyser);
+    this.voice.wireModelProgress();
+    this.voice.stt.onTranscript = (text, isFinal) => this.prepBay.onTranscript(text, isFinal);
+    this.voice.stt.onAudioCaptured = async (blob) => {
+      try {
+        await fetch('/api/v1/brainstorm/audio', {
+          method: 'POST',
+          headers: { 'Content-Type': 'audio/webm' },
+          body: blob
+        });
+      } catch (err) {
+        console.warn('Failed to store audio context', err);
+      }
+    };
+    this.keyboard.onPttStart = () => this.voice.startPtt();
+    this.keyboard.onPttStop = () => this.voice.stopPtt();
+    this.graph.onSelectionChange = (id) => {
+      if (id === this.nodeEditor.selectedNodeId || id === null) this.nodeEditor.select(null);
+      else this.nodeEditor.select(id);
+    };
+  }
+
+  _initVisualizer(analyser) {
+    const cvs = document.querySelector('.audio-visualizer-canvas');
+    if (!cvs) return;
+    const ctx = cvs.getContext('2d');
+    const buf = new Uint8Array(analyser.frequencyBinCount);
+    const rect = cvs.getBoundingClientRect();
+    cvs.width = rect.width || 200;
+    cvs.height = rect.height || 24;
+    const draw = () => {
+      if (!this.voice.voiceActive) { ctx.clearRect(0, 0, cvs.width, cvs.height); return; }
+      requestAnimationFrame(draw);
+      analyser.getByteTimeDomainData(buf);
+      ctx.clearRect(0, 0, cvs.width, cvs.height);
+      ctx.lineWidth = 2; ctx.strokeStyle = '#10b981'; ctx.beginPath();
+      const sw = cvs.width / buf.length;
+      for (let i = 0, x = 0; i < buf.length; i++, x += sw) {
+        const y = (buf[i] / 128.0) * cvs.height / 2;
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.lineTo(cvs.width, cvs.height / 2); ctx.stroke();
+    };
+    draw();
+  }
+
+  initCanvas() {
+    const container = this.container.querySelector('.cc-brainstorm-canvas');
+    if (!container) return;
+    const canvas = new BrainstormCanvas(container);
+    this.graph.setCanvas(canvas);
+    this._updateEmptyState = () => {
+      const el = this.container?.querySelector('.cc-bs-empty-state');
+      if (el) el.style.display = this.graph.nodes.length ? 'none' : 'block';
+    };
+    const origSetNodes = canvas.setNodes.bind(canvas);
+    canvas.setNodes = (nodes) => { origSetNodes(nodes); this._updateEmptyState(); };
+    canvas.setNodes(this.graph.nodes);
+    canvas.setEdges(this.graph.edges, this.graph.nodes);
+    canvas.onNodeMove((id, x, y) => {
+      const node = this.graph.nodes.find(n => n.id === id);
+      if (node) { node.x = x; node.y = y; }
+    });
+    canvas.onNodeSelect((id) => this.nodeEditor.select(id));
+    canvas.onNodeDblClick((id) => this.nodeEditor.startEdit(id));
+    this.bindToolbar();
+    this.keyboard.loadKey();
+    this.keyboard.bind();
+  }
+
+  bindToolbar() {
+    const canvas = this.graph.canvas;
+    if (!canvas) return;
+
+    this._getEl('.cc-bs-export')?.addEventListener('click', () => this.graph.exportJSON());
+    this._getEl('.cc-bs-clear')?.addEventListener('click', () => {
+      if (confirm('Are you sure you want to reset the entire Mind Map? This will clear all extracted ideations.')) {
+        this.graph.clearAll();
+      }
+    });
+
+    this._getAll('.cc-bs-layout').forEach(btn => {
+      btn.addEventListener('click', () => {
+        canvas.setLayout(btn.getAttribute('data-layout'));
+        this._getAll('.cc-bs-layout').forEach(b => b.style.borderColor = '');
+        btn.style.borderColor = 'var(--accent-cyan)';
+      });
+    });
+
+    this._getAll('.cc-bs-view').forEach(btn => {
+      btn.addEventListener('click', () => {
+        canvas.setViewMode(btn.getAttribute('data-view'));
+        this._getAll('.cc-bs-view').forEach(b => { b.classList.remove('active'); b.style.borderColor = ''; });
+        btn.classList.add('active');
+        btn.style.borderColor = 'var(--accent-cyan)';
+      });
+    });
+
+    this._bindWakeToggle();
+
+    // Global listener uses fresh DOM query each time (survives tab-switch rebuilds)
+    if (!this._wakeListenerBound) {
+      this._wakeListenerBound = true;
+      window.addEventListener('failsafe:wake-word-changed', (e) => {
+        this.voice.stt.setWakeWordEnabled(e.detail.enabled);
+        if (e.detail.enabled) this.voice.stt.startWakeWordListener();
+        else this.voice.stt.stopWakeWordListener();
+        const toggle = this._getEl('.cc-bs-wake-toggle');
+        if (toggle && toggle.checked !== e.detail.enabled) toggle.checked = e.detail.enabled;
+      });
+    }
+
+    this.prepBay.bindEvents();
+    this._getEl('.cc-bs-voice')?.addEventListener('click', () => this.voice.toggle());
+    this.llmStatus.render(this.client);
+
+    // Replace with lightweight re-render for subsequent calls (sidebar re-show)
+    this.bindToolbar = () => {
+      this.llmStatus.render(this.client);
+      this._bindWakeToggle();
+    };
+  }
+
+  _bindWakeToggle() {
+    const toggle = this._getEl('.cc-bs-wake-toggle');
+    if (!toggle) return;
+    const val = this.store?.get('wake-word-enabled');
+    toggle.checked = val === 'true' || val === true;
+    toggle.addEventListener('change', (e) => {
+      const on = e.target.checked;
+      this.voice.stt.setWakeWordEnabled(on);
+      if (on) this.voice.stt.startWakeWordListener(); else this.voice.stt.stopWakeWordListener();
+      this.store?.set('wake-word-enabled', on);
+      window.dispatchEvent(new CustomEvent('failsafe:wake-word-changed', { detail: { enabled: on } }));
+    });
+  }
+
+  showStatus(text, color) {
+    const el = this._getEl('.cc-bs-chat-status');
+    if (!el) return;
+    if (text) { el.textContent = text; el.style.borderLeftColor = color || 'var(--accent-cyan)'; el.style.display = 'block'; }
+    else { el.style.display = 'none'; el.textContent = ''; }
+  }
+
+  onEvent(evt) { this.graph.onEvent(evt); }
+
+  destroy() {
+    if (this._heartbeatInterval) clearInterval(this._heartbeatInterval);
+    this.keyboard.unbind();
+    this.voice.destroy();
+    this.graph.canvas?.destroy();
+    if (this.container) this.container.innerHTML = '';
+  }
+}

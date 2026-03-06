@@ -229,11 +229,34 @@ export class SentinelRagStore {
         return null;
       }
       const maxBytes = 16 * 1024;
-      const file = await fs.promises.readFile(filePath);
-      return file.slice(0, maxBytes).toString("utf8");
+      return await this.readFileHead(filePath, maxBytes);
     } catch {
       return null;
     }
+  }
+
+  private readFileHead(filePath: string, maxBytes: number): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const chunks: Buffer[] = [];
+      let bytesRead = 0;
+      const stream = fs.createReadStream(filePath, { highWaterMark: maxBytes });
+      stream.on("data", (chunk: string | Buffer) => {
+        const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+        const remaining = maxBytes - bytesRead;
+        if (remaining <= 0) {
+          stream.destroy();
+          return;
+        }
+        const slice = buf.slice(0, remaining);
+        chunks.push(slice);
+        bytesRead += slice.length;
+        if (bytesRead >= maxBytes) {
+          stream.destroy();
+        }
+      });
+      stream.on("close", () => resolve(Buffer.concat(chunks).toString("utf8")));
+      stream.on("error", reject);
+    });
   }
   private openSqlite(): SqliteDb | null {
     try {

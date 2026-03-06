@@ -38,7 +38,29 @@
     "roi"
   ],
   "activationEvents": [
-    "onStartupFinished"
+    "onChatParticipant:failsafe.chat",
+    "onView:failsafe.sidebarView",
+    "onCommand:failsafe.openSidebar",
+    "onCommand:failsafe.openPlannerHub",
+    "onCommand:failsafe.openRoadmap",
+    "onCommand:failsafe.openPlannerHubEditor",
+    "onCommand:failsafe.auditFile",
+    "onCommand:failsafe.secureWorkspace",
+    "onCommand:failsafe.panicStop",
+    "onCommand:failsafe.resumeMonitoring",
+    "onCommand:failsafe.openProjectOverview",
+    "onCommand:failsafe.openRiskRegister",
+    "onCommand:failsafe.addRisk",
+    "onCommand:failsafe.setGovernanceMode",
+    "onCommand:failsafe.showEconomics",
+    "onCommand:failsafe.revertToCheckpoint",
+    "onCommand:failsafe.breakGlass",
+    "onCommand:failsafe.revokeBreakGlass",
+    "onCommand:failsafe.replayVerdict",
+    "onCommand:failsafe.undoLastAttempt",
+    "onCommand:failsafe.onboardAgent",
+    "onCommand:failsafe.installCommitHook",
+    "onCommand:failsafe.removeCommitHook"
   ],
   "main": "./dist/extension/main.js",
   "contributes": {

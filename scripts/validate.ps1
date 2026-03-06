@@ -15,7 +15,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$RepoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+$RepoRoot = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $violations = @()
 
 function Write-Log {
@@ -125,35 +125,49 @@ function Validate-ReliabilityHardening {
     Assert-PathExists -RelativePath $item.Path -Rule $item.Rule
   }
 
-  Assert-FileContains `
-    -RelativePath ".agent/workflows/ql-implement.md" `
-    -Pattern "Step 5\.6: Intent Lock Interdiction \(B51\)" `
-    -Rule "ql-implement missing B51 interdiction"
+  $qlImplementWorkflows = @(
+    "FailSafe/Claude/Qorelogic/workflows/ql-implement.md",
+    "FailSafe/Antigravity/Qorelogic/workflows/ql-implement.md"
+  )
 
-  Assert-FileContains `
-    -RelativePath ".agent/workflows/ql-implement.md" `
-    -Pattern "Step 5\.7: Skill Admission Interdiction \(B49\)" `
-    -Rule "ql-implement missing B49 interdiction"
+  foreach ($workflow in $qlImplementWorkflows) {
+    Assert-FileContains `
+      -RelativePath $workflow `
+      -Pattern "Step 5\.6: Intent Lock Interdiction \(B51\)" `
+      -Rule "ql-implement missing B51 interdiction"
 
-  Assert-FileContains `
-    -RelativePath ".agent/workflows/ql-implement.md" `
-    -Pattern "Step 5\.8: Gate-to-Skill Matrix Interdiction \(B50\)" `
-    -Rule "ql-implement missing B50 interdiction"
+    Assert-FileContains `
+      -RelativePath $workflow `
+      -Pattern "Step 5\.7: Skill Admission Interdiction \(B49\)" `
+      -Rule "ql-implement missing B49 interdiction"
 
-  Assert-FileContains `
-    -RelativePath ".agent/workflows/ql-substantiate.md" `
-    -Pattern "validate-reliability-run\.ps1" `
-    -Rule "ql-substantiate missing reliability-run validator gate"
+    Assert-FileContains `
+      -RelativePath $workflow `
+      -Pattern "Step 5\.8: Gate-to-Skill Matrix Interdiction \(B50\)" `
+      -Rule "ql-implement missing B50 interdiction"
+  }
 
-  Assert-FileContains `
-    -RelativePath ".agent/workflows/ql-substantiate.md" `
-    -Pattern "Step 4\.6: Skill Admission Evidence Check \(B49\)" `
-    -Rule "ql-substantiate missing B49 evidence check"
+  $qlSubstantiateWorkflows = @(
+    "FailSafe/Claude/Qorelogic/workflows/ql-substantiate.md",
+    "FailSafe/Antigravity/Qorelogic/workflows/ql-substantiate.md"
+  )
 
-  Assert-FileContains `
-    -RelativePath ".agent/workflows/ql-substantiate.md" `
-    -Pattern "Step 4\.7: Gate-to-Skill Matrix Evidence Check \(B50\)" `
-    -Rule "ql-substantiate missing B50 evidence check"
+  foreach ($workflow in $qlSubstantiateWorkflows) {
+    Assert-FileContains `
+      -RelativePath $workflow `
+      -Pattern "validate-reliability-run\.ps1" `
+      -Rule "ql-substantiate missing reliability-run validator gate"
+
+    Assert-FileContains `
+      -RelativePath $workflow `
+      -Pattern "Step 4\.6: Skill Admission Evidence Check \(B49\)" `
+      -Rule "ql-substantiate missing B49 evidence check"
+
+    Assert-FileContains `
+      -RelativePath $workflow `
+      -Pattern "Step 4\.7: Gate-to-Skill Matrix Evidence Check \(B50\)" `
+      -Rule "ql-substantiate missing B50 evidence check"
+  }
 }
 
 function Validate-GitHubStandards {

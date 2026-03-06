@@ -136,7 +136,7 @@ export function registerAdvancedCommands(
   );
 
   // Multi-Agent Ceremony (B85)
-  registerCeremonyCommands(context, deps, logger);
+  registerCeremonyCommands(context, deps);
 
   // Undo Last Attempt (B60)
   context.subscriptions.push(
@@ -166,7 +166,6 @@ export function registerAdvancedCommands(
 async function registerCeremonyCommands(
   context: vscode.ExtensionContext,
   deps: AdvancedCommandsDeps,
-  logger: Logger,
 ): Promise<void> {
   const { AgentConfigInjector } = await import("../qorelogic/AgentConfigInjector");
   const { GovernanceCeremony } = await import("../governance/GovernanceCeremony");

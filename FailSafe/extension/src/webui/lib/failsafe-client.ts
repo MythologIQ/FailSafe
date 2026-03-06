@@ -48,10 +48,15 @@ export interface FailSafeEvent {
 }
 
 export class FailSafeClient {
+  private static resolveBaseUrl(): string {
+    const maybeWindow = globalThis as typeof globalThis & {
+      window?: { location?: { origin?: string } };
+    };
+    return maybeWindow.window?.location?.origin || "http://localhost:9376";
+  }
+
   constructor(
-    private baseUrl = typeof (globalThis as any).window !== "undefined"
-      ? (globalThis as any).window.location.origin
-      : "http://localhost:9376",
+    private baseUrl = FailSafeClient.resolveBaseUrl(),
   ) {}
 
   private async get<T>(path: string): Promise<T> {

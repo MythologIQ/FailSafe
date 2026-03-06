@@ -13,6 +13,13 @@ export interface HostBridge {
   dispose(): void;
 }
 
+function resolveDefaultBaseUrl(): string {
+  const maybeWindow = globalThis as typeof globalThis & {
+    window?: { location?: { origin?: string } };
+  };
+  return maybeWindow.window?.location?.origin || "http://localhost:9376";
+}
+
 type VscodeApi = {
   postMessage: (msg: unknown) => void;
   getState: () => unknown;
@@ -129,11 +136,7 @@ export class ApiHostBridge implements HostBridge {
   private eventListeners = new Map<string, Set<(data: unknown) => void>>();
   private state = new Map<string, unknown>();
 
-  constructor(
-    private baseUrl = typeof (globalThis as any).window !== "undefined"
-      ? (globalThis as any).window.location.origin
-      : "http://localhost:9376",
-  ) {}
+  constructor(private baseUrl = resolveDefaultBaseUrl()) {}
 
   async executeCommand(command: string, ...args: unknown[]): Promise<unknown> {
     const res = await fetch(`${this.baseUrl}/api/v1/command`, {
@@ -205,9 +208,7 @@ export class ApiHostBridge implements HostBridge {
  * Detect the current environment and return the appropriate bridge
  */
 export function createHostBridge(
-  apiBaseUrl = typeof (globalThis as any).window !== "undefined"
-    ? (globalThis as any).window.location.origin
-    : "http://localhost:9376",
+  apiBaseUrl = resolveDefaultBaseUrl(),
 ): HostBridge {
   if (
     typeof (globalThis as typeof globalThis & { acquireVsCodeApi?: unknown })

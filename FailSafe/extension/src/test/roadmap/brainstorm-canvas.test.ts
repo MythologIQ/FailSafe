@@ -1,5 +1,5 @@
 import * as assert from "assert";
-// @ts-ignore
+// @ts-expect-error JS module import in TS test context
 import { BrainstormCanvas } from "../../../src/roadmap/ui/modules/brainstorm-canvas.js";
 import { JSDOM } from "jsdom";
 

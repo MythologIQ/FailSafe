@@ -1,5 +1,5 @@
 import * as assert from "assert";
-// @ts-ignore
+// @ts-expect-error JS module import in TS test context
 import { calculateHaptics } from "../../../src/roadmap/ui/modules/haptic-engine.js";
 
 suite("HapticEngine Tests", () => {

@@ -1,12 +1,12 @@
 import * as assert from "assert";
 
 // SttEngine depends on browser globals — stub the minimum so the module loads.
-// @ts-ignore
+// @ts-expect-error test-only global shim
 globalThis.SpeechRecognition ??= class {};
-// @ts-ignore
+// @ts-expect-error test-only global shim
 globalThis.webkitSpeechRecognition ??= class {};
 
-// @ts-ignore
+// @ts-expect-error JS module import in TS test context
 import { SttEngine } from "../../../src/roadmap/ui/modules/stt-engine.js";
 
 suite("SttEngine Silence Timer Tests", () => {
@@ -82,16 +82,16 @@ function useFakeTimers() {
   const origSetTimeout = globalThis.setTimeout;
   const origClearTimeout = globalThis.clearTimeout;
   let now = 0;
-  const timers: { id: number; cb: Function; at: number }[] = [];
+  const timers: { id: number; cb: () => void; at: number }[] = [];
   let nextId = 1;
 
-  // @ts-ignore
-  globalThis.setTimeout = (cb: Function, ms: number) => {
+  // @ts-expect-error test fake timer override
+  globalThis.setTimeout = (cb: () => void, ms = 0) => {
     const id = nextId++;
-    timers.push({ id, cb, at: now + (ms || 0) });
+    timers.push({ id, cb, at: now + ms });
     return id;
   };
-  // @ts-ignore
+  // @ts-expect-error test fake timer override
   globalThis.clearTimeout = (id: number) => {
     const idx = timers.findIndex((t) => t.id === id);
     if (idx !== -1) timers.splice(idx, 1);

@@ -1,5 +1,5 @@
 import * as assert from "assert";
-// @ts-ignore
+// @ts-expect-error JS module import in TS test context
 import { IdeationBuffer } from "../../../src/roadmap/ui/modules/ideation-buffer.js";
 
 suite("IdeationBuffer Tests", () => {

@@ -5,10 +5,8 @@ const WHISPER_MODULE = '../vendor/whisper/transformers.min.js';
 
 async function checkVendorAvailable() {
   try {
-    const check = await fetch(WHISPER_MODULE, { method: 'HEAD' });
-    if (!check.ok) return false;
-    const ct = (check.headers.get('content-type') || '').toLowerCase();
-    return ct.includes('javascript') || ct.includes('application/octet-stream');
+    await import(WHISPER_MODULE);
+    return true;
   } catch {
     return false;
   }

@@ -10,10 +10,8 @@ const LLM_MODULE = '../vendor/whisper/transformers.min.js'; // Re-use vendored t
 
 async function checkVendorAvailable() {
     try {
-        const check = await fetch(LLM_MODULE, { method: 'HEAD' });
-        if (!check.ok) return false;
-        const ct = (check.headers.get('content-type') || '').toLowerCase();
-        return ct.includes('javascript') || ct.includes('application/octet-stream');
+        await import(LLM_MODULE);
+        return true;
     } catch {
         return false;
     }

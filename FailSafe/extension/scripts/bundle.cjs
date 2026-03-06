@@ -34,6 +34,50 @@ function vendorWhisper() {
   if (copied > 0) console.log(`  Vendored ${copied} Whisper file(s)`);
 }
 
+function sanitizeBetterSqlite3Metadata() {
+  const pkgPath = path.join(root, "node_modules", "better-sqlite3", "package.json");
+  if (!fs.existsSync(pkgPath)) return;
+
+  const original = fs.readFileSync(pkgPath, "utf8");
+  const pkg = JSON.parse(original);
+
+  // Strip install/build metadata not needed at runtime in VSIX.
+  delete pkg.scripts;
+  delete pkg.devDependencies;
+  delete pkg.overrides;
+  delete pkg.binary;
+  delete pkg.files;
+
+  if (pkg.dependencies && pkg.dependencies["prebuild-install"]) {
+    delete pkg.dependencies["prebuild-install"];
+    if (Object.keys(pkg.dependencies).length === 0) {
+      delete pkg.dependencies;
+    }
+  }
+
+  const updated = `${JSON.stringify(pkg, null, 2)}\n`;
+  if (updated !== original) {
+    fs.writeFileSync(pkgPath, updated, "utf8");
+    console.log("  Sanitized better-sqlite3 package metadata for VSIX packaging");
+  }
+}
+
+function sanitizeWhisperVendorEval() {
+  const whisperPath = path.join(root, "src", "roadmap", "ui", "vendor", "whisper", "transformers.min.js");
+  if (!fs.existsSync(whisperPath)) return;
+
+  const original = fs.readFileSync(whisperPath, "utf8");
+  const updated = original.replace(
+    'var mod=eval("quire".replace(/^/,"re"))(moduleName);if(mod&&(mod.length||Object.keys(mod).length))return mod',
+    "var mod=null"
+  );
+
+  if (updated !== original) {
+    fs.writeFileSync(whisperPath, updated, "utf8");
+    console.log("  Sanitized whisper vendor eval shim for VSIX packaging");
+  }
+}
+
 async function main() {
   resetDist();
 
@@ -51,6 +95,8 @@ async function main() {
 
   // Auto-vendor Whisper (Transformers.js) files before UI copy
   vendorWhisper();
+  sanitizeWhisperVendorEval();
+  sanitizeBetterSqlite3Metadata();
 
   copyDir(
     path.join(root, "src", "roadmap", "ui"),

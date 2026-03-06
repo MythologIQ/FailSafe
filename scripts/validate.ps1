@@ -15,8 +15,37 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$RepoRoot = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $violations = @()
+
+function Resolve-RepoRoot {
+  $scriptPath = $PSCommandPath
+  if ([string]::IsNullOrWhiteSpace($scriptPath)) {
+    $scriptPath = $MyInvocation.PSCommandPath
+  }
+  if ([string]::IsNullOrWhiteSpace($scriptPath)) {
+    throw "Unable to determine script path for repository root resolution."
+  }
+  $current = Split-Path -Parent $scriptPath
+
+  for ($i = 0; $i -lt 6; $i++) {
+    $hasScripts = Test-Path (Join-Path $current "scripts/validate.ps1")
+    $hasTools = Test-Path (Join-Path $current "tools/reliability")
+    $hasReadme = Test-Path (Join-Path $current "README.md")
+    if ($hasScripts -and $hasTools -and $hasReadme) {
+      return $current
+    }
+
+    $parent = Split-Path -Parent $current
+    if ([string]::IsNullOrWhiteSpace($parent) -or $parent -eq $current) {
+      break
+    }
+    $current = $parent
+  }
+
+  throw "Unable to resolve repository root from script path: $scriptPath"
+}
+
+$RepoRoot = Resolve-RepoRoot
 
 function Write-Log {
   param([string]$Message, [string]$Level = "Info")
@@ -182,9 +211,12 @@ function Validate-GitHubStandards {
 
   $branchValidator = Join-Path $RepoRoot "tools/reliability/validate-branch-policy.ps1"
   if (Test-Path $branchValidator) {
-    $allowMainArg = if ($AllowMainBranch) { "-AllowMain" } else { "" }
-    $cmd = "powershell -File `"$branchValidator`" $allowMainArg"
-    Invoke-Expression $cmd | Out-Null
+    $branchArgs = @()
+    if ($AllowMainBranch) {
+      $branchArgs += "-AllowMain"
+    }
+
+    & $branchValidator @branchArgs | Out-Null
     if ($LASTEXITCODE -ne 0) {
       $script:violations += @{ File = "git-branch-policy"; Rule = "Branch policy validation failed" }
     } else {

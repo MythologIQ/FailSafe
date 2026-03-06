@@ -13,6 +13,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.4.1] - 2026-03-06
+
+### Changed
+
+- Extension activation now uses explicit command/view/chat activation events instead of startup-wide activation.
+- Socket policy manifests updated to ignore accepted capability classes used by design.
+- Socket badge/version markers aligned to `4.4.1` across docs.
+
+---
+
 ## [4.4.0] - 2026-03-06
 
 ### Changed

@@ -1,7 +1,7 @@
 # SYSTEM STATE
 
 **Last Updated:** 2026-03-06T05:00:00Z
-**Version:** v4.4.0 Performance & Polish + Voice Brainstorm + Voice UI + Blueprint Remediation + Console Noise Fix + Skill Categories + Command Center Fixes + Command Center Polish + LLM Health Monitoring + Brainstorm Bug Fixes & Razor Debt SUBSTANTIATED
+**Version:** v4.4.1 Performance & Polish + Voice Brainstorm + Voice UI + Blueprint Remediation + Console Noise Fix + Skill Categories + Command Center Fixes + Command Center Polish + LLM Health Monitoring + Brainstorm Bug Fixes & Razor Debt SUBSTANTIATED
 
 ## Brainstorm Bug Fixes & Razor Debt — Implementation State
 

@@ -221,60 +221,60 @@
 
 **Security Hardening (v4.3.1)** ✅ COMPLETE
 
-- [x] [B107] SQL injection protection in SchemaVersionManager.ts via table name whitelist validation | v4.3.1
-- [x] [B108] XSS prevention in LivingGraphTemplate.ts via HTML escaping of dynamic graph data | v4.3.1
-- [x] [B109] XSS prevention in RevertTemplate.ts via HTML escaping of result messages | v4.3.1
-- [x] [B110] README logo path correction to reference current FailSafe branding | v4.3.1
+- [x] [B133] SQL injection protection in SchemaVersionManager.ts via table name whitelist validation | v4.3.1
+- [x] [B134] XSS prevention in LivingGraphTemplate.ts via HTML escaping of dynamic graph data | v4.3.1
+- [x] [B135] XSS prevention in RevertTemplate.ts via HTML escaping of result messages | v4.3.1
+- [x] [B136] README logo path correction to reference current FailSafe branding | v4.3.1
 
-**Voice Brainstorm & Mindmap — Production Readiness Blockers (v4.5.0)**
+**Voice Brainstorm & Mindmap — Production Readiness Blockers (v4.6.0)**
 
 _Source: Code audit 2026-03-07. All line references against current working tree._
 
 Security:
 
-- [ ] [B111] XSS via LLM-extracted node labels: `brainstorm-canvas.js` passes raw `node.label` to ForceGraph3D without escaping. `escapeHtml()` exists in `brainstorm-templates.js` but is not applied in `web-llm-engine.js` or `heuristic-extractor.js` at node creation time | v4.5.0
+- [ ] [B111] XSS via LLM-extracted node labels: `brainstorm-canvas.js` passes raw `node.label` to ForceGraph3D without escaping. `escapeHtml()` exists in `brainstorm-templates.js` but is not applied in `web-llm-engine.js` or `heuristic-extractor.js` at node creation time | v4.6.0
 
 Resource Leaks:
 
-- [ ] [B112] Window event listeners leak in `brainstorm.js`: `failsafe:audio-device-changed` and `failsafe:wake-word-changed` listeners bound but never removed in `destroy()` — duplicates accumulate on tab switch | v4.5.0
-- [ ] [B113] Modal keydown handler leak in `prep-bay.js`: `document.addEventListener('keydown', escHandler)` in `openModal()` never removed on close — stacks on repeated open/close | v4.5.0
-- [ ] [B114] MediaStream not released on failure in `stt-engine.js`: if `MediaRecorder` construction fails after `getUserMedia()` succeeds, `_releaseStream()` is never called — locks microphone | v4.5.0
-- [ ] [B115] AudioContext leak in `stt-engine.js` `_stopWhisper()`: `ctx.close()` not in finally block — skipped if `decodeAudioData()` throws | v4.5.0
-- [ ] [B116] Web LLM native AI session never destroyed: `web-llm-engine.js` creates `ai.languageModel` sessions but has no `destroy()` — sessions accumulate across extractions | v4.5.0
+- [ ] [B112] Window event listeners leak in `brainstorm.js`: `failsafe:audio-device-changed` and `failsafe:wake-word-changed` listeners bound but never removed in `destroy()` — duplicates accumulate on tab switch | v4.6.0
+- [ ] [B113] Modal keydown handler leak in `prep-bay.js`: `document.addEventListener('keydown', escHandler)` in `openModal()` never removed on close — stacks on repeated open/close | v4.6.0
+- [ ] [B114] MediaStream not released on failure in `stt-engine.js`: if `MediaRecorder` construction fails after `getUserMedia()` succeeds, `_releaseStream()` is never called — locks microphone | v4.6.0
+- [ ] [B115] AudioContext leak in `stt-engine.js` `_stopWhisper()`: `ctx.close()` not in finally block — skipped if `decodeAudioData()` throws | v4.6.0
+- [ ] [B116] Web LLM native AI session never destroyed: `web-llm-engine.js` creates `ai.languageModel` sessions but has no `destroy()` — sessions accumulate across extractions | v4.6.0
 
 State Management / Race Conditions:
 
-- [ ] [B117] Rapid mic toggle race condition: `voice-controller.js` `toggle()` doesn't debounce — clicking twice fast causes `startListening()` while `stopListening()` is still async mid-flight | v4.5.0
-- [ ] [B118] STT callback references not nulled on destroy: `stt-engine.js` stores `onTranscript`, `onStateChange`, `onAutoStop`, etc. but never clears them — stale closures can fire into destroyed modules | v4.5.0
-- [ ] [B119] Graph mutation during render: `brainstorm.js` proxies `canvas.setNodes` with no mutex — concurrent `mergeNodes()` and render frame can collide | v4.5.0
+- [ ] [B117] Rapid mic toggle race condition: `voice-controller.js` `toggle()` doesn't debounce — clicking twice fast causes `startListening()` while `stopListening()` is still async mid-flight | v4.6.0
+- [ ] [B118] STT callback references not nulled on destroy: `stt-engine.js` stores `onTranscript`, `onStateChange`, `onAutoStop`, etc. but never clears them — stale closures can fire into destroyed modules | v4.6.0
+- [ ] [B119] Graph mutation during render: `brainstorm.js` proxies `canvas.setNodes` with no mutex — concurrent `mergeNodes()` and render frame can collide | v4.6.0
 
 Error Handling:
 
-- [ ] [B120] TTS failure silently swallowed: `prep-bay.js` calls `tts.speak().catch(() => {})` — user sees success status but hears nothing, no feedback | v4.5.0
-- [ ] [B121] Audio storage failure silent: `prep-bay.js` audio vault POST failure logged as `console.warn` only — user believes recording is persisted but it's lost | v4.5.0
-- [ ] [B122] STT init failure indefinite loading: `stt-engine.js` `init()` catch block sets state to idle but provides no distinguishable user feedback between timeout, network error, and permanent failure | v4.5.0
-- [ ] [B123] Wake word listener infinite retry loop: `stt-engine.js` Web Speech error handler restarts listener after 1s with no backoff, no max retries, no user notification on permanent failure | v4.5.0
+- [ ] [B120] TTS failure silently swallowed: `prep-bay.js` calls `tts.speak().catch(() => {})` — user sees success status but hears nothing, no feedback | v4.6.0
+- [ ] [B121] Audio storage failure silent: `prep-bay.js` audio vault POST failure logged as `console.warn` only — user believes recording is persisted but it's lost | v4.6.0
+- [ ] [B122] STT init failure indefinite loading: `stt-engine.js` `init()` catch block sets state to idle but provides no distinguishable user feedback between timeout, network error, and permanent failure | v4.6.0
+- [ ] [B123] Wake word listener infinite retry loop: `stt-engine.js` Web Speech error handler restarts listener after 1s with no backoff, no max retries, no user notification on permanent failure | v4.6.0
 
 Data Flow Integrity:
 
-- [ ] [B124] Empty transcript submitted to extraction: prep-bay allows `submitTranscript('')` — heuristic extractor creates phantom "Feature" node from silence/empty input, polluting graph | v4.5.0
-- [ ] [B125] Heuristic extractor catch-all `Feature` type: `heuristic-extractor.js` TYPE_SIGNALS uses `/./` for Feature — any unclassifiable text becomes a Feature node, degrading graph quality over time | v4.5.0
+- [ ] [B124] Empty transcript submitted to extraction: prep-bay allows `submitTranscript('')` — heuristic extractor creates phantom "Feature" node from silence/empty input, polluting graph | v4.6.0
+- [ ] [B125] Heuristic extractor catch-all `Feature` type: `heuristic-extractor.js` TYPE_SIGNALS uses `/./` for Feature — any unclassifiable text becomes a Feature node, degrading graph quality over time | v4.6.0
 
 Browser Compatibility:
 
-- [ ] [B126] MediaRecorder codec not specified: `stt-engine.js` `new MediaRecorder(stream)` uses browser default codec — Safari/Firefox may produce incompatible blobs while server assumes `audio/webm` | v4.5.0
-- [ ] [B127] Web Speech API language hardcoded to `en-US`: `stt-engine.js` line 321 — non-English users get forced English recognition | v4.5.0
+- [ ] [B126] MediaRecorder codec not specified: `stt-engine.js` `new MediaRecorder(stream)` uses browser default codec — Safari/Firefox may produce incompatible blobs while server assumes `audio/webm` | v4.6.0
+- [ ] [B127] Web Speech API language hardcoded to `en-US`: `stt-engine.js` line 321 — non-English users get forced English recognition | v4.6.0
 
 Performance:
 
-- [ ] [B128] Canvas resize not debounced: `brainstorm-canvas.js` `window.resize` handler recomputes ForceGraph3D physics on every event — locks main thread with 100+ nodes during window resize | v4.5.0
+- [ ] [B128] Canvas resize not debounced: `brainstorm-canvas.js` `window.resize` handler recomputes ForceGraph3D physics on every event — locks main thread with 100+ nodes during window resize | v4.6.0
 
 Minor / UX:
 
-- [ ] [B129] Modal audio visualizer canvas not wired: `prep-bay.js` creates `<canvas class="cc-bs-modal-visualizer">` but never connects it to audio analyser | v4.5.0
-- [ ] [B130] Export filename has no timestamp: `brainstorm-graph.js` hardcodes `brainstorm-session.json` — second export in same session overwrites first | v4.5.0
-- [ ] [B131] Ideation buffer silently discards history beyond 10 entries: `ideation-buffer.js` `MAX_HISTORY=10` with no user warning when oldest thought is dropped | v4.5.0
-- [ ] [B132] Long node labels silently truncated server-side: `ConsoleServer.ts` `.slice(0, 200)` with no client feedback — user's full text accepted but shortened without notice | v4.5.0
+- [ ] [B129] Modal audio visualizer canvas not wired: `prep-bay.js` creates `<canvas class="cc-bs-modal-visualizer">` but never connects it to audio analyser | v4.6.0
+- [ ] [B130] Export filename has no timestamp: `brainstorm-graph.js` hardcodes `brainstorm-session.json` — second export in same session overwrites first | v4.6.0
+- [ ] [B131] Ideation buffer silently discards history beyond 10 entries: `ideation-buffer.js` `MAX_HISTORY=10` with no user warning when oldest thought is dropped | v4.6.0
+- [ ] [B132] Long node labels silently truncated server-side: `ConsoleServer.ts` `.slice(0, 200)` with no client feedback — user's full text accepted but shortened without notice | v4.6.0
 
 **Razor Debt (v4.3.1)**
 
@@ -294,6 +294,10 @@ Minor / UX:
 - [ ] [B105] VSIX validation hardening: standardize artifact naming and archive inspection so validation accepts tag-style filenames, package-style filenames, and reads VSIX contents via ZIP-safe tooling rather than tar-specific behavior | FailSafe Plus
 - [ ] [B106] Release operator checklist: write an explicit release-prep checklist covering lint debt closure, local `test:all`, local VSIX validation, exact artifact naming, and final ref/tag sequencing before publish | FailSafe Plus
 
+- [ ] [B137] Release branch gate: `/ql-repo-release` must verify current branch is `main` (or merged to main) before tagging and pushing. Feature branches must be merged first. | v4.5
+- [ ] [B138] Release pipeline CI gate: GitHub Actions release workflow must gate on `validate.ps1` passing before publishing to marketplaces. Currently publishes even when validation fails. | v4.5
+- [ ] [B139] Release backlog coherence: `/ql-repo-release` pre-flight should verify version summary table in `BACKLOG.md` is current and no duplicate B-item numbers exist. | v4.5
+
 - [ ] [B107] Workspace Hook Toggle: Console Settings UI to enable/disable FailSafe Claude Code hooks per workspace. Toggle writes/removes `.claude/hooks/disabled` sentinel. `resolve.sh` checks sentinel before emitting hook content. ConsoleServer routes: `GET /api/hooks/status`, `POST /api/hooks/toggle`. Unifies extension settings (`failsafe.sentinel.enabled`, `failsafe.governance.mode`) with Claude Code hook layer into one control surface. | v4.5
 - [ ] [B108] Release pre-flight help doc check: `release-gate.cjs --preflight` should validate version markers in `docs/COMPONENT_HELP.md` and `docs/PROCESS_GUIDE.md` in addition to CHANGELOG/README | v4.5
 
@@ -308,27 +312,31 @@ Minor / UX:
 
 ## Version Summary
 
-| Version    | Codename              | Status         | Description                                                                                                         |
-| ---------- | --------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------- |
-| v1.0.7     | Beta                  | ✅ RELEASED    | Current marketplace                                                                                                 |
-| v1.1.0     | Pathfinder            | ✅ IMPLEMENTED | Event-sourced Plans                                                                                                 |
-| v1.2.0     | Navigator             | ✅ IMPLEMENTED | Roadmap View                                                                                                        |
-| v1.2.2     | Cleanup               | ✅ COMPLETE    | Blockers D1-D3, B1-B2                                                                                               |
-| v1.3.0     | Autopilot             | ✅ COMPLETE    | B3-B5 all done                                                                                                      |
-| v2.0.0     | Governance            | ✅ COMPLETE    | Gold Standard + ambient (B12-B28)                                                                                   |
-| v2.0.1     | Tooltip Remediation   | ✅ COMPLETE    | Template modularization + tooltips (B30)                                                                            |
-| v2.0.2     | Marketplace Fix       | ✅ COMPLETE    | README corrections for both marketplaces                                                                            |
-| v3.0.0     | Horizon               | ✅ COMPLETE    | UI + Analytics (B6-B36)                                                                                             |
-| v3.0.2     | Dashboard Remediation | ✅ COMPLETE    | Roadmap card, tooltips, wiring (B37-B40)                                                                            |
-| v3.1.0     | Orchestration         | ✅ SEALED      | Cumulative Roadmap, External Browser (B41-B44)                                                                      |
-| v3.2.0     | Reliability Hardening | ✅ SEALED      | B45/B47/B48/B49/B50/B51 substantiated with executable gate evidence                                                 |
-| v3.2.5     | Console Overhaul      | ✅ SEALED      | Partial delivery (B52/B58/B59); remainder deferred to v4.2.0                                                        |
-| v4.0.0     | Economics             | ✅ SEALED      | Token economics, governance modes, risk register, transparency stream                                               |
-| v4.1.0     | Governance Gaps       | ✅ SEALED      | Mode-change audit trail, break-glass, artifact hash, verdict replay (Gaps 1-4)                                      |
-| **v4.2.0** | **The Answer**        | ✅ SEALED      | Full-stack governance: console, release pipeline, schema hardening, multi-agent fabric, and discovery workflow delivery |
-| **v4.3.0** | **Telemetry Loop**    | ✅ SEALED      | Commit guard, AI provenance tracing, CI governance context export, and post-substantiation quality sweep remediation |
-| **v4.3.1** | **Security Hardening**| IN PROGRESS    | SQL injection protection, XSS prevention, README logo correction, Razor Debt decomposition |
-| **v4.5.0** | **Voice Production Readiness** | PLANNED | Voice Brainstorm & Mindmap production blockers: XSS, resource leaks, race conditions, error handling, data flow, browser compat (B111-B132) |
+| Version      | Codename                       | Status         | Description                                                                                                           |
+| ------------ | ------------------------------ | -------------- | --------------------------------------------------------------------------------------------------------------------- |
+| v1.0.7       | Beta                           | ✅ RELEASED    | Current marketplace                                                                                                   |
+| v1.1.0       | Pathfinder                     | ✅ IMPLEMENTED | Event-sourced Plans                                                                                                   |
+| v1.2.0       | Navigator                      | ✅ IMPLEMENTED | Roadmap View                                                                                                          |
+| v1.2.2       | Cleanup                        | ✅ COMPLETE    | Blockers D1-D3, B1-B2                                                                                                 |
+| v1.3.0       | Autopilot                      | ✅ COMPLETE    | B3-B5 all done                                                                                                        |
+| v2.0.0       | Governance                     | ✅ COMPLETE    | Gold Standard + ambient (B12-B28)                                                                                     |
+| v2.0.1       | Tooltip Remediation            | ✅ COMPLETE    | Template modularization + tooltips (B30)                                                                              |
+| v2.0.2       | Marketplace Fix                | ✅ COMPLETE    | README corrections for both marketplaces                                                                              |
+| v3.0.0       | Horizon                        | ✅ COMPLETE    | UI + Analytics (B6-B36)                                                                                               |
+| v3.0.2       | Dashboard Remediation          | ✅ COMPLETE    | Roadmap card, tooltips, wiring (B37-B40)                                                                              |
+| v3.1.0       | Orchestration                  | ✅ SEALED      | Cumulative Roadmap, External Browser (B41-B44)                                                                        |
+| v3.2.0       | Reliability Hardening          | ✅ SEALED      | B45/B47/B48/B49/B50/B51 substantiated with executable gate evidence                                                   |
+| v3.2.5       | Console Overhaul               | ✅ SEALED      | Partial delivery (B52/B58/B59); remainder deferred to v4.2.0                                                          |
+| v4.0.0       | Economics                      | ✅ SEALED      | Token economics, governance modes, risk register, transparency stream                                                 |
+| v4.1.0       | Governance Gaps                | ✅ SEALED      | Mode-change audit trail, break-glass, artifact hash, verdict replay (Gaps 1-4)                                        |
+| **v4.2.0**   | **The Answer**                 | ✅ SEALED      | Full-stack governance: console, release pipeline, schema hardening, multi-agent fabric, and discovery workflow delivery |
+| **v4.3.0**   | **Telemetry Loop**             | ✅ SEALED      | Commit guard, AI provenance tracing, CI governance context export, and post-substantiation quality sweep remediation   |
+| **v4.3.1**   | **Security Hardening**         | ✅ SEALED      | SQL injection protection, XSS prevention, README logo correction (B133-B136)                                          |
+| **v4.4.0**   | **Mindmap Evolution**          | ✅ SEALED      | Mindmap surface upgrade, UI asset expansion, console integration depth                                                |
+| **v4.4.1**   | **Screenshot Refresh**         | ✅ SEALED      | UI screenshots, socket hardening, activation event tightening                                                         |
+| **v4.5.0**   | **Skill Discovery**            | ✅ RELEASED    | Skill discovery tags, tag filter, governance skill cohesion, /ql-document skill, CI/CD hardening                      |
+| **v4.5.1**   | **Hotfix**                     | ✅ RELEASED    | Fix activation crash when ledger DB unavailable, fix validate.ps1 parameter mismatch                                 |
+| **v4.6.0**   | **Voice Production Readiness** | PLANNED        | Voice Brainstorm & Mindmap production blockers: XSS, resource leaks, race conditions, error handling (B111-B132)      |
 
 ---
 

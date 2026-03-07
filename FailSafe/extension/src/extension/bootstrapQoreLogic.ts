@@ -26,7 +26,7 @@ export interface QoreLogicSubstrate {
   breakGlass: BreakGlassProtocol;
   agentRevocation: AgentRevocation;
   ledgerRetentionPolicy: LedgerRetentionPolicy;
-  ledgerQueryAPI: LedgerQueryAPI;
+  ledgerQueryAPI: LedgerQueryAPI | undefined;
   systemRegistry: SystemRegistry;
 }
 
@@ -103,7 +103,9 @@ export async function bootstrapQoreLogic(
   const agentRevocation = new AgentRevocation(trustEngine, ledgerManager);
   const archivePath = path.join(core.workspaceRoot, '.failsafe', 'archive');
   const ledgerRetentionPolicy = new LedgerRetentionPolicy(ledgerManager, archivePath);
-  const ledgerQueryAPI = new LedgerQueryAPI(ledgerManager.getDatabase());
+  const ledgerQueryAPI = ledgerManager.isAvailable()
+    ? new LedgerQueryAPI(ledgerManager.getDatabase())
+    : undefined;
   const systemRegistry = new SystemRegistry(core.workspaceRoot);
 
   return {

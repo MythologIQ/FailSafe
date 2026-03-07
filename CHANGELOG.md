@@ -9,7 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- Post-4.5.0 scope to be scheduled.
+- Post-4.5.1 scope to be scheduled.
+
+## [4.5.1] - 2026-03-07
+
+### Fixed
+
+- Activation crash when ledger database is unavailable
+- CI validator parameter mismatch in `validate.ps1`
 
 ## [4.5.0] - 2026-03-07
 

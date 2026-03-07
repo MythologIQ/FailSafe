@@ -1,14 +1,14 @@
-[![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.5.0?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.5.0?platform=universal)
+[![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.5.1?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.5.1?platform=universal)
 
 # MythologIQ FailSafe for VS Code
 
 FailSafe is a local-first governance extension for AI-assisted development in VS Code and Cursor. It applies deterministic checks at the editor boundary, records decisions to a local ledger, and provides dedicated surfaces for audits, checkpoints, and agent governance.
 
-**Current Release**: v4.5.0 (2026-03-07)
+**Current Release**: v4.5.1 (2026-03-07)
 
 ![FailSafe Banner](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/extension/FailSafe%20Banner.png)
 
-## What's New in v4.5.0
+## What's New in v4.5.1
 
 ### Skill Discovery & Filtering
 
@@ -29,7 +29,7 @@ FailSafe is a local-first governance extension for AI-assisted development in VS
 ### Under the Hood
 
 - CI workflow consolidation: single-source VSIX build with automated proprietary content scanning.
-- Operator help docs (`COMPONENT_HELP.md`, `PROCESS_GUIDE.md`) updated to v4.5.0.
+- Operator help docs (`COMPONENT_HELP.md`, `PROCESS_GUIDE.md`) updated to v4.5.1.
 
 > **We'd love your review!** If FailSafe is useful to you, please leave a review on the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe) or [Open VSX](https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe). Your feedback helps other developers discover FailSafe and directly shapes its roadmap. Bug reports and feature requests welcome on [GitHub Issues](https://github.com/MythologIQ/FailSafe/issues).
 

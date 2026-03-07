@@ -294,6 +294,9 @@ Minor / UX:
 - [ ] [B105] VSIX validation hardening: standardize artifact naming and archive inspection so validation accepts tag-style filenames, package-style filenames, and reads VSIX contents via ZIP-safe tooling rather than tar-specific behavior | FailSafe Plus
 - [ ] [B106] Release operator checklist: write an explicit release-prep checklist covering lint debt closure, local `test:all`, local VSIX validation, exact artifact naming, and final ref/tag sequencing before publish | FailSafe Plus
 
+- [ ] [B107] Workspace Hook Toggle: Console Settings UI to enable/disable FailSafe Claude Code hooks per workspace. Toggle writes/removes `.claude/hooks/disabled` sentinel. `resolve.sh` checks sentinel before emitting hook content. ConsoleServer routes: `GET /api/hooks/status`, `POST /api/hooks/toggle`. Unifies extension settings (`failsafe.sentinel.enabled`, `failsafe.governance.mode`) with Claude Code hook layer into one control surface. | v4.5
+- [ ] [B108] Release pre-flight help doc check: `release-gate.cjs --preflight` should validate version markers in `docs/COMPONENT_HELP.md` and `docs/PROCESS_GUIDE.md` in addition to CHANGELOG/README | v4.5
+
 ## Wishlist (Nice to Have)
 
 - [ ] [B90] CLI Overseer Lite Feasibility Extraction: Explore creating a lightweight, CLI-compatible version of FailSafe for direct website integration | v5.0.0

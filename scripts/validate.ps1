@@ -250,7 +250,9 @@ function Validate-ReleaseVersionCoherence {
     return
   }
 
-  & $versionValidator -RepoRoot $RepoRoot | Out-Null
+  $pkgJson = Join-Path $RepoRoot "FailSafe/extension/package.json"
+  $pkgVersion = (Get-Content $pkgJson -Raw | ConvertFrom-Json).version
+  & $versionValidator -Version $pkgVersion | Out-Null
   if ($LASTEXITCODE -ne 0) {
     $script:violations += @{ File = "release-version-coherence"; Rule = "Release version coherence validation failed" }
     Write-Log "FAIL: release version coherence gate" -Level Error

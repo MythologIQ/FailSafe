@@ -7,7 +7,7 @@ import * as fs from "fs";
  * We require the module and test its exported functions directly.
  */
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const releaseGate = require("../../../scripts/release-gate.cjs");
+const releaseGate = require(path.join(__dirname, "../../../scripts/release-gate.cjs"));
 
 suite("release-gate: bumpVersion", () => {
   test("patch increment", () => {

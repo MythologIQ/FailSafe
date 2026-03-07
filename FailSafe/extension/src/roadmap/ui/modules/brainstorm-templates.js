@@ -14,13 +14,14 @@ export function renderShell() {
         <button class="cc-btn cc-bs-layout" data-layout="FORCE">FORCE</button>
         <button class="cc-btn cc-bs-layout" data-layout="TREE">TREE</button>
         <button class="cc-btn cc-bs-layout" data-layout="CIRCLE">CIRCLE</button>
-        <button class="cc-btn cc-bs-layout" data-layout="GRID">GRID</button>
       </div>
       <div class="cc-bs-view-row">
-        <button class="cc-btn cc-bs-view" data-view="2D">2D</button>
-        <button class="cc-btn cc-bs-view active" data-view="3D">3D</button>
+        <button class="cc-btn cc-bs-view active" data-view="2D">2D</button>
+        <button class="cc-btn cc-bs-view" data-view="3D">3D</button>
       </div>
       <div class="cc-bs-meta-row">
+        <button class="cc-btn cc-bs-undo" title="Undo (Ctrl+Z)">UNDO</button>
+        <button class="cc-btn cc-bs-redo" title="Redo (Ctrl+Y)">REDO</button>
         <button class="cc-btn cc-bs-export">EXPORT</button>
         <button class="cc-btn cc-btn--danger cc-bs-clear">RESET</button>
       </div>

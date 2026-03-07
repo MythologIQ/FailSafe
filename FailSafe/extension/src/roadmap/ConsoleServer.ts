@@ -66,10 +66,12 @@ type InstalledSkill = {
   admissionState: string;
   requiredPermissions: string[];
   category: string;
+  tags: string[];
   name: string;
   description: string;
   installed: boolean;
   origin: string;
+  sourceCredit: string;
 };
 
 type SkillRelevance = InstalledSkill & {
@@ -1802,6 +1804,12 @@ export class ConsoleServer {
     const descMatch = content.match(/^##\s+Purpose\s*\n+(.*)/m);
     const desc = descMatch ? descMatch[1].trim().slice(0, 120) : "Command skill";
     const resolvedId = `cmd:${baseName}`;
+    const tags = this.normalizeSkillTags([
+      category,
+      baseName,
+      rootMeta.sourceType,
+      "command",
+    ]);
     const wsRoot = this.getWorkspaceRoot();
     const origin = path.relative(wsRoot, path.dirname(filePath)).replace(/\\/g, "/");
     return {
@@ -1821,10 +1829,12 @@ export class ConsoleServer {
       admissionState: rootMeta.admissionState,
       requiredPermissions: [],
       category,
+      tags,
       name: displayName,
       description: desc,
       installed: true,
       origin,
+      sourceCredit: "QoreLogic",
     };
   }
 
@@ -1914,6 +1924,29 @@ export class ConsoleServer {
       this.readFrontmatterValue(frontmatter, "domain");
     const category = explicitCategory ||
       this.deriveSkillDomainToken(this.toSlug(rawName), desc);
+    const sourceCredit = this.resolveSourceCredit({
+      creator,
+      sourceRepo,
+      sourceName:
+        sourceMeta.sourceName ||
+        this.readFrontmatterValue(frontmatter, "source") ||
+        this.readFrontmatterValue(frontmatter, "provider") ||
+        this.readFrontmatterValue(frontmatter, "publisher"),
+    });
+    const tags = this.normalizeSkillTags([
+      ...this.readFrontmatterList(frontmatter, "tags"),
+      ...this.readFrontmatterList(frontmatter, "categories"),
+      ...this.readFrontmatterList(frontmatter, "keywords"),
+      ...this.readFrontmatterList(frontmatter, "topics"),
+      this.readFrontmatterValue(frontmatter, "tags"),
+      this.readFrontmatterValue(frontmatter, "category"),
+      this.readFrontmatterValue(frontmatter, "domain"),
+      category,
+      rootMeta.sourceType,
+      admissionState,
+      sourceMeta.sourceName,
+      sourceCredit,
+    ]);
 
     return {
       id: resolvedId,
@@ -1934,10 +1967,12 @@ export class ConsoleServer {
         new Set(requiredPermissions.map((item) => item.trim()).filter(Boolean)),
       ),
       category,
+      tags,
       name: String(displayName || rawName || resolvedId).trim(),
       description: desc,
       installed: true,
       origin: path.relative(this.getWorkspaceRoot(), rootMeta.root).replace(/\\/g, "/"),
+      sourceCredit,
     };
   }
 
@@ -2287,7 +2322,7 @@ export class ConsoleServer {
     if (!slug) return "";
     const segments = slug.split("-").filter(Boolean);
     if (segments.length >= 3) {
-      return slug;
+      return this.toSlug(`${segments[0]}-${segments[1]}-${segments.slice(2).join("-")}`);
     }
 
     const source = this.deriveSkillSourceToken(context);
@@ -2337,7 +2372,7 @@ export class ConsoleServer {
       text.includes("sound")
     )
       return "audio";
-    return "general";
+    return "operations";
   }
 
   private deriveSkillActionToken(skillSlug: string, domain: string): string {
@@ -2349,8 +2384,73 @@ export class ConsoleServer {
       agents: "build-intent-assistant",
     };
     if (directMap[skillSlug]) return directMap[skillSlug];
-    if (domain === "general") return `use-${skillSlug}`;
-    return skillSlug;
+    if (domain === "operations") return skillSlug || "apply-skill";
+    return skillSlug || `improve-${domain}`;
+  }
+
+  private normalizeSkillTags(values: Array<string | undefined | null>): string[] {
+    const stop = new Set([
+      "a",
+      "an",
+      "and",
+      "as",
+      "at",
+      "by",
+      "for",
+      "from",
+      "in",
+      "into",
+      "of",
+      "on",
+      "or",
+      "the",
+      "to",
+      "with",
+      "skill",
+      "skills",
+      "qore",
+      "local",
+      "project",
+      "unknown",
+      "unversioned",
+      "admitted",
+      "conditional",
+      "quarantined",
+      "general",
+      "cmd",
+      "command",
+      "commands",
+      "source",
+      "type",
+    ]);
+    const out = new Set<string>();
+    for (const value of values) {
+      const raw = String(value || "").replace(/[[\]{}()]/g, " ");
+      const parts = raw.split(/[,;|/\\\n]+/).map((part) => part.trim()).filter(Boolean);
+      for (const part of parts) {
+        const slug = this.toSlug(part);
+        if (!slug || stop.has(slug)) continue;
+        if (slug.length < 2 || slug.length > 48) continue;
+        out.add(slug);
+      }
+    }
+    return Array.from(out).slice(0, 8);
+  }
+
+  private resolveSourceCredit(context: {
+    creator: string;
+    sourceRepo: string;
+    sourceName: string;
+  }): string {
+    const sourceName = String(context.sourceName || "").trim();
+    const creator = String(context.creator || "").trim();
+    const repo = String(context.sourceRepo || "").trim();
+    const repoOwner = repo.includes("/") ? repo.split("/")[0] : "";
+    const picked = sourceName || creator || repoOwner || "Community";
+    const normalized = picked.replace(/^@+/, "").trim();
+    if (normalized.toLowerCase().includes("elevenlabs")) return "ElevenLabs";
+    if (normalized.toLowerCase() === "qorelogic") return "QoreLogic";
+    return normalized;
   }
 
   private readFrontmatterValue(frontmatter: string, key: string): string {
@@ -2405,6 +2505,7 @@ export class ConsoleServer {
     sourceType: string;
     sourcePriority: string;
     admissionState: string;
+    sourceName: string;
   } {
     const sourceFile = path.join(skillDir, "SOURCE.yml");
     if (!fs.existsSync(sourceFile)) {
@@ -2415,6 +2516,7 @@ export class ConsoleServer {
         sourceType: "",
         sourcePriority: "",
         admissionState: "",
+        sourceName: "",
       };
     }
     let content = "";
@@ -2428,6 +2530,7 @@ export class ConsoleServer {
         sourceType: "",
         sourcePriority: "",
         admissionState: "",
+        sourceName: "",
       };
     }
     const read = (pattern: RegExp) =>
@@ -2496,6 +2599,13 @@ export class ConsoleServer {
         imported.admission_state,
         parsed?.admission_state,
         read(/^\s*admission_state\s*:\s*(.+)$/im),
+      ),
+      sourceName: pick(
+        source.name,
+        source.provider,
+        source.vendor,
+        parsed?.source_name,
+        read(/^\s*source_name\s*:\s*(.+)$/im),
       ),
     };
   }

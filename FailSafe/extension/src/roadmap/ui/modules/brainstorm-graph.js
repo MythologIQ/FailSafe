@@ -9,9 +9,39 @@ export class BrainstormGraph {
     this.edges = [];
     this.canvas = null;
     this.onSelectionChange = null;
+    this._undoStack = [];
+    this._redoStack = [];
+    this._maxHistory = 50;
+    this._mutating = false;
   }
 
   setCanvas(canvas) { this.canvas = canvas; }
+
+  _pushUndo(command) {
+    this._undoStack.push(command);
+    if (this._undoStack.length > this._maxHistory) this._undoStack.shift();
+    this._redoStack = [];
+  }
+
+  undo() {
+    const cmd = this._undoStack.pop();
+    if (!cmd) return;
+    cmd.backward();
+    this._redoStack.push(cmd);
+    this.canvas?.setNodes(this.nodes);
+    this.canvas?.setEdges(this.edges, this.nodes);
+    this._saveLocal();
+  }
+
+  redo() {
+    const cmd = this._redoStack.pop();
+    if (!cmd) return;
+    cmd.forward();
+    this._undoStack.push(cmd);
+    this.canvas?.setNodes(this.nodes);
+    this.canvas?.setEdges(this.edges, this.nodes);
+    this._saveLocal();
+  }
 
   async fetchGraph() {
     // Try server first, fall back to localStorage
@@ -73,11 +103,24 @@ export class BrainstormGraph {
 
   async removeNode(id) {
     if (!id) return;
+    const removedNode = this.nodes.find(n => n.id === id);
+    const removedEdges = this.edges.filter(e => e.source === id || e.target === id);
     try {
       await fetch(`/api/v1/brainstorm/node/${encodeURIComponent(id)}`, { method: 'DELETE' });
     } catch { /* network error */ }
     this.nodes = this.nodes.filter(n => n.id !== id);
     this.edges = this.edges.filter(e => e.source !== id && e.target !== id);
+    this._pushUndo({
+      type: 'remove-node',
+      forward: () => {
+        this.nodes = this.nodes.filter(n => n.id !== id);
+        this.edges = this.edges.filter(e => e.source !== id && e.target !== id);
+      },
+      backward: () => {
+        if (removedNode) this.nodes.push(removedNode);
+        this.edges.push(...removedEdges);
+      }
+    });
     this.canvas?.setNodes(this.nodes);
     this.canvas?.setEdges(this.edges, this.nodes);
     this.onSelectionChange?.(null);
@@ -101,19 +144,51 @@ export class BrainstormGraph {
   }
 
   mergeNodes(newNodes, newEdges) {
-    const existingIds = new Set(this.nodes.map(n => n.id));
-    for (const n of newNodes) {
-      if (!existingIds.has(n.id)) this.nodes.push(n);
+    if (this._mutating) {
+      setTimeout(() => this.mergeNodes(newNodes, newEdges), 16);
+      return;
     }
-    for (const e of newEdges) this.edges.push(e);
+    this._mutating = true;
+    try {
+    const existingIds = new Set(this.nodes.map(n => n.id));
+    const actuallyAdded = [];
+    for (const n of newNodes) {
+      if (!existingIds.has(n.id)) { this.nodes.push(n); actuallyAdded.push(n); }
+    }
+    const addedEdges = [...newEdges];
+    for (const e of addedEdges) this.edges.push(e);
+    if (actuallyAdded.length || addedEdges.length) {
+      const addedNodeIds = new Set(actuallyAdded.map(n => n.id));
+      this._pushUndo({
+        type: 'merge',
+        forward: () => {
+          for (const n of actuallyAdded) {
+            if (!this.nodes.some(x => x.id === n.id)) this.nodes.push(n);
+          }
+          this.edges.push(...addedEdges);
+        },
+        backward: () => {
+          this.nodes = this.nodes.filter(n => !addedNodeIds.has(n.id));
+          this.edges = this.edges.filter(e =>
+            !addedEdges.some(ae => ae.source === e.source && ae.target === e.target));
+        }
+      });
+    }
     this.canvas?.setNodes(this.nodes);
     this.canvas?.setEdges(this.edges, this.nodes);
     this._saveLocal();
+    } finally { this._mutating = false; }
   }
 
   async clearAll() {
+    const snapshot = { nodes: [...this.nodes], edges: [...this.edges] };
     try { await fetch('/api/v1/brainstorm/graph', { method: 'DELETE' }); } catch {}
     this.nodes = []; this.edges = [];
+    this._pushUndo({
+      type: 'clear',
+      forward: () => { this.nodes = []; this.edges = []; },
+      backward: () => { this.nodes = [...snapshot.nodes]; this.edges = [...snapshot.edges]; }
+    });
     this.canvas?.setNodes([]); this.canvas?.setEdges([], []);
     this.onSelectionChange?.(null);
     this._saveLocal();
@@ -126,7 +201,9 @@ export class BrainstormGraph {
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url; a.download = 'brainstorm-session.json'; a.click();
+      a.href = url;
+      a.download = `brainstorm-${new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-')}.json`;
+      a.click();
       URL.revokeObjectURL(url);
     } catch {}
   }

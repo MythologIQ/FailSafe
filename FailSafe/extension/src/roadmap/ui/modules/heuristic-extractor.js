@@ -8,7 +8,6 @@ export const TYPE_SIGNALS = {
     Database:     /\b(database|sql|table|schema|migration|store|persist|cache|redis|postgres|mongo)\b/i,
     Integration:  /\b(api|endpoint|webhook|third.?party|integration|external|upstream|downstream|service)\b/i,
     Architecture: /\b(architect|pattern|layer|module|component|system|design|structure|framework|engine)\b/i,
-    Feature:      /./,  // default fallback
 };
 
 export function heuristicExtract(transcript) {

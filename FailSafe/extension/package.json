@@ -3,7 +3,7 @@
   "displayName": "FailSafe (feat. QoreLogic)",
   "description": "Complete AI governance for modern development. Genesis visualization + QoreLogic framework + Sentinel monitoring.",
   "icon": "media/icon.png",
-  "version": "4.4.1",
+  "version": "4.5.0",
   "publisher": "MythologIQ",
   "license": "MIT",
   "repository": {
@@ -186,7 +186,7 @@
         {
           "id": "failsafe-sidebar-container",
           "title": "FailSafe",
-          "icon": "media/failsafe-icon.png"
+          "icon": "media/failsafe-icon.svg"
         }
       ]
     },
@@ -196,7 +196,7 @@
           "id": "failsafe.sidebarView",
           "name": "FailSafe Monitor",
           "type": "webview",
-          "icon": "media/failsafe-icon.png"
+          "icon": "media/failsafe-icon.svg"
         }
       ]
     },
@@ -363,6 +363,9 @@
     "prepush:validate": "powershell -File ../../validate.ps1",
     "lint": "eslint src --ext ts",
     "validate:vsix": "node ./scripts/validate-vsix.cjs",
+    "release:preflight": "node ./scripts/release-gate.cjs --preflight",
+    "release:bump": "node ./scripts/release-gate.cjs --bump",
+    "release:tag": "node ./scripts/release-gate.cjs --tag",
     "package": "vsce package",
     "publish": "vsce publish"
   },

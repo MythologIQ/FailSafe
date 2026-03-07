@@ -9,8 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- Post-4.4.0 scope to be scheduled.
+- Post-4.5.0 scope to be scheduled.
 
+## [4.5.0] - 2026-03-07
+
+### Changed
+
+- Skill Discovery now carries tags and source credit; Skills panel uses type-ahead tag filter with autocomplete.
+- Brainstorm, STT, and ideation modules refined for cleaner runtime behavior.
+- CI VSIX guardrails workflow consolidated to single-source build with proprietary content scan.
+- Governance skill lifecycle cohesion: 19 skills with next-step routing, canonical routing table, /ql-document authoring skill.
+
+---
 ## [4.4.1] - 2026-03-06
 
 ### Changed

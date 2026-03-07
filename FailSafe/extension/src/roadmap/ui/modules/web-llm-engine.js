@@ -207,6 +207,13 @@ JSON Output:`;
         return result;
     }
 
+    destroy() {
+        if (this.nativeModel) {
+            this.nativeModel.destroy?.();
+            this.nativeModel = null;
+        }
+    }
+
     _parseJson(text) {
         if (!text || text.trim().startsWith('<!DOCTYPE')) {
             return { error: 'Received HTML instead of JSON.' };

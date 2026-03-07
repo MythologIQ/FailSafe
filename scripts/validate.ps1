@@ -243,10 +243,10 @@ function Validate-GitHubStandards {
 function Validate-ReleaseVersionCoherence {
   Write-Log "Validating release version coherence..."
 
-  $versionValidator = Join-Path $RepoRoot "tools/reliability/validate-release-version.ps1"
+  $versionValidator = Join-Path $RepoRoot "tools/validate-release-version.ps1"
   if (!(Test-Path $versionValidator)) {
-    $script:violations += @{ File = "tools/reliability/validate-release-version.ps1"; Rule = "Missing release version coherence validator" }
-    Write-Log "FAIL: Missing tools/reliability/validate-release-version.ps1" -Level Error
+    $script:violations += @{ File = "tools/validate-release-version.ps1"; Rule = "Missing release version coherence validator" }
+    Write-Log "FAIL: Missing tools/validate-release-version.ps1" -Level Error
     return
   }
 

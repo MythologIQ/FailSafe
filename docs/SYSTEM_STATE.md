@@ -1,7 +1,203 @@
 # SYSTEM STATE
 
-**Last Updated:** 2026-03-06T05:00:00Z
-**Version:** v4.4.1 Performance & Polish + Voice Brainstorm + Voice UI + Blueprint Remediation + Console Noise Fix + Skill Categories + Command Center Fixes + Command Center Polish + LLM Health Monitoring + Brainstorm Bug Fixes & Razor Debt SUBSTANTIATED
+**Last Updated:** 2026-03-07T22:35:00Z
+**Version:** v4.4.1 + /ql-document Skill SUBSTANTIATED
+
+## /ql-document Skill — Implementation State
+
+### Ledger Trail
+
+| Entry | Phase | Verdict |
+|-------|-------|---------|
+| #173 | GATE | PASS |
+| #174 | IMPLEMENT | Phases 1-2 |
+| #175 | SUBSTANTIATE | Session sealed |
+
+### Phase 1: Create /ql-document Skill
+
+| File | Change | Status |
+|------|--------|--------|
+| `.claude/commands/ql-document.md` | NEW: Dual-mode documentation authoring skill (RELEASE_METADATA + GENERAL) | DONE |
+| `.claude/commands/references/ql-skill-routing.md` | Added `/ql-document` to Support Skills table | DONE |
+| `.claude/commands/ql-help.md` | Added `/ql-document` to Quick Reference table | DONE |
+
+### Phase 2: Integrate with /ql-repo-release
+
+| File | Change | Status |
+|------|--------|--------|
+| `.claude/commands/ql-repo-release.md` | Step 5 replaced: manual metadata prompt → `/ql-document` RELEASE_METADATA invocation | DONE |
+| `.claude/commands/ql-repo-release.md` | Constraints updated: `NEVER auto-generate` → `ALWAYS use /ql-document` + `NEVER write without review` | DONE |
+
+---
+
+## Skill Lifecycle Cohesion & Governance Patterns — Implementation State
+
+### Ledger Trail
+
+| Entry | Phase | Verdict |
+|-------|-------|---------|
+| #169 | RESEARCH | Skill Lifecycle brief |
+| #170 | GATE | PASS |
+| #171 | IMPLEMENT | Phases 1-4 |
+| #172 | SUBSTANTIATE | Session sealed |
+
+### Phase 1: Universal Next-Step Exit Pattern
+
+| File | Change | Status |
+|------|--------|--------|
+| `.claude/commands/ql-status.md` | Added SECURE INTENT state + `/ql-research` routing + `## Next Step` | DONE |
+| `.claude/commands/ql-compliance.md` | Added `## Next Step` section | DONE |
+| `.claude/commands/ql-validate.md` | Added `## Next Step` section | DONE |
+| `.claude/commands/ql-organize.md` | Added `## Next Step` section | DONE |
+
+### Phase 2: Proactive Suggestion Contract
+
+| File | Change | Status |
+|------|--------|--------|
+| `.claude/commands/references/ql-skill-routing.md` | NEW: Canonical SHIELD routing table + proactive signals | DONE |
+| `.claude/commands/ql-help.md` | Rewritten with routing table ref + workflow chains | DONE |
+
+### Phase 3: Skill Integrity Contract
+
+| File | Change | Status |
+|------|--------|--------|
+| `.claude/commands/ql-substantiate.md` | Added Step 4.5: Skill File Integrity Check | DONE |
+| `.claude/commands/ql-repo-release.md` | Added uncommitted skill file warning to pre-flight | DONE |
+
+### Phase 4: Research Brief Archive
+
+| File | Change | Status |
+|------|--------|--------|
+| `docs/research/INDEX.md` | NEW: Flat-file archive index | DONE |
+| `docs/research/skill-lifecycle.md` | Archived current research brief | DONE |
+| `.claude/commands/ql-research.md` | Added prior-research check + archive step | DONE |
+
+---
+
+## Deployment Pipeline & Delivery Gates — Implementation State
+
+### Ledger Trail
+
+| Entry | Phase | Verdict |
+|-------|-------|---------|
+| #165 | RESEARCH | Brief delivered |
+| #166 | GATE TRIBUNAL | PASS (all 6 audit passes cleared) |
+| #167 | IMPLEMENT | Complete (Phases 1-3) |
+| #168 | SUBSTANTIATE | SEALED |
+
+### Phase 1: Local Release Gate Script
+
+| File | LOC | Purpose |
+|------|-----|---------|
+| `FailSafe/extension/scripts/release-gate.cjs` | 190 | 4-mode CLI: preflight, bump, tag, dry-run |
+| `FailSafe/extension/src/test/scripts/release-gate.test.ts` | 132 | 10 tests: bumpVersion (6) + preflight (4) |
+| `FailSafe/extension/package.json` | +3 scripts | release:preflight, release:bump, release:tag |
+
+### Phase 2: Infrastructure Fixes
+
+| File | Change | Evidence |
+|------|--------|----------|
+| `scripts/validate.ps1` | Fixed path: `tools/reliability/` -> `tools/` | Line 246 |
+| `.github/workflows/vsix-proprietary-guardrails.yml` | Replaced deprecated PROD-Extension refs | Scans main extension VSIX for prohibited content |
+
+### Phase 3: /ql-repo-release Skill
+
+| File | Purpose |
+|------|---------|
+| `.claude/commands/ql-repo-release.md` | 10-step delivery orchestration with 2 confirmation gates |
+
+### Section 4 Compliance
+
+| File | LOC | Longest Function | Max Nesting | Status |
+|------|-----|-----------------|-------------|--------|
+| release-gate.cjs | 190 | preflight() 36 lines | 2 | PASS |
+| release-gate.test.ts | 132 | writeFixture() 25 lines | 1 | PASS |
+
+### Console.log Audit
+
+Zero `console.log` in release-gate.cjs. Uses `process.stdout.write` / `process.stderr.write`.
+
+---
+
+## Brainstorm Production Hardening — Implementation State
+
+### Ledger Trail
+
+| Entry | Phase | Verdict |
+|-------|-------|---------|
+| #160 | RESEARCH | Brief delivered |
+| #161 | GATE TRIBUNAL | VETO (V1: ghost forward, V2: null destructure, V3: _history mismatch) |
+| #162 | RE-AUDIT | PASS (all 3 violations remediated) |
+| #163 | IMPLEMENT | Complete (22 blockers B111-B132, undo/redo, 2D default) |
+| #164 | SUBSTANTIATE | SEALED |
+
+### Phase 1: Critical Stability (B111-B118)
+
+| Blocker | Description | File | Evidence |
+|---------|-------------|------|----------|
+| B111 | 2D default view mode | brainstorm-canvas.js:26 | `this.viewMode = '2D'` |
+| B112 | Event listener leak fixes | brainstorm.js:62-65, :239-248 | Stored handlers + removeEventListener in destroy |
+| B113 | Modal ESC key leak | prep-bay.js:166-174 | `removeEventListener` in close() |
+| B114 | MediaRecorder try/catch | stt-engine.js | _releaseStream() on failure |
+| B115 | AudioContext cleanup | stt-engine.js:386-393 | try/finally with ctx.close() |
+| B116 | WebLLM destroy() | web-llm-engine.js | nativeModel.destroy() + null |
+| B117 | Voice toggle guard | voice-controller.js:60,68,82 | `_toggling` flag with try/finally |
+| B118 | STT callback nulling | stt-engine.js | All 5 callbacks nulled in destroy() |
+
+### Phase 2: Data Integrity & UX (B119-B127)
+
+| Blocker | Description | File | Evidence |
+|---------|-------------|------|----------|
+| B119 | Undo/redo command pattern | brainstorm-graph.js:12-44 | _undoStack, _redoStack, _pushUndo, undo(), redo() |
+| B120 | TTS error catch | prep-bay.js:78-80 | .catch() with status fallback |
+| B121 | Audio capture error | brainstorm.js:90-91 | .catch() with gold status |
+| B122 | Mic error classification | stt-engine.js | NotAllowedError, NotFoundError, network, generic |
+| B123 | Wake word backoff | stt-engine.js | Exponential: min(1000*2^n, 30000), max 5 retries |
+| B124 | Empty transcript guard | prep-bay.js:69 | `if (!transcript?.trim()) return` |
+| B125 | Heuristic catch-all removed | heuristic-extractor.js | No `Feature: /./` regex |
+| B126 | MediaRecorder codec | stt-engine.js | webm;codecs=opus → webm → default |
+| B127 | STT language fallback | stt-engine.js | store → navigator.language → 'en-US' |
+
+### Phase 3: Security & Polish (B128-B132)
+
+| Blocker | Description | File | Evidence |
+|---------|-------------|------|----------|
+| B128 | Debounced resize | brainstorm-canvas.js:34-44 | 150ms setTimeout, cleanup in destroy |
+| B129 | XSS in node labels | brainstorm-canvas.js:62 | `escapeHtml(node.label)` |
+| B130 | Timestamped export | brainstorm-graph.js:205 | ISO timestamp in filename |
+| B131 | IdeationBuffer overflow | ideation-buffer.js:22-38 | `{ thought, dropped }` return contract |
+| B132 | Label truncation | BrainstormService.ts:122-124 | 200 char limit |
+
+### Accessibility
+
+| Feature | File | Evidence |
+|---------|------|----------|
+| prefers-reduced-motion | brainstorm-canvas.js:27,73,90 | Disables particles + auto-rotation |
+| UNDO/REDO toolbar buttons | brainstorm-templates.js:23-24 | Title attributes with shortcuts |
+| GRID button removed | brainstorm-templates.js | Only FORCE/TREE/CIRCLE remain |
+
+### Section 4 Compliance
+
+| File | LOC | Status |
+|------|-----|--------|
+| brainstorm-canvas.js | 167 | PASS |
+| brainstorm-graph.js | 230 | PASS |
+| brainstorm-templates.js | 106 | PASS |
+| brainstorm.js | 250 | PASS (at limit) |
+| prep-bay.js | 199 | PASS |
+| voice-controller.js | 119 | PASS |
+| ideation-buffer.js | 44 | PASS |
+| heuristic-extractor.js | 81 | PASS |
+| web-llm-engine.js | 234 | PASS |
+| BrainstormService.ts | 172 | PASS |
+| stt-engine.js | ~400 | EXCEPTION (pre-existing debt) |
+
+### Tests
+
+| Test File | Count | Coverage |
+|-----------|-------|----------|
+| brainstorm-canvas.test.ts | 3 | 2D default, XSS escape, non-mutation |
+| IdeationBuffer.test.ts | 5 | append, setText, commit, overflow, empty |
 
 ## Brainstorm Bug Fixes & Razor Debt — Implementation State
 

@@ -45,12 +45,12 @@ export class PrepBayController {
     if (!text) { prepInput?.focus(); return; }
 
     this.ideationBuffer.setText(text);
-    const thought = this.ideationBuffer.commit();
-    if (thought) {
-      this.updateHistoryDropdown();
-      prepInput.value = '';
-      this.submit(thought.text);
-    }
+    const { thought, dropped } = this.ideationBuffer.commit();
+    if (!thought) { prepInput?.focus(); return; }
+    if (dropped) this.showStatus('Oldest thought archived to make room', 'var(--text-muted)');
+    this.updateHistoryDropdown();
+    prepInput.value = '';
+    this.submit(thought.text);
   }
 
   updateHistoryDropdown() {
@@ -66,6 +66,7 @@ export class PrepBayController {
   }
 
   async submit(transcript) {
+    if (!transcript?.trim()) return;
     this.showStatus('Processing transcript...', 'var(--accent-cyan)');
     const extraction = await this.graph.submitTranscript(transcript);
 
@@ -74,7 +75,9 @@ export class PrepBayController {
       const msg = extraction.verbalResponse || `Extracted ${extraction.nodes.length} node(s)`;
       this.showStatus(msg, 'var(--accent-green)');
       if (extraction.verbalResponse) {
-        this.voice.tts.speak(extraction.verbalResponse).catch(() => {});
+        this.voice.tts.speak(extraction.verbalResponse).catch(() => {
+          this.showStatus('Voice response failed — text shown above', 'var(--accent-gold)');
+        });
       }
       return;
     }
@@ -160,7 +163,11 @@ export class PrepBayController {
     const recordBtn = modal.querySelector('.cc-bs-modal-record');
     recordBtn.addEventListener('click', () => this.voice.toggle());
 
+    const escHandler = (e) => { if (e.key === 'Escape') close(); };
+    document.addEventListener('keydown', escHandler);
+
     const close = () => {
+      document.removeEventListener('keydown', escHandler);
       this._modalTextarea = null;
       if (prepInput) prepInput.value = textarea.value;
       overlay.remove();
@@ -168,8 +175,6 @@ export class PrepBayController {
 
     modal.querySelector('.cc-bs-modal-close').addEventListener('click', close);
     overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
-    const escHandler = (e) => { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', escHandler); } };
-    document.addEventListener('keydown', escHandler);
 
     modal.querySelector('.cc-bs-modal-send').addEventListener('click', () => {
       if (prepInput) prepInput.value = textarea.value;

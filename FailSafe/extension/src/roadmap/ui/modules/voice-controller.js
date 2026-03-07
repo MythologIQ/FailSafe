@@ -57,7 +57,7 @@ export class VoiceController {
   }
 
   async toggle() {
-    if (this.pttActive) return;
+    if (this.pttActive || this._toggling) return;
     if (!this.stt.modelReady) {
       const msg = this.stt.loadingStatus === 'downloading' || this.stt.loadingStatus === 'loading'
         ? 'Security model is still preparing — please wait...'
@@ -65,16 +65,21 @@ export class VoiceController {
       this.onStatus?.(msg, 'var(--accent-gold)');
       return;
     }
-    if (this.voiceActive) {
-      this.voiceActive = false;
-      this.onMicButton?.('🎙️ LISTEN', false);
-      this.onStatus?.('Processing...', 'var(--accent-cyan)');
-      await this.stt.stopListening();
-    } else {
-      this.voiceActive = true;
-      this.onMicButton?.('⏹️ STOP', true);
-      this.onStatus?.('Recording...', 'var(--accent-red)');
-      this.stt.startListening();
+    this._toggling = true;
+    try {
+      if (this.voiceActive) {
+        this.voiceActive = false;
+        this.onMicButton?.('🎙️ LISTEN', false);
+        this.onStatus?.('Processing...', 'var(--accent-cyan)');
+        await this.stt.stopListening();
+      } else {
+        this.voiceActive = true;
+        this.onMicButton?.('⏹️ STOP', true);
+        this.onStatus?.('Recording...', 'var(--accent-red)');
+        this.stt.startListening();
+      }
+    } finally {
+      this._toggling = false;
     }
   }
 

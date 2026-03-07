@@ -9,7 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- Post-4.4.0 scope to be scheduled.
+- Post-4.5.0 scope to be scheduled.
+
+## [4.5.0] - 2026-03-07
+
+### Added
+
+- **Skill Discovery Tags** - Skills now carry normalized tags and source credit metadata. Console skill-scan extracts tags from frontmatter, filenames, and categories.
+- **Tag-Based Skill Filter** - Skills panel replaces category chips with a type-ahead tag filter with autocomplete suggestions and clear control.
+- **Governance Skill Cohesion** - All 19 QoreLogic skills now carry explicit next-step routing. Canonical skill routing table and proactive suggestion signals established.
+- **/ql-document Skill** - New documentation authoring skill with RELEASE_METADATA mode for automated release notes and GENERAL mode for standalone technical writing. Integrated into `/ql-repo-release` Step 5.
+
+### Changed
+
+- **Brainstorm Module Cleanup** - Optional chaining replaces null guards; status messages consolidated into a lookup map; audio device handler uses named reference for cleanup.
+- **STT Engine Refinements** - Improved silence timer handling and mic device switching in speech-to-text pipeline.
+- **Ideation Buffer & Prep Bay** - Tightened buffer merge logic and prep bay staging flow for mindmap ideation.
+- **CI Workflow Consolidation** - VSIX proprietary guardrails workflow now builds from single extension source and scans packaged VSIX for prohibited content patterns.
+
+### Documentation
+
+- Updated `docs/COMPONENT_HELP.md` and `docs/PROCESS_GUIDE.md` to reflect `v4.5.0`.
 
 ## [4.4.1] - 2026-03-06
 

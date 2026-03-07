@@ -20,21 +20,22 @@ export class IdeationBuffer {
   }
 
   commit() {
-    if (!this.currentText.trim()) return null;
-    
+    if (!this.currentText.trim()) return { thought: null, dropped: null };
+
     const thought = {
       id: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
       text: this.currentText.trim(),
       timestamp: new Date().toISOString()
     };
-    
+
     this.history.unshift(thought);
+    let dropped = null;
     if (this.history.length > MAX_HISTORY) {
-      this.history.pop();
+      dropped = this.history.pop();
     }
-    
+
     this.currentText = '';
-    return thought;
+    return { thought, dropped };
   }
 
   getHistory() {

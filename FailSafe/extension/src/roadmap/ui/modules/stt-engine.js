@@ -62,8 +62,9 @@ export class SttEngine {
     // Live interim transcription (Web Speech API companion)
     this._liveRecognition = null;
     this._liveAccumulated = '';
-    // Audio device selection
+    // Audio device / language
     this.micDeviceId = null;
+    this.language = null;
   }
 
   async init() {
@@ -127,6 +128,7 @@ export class SttEngine {
     if (phrase) this.wakePhrase = phrase.toLowerCase();
     const mic = this.store?.get('audio-input-device');
     if (mic) this.micDeviceId = mic;
+    this.language = this.store?.get('stt-language') || navigator.language || 'en-US';
   }
 
   async startListening() {
@@ -212,9 +214,14 @@ export class SttEngine {
     });
 
     this._wakeRecognition.addEventListener('error', () => {
-      // Silently restart on transient errors
+      this._wakeRetries = (this._wakeRetries || 0) + 1;
+      if (this._wakeRetries > 5) {
+        this.onModelProgress?.('error', 'Wake word stopped after 5 failures');
+        return;
+      }
       if (this.wakeWordEnabled && this.state === 'idle') {
-        setTimeout(() => this.startWakeWordListener(), 1000);
+        const delay = Math.min(1000 * Math.pow(2, this._wakeRetries - 1), 30000);
+        setTimeout(() => this.startWakeWordListener(), delay);
       }
     });
 
@@ -232,6 +239,11 @@ export class SttEngine {
     this.stopWakeWordListener();
     this._stopRecorder();
     this._setState('idle');
+    this.onTranscript = null;
+    this.onStateChange = null;
+    this.onAutoStop = null;
+    this.onWakeWordTriggered = null;
+    this.onModelProgress = null;
   }
 
   // -- Private helpers -------------------------------------------------------
@@ -256,11 +268,25 @@ export class SttEngine {
       this.onAnalyserCreated?.(this._analyser);
       
     } catch (err) {
-      console.error('STT mic error:', err);
+      const msg = err.name === 'NotAllowedError' ? 'Microphone access denied'
+        : err.name === 'NotFoundError' ? 'No microphone detected'
+        : err.message?.includes('network') ? 'Network error loading speech model'
+        : 'Speech recognition unavailable';
+      this.onModelProgress?.('error', msg);
       this._setState('idle');
       return;
     }
-    this._recorder = new MediaRecorder(this._stream);
+    // B126: Explicit codec with fallback
+    const mimeType = MediaRecorder.isTypeSupported?.('audio/webm;codecs=opus')
+      ? 'audio/webm;codecs=opus'
+      : MediaRecorder.isTypeSupported?.('audio/webm') ? 'audio/webm' : undefined;
+    try {
+      this._recorder = new MediaRecorder(this._stream, mimeType ? { mimeType } : undefined);
+    } catch (recErr) {
+      this._releaseStream();
+      this._setState('idle');
+      return;
+    }
     this._recorder.addEventListener('dataavailable', (e) => {
       if (e.data.size > 0) this._chunks.push(e.data);
     });
@@ -287,16 +313,16 @@ export class SttEngine {
       this.onAudioCaptured(blob);
     }
     const arrayBuf = await blob.arrayBuffer();
-    const ctx = new (globalThis.AudioContext || globalThis.webkitAudioContext)();
-    const decoded = await ctx.decodeAudioData(arrayBuf);
-    const audioBuffer = decoded.getChannelData(0);
-    await ctx.close();
-
+    const ctx = new (globalThis.AudioContext || globalThis.webkitAudioContext)({ sampleRate: 16000 });
     try {
+      const decoded = await ctx.decodeAudioData(arrayBuf);
+      const audioBuffer = decoded.getChannelData(0);
       const result = await this._whisperPipeline(audioBuffer);
       this.onTranscript?.(result.text, true);
     } catch {
       this.onTranscript?.('[transcription failed]', true);
+    } finally {
+      ctx.close().catch(() => {});
     }
     this._chunks = [];
     this._recorder = null;
@@ -318,7 +344,7 @@ export class SttEngine {
       this._liveRecognition = new SpeechRecognitionCtor();
       this._liveRecognition.continuous = true;
       this._liveRecognition.interimResults = true;
-      this._liveRecognition.lang = 'en-US';
+      this._liveRecognition.lang = this.language || 'en-US';
 
       this._liveRecognition.addEventListener('result', (e) => {
         let current = '';

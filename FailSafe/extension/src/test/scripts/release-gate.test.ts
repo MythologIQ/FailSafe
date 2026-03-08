@@ -64,12 +64,30 @@ suite("release-gate: preflight", () => {
       opts.readme ??
         `**Current Release**: v${version} (${date})\n\n## What's New in v${version}\n\nStuff`,
     );
+    // docs/ subfolder for component-help and process-guide checks (B108)
+    const docsDir = path.join(dir, "docs");
+    fs.mkdirSync(docsDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(docsDir, "COMPONENT_HELP.md"),
+      `# Component Help\n\nAudience: operators using v${version}.`,
+    );
+    fs.writeFileSync(
+      path.join(docsDir, "PROCESS_GUIDE.md"),
+      `# Process Guide\n\nAccurate workflows for v${version}.`,
+    );
     const rootDir = path.join(dir, ".root");
     fs.mkdirSync(rootDir, { recursive: true });
     fs.writeFileSync(
       path.join(rootDir, "CHANGELOG.md"),
       opts.rootChangelog ??
         `## [${version}]\n\n### Summary\n- Release`,
+    );
+    // docs/BACKLOG.md with version summary (B139)
+    const rootDocsDir = path.join(rootDir, "docs");
+    fs.mkdirSync(rootDocsDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(rootDocsDir, "BACKLOG.md"),
+      `## Version Summary\n\n| Version | Status |\n| --- | --- |\n| ${version} | Released |\n\n---\n`,
     );
     return { dir, rootDir };
   }

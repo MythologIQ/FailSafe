@@ -16,8 +16,13 @@ describe("CommitGuard", () => {
     guard = new CommitGuard(tmpDir, 7777);
   });
 
-  afterEach(() => {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
+  afterEach(function () {
+    this.timeout(5000);
+    try {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    } catch {
+      // Windows may hold brief locks on temp dirs; swallow cleanup errors
+    }
   });
 
   describe("generateToken", () => {

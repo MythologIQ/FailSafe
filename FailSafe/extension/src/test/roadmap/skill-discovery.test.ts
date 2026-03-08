@@ -42,8 +42,13 @@ suite('Skill Discovery: collectCommandMarkdownFiles equivalent logic', () => {
     fs.writeFileSync(path.join(tmpDir, '_quarantine', 'blocked.md'), '# Blocked');
   });
 
-  teardown(() => {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
+  teardown(function () {
+    this.timeout(5000);
+    try {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    } catch {
+      // Windows may hold brief locks on temp dirs; swallow cleanup errors
+    }
   });
 
   test('finds .md files in root and nested directories', () => {

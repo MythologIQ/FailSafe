@@ -138,7 +138,8 @@ export class BrainstormCanvas {
   _updateGraph() {
     if (this._updatePending) return;
     this._updatePending = true;
-    requestAnimationFrame(() => {
+    const raf = typeof requestAnimationFrame === 'function' ? requestAnimationFrame : (cb) => setTimeout(cb, 0);
+    raf(() => {
       this._updatePending = false;
       this._applyGraphData();
     });

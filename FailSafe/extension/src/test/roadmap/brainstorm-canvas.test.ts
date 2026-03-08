@@ -80,6 +80,8 @@ suite("BrainstormCanvas Tests", () => {
     const originalCopy = JSON.parse(JSON.stringify(originalNodes));
 
     canvas.setNodes(originalNodes);
+    // rAF batching defers _applyGraphData; flush it synchronously for test
+    canvas._applyGraphData();
 
     assert.deepStrictEqual(
       originalNodes,

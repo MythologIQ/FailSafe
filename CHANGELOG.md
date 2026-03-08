@@ -9,7 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- Post-4.6.1 scope to be scheduled.
+- Post-4.6.2 scope to be scheduled.
+
+## [4.6.2] - 2026-03-08
+
+### Fixed
+
+- Console Server 404 on dotfile install paths (`.vscode/`, `.antigravity/`). Latent bug in Express `sendFile()` dotfile protection.
 
 ## [4.6.1] - 2026-03-08
 

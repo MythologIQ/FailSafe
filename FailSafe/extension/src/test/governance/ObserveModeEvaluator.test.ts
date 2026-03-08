@@ -18,8 +18,8 @@ suite("ObserveModeEvaluator", () => {
         axiom1: {
           enforce: () =>
             axiom1Status === "ALLOW"
-              ? { status: "ALLOW", reason: "ok", intentId: "test" }
-              : { status: "BLOCK", violation: "No intent", reason: "blocked" },
+              ? { status: "ALLOW" as const, reason: "ok", intentId: "test" }
+              : { status: "BLOCK" as const, violation: "No intent", reason: "blocked" },
         } as any,
         logger: { info: (...args: unknown[]) => logged.push(args) } as any,
         notifications: {

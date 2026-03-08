@@ -120,6 +120,25 @@ function main() {
     "Source README release marker"
   );
   assertIncludes(sourceReadme, `## What's New in v${sourcePkg.version}`, "Source README release notes heading");
+  // Validate all icon references in package.json resolve to real files
+  const iconErrors = [];
+  function checkIcon(label, iconPath) {
+    if (!iconPath) return;
+    if (!fs.existsSync(path.resolve(root, iconPath))) {
+      iconErrors.push(`${label}: ${iconPath}`);
+    }
+  }
+  checkIcon("Extension icon", sourcePkg.icon);
+  (sourcePkg.contributes?.viewsContainers?.activitybar || []).forEach((c) =>
+    checkIcon(`Activity bar "${c.title}"`, c.icon)
+  );
+  Object.values(sourcePkg.contributes?.views || {}).forEach((viewList) =>
+    viewList.forEach((v) => checkIcon(`View "${v.name}"`, v.icon))
+  );
+  if (iconErrors.length) {
+    fail("Missing icon files referenced in package.json:\n  " + iconErrors.join("\n  "));
+  }
+
   console.log(`[PASS] Source release metadata validated: v${sourcePkg.version} (${latestRelease.date})`);
 
   if (sourceOnly) {

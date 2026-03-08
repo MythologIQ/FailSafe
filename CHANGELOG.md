@@ -9,7 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- Post-4.6.0 scope to be scheduled.
+- Post-4.6.1 scope to be scheduled.
+
+## [4.6.1] - 2026-03-08
+
+### Fixed
+
+- Missing sidebar SVG icon in activity bar.
+- Release Pipeline branch policy validation for tag-based CI.
+- Icon reference validation added to release preflight gate.
 
 ## [4.6.0] - 2026-03-08
 

@@ -37,14 +37,14 @@ suite("ObserveModeEvaluator", () => {
 
   test("allows action when axiom1 passes", async () => {
     const { deps } = makeDeps("ALLOW");
-    const result = evaluateObserveMode(baseContext, deps);
+    const result = evaluateObserveMode(baseContext, deps as any);
     assert.strictEqual(result.status, "ALLOW");
     assert.ok(result.reason.includes("permitted"));
   });
 
   test("allows action but logs when axiom1 fails", async () => {
     const { deps, logged, notifications } = makeDeps("BLOCK");
-    const result = evaluateObserveMode(baseContext, deps);
+    const result = evaluateObserveMode(baseContext, deps as any);
     assert.strictEqual(result.status, "ALLOW");
     assert.ok(result.reason.includes("logged but not blocked"));
     assert.strictEqual(logged.length, 1);

@@ -9,7 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- Post-4.6.2 scope to be scheduled.
+- Post-4.6.3 scope to be scheduled.
+
+## [4.6.3] - 2026-03-08
+
+### Fixed
+
+- Console Server `express.static` missing `dotfiles: "allow"` — all CSS/JS/image assets silently 404'd under dotfile install paths.
 
 ## [4.6.2] - 2026-03-08
 

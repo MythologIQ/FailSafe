@@ -169,7 +169,7 @@ export class ConsoleServer {
 
   private setupRoutes(): void {
     this.app.use(express.json({ limit: "12mb" }));
-    this.app.use(express.static(this.uiDir, { index: false }));
+    this.app.use(express.static(this.uiDir, { index: false, dotfiles: "allow" }));
     this.registerCoreRoutes();
     this.registerApiRoutes();
     this.registerSpaFallback();
@@ -1058,7 +1058,7 @@ export class ConsoleServer {
   // ------------------------------------------------------------------
 
   private getWorkspaceRoot(): string {
-    return path.resolve(process.cwd());
+    return this.workspaceRoot;
   }
 
   private resolveUiDir(): string {

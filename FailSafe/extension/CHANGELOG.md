@@ -9,7 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- Post-4.6.2 scope to be scheduled.
+- Post-4.6.3 scope to be scheduled.
+
+## [4.6.3] - 2026-03-08
+
+### Fixed
+
+- **Console Server assets now load** — `express.static` middleware was also missing `dotfiles: "allow"`, causing all CSS, JS, images, and vendor files to silently 404 even after v4.6.2's `sendFile` fix. The HTML page loaded but rendered blank because no assets were served.
 
 ## [4.6.2] - 2026-03-08
 

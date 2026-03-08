@@ -25,10 +25,23 @@ function Get-CurrentBranch {
   return $null
 }
 
+# Tag-based CI runs (e.g. release pipeline triggered by v* tag push) are not
+# branch operations — skip branch naming validation entirely.
+if ($env:GITHUB_REF_TYPE -eq "tag") {
+  Write-Host "[OK] Tag-based CI run detected (ref_type=tag). Branch policy not applicable." -ForegroundColor Green
+  exit 0
+}
+
 $effectiveBranch = if ($BranchName) { $BranchName } else { Get-CurrentBranch }
 if (-not $effectiveBranch) {
   Write-Host "[FAIL] Unable to determine current git branch." -ForegroundColor Red
   exit 1
+}
+
+# Detached HEAD from tag checkout (git rev-parse --abbrev-ref HEAD returns "HEAD")
+if ($effectiveBranch -eq "HEAD") {
+  Write-Host "[OK] Detached HEAD detected (likely tag checkout). Branch policy not applicable." -ForegroundColor Green
+  exit 0
 }
 
 $allowedPattern = '^(plan|feat|fix|release|hotfix)\/[a-z0-9][a-z0-9\-._]*$'

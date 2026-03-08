@@ -1,12 +1,20 @@
-[![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.6.0?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.6.0?platform=universal)
+[![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.6.1?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.6.1?platform=universal)
 
 # MythologIQ FailSafe for VS Code
 
 FailSafe is a local-first governance extension for AI-assisted development in VS Code and Cursor. It applies deterministic checks at the editor boundary, records decisions to a local ledger, and provides dedicated surfaces for audits, checkpoints, and agent governance.
 
-**Current Release**: v4.6.0 (2026-03-08)
+**Current Release**: v4.6.1 (2026-03-08)
 
 ![FailSafe Banner](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/extension/FailSafe%20Banner.png)
+
+## What's New in v4.6.1
+
+### Fixes
+
+- Missing sidebar icon restored — activity bar now shows the FailSafe shield.
+- Release Pipeline no longer fails on tag-based CI runs (detached HEAD).
+- Icon validation added to preflight gate to prevent missing asset regressions.
 
 ## What's New in v4.6.0
 

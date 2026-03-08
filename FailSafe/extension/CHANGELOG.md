@@ -9,7 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- Post-4.6.0 scope to be scheduled.
+- Post-4.6.1 scope to be scheduled.
+
+## [4.6.1] - 2026-03-08
+
+### Fixed
+
+- **Missing sidebar icon** — Activity bar SVG icon (`failsafe-icon.svg`) was referenced in package.json but never created; sidebar showed blank icon in VS Code and Antigravity.
+- **Release Pipeline branch policy** — Tag-based CI runs (detached HEAD from `v*` tag checkout) no longer fail branch naming validation.
+- **Icon validation gate** — `validate-vsix.cjs` preflight now checks all icon references in package.json resolve to real files, preventing this class of bug in future releases.
 
 ## [4.6.0] - 2026-03-08
 

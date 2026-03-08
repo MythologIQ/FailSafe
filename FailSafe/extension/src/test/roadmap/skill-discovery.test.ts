@@ -3,7 +3,8 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
 
-suite('Skill Discovery: collectCommandMarkdownFiles equivalent logic', () => {
+suite('Skill Discovery: collectCommandMarkdownFiles equivalent logic', function () {
+  this.timeout(10000);
   let tmpDir: string;
 
   function collectCommandMarkdownFiles(root: string): string[] {

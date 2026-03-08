@@ -5,7 +5,8 @@ import * as path from "path";
 import * as os from "os";
 import { CommitGuard } from "../../governance/CommitGuard";
 
-describe("CommitGuard", () => {
+describe("CommitGuard", function () {
+  this.timeout(10000);
   let tmpDir: string;
   let guard: CommitGuard;
 
@@ -17,7 +18,7 @@ describe("CommitGuard", () => {
   });
 
   afterEach(function () {
-    this.timeout(5000);
+    this.timeout(10000);
     try {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     } catch {

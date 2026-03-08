@@ -12,7 +12,8 @@ export type L3ApprovalState =
   | "APPROVED"
   | "APPROVED_WITH_CONDITIONS"
   | "REJECTED"
-  | "DEFERRED";
+  | "DEFERRED"
+  | "EXPIRED";
 
 export interface L3ApprovalRequest {
   id: string;

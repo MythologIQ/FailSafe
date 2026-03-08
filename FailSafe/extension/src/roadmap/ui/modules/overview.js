@@ -1,5 +1,11 @@
 // FailSafe Unified Command Center — Overview Tab Module
 
+function esc(value) {
+  const d = document.createElement('div');
+  d.textContent = String(value ?? '');
+  return d.innerHTML;
+}
+
 export class OverviewRenderer {
   constructor(containerId) {
     this.container = document.getElementById(containerId);
@@ -44,8 +50,10 @@ export class OverviewRenderer {
         </div>
       </div>
 
+      ${this.renderVerdictAlert(hubData)}
+
       <div class="split-grid" style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
-        
+
         <div class="card panel-section" style="background: var(--bg-panel); border: 1px solid var(--border-rim); border-radius: 12px; padding: 20px;">
           <h3 style="margin: 0 0 16px 0; font-family: var(--font-display); font-size: 1rem; color: var(--text-main);">Recent Operations Stream</h3>
           ${this.renderOperationalStream(checkpoints)}
@@ -54,7 +62,7 @@ export class OverviewRenderer {
         <div class="card panel-section" style="display: flex; flex-direction: column; gap: 16px;">
           <div style="background: var(--bg-panel); border: 1px solid var(--border-rim); border-radius: 12px; padding: 20px; flex: 1;">
             <h3 style="margin: 0 0 16px 0; font-family: var(--font-display); font-size: 1rem; color: var(--text-main);">Network Activity</h3>
-            ${this.renderActivityMocks()}
+            ${this.renderActivityLive(hubData)}
           </div>
         </div>
 
@@ -88,12 +96,12 @@ export class OverviewRenderer {
       html += `
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(0,0,0,0.15); border-left: 3px solid ${color}; border-radius: 4px;">
           <div>
-            <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-main);">${c.checkpointType}</div>
-            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">Phase: ${c.phase || 'N/A'}</div>
+            <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-main);">${esc(c.checkpointType)}</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">Phase: ${esc(c.phase || 'N/A')}</div>
           </div>
           <div style="text-align: right;">
-            <div style="font-size: 0.75rem; font-family: var(--font-mono); color: var(--text-muted);">${new Date(c.timestamp).toLocaleTimeString()}</div>
-            <div style="font-size: 0.7rem; color: ${color}; font-weight: 700; margin-top: 2px;">${c.policyVerdict}</div>
+            <div style="font-size: 0.75rem; font-family: var(--font-mono); color: var(--text-muted);">${esc(new Date(c.timestamp).toLocaleTimeString())}</div>
+            <div style="font-size: 0.7rem; color: ${color}; font-weight: 700; margin-top: 2px;">${esc(c.policyVerdict)}</div>
           </div>
         </div>
       `;
@@ -102,22 +110,51 @@ export class OverviewRenderer {
     return html;
   }
 
-  renderActivityMocks() {
+  renderActivityLive(hubData) {
+    const evts = hubData?.sentinelStatus?.eventsProcessed || 0;
+    const qd = hubData?.sentinelStatus?.queueDepth || 0;
+    const l3 = hubData?.l3Queue?.length || 0;
+    const evtPct = Math.min(evts, 100);
+    const qdPct = Math.min(qd * 10, 100);
     return `
-      <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.8rem; color: var(--text-muted);">
-        <span>I/O Operations</span> <span>142 req/s</span>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:0.8rem;color:var(--text-muted)">
+        <span>Events Processed</span> <span>${evts}</span>
       </div>
-      <div style="height: 6px; background: rgba(0,0,0,0.3); border-radius: 3px; overflow: hidden; margin-bottom: 16px;">
-        <div style="height: 100%; width: 45%; background: var(--primary);"></div>
+      <div style="height:6px;background:rgba(0,0,0,0.3);border-radius:3px;overflow:hidden;margin-bottom:16px">
+        <div style="height:100%;width:${evtPct}%;background:var(--primary)"></div>
       </div>
-
-      <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.8rem; color: var(--text-muted);">
-        <span>Queue Depth</span> <span>0</span>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:0.8rem;color:var(--text-muted)">
+        <span>Queue Depth</span> <span>${qd}</span>
       </div>
-      <div style="height: 6px; background: rgba(0,0,0,0.3); border-radius: 3px; overflow: hidden; margin-bottom: 16px;">
-        <div style="height: 100%; width: 2%; background: var(--accent-cyan);"></div>
+      <div style="height:6px;background:rgba(0,0,0,0.3);border-radius:3px;overflow:hidden;margin-bottom:16px">
+        <div style="height:100%;width:${qdPct}%;background:var(--accent-cyan)"></div>
+      </div>
+      <div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px">
+        L3 Queue: ${l3} pending
       </div>
     `;
+  }
+
+  renderVerdictAlert(hubData) {
+    const verdicts = hubData?.recentVerdicts || [];
+    const critical = verdicts.filter(
+      (v) => ['BLOCK', 'ESCALATE', 'QUARANTINE'].includes(v.decision),
+    );
+    if (critical.length === 0) return '';
+    const latest = critical[critical.length - 1];
+    return `
+      <div style="background:rgba(255,60,60,0.12);border:1px solid var(--accent-red);
+        border-radius:10px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
+        <span style="font-size:1.2rem">!</span>
+        <div>
+          <div style="font-weight:700;color:var(--accent-red);font-size:0.9rem">
+            ${esc(latest.decision)}: ${critical.length} critical verdict(s)
+          </div>
+          <div style="font-size:0.78rem;color:var(--text-muted);margin-top:2px">
+            Latest: ${esc(latest.riskGrade)} risk at ${esc(new Date(latest.timestamp).toLocaleTimeString())}
+          </div>
+        </div>
+      </div>`;
   }
 
   renderRightPanel() {

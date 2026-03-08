@@ -116,6 +116,9 @@ export class ConsoleServer {
   private systemRegistry:
     | import("../qorelogic/SystemRegistry").SystemRegistry
     | null = null;
+  private ideTracker:
+    | import("./services/IdeActivityTracker").IdeActivityTracker
+    | null = null;
   private checkpointTypeRegistry = new Set<string>([
     "snapshot.created",
     "phase.entered",
@@ -492,6 +495,12 @@ export class ConsoleServer {
     this.systemRegistry = registry;
   }
 
+  setIdeTracker(
+    tracker: import("./services/IdeActivityTracker").IdeActivityTracker,
+  ): void {
+    this.ideTracker = tracker;
+  }
+
   private buildRouteDeps(): RouteDeps {
     const configProfile = new ConfigurationProfile();
     configProfile.loadDefaults({ workspaceRoot: this.workspaceRoot });
@@ -759,6 +768,13 @@ export class ConsoleServer {
       checkpointSummary: this.getCheckpointSummary(),
       recentCheckpoints: this.getRecentCheckpoints(12),
       qoreRuntime,
+      runState: this.ideTracker
+        ? this.ideTracker.getRunState(
+            this.inferActivePhaseTitle(activePlan),
+          )
+        : { currentPhase: "Plan", activeTasks: [], activeDebugSessions: [] },
+      riskSummary: this.buildRiskSummary(),
+      recentCompletions: this.buildRecentCompletions(),
       bootstrapComplete: fs.existsSync(
         path.join(this.getWorkspaceRoot(), "docs", "CONCEPT.md"),
       ),
@@ -1009,6 +1025,45 @@ export class ConsoleServer {
       this.checkpointDb, this.checkpointMemory,
       this.cachedChainValid, this.chainValidAt,
     );
+  }
+
+  // ------------------------------------------------------------------
+  //  Hub snapshot helpers
+  // ------------------------------------------------------------------
+
+  private inferActivePhaseTitle(
+    activePlan: ReturnType<PlanManager["getActivePlan"]>,
+  ): string | undefined {
+    if (!activePlan) return undefined;
+    const p = activePlan as unknown as Record<string, unknown>;
+    if (p.currentPhaseId) return String(p.currentPhaseId);
+    const phases = p.phases as Array<{ status: string; title: string }> | undefined;
+    return phases?.find((ph) => ph.status === "active")?.title;
+  }
+
+  private buildRiskSummary(): Record<string, number> {
+    const high = this.recentVerdicts.filter(
+      (v) => ["BLOCK", "ESCALATE", "QUARANTINE"].includes(v.decision),
+    ).length;
+    const medium = this.recentVerdicts.filter(
+      (v) => v.decision === "WARN",
+    ).length;
+    const low = this.recentVerdicts.filter(
+      (v) => v.decision === "PASS",
+    ).length;
+    return { high, medium, low };
+  }
+
+  private buildRecentCompletions(): Array<Record<string, unknown>> {
+    const completionTypes = new Set([
+      "milestone.completed",
+      "phase.completed",
+      "substantiate.sealed",
+    ]);
+    return this.getRecentCheckpoints(20)
+      .filter((c) => completionTypes.has(c.checkpointType))
+      .slice(0, 5)
+      .map((c) => ({ type: c.checkpointType, phase: c.phase, at: c.timestamp }));
   }
 
   // ------------------------------------------------------------------

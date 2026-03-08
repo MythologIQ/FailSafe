@@ -10,9 +10,12 @@ FailSafe is a local-first governance extension for AI-assisted development in VS
 
 ## What's New in v4.6.3
 
+Incremental hotfix — additional UI refinements and hardening are forthcoming.
+
 ### Fixes
 
 - **Console Server accessible again** — Fixed latent Express dotfile protection bug that caused 404 errors when extension was installed in dotfile directories (`.vscode/`, `.antigravity/`).
+- **Monitor & Command Center Parity** — Build steps, debug sessions, and recently completed items now track live in the sidebar. L3 approval queue auto-prunes expired requests. Command Center surfaces Sentinel critical alerts with verdict banners and status-aware mission strip coloring.
 
 ## What's New in v4.6.1
 

@@ -28,7 +28,11 @@ export type FailSafeEventType =
   | "prompt.response"
   | "governance.revertInitiated"
   | "governance.revertCompleted"
-  | "governance.revertFailed";
+  | "governance.revertFailed"
+  | "ide.taskStarted"
+  | "ide.taskEnded"
+  | "ide.debugStarted"
+  | "ide.debugEnded";
 
 export interface FailSafeEvent<T = unknown> {
   type: FailSafeEventType;

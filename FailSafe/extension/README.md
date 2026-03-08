@@ -29,6 +29,10 @@ FailSafe is a local-first governance extension for AI-assisted development in VS
 - Release gate now validates backlog duplicates, version summaries, and help doc markers.
 - Governance doc storage consolidated to `.failsafe/governance/` with `/ql-organize` Phase 6 compliance checking.
 
+### Voice-Brainstorm Status
+
+Implemented. Console Mindmap tab supports mic capture, STT/TTS roundtrip, transcript-to-graph extraction, and confidence-based node coloring. Requires vendored Whisper/Piper runtime assets.
+
 ### Under the Hood
 
 - Socket.dev compliance: deprecated API removal and post-build pattern sanitization for clean scan scores.

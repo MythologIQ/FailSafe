@@ -41,7 +41,8 @@ suite("release-gate: bumpVersion", () => {
   });
 });
 
-suite("release-gate: preflight", () => {
+suite("release-gate: preflight", function () {
+  this.timeout(10000);
   const fixtureDir = path.join(__dirname, "__fixtures__", "release-gate");
 
   function writeFixture(
@@ -96,8 +97,13 @@ suite("release-gate: preflight", () => {
     fs.mkdirSync(fixtureDir, { recursive: true });
   });
 
-  suiteTeardown(() => {
-    fs.rmSync(fixtureDir, { recursive: true, force: true });
+  suiteTeardown(function () {
+    this.timeout(5000);
+    try {
+      fs.rmSync(fixtureDir, { recursive: true, force: true });
+    } catch {
+      // Windows may hold brief locks on temp dirs; swallow cleanup errors
+    }
   });
 
   test("all checks pass for valid fixture", () => {

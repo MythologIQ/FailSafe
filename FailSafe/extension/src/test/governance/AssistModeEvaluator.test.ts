@@ -11,7 +11,11 @@ suite("AssistModeEvaluator", () => {
     return {
       deps: {
         axiom1: {
-          enforce: () => ({ status: "ALLOW" as const, reason: "ok", intentId: "test" }),
+          enforce: () => ({
+            status: "ALLOW" as const,
+            reason: "ok",
+            intentId: "test",
+          }),
         },
         intentProvider: {
           getActiveIntent: async () => null,
@@ -41,7 +45,7 @@ suite("AssistModeEvaluator", () => {
       activeIntent: null,
       workspaceRoot: "/workspace",
     };
-    const result = await evaluateAssistMode(context, deps);
+    const result = await evaluateAssistMode(context, deps as any);
     assert.strictEqual(result.status, "ALLOW");
     assert.ok(result.reason.includes("auto-1"));
   });
@@ -53,7 +57,7 @@ suite("AssistModeEvaluator", () => {
       activeIntent: null,
       workspaceRoot: "/workspace",
     };
-    const result = await evaluateAssistMode(context, deps);
+    const result = await evaluateAssistMode(context, deps as any);
     assert.strictEqual(result.status, "ALLOW");
     assert.ok(result.reason.includes("failed"));
   });
@@ -65,7 +69,7 @@ suite("AssistModeEvaluator", () => {
       activeIntent: { id: "existing-1" } as any,
       workspaceRoot: "/workspace",
     };
-    const result = await evaluateAssistMode(context, deps);
+    const result = await evaluateAssistMode(context, deps as any);
     assert.strictEqual(result.status, "ALLOW");
     assert.ok(result.reason.includes("existing-1"));
   });

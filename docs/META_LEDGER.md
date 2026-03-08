@@ -7740,3 +7740,38 @@ SHA256(content_hash + previous_hash)
 ```
 
 **Decision**: Post-v4.6.0 fixes substantiated. Governance doc migration (Entry #181) and socket.dev compliance fixes (Entry #182) verified complete. All dist output clean of scanner-triggering patterns. Gate open for /ql-repo-release.
+
+---
+
+### Entry #184: DELIVER — v4.6.0
+
+**Timestamp**: 2026-03-08T03:10:00Z
+**Phase**: DELIVER
+**Author**: Governor
+
+**Version**: 4.6.0
+**Tag**: v4.6.0
+**Commit**: 4aa35d0
+**Branch**: release/v4.6.0
+
+**Test Results**: 394 passing, 0 failing + 8 Playwright UI tests passing
+**VSIX**: mythologiq-failsafe-4.6.0.vsix (24.07 MB, 134 files)
+**Pre-push gate**: PASS (lint, compile, test:all, package, validate:vsix)
+
+**Decision**: Release v4.6.0 delivered. Tag pushed to trigger release pipeline. Includes Section 4 Razor decomposition, voice brainstorm bug fixes, socket.dev compliance, governance doc migration, and flaky test stabilization.
+
+**Content Hash**:
+
+```
+SHA256(delivery_summary)
+= e47f31a4366ace97038eed9678888754cec6e57f55383e9618792d40911196b2
+```
+
+**Previous Hash**: 1b426123bbd2bf4ddd85827b65477dd2215ce0c40382232c61e47041bed6acb0
+
+**Chain Hash**:
+
+```
+SHA256(content_hash + previous_hash)
+= 9715089756ce3bc3f38fe2532e364a6b910c21c2d0e2a23a673f84c7b302278f
+```

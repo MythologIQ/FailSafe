@@ -21,25 +21,48 @@ jobs:
         with:
           node-version: "20"
           cache: npm
-          cache-dependency-path: |
-            FailSafe/PROD-Extension/VSCode/package-lock.json
-            FailSafe/PROD-Extension/Antigravity/package-lock.json
+          cache-dependency-path: FailSafe/extension/package-lock.json
 
-      - name: Install VSCode PROD dependencies
+      - name: Install dependencies
         run: npm ci
-        working-directory: FailSafe/PROD-Extension/VSCode
+        working-directory: FailSafe/extension
 
-      - name: Install Antigravity PROD dependencies
-        run: npm ci
-        working-directory: FailSafe/PROD-Extension/Antigravity
+      - name: Package VSIX
+        run: npx @vscode/vsce package
+        working-directory: FailSafe/extension
 
-      - name: Compile VSCode PROD extension
-        run: npm run compile
-        working-directory: FailSafe/PROD-Extension/VSCode
+      - name: Scan VSIX for prohibited content
+        working-directory: FailSafe/extension
+        run: |
+          VSIX_FILE=$(ls -t *.vsix | head -1)
+          if [ -z "$VSIX_FILE" ]; then
+            echo "::error::No VSIX file found"
+            exit 1
+          fi
 
-      - name: Compile Antigravity PROD extension
-        run: npm run compile
-        working-directory: FailSafe/PROD-Extension/Antigravity
+          CONTENTS=$(unzip -Z1 "$VSIX_FILE")
+          PROHIBITED_PATTERNS=(
+            "proprietary/"
+            "internal/"
+            "private/"
+            ".env"
+            ".vsce-token"
+            ".ovsx-token"
+          )
 
-      - name: Verify VSIX proprietary guardrails
-        run: node FailSafe/PROD-Extension/scripts/verify-vsix-proprietary-guardrails.mjs
+          FOUND=0
+          for pattern in "${PROHIBITED_PATTERNS[@]}"; do
+            MATCHES=$(echo "$CONTENTS" | grep -i "$pattern" || true)
+            if [ -n "$MATCHES" ]; then
+              echo "::error::Prohibited content found: $pattern"
+              echo "$MATCHES"
+              FOUND=1
+            fi
+          done
+
+          if [ "$FOUND" -eq 1 ]; then
+            echo "::error::VSIX contains prohibited content. Review .vscodeignore."
+            exit 1
+          fi
+
+          echo "VSIX guardrail check passed: $VSIX_FILE"

@@ -133,16 +133,11 @@ export class LlmStatusRenderer {
       }
     } catch (_) {}
     try {
-      const temp = document.createElement('textarea');
-      temp.value = text;
-      temp.setAttribute('readonly', 'readonly');
-      temp.style.position = 'fixed';
-      temp.style.left = '-9999px';
-      document.body.appendChild(temp);
-      temp.select();
-      const ok = document.execCommand('copy');
-      document.body.removeChild(temp);
-      return !!ok;
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(text);
+        return true;
+      }
+      return false;
     } catch (_) {
       return false;
     }

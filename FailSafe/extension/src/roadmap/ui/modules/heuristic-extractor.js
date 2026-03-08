@@ -4,11 +4,11 @@
 
 export const TYPE_SIGNALS = {
     Risk:         /\b(risk|danger|threat|vulnerability|fail|crash|breach|attack|exploit|unsafe)\b/i,
+    Decision:     /\b(decide|decision|choose|pick|go with|agreed|approve|reject)\b/i,
+    Task:         /\b(need to|must|should|todo|action item|assign|implement|build|create|fix)\b/i,
     Question:     /\b(how|why|should|could|what if|whether|question|ask|concern)\b/i,
-    Database:     /\b(database|sql|table|schema|migration|store|persist|cache|redis|postgres|mongo)\b/i,
-    Integration:  /\b(api|endpoint|webhook|third.?party|integration|external|upstream|downstream|service)\b/i,
-    Architecture: /\b(architect|pattern|layer|module|component|system|design|structure|framework|engine)\b/i,
-    Feature:      /./,  // default fallback
+    Constraint:   /\b(cannot|must not|limit|restrict|budget|deadline|blocking|dependency)\b/i,
+    Idea:         /./,
 };
 
 export function heuristicExtract(transcript) {
@@ -26,7 +26,7 @@ export function heuristicExtract(transcript) {
             nodes: [{
                 id: `h-${Date.now()}`,
                 label: transcript.substring(0, 30).trim() || 'Brainstorm idea',
-                type: 'Feature',
+                type: 'Idea',
                 confidence: 20,
             }],
             edges: [],
@@ -50,7 +50,7 @@ export function heuristicExtract(transcript) {
         usedLabels.add(label.toLowerCase());
 
         // Infer type from content
-        let type = 'Feature';
+        let type = 'Idea';
         for (const [t, regex] of Object.entries(TYPE_SIGNALS)) {
             if (regex.test(sentence)) { type = t; break; }
         }

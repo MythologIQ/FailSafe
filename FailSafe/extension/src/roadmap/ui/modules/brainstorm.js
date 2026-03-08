@@ -42,43 +42,37 @@ export class BrainstormRenderer {
     this.voice.stt.init().finally(() => this.voice.loadSettings());
     this.voice.tts.init().catch(() => {});
     this.webLlm.onProgress = () => {
-      if (this.client) {
-        this.client.setWebLlmStatus({
-          nativeAvailable: this.webLlm.isNativeAiAvailable,
-          wasmReady: !!this.webLlm.pipeline,
-          loading: this.webLlm.loadingStatus === 'loading' || this.webLlm.loadingStatus === 'downloading'
-        });
-      }
+      this.client?.setWebLlmStatus({
+        nativeAvailable: this.webLlm.isNativeAiAvailable,
+        wasmReady: !!this.webLlm.pipeline,
+        loading: this.webLlm.loadingStatus === 'loading' || this.webLlm.loadingStatus === 'downloading'
+      });
       this.llmStatus.render(this.client);
     };
+    const STATUS_MSGS = { 'native-lost': ['Gemini Nano disconnected \u2014 falling back.', 'var(--accent-gold)'], 'native-downloading': ['Downloading Gemini Nano model...', 'var(--accent-cyan)'], 'native-found': ['Gemini Nano active!', 'var(--accent-green)'] };
     this.webLlm.onStatusChange = (reason) => {
       this.llmStatus.render(this.client);
-      if (reason === 'native-lost') this.showStatus('Gemini Nano disconnected \u2014 falling back.', 'var(--accent-gold)');
-      if (reason === 'native-downloading') this.showStatus('Downloading Gemini Nano model...', 'var(--accent-cyan)');
-      if (reason === 'native-found') this.showStatus('Gemini Nano active!', 'var(--accent-green)');
+      const m = STATUS_MSGS[reason];
+      if (m) this.showStatus(m[0], m[1]);
     };
     this.webLlm.init().then(() => this.llmStatus.render(this.client)).catch(() => this.llmStatus.render(this.client));
     this._heartbeatInterval = setInterval(() => {
       this.webLlm.recheckNative().then(() => this.llmStatus.render(this.client));
     }, 30000);
-    window.addEventListener('failsafe:audio-device-changed', (e) => {
+    this._audioDeviceHandler = (e) => {
       if (e.detail.type === 'input') this.voice.stt.setMicDevice(e.detail.deviceId);
-    });
+    };
+    window.addEventListener('failsafe:audio-device-changed', this._audioDeviceHandler);
   }
 
   renderRightPanel() { return renderRightPanel(); }
-
   _getEl(sel) {
-    if (!this.container) return null;
-    return this.container.querySelector(sel) || document.getElementById('context-hub')?.querySelector(sel);
+    return this.container?.querySelector(sel) || document.getElementById('context-hub')?.querySelector(sel) || null;
   }
 
   _getAll(sel) {
-    const fromMain = Array.from(this.container?.querySelectorAll(sel) || []);
-    const fromHub = Array.from(document.getElementById('context-hub')?.querySelectorAll(sel) || []);
-    return [...fromMain, ...fromHub];
+    return [...(this.container?.querySelectorAll(sel) || []), ...(document.getElementById('context-hub')?.querySelectorAll(sel) || [])];
   }
-
   _wireVoice() {
     this.voice.onMicButton = (html, active, disabled, title) => {
       const el = this._getEl('.cc-bs-voice');
@@ -89,19 +83,12 @@ export class BrainstormRenderer {
       if (title) el.title = title;
     };
     this.voice.onStatus = (text, color) => this.showStatus(text, color);
-    this.voice.onAnalyser = (analyser) => this._initVisualizer(analyser);
+    this.voice.onAnalyser = (a) => this._initVisualizer(a);
     this.voice.wireModelProgress();
-    this.voice.stt.onTranscript = (text, isFinal) => this.prepBay.onTranscript(text, isFinal);
-    this.voice.stt.onAudioCaptured = async (blob) => {
-      try {
-        await fetch('/api/v1/brainstorm/audio', {
-          method: 'POST',
-          headers: { 'Content-Type': 'audio/webm' },
-          body: blob
-        });
-      } catch (err) {
-        console.warn('Failed to store audio context', err);
-      }
+    this.voice.stt.onTranscript = (t, f) => this.prepBay.onTranscript(t, f);
+    this.voice.stt.onAudioCaptured = (blob) => {
+      fetch('/api/v1/brainstorm/audio', { method: 'POST', headers: { 'Content-Type': 'audio/webm' }, body: blob })
+        .catch(() => this.showStatus('Audio capture not saved', 'var(--accent-gold)'));
     };
     this.keyboard.onPttStart = () => this.voice.startPtt();
     this.keyboard.onPttStop = () => this.voice.stopPtt();
@@ -154,6 +141,18 @@ export class BrainstormRenderer {
     });
     canvas.onNodeSelect((id) => this.nodeEditor.select(id));
     canvas.onNodeDblClick((id) => this.nodeEditor.startEdit(id));
+    this._undoKeyHandler = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault(); this.graph.undo();
+      }
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault(); this.graph.redo();
+      }
+      if (e.key === 'Delete' && this.nodeEditor.selectedNodeId) {
+        this.graph.removeNode(this.nodeEditor.selectedNodeId);
+      }
+    };
+    document.addEventListener('keydown', this._undoKeyHandler);
     this.bindToolbar();
     this.keyboard.loadKey();
     this.keyboard.bind();
@@ -163,6 +162,8 @@ export class BrainstormRenderer {
     const canvas = this.graph.canvas;
     if (!canvas) return;
 
+    this._getEl('.cc-bs-undo')?.addEventListener('click', () => this.graph.undo());
+    this._getEl('.cc-bs-redo')?.addEventListener('click', () => this.graph.redo());
     this._getEl('.cc-bs-export')?.addEventListener('click', () => this.graph.exportJSON());
     this._getEl('.cc-bs-clear')?.addEventListener('click', () => {
       if (confirm('Are you sure you want to reset the entire Mind Map? This will clear all extracted ideations.')) {
@@ -189,16 +190,15 @@ export class BrainstormRenderer {
 
     this._bindWakeToggle();
 
-    // Global listener uses fresh DOM query each time (survives tab-switch rebuilds)
-    if (!this._wakeListenerBound) {
-      this._wakeListenerBound = true;
-      window.addEventListener('failsafe:wake-word-changed', (e) => {
+    if (!this._wakeHandler) {
+      this._wakeHandler = (e) => {
         this.voice.stt.setWakeWordEnabled(e.detail.enabled);
         if (e.detail.enabled) this.voice.stt.startWakeWordListener();
         else this.voice.stt.stopWakeWordListener();
         const toggle = this._getEl('.cc-bs-wake-toggle');
         if (toggle && toggle.checked !== e.detail.enabled) toggle.checked = e.detail.enabled;
-      });
+      };
+      window.addEventListener('failsafe:wake-word-changed', this._wakeHandler);
     }
 
     this.prepBay.bindEvents();
@@ -237,8 +237,13 @@ export class BrainstormRenderer {
 
   destroy() {
     if (this._heartbeatInterval) clearInterval(this._heartbeatInterval);
+    if (this._audioDeviceHandler) window.removeEventListener('failsafe:audio-device-changed', this._audioDeviceHandler);
+    if (this._wakeHandler) window.removeEventListener('failsafe:wake-word-changed', this._wakeHandler);
+    if (this._undoKeyHandler) document.removeEventListener('keydown', this._undoKeyHandler);
+    this._wakeHandler = null;
     this.keyboard.unbind();
     this.voice.destroy();
+    this.webLlm.destroy();
     this.graph.canvas?.destroy();
     if (this.container) this.container.innerHTML = '';
   }

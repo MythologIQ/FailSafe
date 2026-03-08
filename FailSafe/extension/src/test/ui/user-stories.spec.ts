@@ -277,9 +277,18 @@ test('US: operations actions post to API endpoints', async ({ page }) => {
     await page.goto(`${baseUrl}/command-center.html`);
     await page.locator('.tab-btn[data-target="operations"]').click();
 
-    await page.locator('[data-action="/api/actions/resume-monitoring"]').click();
-    await page.locator('[data-action="/api/actions/panic-stop"]').click();
-    await page.locator('[data-action="/api/actions/verify-integrity"]').click();
+    await Promise.all([
+      page.waitForResponse(r => r.url().includes('/api/actions/resume-monitoring')),
+      page.locator('[data-action="/api/actions/resume-monitoring"]').click(),
+    ]);
+    await Promise.all([
+      page.waitForResponse(r => r.url().includes('/api/actions/panic-stop')),
+      page.locator('[data-action="/api/actions/panic-stop"]').click(),
+    ]);
+    await Promise.all([
+      page.waitForResponse(r => r.url().includes('/api/actions/verify-integrity')),
+      page.locator('[data-action="/api/actions/verify-integrity"]').click(),
+    ]);
   }, { onAction: (route) => called.push(route) });
 
   expect(called).toContain('/api/actions/resume-monitoring');

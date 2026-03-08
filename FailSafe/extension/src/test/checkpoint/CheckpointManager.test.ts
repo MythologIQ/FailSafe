@@ -22,10 +22,15 @@ describe("Sovereign Checkpoint Protocol", () => {
     }
   });
 
-  afterEach(() => {
+  afterEach(function () {
+    this.timeout(10000);
     // Cleanup
-    if (fs.existsSync(testWorkspace)) {
-      fs.rmSync(testWorkspace, { recursive: true, force: true });
+    try {
+      if (fs.existsSync(testWorkspace)) {
+        fs.rmSync(testWorkspace, { recursive: true, force: true });
+      }
+    } catch {
+      // Windows may hold brief locks on temp dirs; swallow cleanup errors
     }
   });
 

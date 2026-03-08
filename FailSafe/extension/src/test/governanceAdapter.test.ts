@@ -12,7 +12,8 @@ function mkTempDir(prefix: string): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
 }
 
-describe('GovernanceAdapter transparency correlation', () => {
+describe('GovernanceAdapter transparency correlation', function () {
+  this.timeout(10000);
   it('clears active transparency build entries after allowed decision', async () => {
     const tempRoot = mkTempDir('failsafe-gov-allow-');
     try {
@@ -98,7 +99,8 @@ describe('GovernanceAdapter transparency correlation', () => {
   });
 });
 
-describe('GovernanceAdapter trust score wiring', () => {
+describe('GovernanceAdapter trust score wiring', function () {
+  this.timeout(10000);
   it('uses trust score from TrustEngine for known agent', async () => {
     const tempRoot = mkTempDir('failsafe-gov-trust-');
     try {

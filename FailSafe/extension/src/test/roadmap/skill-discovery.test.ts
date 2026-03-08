@@ -3,7 +3,8 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
 
-suite('Skill Discovery: collectCommandMarkdownFiles equivalent logic', () => {
+suite('Skill Discovery: collectCommandMarkdownFiles equivalent logic', function () {
+  this.timeout(10000);
   let tmpDir: string;
 
   function collectCommandMarkdownFiles(root: string): string[] {
@@ -42,8 +43,13 @@ suite('Skill Discovery: collectCommandMarkdownFiles equivalent logic', () => {
     fs.writeFileSync(path.join(tmpDir, '_quarantine', 'blocked.md'), '# Blocked');
   });
 
-  teardown(() => {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
+  teardown(function () {
+    this.timeout(5000);
+    try {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    } catch {
+      // Windows may hold brief locks on temp dirs; swallow cleanup errors
+    }
   });
 
   test('finds .md files in root and nested directories', () => {

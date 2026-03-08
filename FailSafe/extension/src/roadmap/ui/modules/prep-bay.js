@@ -45,12 +45,12 @@ export class PrepBayController {
     if (!text) { prepInput?.focus(); return; }
 
     this.ideationBuffer.setText(text);
-    const thought = this.ideationBuffer.commit();
-    if (thought) {
-      this.updateHistoryDropdown();
-      prepInput.value = '';
-      this.submit(thought.text);
-    }
+    const { thought, dropped } = this.ideationBuffer.commit();
+    if (!thought) { prepInput?.focus(); return; }
+    if (dropped) this.showStatus('Oldest thought archived to make room', 'var(--text-muted)');
+    this.updateHistoryDropdown();
+    prepInput.value = '';
+    this.submit(thought.text);
   }
 
   updateHistoryDropdown() {
@@ -66,6 +66,7 @@ export class PrepBayController {
   }
 
   async submit(transcript) {
+    if (!transcript?.trim()) return;
     this.showStatus('Processing transcript...', 'var(--accent-cyan)');
     const extraction = await this.graph.submitTranscript(transcript);
 
@@ -74,7 +75,9 @@ export class PrepBayController {
       const msg = extraction.verbalResponse || `Extracted ${extraction.nodes.length} node(s)`;
       this.showStatus(msg, 'var(--accent-green)');
       if (extraction.verbalResponse) {
-        this.voice.tts.speak(extraction.verbalResponse).catch(() => {});
+        this.voice.tts.speak(extraction.verbalResponse).catch((err) => {
+          this.showStatus(`Voice failed: ${err.message || 'unknown error'}`, 'var(--accent-red)');
+        });
       }
       return;
     }
@@ -127,10 +130,42 @@ export class PrepBayController {
   openModal() {
     if (document.querySelector('.cc-bs-modal-overlay')) return;
     const prepInput = this._getEl('.cc-bs-prep-input');
+    const { overlay, modal, textarea, recordBtn } = this._createModalDom(prepInput);
+    document.body.appendChild(overlay);
+
+    textarea.focus();
+    textarea.scrollTop = textarea.scrollHeight;
+    this._modalTextarea = textarea;
+    recordBtn.addEventListener('click', () => this.voice.toggle());
+
+    const escHandler = (e) => { if (e.key === 'Escape') close(); };
+    document.addEventListener('keydown', escHandler);
+
+    const close = () => {
+      this._modalVizActive = false;
+      if (this._restoreAnalyser) { this._restoreAnalyser(); this._restoreAnalyser = null; }
+      document.removeEventListener('keydown', escHandler);
+      this._modalTextarea = null;
+      if (prepInput) prepInput.value = textarea.value;
+      overlay.remove();
+    };
+
+    modal.querySelector('.cc-bs-modal-close').addEventListener('click', close);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+    modal.querySelector('.cc-bs-modal-send').addEventListener('click', () => {
+      if (prepInput) prepInput.value = textarea.value;
+      close();
+      this.commit();
+    });
+
+    this._wireModalVoiceState(modal, recordBtn);
+    this._wireModalVisualizer(modal);
+  }
+
+  _createModalDom(prepInput) {
     const overlay = document.createElement('div');
     overlay.className = 'cc-bs-modal-overlay';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;padding:24px;';
-
     const modal = document.createElement('div');
     modal.style.cssText = 'width:100%;max-width:800px;max-height:90vh;background:var(--bg-mid);border:1px solid var(--border-rim);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:12px;';
     modal.innerHTML = `
@@ -149,35 +184,10 @@ export class PrepBayController {
         <button class="cc-btn cc-btn--primary cc-bs-modal-send" style="flex:1.2;padding:12px;font-weight:bold;">SEND TO MAP</button>
       </div>`;
     overlay.appendChild(modal);
-    document.body.appendChild(overlay);
-
     const textarea = modal.querySelector('.cc-bs-modal-input');
     textarea.value = prepInput?.value || '';
-    textarea.focus();
-    textarea.scrollTop = textarea.scrollHeight;
-    this._modalTextarea = textarea;
-
     const recordBtn = modal.querySelector('.cc-bs-modal-record');
-    recordBtn.addEventListener('click', () => this.voice.toggle());
-
-    const close = () => {
-      this._modalTextarea = null;
-      if (prepInput) prepInput.value = textarea.value;
-      overlay.remove();
-    };
-
-    modal.querySelector('.cc-bs-modal-close').addEventListener('click', close);
-    overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
-    const escHandler = (e) => { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', escHandler); } };
-    document.addEventListener('keydown', escHandler);
-
-    modal.querySelector('.cc-bs-modal-send').addEventListener('click', () => {
-      if (prepInput) prepInput.value = textarea.value;
-      close();
-      this.commit();
-    });
-
-    this._wireModalVoiceState(modal, recordBtn);
+    return { overlay, modal, textarea, recordBtn };
   }
 
   _wireModalVoiceState(modal, recordBtn) {
@@ -190,5 +200,44 @@ export class PrepBayController {
       if (disabled !== undefined) recordBtn.disabled = !!disabled;
       if (title) recordBtn.title = title;
     };
+  }
+
+  _wireModalVisualizer(modal) {
+    const vizCanvas = modal.querySelector('.cc-bs-modal-visualizer');
+    if (!vizCanvas) return;
+    const origOnAnalyser = this.voice.onAnalyser;
+    this.voice.onAnalyser = (analyser) => {
+      origOnAnalyser?.(analyser);
+      if (vizCanvas && this._modalTextarea) {
+        this._drawModalVisualizer(vizCanvas, analyser);
+      }
+    };
+    this._restoreAnalyser = () => { this.voice.onAnalyser = origOnAnalyser; };
+  }
+
+  _drawModalVisualizer(canvas, analyser) {
+    const ctx = canvas.getContext('2d');
+    const buf = new Uint8Array(analyser.frequencyBinCount);
+    canvas.width = canvas.clientWidth || 200;
+    canvas.height = canvas.clientHeight || 24;
+    this._modalVizActive = true;
+    const draw = () => {
+      if (!this._modalVizActive) return;
+      requestAnimationFrame(draw);
+      analyser.getByteTimeDomainData(buf);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#10b981';
+      ctx.beginPath();
+      const sw = canvas.width / buf.length;
+      for (let i = 0, x = 0; i < buf.length; i++, x += sw) {
+        const y = (buf[i] / 128.0) * canvas.height / 2;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.lineTo(canvas.width, canvas.height / 2);
+      ctx.stroke();
+    };
+    draw();
   }
 }

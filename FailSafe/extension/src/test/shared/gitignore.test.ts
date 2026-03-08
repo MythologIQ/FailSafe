@@ -13,11 +13,16 @@ function makeTempWorkspace(): string {
   return dir;
 }
 
-afterEach(() => {
+afterEach(function () {
+  this.timeout(10000);
   while (tempDirs.length > 0) {
     const dir = tempDirs.pop();
     if (dir && fs.existsSync(dir)) {
-      fs.rmSync(dir, { recursive: true, force: true });
+      try {
+        fs.rmSync(dir, { recursive: true, force: true });
+      } catch {
+        // Windows may hold brief locks on temp dirs; swallow cleanup errors
+      }
     }
   }
 });

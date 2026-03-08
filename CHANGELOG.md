@@ -9,7 +9,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- Post-4.4.0 scope to be scheduled.
+- Post-4.6.0 scope to be scheduled.
+
+## [4.6.0] - 2026-03-08
+
+### Changed
+
+- Section 4 Razor decomposition: ConsoleServer 3265L→1124L, stt-engine 400L→249L, EnforcementEngine 250L→122L with 16 extracted modules.
+- Voice brainstorm bug fixes: rAF batching, TTS error handling, node taxonomy, waveform visualizer, truncation logging (B119, B120, B125, B129, B132).
+- Hook toggle UI and release gate enhancements (B107, B108, B138, B139).
+- Socket.dev compliance: deprecated API removal, post-build pattern sanitization.
+- Governance doc storage migrated to `.failsafe/governance/`.
+
+## [4.5.1] - 2026-03-07
+
+### Fixed
+
+- Activation crash when ledger database is unavailable
+- CI validator parameter mismatch in `validate.ps1`
+
+## [4.5.0] - 2026-03-07
+
+### Changed
+
+- Skill Discovery now carries tags and source credit; Skills panel uses type-ahead tag filter with autocomplete.
+- Brainstorm, STT, and ideation modules refined for cleaner runtime behavior.
+- CI VSIX guardrails workflow consolidated to single-source build with proprietary content scan.
+- Governance skill lifecycle cohesion: 19 skills with next-step routing, canonical routing table, /ql-document authoring skill.
+
+---
 
 ## [4.4.1] - 2026-03-06
 

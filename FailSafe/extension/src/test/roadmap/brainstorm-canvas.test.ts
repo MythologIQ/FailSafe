@@ -3,7 +3,7 @@ import * as assert from "assert";
 import { BrainstormCanvas } from "../../../src/roadmap/ui/modules/brainstorm-canvas.js";
 import { JSDOM } from "jsdom";
 
-suite("BrainstormCanvas (3D) Tests", () => {
+suite("BrainstormCanvas Tests", () => {
   let originalWindow: any;
   let canvas: any;
 
@@ -35,7 +35,9 @@ suite("BrainstormCanvas (3D) Tests", () => {
       graphData: () => mockGraphInstance,
       d3Force: () => ({ strength: () => {}, distance: () => {} }),
     };
+    (global as any).window.ForceGraph = () => () => mockGraphInstance;
     (global as any).window.ForceGraph3D = () => () => mockGraphInstance;
+    (global as any).window.matchMedia = () => ({ matches: false });
   });
 
   teardown(() => {
@@ -47,6 +49,23 @@ suite("BrainstormCanvas (3D) Tests", () => {
     (global as any).document = originalWindow
       ? originalWindow.document
       : undefined;
+  });
+
+  test("defaults to 2D view mode", () => {
+    const container = (global as any).document.getElementById("container");
+    canvas = new BrainstormCanvas(container);
+    assert.strictEqual(canvas.viewMode, "2D");
+  });
+
+  test("escapes HTML in node labels", () => {
+    const container = (global as any).document.getElementById("container");
+    canvas = new BrainstormCanvas(container);
+
+    // The nodeLabel callback is set during _initGraph via .nodeLabel(fn)
+    // Verify the escapeHtml import works correctly
+    const { escapeHtml } = require("../../../src/roadmap/ui/modules/brainstorm-templates.js");
+    assert.strictEqual(escapeHtml('<script>alert(1)</script>'), '&lt;script&gt;alert(1)&lt;/script&gt;');
+    assert.strictEqual(escapeHtml('Node "A" & B'), 'Node &quot;A&quot; &amp; B');
   });
 
   test("setNodes correctly maps node val without mutating original", () => {
@@ -61,6 +80,8 @@ suite("BrainstormCanvas (3D) Tests", () => {
     const originalCopy = JSON.parse(JSON.stringify(originalNodes));
 
     canvas.setNodes(originalNodes);
+    // rAF batching defers _applyGraphData; flush it synchronously for test
+    canvas._applyGraphData();
 
     assert.deepStrictEqual(
       originalNodes,

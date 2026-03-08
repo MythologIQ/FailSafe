@@ -1,12 +1,16 @@
 import { applyPhysicsAdapters } from './force-layout.js';
 import { calculateHaptics } from './haptic-engine.js';
+import { escapeHtml } from './brainstorm-templates.js';
 
 const CATEGORY_COLORS = {
-  Feature: '#4f46e5',
+  Idea: '#4f46e5',
   Architecture: '#4f46e5',
   Alignment: '#10b981',
   Risk: '#ef4444',
+  Decision: '#8b5cf6',
+  Task: '#06b6d4',
   Question: '#f59e0b',
+  Constraint: '#f97316',
   Database: '#06b6d4',
   Integration: '#f59e0b',
 };
@@ -22,18 +26,22 @@ function confidenceColor(score) {
 export class BrainstormCanvas {
   constructor(container) {
     this.container = container;
-    this.viewMode = '3D'; // Default to 3D
+    this.viewMode = '2D'; // Default to 2D (research: 3D harms accuracy at 10-100 nodes)
+    this._reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     this.nodes = [];
     this.edges = [];
     this.graph = null;
     this._initGraph();
     
-    // Resize handler
+    // B128: Debounced resize handler
     this._resizeHandler = () => {
-      const rect = this.container.getBoundingClientRect();
-      if (rect.width > 0 && rect.height > 0 && this.graph) {
-        this.graph.width(rect.width).height(rect.height);
-      }
+      clearTimeout(this._resizeDebounce);
+      this._resizeDebounce = setTimeout(() => {
+        const rect = this.container.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0 && this.graph) {
+          this.graph.width(rect.width).height(rect.height);
+        }
+      }, 150);
     };
     window.addEventListener('resize', this._resizeHandler);
     setTimeout(this._resizeHandler, 100);
@@ -54,7 +62,7 @@ export class BrainstormCanvas {
     this.graph = factory()(this.container)
       .backgroundColor('rgba(0,0,0,0)')
       .showNavInfo(false)
-      .nodeLabel('label')
+      .nodeLabel(node => escapeHtml(node.label))
       .nodeColor(node => {
         const base = confidenceColor(node.confidence) || CATEGORY_COLORS[node.type] || '#4f46e5';
         if (node.strain > 0) {
@@ -65,7 +73,7 @@ export class BrainstormCanvas {
       .nodeVal(node => node.val || 5)
       .linkColor(() => 'rgba(255, 255, 255, 0.2)')
       .linkWidth(1)
-      .linkDirectionalParticles(2)
+      .linkDirectionalParticles(this._reduceMotion ? 0 : 2)
       .linkDirectionalParticleSpeed(0.005)
       .linkDirectionalParticleWidth(1.5)
       .onNodeClick(node => {
@@ -82,16 +90,17 @@ export class BrainstormCanvas {
 
     if (this.viewMode === '3D') {
       this.graph.nodeResolution(32);
-      // Slow auto-rotation
-      const distance = 400;
-      let angle = 0;
-      this._rotateTimer = setInterval(() => {
-        this.graph.cameraPosition({
-          x: distance * Math.sin(angle),
-          z: distance * Math.cos(angle)
-        });
-        angle += Math.PI / 3000; // Extremely slow
-      }, 50);
+      if (!this._reduceMotion) {
+        const distance = 400;
+        let angle = 0;
+        this._rotateTimer = setInterval(() => {
+          this.graph.cameraPosition({
+            x: distance * Math.sin(angle),
+            z: distance * Math.cos(angle)
+          });
+          angle += Math.PI / 3000;
+        }, 50);
+      }
     }
 
     this.graph = applyPhysicsAdapters(this.graph);
@@ -127,8 +136,17 @@ export class BrainstormCanvas {
   }
 
   _updateGraph() {
+    if (this._updatePending) return;
+    this._updatePending = true;
+    const raf = typeof requestAnimationFrame === 'function' ? requestAnimationFrame : (cb) => setTimeout(cb, 0);
+    raf(() => {
+      this._updatePending = false;
+      this._applyGraphData();
+    });
+  }
+
+  _applyGraphData() {
     const haptics = calculateHaptics(this.nodes, this.edges);
-    
     this.nodes.forEach(n => {
       const h = haptics.get(n.id);
       if (h) {
@@ -139,7 +157,6 @@ export class BrainstormCanvas {
         n.strain = 0;
       }
     });
-
     this.graph.graphData({
       nodes: this.nodes,
       links: this.edges
@@ -152,6 +169,7 @@ export class BrainstormCanvas {
 
   destroy() {
     if (this._rotateTimer) clearInterval(this._rotateTimer);
+    clearTimeout(this._resizeDebounce);
     window.removeEventListener('resize', this._resizeHandler);
     if (this.graph && this.graph.pauseAnimation) this.graph.pauseAnimation();
     this.container.innerHTML = '';

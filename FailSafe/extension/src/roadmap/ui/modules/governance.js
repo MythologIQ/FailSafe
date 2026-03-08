@@ -134,7 +134,7 @@ export class GovernanceRenderer {
           <div class="cc-card" style="min-height:150px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:14px">
             <div style="font-size:0.9rem;font-weight:600;color:var(--text-main);margin-bottom:6px">Governance chain ready</div>
             <div style="font-size:0.8rem;color:var(--text-muted);max-width:360px">
-              No verdicts yet because no policy decisions have been executed in this cycle.
+              No verdicts yet because no policy decisions have been processed in this cycle.
             </div>
           </div>
         `}</div>

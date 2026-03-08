@@ -69,14 +69,26 @@ export class SkillsRenderer {
   }
 
   renderCategoryChips() {
+    const activeLabel = this.activeCat === 'All' ? '' : this.displayTag(this.activeCat);
+    return `
+      <div class="cc-tag-filter" style="position:relative;margin-bottom:12px;display:flex;gap:6px;align-items:center">
+        <input class="cc-tag-input" type="text" placeholder="Filter by tag\u2026"
+          value="${this.esc(activeLabel)}"
+          style="flex:1;max-width:260px;padding:6px 10px;background:var(--bg-dark);color:var(--text-main);
+            border:1px solid var(--border-rim);border-radius:6px;font-size:0.8rem;font-family:var(--font-body)">
+        ${this.activeCat !== 'All' ? `<button class="cc-btn cc-tag-clear" style="font-size:0.75rem;padding:4px 8px">Clear</button>` : ''}
+        <div class="cc-tag-suggestions" style="display:none;position:absolute;top:100%;left:0;
+          max-width:260px;width:100%;max-height:180px;overflow-y:auto;z-index:20;
+          background:var(--bg-dark);border:1px solid var(--border-rim);border-radius:6px;
+          margin-top:2px"></div>
+      </div>`;
+  }
+
+  getAvailableTags() {
     const pool = this.activeTab === 'Installed' ? this.skills.filter(s => s.installed)
       : this.activeTab === 'Other' ? this.skills.filter(s => !s.installed)
       : this.skills;
-    const cats = new Set(pool.map(s => s.category || 'general'));
-    const sorted = ['All', ...Array.from(cats).sort()];
-    return `<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">${sorted.map(c =>
-      `<button class="cc-chip cc-cat-chip${c === this.activeCat ? ' active' : ''}" data-cat="${c}">${c}</button>`
-    ).join('')}</div>`;
+    return Array.from(new Set(pool.flatMap(s => this.skillTags(s)))).sort();
   }
 
   bindEvents() {
@@ -101,7 +113,7 @@ export class SkillsRenderer {
       this.renderCards();
     });
     this.bindTabChips();
-    this.bindCatChips();
+    this.bindTagFilter();
   }
 
   bindTabChips() {
@@ -117,22 +129,50 @@ export class SkillsRenderer {
     });
   }
 
-  bindCatChips() {
-    this.container.querySelectorAll('.cc-cat-chip').forEach(chip => {
-      chip.addEventListener('click', () => {
-        this.activeCat = chip.dataset.cat;
-        this.container.querySelectorAll('.cc-cat-chip').forEach(c => c.classList.remove('active'));
-        chip.classList.add('active');
-        this.renderCards();
+  bindTagFilter() {
+    const input = this.container.querySelector('.cc-tag-input');
+    const sugBox = this.container.querySelector('.cc-tag-suggestions');
+    const clearBtn = this.container.querySelector('.cc-tag-clear');
+    if (!input || !sugBox) return;
+
+    input.addEventListener('input', () => {
+      const q = input.value.trim().toLowerCase();
+      if (!q) { sugBox.style.display = 'none'; return; }
+      const matches = this.getAvailableTags().filter(t => t.includes(q));
+      if (!matches.length) { sugBox.style.display = 'none'; return; }
+      sugBox.innerHTML = matches.map(t =>
+        `<div class="cc-tag-option" data-tag="${this.esc(t)}"
+          style="padding:6px 10px;cursor:pointer;font-size:0.8rem;color:var(--text-main)"
+          onmouseenter="this.style.background='var(--primary)'"
+          onmouseleave="this.style.background='transparent'">${this.esc(this.displayTag(t))}</div>`
+      ).join('');
+      sugBox.style.display = 'block';
+      sugBox.querySelectorAll('.cc-tag-option').forEach(opt => {
+        opt.addEventListener('click', () => {
+          this.activeCat = opt.dataset.tag;
+          input.value = this.displayTag(opt.dataset.tag);
+          sugBox.style.display = 'none';
+          this.reRenderCategoryChips();
+          this.renderCards();
+        });
       });
+    });
+
+    input.addEventListener('blur', () => setTimeout(() => { sugBox.style.display = 'none'; }, 150));
+    input.addEventListener('focus', () => { if (input.value.trim()) input.dispatchEvent(new Event('input')); });
+
+    clearBtn?.addEventListener('click', () => {
+      this.activeCat = 'All';
+      this.reRenderCategoryChips();
+      this.renderCards();
     });
   }
 
   reRenderCategoryChips() {
-    const wrapper = this.container.querySelector('.cc-cat-chip')?.parentElement;
+    const wrapper = this.container.querySelector('.cc-tag-filter');
     if (!wrapper) return;
     wrapper.outerHTML = this.renderCategoryChips();
-    this.bindCatChips();
+    this.bindTagFilter();
   }
 
   renderCards() {
@@ -153,17 +193,22 @@ export class SkillsRenderer {
   }
 
   renderCard(s) {
-    const origin = s.origin ? `<span style="font-size:0.65rem;color:var(--text-muted)">${this.esc(s.origin)}</span>` : '';
+    const tags = this.skillTags(s).slice(0, 3);
+    const sourceCredit = s.sourceCredit || s.creator || '';
+    const normalizedId = s.id || s.key || '';
     return `
       <div class="cc-card" style="padding:12px">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
           <strong style="font-size:0.9rem">${this.esc(s.name || s.displayName || s.id || 'Skill')}</strong>
-          <span class="cc-badge" style="background:var(--primary);color:#fff">${this.esc(s.category || 'general')}</span>
+          <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">
+            ${tags.map(tag => `<span class="cc-badge" style="background:var(--primary);color:#fff">${this.esc(this.displayTag(tag))}</span>`).join('')}
+          </div>
         </div>
         <div style="color:var(--text-muted);font-size:0.8rem;margin-top:4px">
           ${this.esc((s.description || s.desc || '').slice(0, 100))}
         </div>
-        ${origin ? `<div style="margin-top:4px">${origin}</div>` : ''}
+        ${normalizedId ? `<div style="margin-top:4px"><span style="font-size:0.65rem;color:var(--text-muted)">ID: ${this.esc(normalizedId)}</span></div>` : ''}
+        ${sourceCredit ? `<div style="margin-top:4px"><span style="font-size:0.65rem;color:var(--text-muted)">Source: ${this.esc(sourceCredit)}</span></div>` : ''}
       </div>`;
   }
 
@@ -174,13 +219,21 @@ export class SkillsRenderer {
     else if (this.activeTab === 'Installed') pool = this.skills.filter(s => s.installed);
     else pool = this.skills.filter(s => !s.installed);
     if (this.activeCat !== 'All') {
-      pool = pool.filter(s => (s.category || 'general') === this.activeCat);
+      pool = pool.filter(s => this.skillTags(s).includes(this.activeCat));
     }
     return pool;
   }
 
   onEvent() {}
   esc(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
+  displayTag(tag) { return String(tag || '').replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase()); }
+  skillTags(skill) {
+    const tags = Array.isArray(skill?.tags) ? skill.tags : [];
+    const fallback = skill?.category ? [skill.category] : [];
+    return Array.from(new Set([...tags, ...fallback]
+      .map(v => String(v || '').trim().toLowerCase().replace(/\s+/g, '-'))
+      .filter(v => v && v !== 'general')));
+  }
 
   renderRightPanel() {
     return `

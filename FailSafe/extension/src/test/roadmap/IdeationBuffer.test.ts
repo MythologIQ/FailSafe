@@ -20,10 +20,12 @@ suite("IdeationBuffer Tests", () => {
 
   test("commit pushes to history cache without exceeding max size", () => {
     const buffer = new IdeationBuffer();
+    let lastDropped = null;
     for (let i = 0; i < 15; i++) {
       buffer.setText(`Thought ${i}`);
-      const t = buffer.commit();
-      assert.ok(t);
+      const { thought, dropped } = buffer.commit();
+      assert.ok(thought);
+      if (dropped) lastDropped = dropped;
     }
 
     assert.strictEqual(buffer.currentText, "");
@@ -33,11 +35,25 @@ suite("IdeationBuffer Tests", () => {
     assert.strictEqual(history[9].text, "Thought 5");
   });
 
-  test("commit ignores empty strings", () => {
+  test("commit returns dropped item when history overflows", () => {
+    const buffer = new IdeationBuffer();
+    for (let i = 0; i < 10; i++) {
+      buffer.setText(`Thought ${i}`);
+      buffer.commit();
+    }
+    buffer.setText("Overflow");
+    const { thought, dropped } = buffer.commit();
+    assert.ok(thought);
+    assert.ok(dropped, "Should return dropped item");
+    assert.strictEqual(dropped.text, "Thought 0");
+  });
+
+  test("commit returns { thought: null, dropped: null } for empty strings", () => {
     const buffer = new IdeationBuffer();
     buffer.setText("   ");
-    const res = buffer.commit();
-    assert.strictEqual(res, null);
+    const { thought, dropped } = buffer.commit();
+    assert.strictEqual(thought, null);
+    assert.strictEqual(dropped, null);
     assert.strictEqual(buffer.getHistory().length, 0);
   });
 });

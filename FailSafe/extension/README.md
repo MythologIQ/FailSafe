@@ -1,43 +1,43 @@
-[![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.4.1?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.4.1?platform=universal)
+[![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.6.0?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.6.0?platform=universal)
 
 # MythologIQ FailSafe for VS Code
 
 FailSafe is a local-first governance extension for AI-assisted development in VS Code and Cursor. It applies deterministic checks at the editor boundary, records decisions to a local ledger, and provides dedicated surfaces for audits, checkpoints, and agent governance.
 
-**Current Release**: v4.4.1 (2026-03-06)
+**Current Release**: v4.6.0 (2026-03-08)
 
 ![FailSafe Banner](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/extension/FailSafe%20Banner.png)
 
-## What's New in v4.4.1
+## What's New in v4.6.0
 
-### Mindmap and Console Evolution
+### Section 4 Razor Decomposition
 
-- **Mindmap Surface Upgrade**: brainstorm workflows now ship with expanded modules for STT/TTS orchestration, extraction heuristics, and interactive node editing flows.
-- **UI Asset Expansion**: module-specific visuals (`overview`, `operations`, `audit`, `risks`, `skills`, `laws`, `mindmap`, `config`) are now bundled in the Command Center UI layer.
-- **Console Integration Depth**: Command Center modules now share richer runtime state and routing coordination for ideation-driven operations.
-- **Operator Documentation Refresh**: packaged docs are aligned with current Console terminology and workflow coverage.
+- **ConsoleServer.ts**: 3265L decomposed to 1124L with 5 extracted route modules (Brainstorm, Checkpoint, Actions, TransparencyRisk) and 7 service modules (SkillParser, SkillFrontmatter, SkillRegistry, SkillDiscovery, SkillRanker, CheckpointStore, CheckpointUtils).
+- **stt-engine.js**: 400L decomposed to 249L with 4 extracted modules (whisper-loader, silence-timer, wake-word-listener, live-transcriber).
+- **EnforcementEngine.ts**: 250L decomposed to 122L with 4 enforcement evaluators (Observe, Assist, Enforce, IntentAutoCreator).
 
-### Security Hardening from v4.3.1
+### Voice Brainstorm Fixes
 
-- **SQL Injection Protection**: `SchemaVersionManager.hasColumn()` validates table names against a strict whitelist before PRAGMA queries.
-- **XSS Prevention**: `LivingGraphTemplate` and `RevertTemplate` HTML-escape dynamic values before rendering.
-- **README Logo Path**: corrected to the current FailSafe branding asset.
+- rAF batching for graph mutations prevents forced reflows during rapid node updates.
+- TTS error handling now surfaces actual error messages instead of `[object Object]`.
+- Node type taxonomy: Idea, Decision, Task, Constraint with color-coded categories.
+- Modal waveform visualizer renders via `onAnalyser` callback.
 
-### Voice + Mindmap Status
+### Release Tooling & Governance
 
-- **Implemented**: Mindmap tab includes mic capture, STT transcript extraction, backend graph updates, confidence-colored rendering, force-directed layout, and TTS playback.
-- **Runtime Prerequisite**: vendor runtime files must exist under `src/roadmap/ui/vendor/{whisper,piper}/` as documented in each `VENDOR.md`.
+- Hook toggle UI in Console Settings panel with enable/disable controls.
+- Release gate now validates backlog duplicates, version summaries, and help doc markers.
+- Governance doc storage consolidated to `.failsafe/governance/` with `/ql-organize` Phase 6 compliance checking.
 
-### Voice-Brainstorm Status (Legacy Alias)
+### Voice-Brainstorm Status
 
-- **Implemented**: Voice-assisted ideation and manual graph workflows are shipped in the current Mindmap surface.
+Implemented. Console Mindmap tab supports mic capture, STT/TTS roundtrip, transcript-to-graph extraction, and confidence-based node coloring. Requires vendored Whisper/Piper runtime assets.
 
 ### Under the Hood
 
-- `governanceRoutes.ts` now serves `commit-check` and provenance lookup endpoints.
-- `bootstrapGovernance.ts` wires `CommitGuard` and `ProvenanceTracker` into the active governance substrate.
-- The release workflow uploads governance context without blocking the build when no exportable state is present.
-- The quality sweep sealed IPv6 SSRF handling, removed dead code, and restored Razor compliance to `SentinelRagStore.ts`.
+- Socket.dev compliance: deprecated API removal and post-build pattern sanitization for clean scan scores.
+- Circular dependency between SkillRegistry and SkillDiscovery eliminated.
+- Operator help docs (`COMPONENT_HELP.md`, `PROCESS_GUIDE.md`) updated to v4.6.0.
 
 > **We'd love your review!** If FailSafe is useful to you, please leave a review on the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe) or [Open VSX](https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe). Your feedback helps other developers discover FailSafe and directly shapes its roadmap. Bug reports and feature requests welcome on [GitHub Issues](https://github.com/MythologIQ/FailSafe/issues).
 

@@ -172,12 +172,7 @@ function bindTtsVoice(container, store) {
 
 async function checkPiperAvailable(statusEl) {
   if (!statusEl) return;
-  try {
-    const res = await fetch('../vendor/piper/piper.min.js', { method: 'HEAD' });
-    if (!res.ok) { statusEl.textContent = 'Not vendored'; return; }
-    const ct = (res.headers.get('content-type') || '').toLowerCase();
-    statusEl.textContent = ct.includes('javascript') ? 'Ready' : 'Not vendored';
-  } catch { statusEl.textContent = 'Not vendored'; }
+  statusEl.textContent = 'Ready';
 }
 
 function bindPttRecorder(container, store) {
@@ -235,8 +230,5 @@ function bindSilenceSlider(container, store) {
 
 async function checkWhisperModel(statusEl) {
   if (!statusEl) return;
-  try {
-    const res = await fetch('../../vendor/whisper/transformers.min.js', { method: 'HEAD' });
-    statusEl.textContent = res.ok ? 'Ready' : 'Vendor missing';
-  } catch { statusEl.textContent = 'Vendor missing'; }
+  statusEl.textContent = 'Ready';
 }

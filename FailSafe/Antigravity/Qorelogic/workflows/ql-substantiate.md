@@ -1,6 +1,6 @@
 ---
 name: ql-substantiate
-description: SHIELD Lock Proof and Session Seal that verifies implementation against blueprint and cryptographically seals the session. Use when: (1) Implementation is complete, (2) Ready to verify Reality matches Promise, (3) Need to seal session with Merkle hash, or (4) Preparing to hand off completed work.
+description: Verify implementation matches blueprint and seal the session. Use when implementation is complete, ready to verify Reality matches Promise, or preparing handoff.
 ---
 
 # /ql-substantiate - Session Seal

@@ -11,8 +11,13 @@ suite('AgentTeamsDetector Test Suite', () => {
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'failsafe-teams-test-'));
   });
 
-  suiteTeardown(() => {
-    fs.rmSync(tempDir, { recursive: true, force: true });
+  suiteTeardown(function () {
+    this.timeout(10000);
+    try {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    } catch {
+      // Windows may hold brief locks on temp dirs; swallow cleanup errors
+    }
   });
 
   test('returns disabled when settings file is missing', () => {

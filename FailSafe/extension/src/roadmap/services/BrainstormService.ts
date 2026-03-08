@@ -119,7 +119,11 @@ export class BrainstormService {
   addNode(label: string, type: string, clientId?: string): BrainstormNode {
     const id = clientId || `n-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     if (this.nodes.has(id)) return this.nodes.get(id)!;
-    const node: BrainstormNode = { id, label, type, confidence: -1 };
+    const finalLabel = label.length > 200 ? label.slice(0, 200) : label;
+    if (label.length > 200) {
+      console.info(`[BrainstormService] Node label truncated from ${label.length} to 200 chars`);
+    }
+    const node: BrainstormNode = { id, label: finalLabel, type, confidence: -1 };
     this.nodes.set(id, node);
     return node;
   }

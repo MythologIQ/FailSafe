@@ -38,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Governance skill lifecycle cohesion: 19 skills with next-step routing, canonical routing table, /ql-document authoring skill.
 
 ---
+
 ## [4.4.1] - 2026-03-06
 
 ### Changed

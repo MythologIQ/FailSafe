@@ -28,8 +28,13 @@ suite("SystemRegistry Test Suite", () => {
     );
   });
 
-  suiteTeardown(() => {
-    fs.rmSync(tempDir, { recursive: true, force: true });
+  suiteTeardown(function () {
+    this.timeout(10000);
+    try {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    } catch {
+      // Windows may hold brief locks on temp dirs; swallow cleanup errors
+    }
   });
 
   test("should load manifests from FailSafe/_STAGING_OLD", async () => {

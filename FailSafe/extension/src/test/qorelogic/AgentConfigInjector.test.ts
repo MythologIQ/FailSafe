@@ -45,8 +45,13 @@ suite('AgentConfigInjector Test Suite', () => {
     registry = new SystemRegistry(tempDir);
   });
 
-  suiteTeardown(() => {
-    fs.rmSync(tempDir, { recursive: true, force: true });
+  suiteTeardown(function () {
+    this.timeout(10000);
+    try {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    } catch {
+      // Windows may hold brief locks on temp dirs; swallow cleanup errors
+    }
   });
 
   test('inject() creates governance block in config file', async () => {

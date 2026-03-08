@@ -15,11 +15,12 @@ suite("AudioVaultService Tests", () => {
     await service.init();
   });
 
-  teardown(() => {
+  teardown(function () {
+    this.timeout(10000);
     try {
       fs.rmSync(workspaceRoot, { recursive: true, force: true });
     } catch {
-      // Ignore teardown errors
+      // Windows may hold brief locks on temp dirs; swallow cleanup errors
     }
   });
 

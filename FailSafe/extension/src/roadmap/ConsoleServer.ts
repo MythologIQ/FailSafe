@@ -8,11 +8,9 @@ import * as path from "path";
 import * as fs from "fs";
 import * as crypto from "crypto";
 import * as net from "net";
-import { spawnSync } from "child_process";
 import express, { Request, Response } from "express";
 import { Server as HttpServer } from "http";
 import { WebSocketServer, WebSocket } from "ws";
-import * as yaml from "js-yaml";
 import { PlanManager } from "../qorelogic/planning/PlanManager";
 import { QoreLogicManager } from "../qorelogic/QoreLogicManager";
 import { SentinelDaemon } from "../sentinel/SentinelDaemon";
@@ -27,16 +25,9 @@ import {
 } from "../governance/revert/FailSafeRevertService";
 import { CheckpointRef, RevertRequest } from "../governance/revert/types";
 import {
-  HomeRoute,
-  RunDetailRoute,
-  WorkflowsRoute,
-  SkillsRoute,
-  GenomeRoute,
-  ReportsRoute,
-  SettingsRoute,
-  PreflightRoute,
-  GovernanceKPIRoute,
-  AgentCoverageRoute,
+  HomeRoute, RunDetailRoute, WorkflowsRoute, SkillsRoute,
+  GenomeRoute, ReportsRoute, SettingsRoute, PreflightRoute,
+  GovernanceKPIRoute, AgentCoverageRoute,
 } from "./routes";
 import { ConfigurationProfile } from "../genesis/ConfigurationProfile";
 import type { RouteDeps } from "./routes";
@@ -46,82 +37,32 @@ import { BrainstormService } from "./services/BrainstormService";
 import { AudioVaultService } from "./services/AudioVaultService";
 import type { IConfigProvider } from "../core/interfaces/IConfigProvider";
 import { LLMClient } from "../sentinel/utils/LLMClient";
+import { setupBrainstormRoutes } from "./routes/BrainstormRoute";
+import { setupCheckpointRoutes } from "./routes/CheckpointRoute";
+import { setupActionsRoutes } from "./routes/ActionsRoute";
+import { setupTransparencyRiskRoutes } from "./routes/TransparencyRiskRoute";
+import type { ApiRouteDeps } from "./routes/types";
+import { type InstalledSkill } from "./services/SkillParser";
+import {
+  autoIngest, manualIngest,
+} from "./services/SkillRegistry";
+import {
+  discoverAllSkills, buildSkillRoots, buildWorkspaceDiscoveryRoots,
+} from "./services/SkillDiscovery";
+import { rankSkillForPhase, type SkillRelevance } from "./services/SkillRanker";
+import {
+  type CheckpointRecord, type CheckpointDb, type CheckpointStatus,
+  getRecentCheckpoints as ckptGetRecent,
+  verifyCheckpointChain as ckptVerifyChain,
+  getCheckpointSummary as ckptGetSummary,
+  buildCheckpointRecord as ckptBuildRecord,
+  persistCheckpoint as ckptPersist,
+  inferPhaseKeyFromPlan,
+  CHECKPOINT_INIT_SQL,
+} from "./services/CheckpointStore";
 
 const PORT = 9376;
 const HOST = "127.0.0.1";
-type InstalledSkill = {
-  id: string;
-  displayName: string;
-  localName: string;
-  key: string;
-  label: string;
-  desc: string;
-  creator: string;
-  sourceRepo: string;
-  sourcePath: string;
-  versionPin: string;
-  trustTier: string;
-  sourceType: string;
-  sourcePriority: number;
-  admissionState: string;
-  requiredPermissions: string[];
-  category: string;
-  tags: string[];
-  name: string;
-  description: string;
-  installed: boolean;
-  origin: string;
-  sourceCredit: string;
-};
-
-type SkillRelevance = InstalledSkill & {
-  score: number;
-  reasons: string[];
-};
-
-type CheckpointStatus = "proposed" | "validated" | "sealed" | "superseded";
-
-type CheckpointRecord = {
-  checkpointId: string;
-  runId: string;
-  checkpointType: string;
-  phase: string;
-  status: CheckpointStatus;
-  timestamp: string;
-  parentId: string | null;
-  gitHash: string;
-  policyVerdict: string;
-  evidenceRefs: string[];
-  actor: string;
-  payloadJson: string;
-  payloadHash: string;
-  entryHash: string;
-  prevHash: string;
-};
-
-type SkillRoot = {
-  root: string;
-  sourceType: string;
-  sourcePriority: number;
-  admissionState: string;
-};
-
-type SkillRegistryEntry = {
-  id?: string;
-  timestamp?: string;
-  skillName?: string;
-  skillPath?: string;
-  source?: string;
-  owner?: string;
-  versionPin?: string;
-  declaredVersion?: string;
-  declaredPermissions?: string[];
-  intendedWorkflows?: string[];
-  compatibilityMap?: string[];
-  riskTier?: string;
-  trustTier?: string;
-  runtimeEligibility?: string;
-};
 
 type QoreRuntimeOptions = {
   enabled: boolean;
@@ -157,13 +98,7 @@ export class ConsoleServer {
   private eventBus: EventBus;
   private recentVerdicts: SentinelVerdict[] = [];
   private uiDir: string;
-  private checkpointDb: {
-    prepare: (sql: string) => {
-      run: (...args: unknown[]) => unknown;
-      get: (...args: unknown[]) => unknown;
-      all: (...args: unknown[]) => unknown;
-    };
-  } | null = null;
+  private checkpointDb: CheckpointDb = null;
   private checkpointMemory: CheckpointRecord[] = [];
   private qoreRuntime: QoreRuntimeOptions;
   private workspaceRoot: string;
@@ -223,132 +158,37 @@ export class ConsoleServer {
     this.audioVaultService
       .init()
       .catch((err) => console.error("AudioVaultService init error:", err));
-    this.brainstormService = new BrainstormService(async (prompt, payload) => {
-      const fullPrompt = `${prompt}\n\nTranscript:\n${payload}`;
-
-      // Helper: strip markdown fences and clean up LLM response for JSON
-      const cleanJsonResponse = (raw: string): string => {
-        let cleaned = raw.trim();
-        // Remove ```json ... ``` or ``` ... ```
-        cleaned = cleaned
-          .replace(/^```(?:json)?\s*/i, "")
-          .replace(/\s*```$/i, "");
-        // If still wrapped, try to extract first JSON object
-        const firstBrace = cleaned.indexOf("{");
-        const lastBrace = cleaned.lastIndexOf("}");
-        if (firstBrace >= 0 && lastBrace > firstBrace) {
-          cleaned = cleaned.slice(firstBrace, lastBrace + 1);
-        }
-        return cleaned;
-      };
-
-      // Try Ollama first via LLMClient (60s timeout for complex JSON extraction)
-      if (this.configProvider) {
-        const llm = new LLMClient(this.configProvider);
-        const available = await llm.checkAvailability();
-        if (available) {
-          try {
-            const result = await llm.callEndpoint(fullPrompt, 60000);
-            return cleanJsonResponse(result.response);
-          } catch (ollamaErr) {
-            console.warn("[Brainstorm] Ollama callEndpoint failed:", ollamaErr);
-            // Fall through to VS Code LM
-          }
-        }
-      }
-
-      // Fallback: VS Code Language Model API (Copilot / IDE-provided LLM)
-      try {
-        const vscode = await import("vscode");
-        const models = await vscode.lm.selectChatModels();
-        if (models.length > 0) {
-          const messages = [vscode.LanguageModelChatMessage.User(fullPrompt)];
-          const chatResponse = await models[0].sendRequest(messages);
-          let text = "";
-          for await (const chunk of chatResponse.text) {
-            text += chunk;
-          }
-          return cleanJsonResponse(text);
-        }
-      } catch {
-        // VS Code LM API not available or no models registered
-      }
-
-      throw new Error(
-        "No LLM available — start Ollama or enable a VS Code language model",
-      );
-    });
+    this.brainstormService = this.createBrainstormService();
     this.setupRoutes();
     this.subscribeToEvents();
   }
 
-  private resolveUiDir(): string {
-    const candidates = [
-      // Packaged/compiled location (if copied into out)
-      path.join(__dirname, "ui"),
-      // Dev workspace location from compiled out/roadmap
-      path.resolve(__dirname, "../../src/roadmap/ui"),
-      // Alternate depth fallback for tests/tooling execution contexts
-      path.resolve(__dirname, "../../../src/roadmap/ui"),
-    ];
-
-    for (const candidate of candidates) {
-      if (fs.existsSync(path.join(candidate, "index.html"))) {
-        return candidate;
-      }
-    }
-
-    // Last fallback to avoid crashes; requests will still 404 if missing.
-    return path.join(__dirname, "ui");
-  }
-
-  private resolveQoreRuntimeOptions(
-    options?: Partial<QoreRuntimeOptions>,
-  ): QoreRuntimeOptions {
-    const baseUrl = String(options?.baseUrl || "http://127.0.0.1:7777")
-      .trim()
-      .replace(/\/+$/, "");
-    return {
-      enabled: Boolean(options?.enabled),
-      baseUrl,
-      apiKey: options?.apiKey ? String(options.apiKey) : undefined,
-      timeoutMs: Math.max(
-        500,
-        Math.min(30000, Number(options?.timeoutMs || 4000)),
-      ),
-    };
-  }
+  // ------------------------------------------------------------------
+  //  Route setup
+  // ------------------------------------------------------------------
 
   private setupRoutes(): void {
     this.app.use(express.json({ limit: "12mb" }));
-
-    // Serve static UI assets for the Operations Hub.
-    // Important: disable implicit index serving so route mode selection controls `/`.
     this.app.use(express.static(this.uiDir, { index: false }));
+    this.registerCoreRoutes();
+    this.registerApiRoutes();
+    this.registerSpaFallback();
+  }
 
-    // Root serves the extensive console by default.
-    // Compact shell is available only when explicitly requested.
+  /** Root, health, roadmap, hub, qore, sprint, plans, skills routes */
+  private registerCoreRoutes(): void {
     this.app.get("/", (req: Request, res: Response) => {
       const file = this.getUiEntryFile(req);
       const target = path.join(this.uiDir, file);
-      if (fs.existsSync(target)) {
-        res.sendFile(target);
-        return;
-      }
+      if (fs.existsSync(target)) { res.sendFile(target); return; }
       res.sendFile(path.join(this.uiDir, "command-center.html"));
     });
 
-    // Readiness endpoint for command-side launch checks.
     this.app.get("/health", (_req: Request, res: Response) => {
       const ready = fs.existsSync(path.join(this.uiDir, "index.html"));
       res.status(ready ? 200 : 503).json({ ready, uiDir: this.uiDir });
     });
 
-    // Unified UI routes - serve webui/pages from this server
-    // Legacy fragment overrides removed (legacy UI deleted)
-    // Unified UI routes removed from pages/ since they are consolidating.
-
-    // API: Get full roadmap state
     this.app.get("/api/roadmap", (_req: Request, res: Response) => {
       const sprints = this.planManager.getAllSprints();
       const currentSprint = this.planManager.getCurrentSprint();
@@ -356,714 +196,232 @@ export class ConsoleServer {
       res.json({ sprints, currentSprint, activePlan });
     });
 
-    // API: Unified planner hub snapshot (single UI source of truth)
     this.app.get("/api/hub", async (_req: Request, res: Response) => {
-      const hub = await this.buildHubSnapshot();
-      res.json(hub);
+      res.json(await this.buildHubSnapshot());
     });
 
+    this.registerQoreRoutes();
+    this.registerSkillRoutes();
+  }
+
+  private registerQoreRoutes(): void {
     this.app.get("/api/qore/runtime", async (req: Request, res: Response) => {
-      if (this.rejectIfRemote(req, res)) {
-        return;
-      }
-      const snapshot = await this.fetchQoreRuntimeSnapshot();
-      res.json(snapshot);
+      if (this.rejectIfRemote(req, res)) return;
+      res.json(await this.fetchQoreRuntimeSnapshot());
     });
-
     this.app.get("/api/qore/health", async (req: Request, res: Response) => {
-      if (this.rejectIfRemote(req, res)) {
-        return;
-      }
-      if (!this.qoreRuntime.enabled) {
-        res.status(503).json({ error: "Qore runtime integration is disabled" });
-        return;
-      }
-      const response = await this.fetchQoreJson("/health");
-      res.status(response.ok ? 200 : 502).json(
-        response.ok
-          ? response.body
-          : {
-              error: response.error,
-              detail: response.detail,
-            },
-      );
+      if (this.rejectIfRemote(req, res)) return;
+      this.handleQoreProxy(req, res, "/health");
     });
-
     this.app.post("/api/qore/evaluate", async (req: Request, res: Response) => {
-      if (this.rejectIfRemote(req, res)) {
-        return;
-      }
-      if (!this.qoreRuntime.enabled) {
-        res.status(503).json({ error: "Qore runtime integration is disabled" });
-        return;
-      }
-      const response = await this.fetchQoreJson("/evaluate", {
-        method: "POST",
-        body: req.body || {},
-      });
-      res.status(response.ok ? 200 : 502).json(
-        response.ok
-          ? response.body
-          : {
-              error: response.error,
-              detail: response.detail,
-            },
-      );
+      if (this.rejectIfRemote(req, res)) return;
+      this.handleQoreProxy(req, res, "/evaluate", "POST");
     });
-
-    // API: Get specific sprint details
     this.app.get("/api/sprint/:id", (req: Request, res: Response) => {
-      const sprintId = req.params.id as string;
-      const sprint = this.planManager.getSprint(sprintId);
-      const plan = sprint ? this.planManager.getPlan(sprint.planId) : null;
-      res.json({ sprint, plan });
+      const sprint = this.planManager.getSprint(req.params.id as string);
+      res.json({ sprint, plan: sprint ? this.planManager.getPlan(sprint.planId) : null });
     });
-
-    // API: Get all plans
     this.app.get("/api/plans", (_req: Request, res: Response) => {
-      const plans = this.planManager.getAllPlans();
-      res.json({ plans });
+      res.json({ plans: this.planManager.getAllPlans() });
     });
+  }
 
-    // API: Discover installed skills from local Codex skill directories.
+  private async handleQoreProxy(
+    req: Request, res: Response, endpoint: string, method?: "POST",
+  ): Promise<void> {
+    if (!this.qoreRuntime.enabled) {
+      res.status(503).json({ error: "Qore runtime integration is disabled" });
+      return;
+    }
+    const opts = method === "POST" ? { method: "POST" as const, body: req.body || {} } : undefined;
+    const response = await this.fetchQoreJson(endpoint, opts);
+    const body = response.ok ? response.body : { error: response.error, detail: response.detail };
+    res.status(response.ok ? 200 : 502).json(body);
+  }
+
+  private registerSkillRoutes(): void {
     this.app.get("/api/skills", (_req: Request, res: Response) => {
-      const skills = this.getInstalledSkills();
-      res.json({ skills });
+      res.json({ skills: this.getInstalledSkills() });
     });
 
-    // API: auto-ingest skills by scanning known workspace-local roots only.
     this.app.post("/api/skills/ingest/auto", (_req: Request, res: Response) => {
       try {
-        const summary = this.autoIngestWorkspaceSkills();
-        res.json(summary);
+        res.json(this.autoIngestWorkspaceSkills());
       } catch (error) {
         res.status(500).json({ ok: false, error: String(error) });
       }
     });
 
-    // API: manual ingest accepts selected file/folder payload from UI.
-    this.app.post(
-      "/api/skills/ingest/manual",
-      (req: Request, res: Response) => {
-        try {
-          const mode =
-            String(req.body?.mode || "file").toLowerCase() === "folder"
-              ? "folder"
-              : "file";
-          const items = Array.isArray(req.body?.items) ? req.body.items : [];
-          const summary = this.manualIngestSkillPayload(items, mode);
-          res.json(summary);
-        } catch (error) {
-          res.status(400).json({ ok: false, error: String(error) });
-        }
-      },
-    );
+    this.app.post("/api/skills/ingest/manual", (req: Request, res: Response) => {
+      try {
+        const mode =
+          String(req.body?.mode || "file").toLowerCase() === "folder"
+            ? "folder" as const
+            : "file" as const;
+        const items = Array.isArray(req.body?.items) ? req.body.items : [];
+        res.json(this.manualIngestSkillPayload(items, mode));
+      } catch (error) {
+        res.status(400).json({ ok: false, error: String(error) });
+      }
+    });
 
-    // API: rank installed skills for a phase with explainability payload.
     this.app.get("/api/skills/relevance", (req: Request, res: Response) => {
-      const phase = String(req.query.phase || "")
-        .trim()
-        .toLowerCase();
+      const phase = String(req.query.phase || "").trim().toLowerCase();
       if (!phase) {
         res.status(400).json({ error: "phase is required" });
         return;
       }
-      const catalog = this.getInstalledSkills();
-      const ranked = catalog
-        .map((skill) => this.rankSkillForPhase(skill, phase))
-        .sort((a, b) => b.score - a.score || a.label.localeCompare(b.label));
-
-      let allRelevant = ranked.filter((item) => item.score > 1);
-      if (allRelevant.length === 0) {
-        allRelevant = ranked.slice();
-      }
-      const recommended = allRelevant.slice(0, Math.min(4, allRelevant.length));
-      const relevantKeys = new Set(allRelevant.map((item) => item.key));
-      const otherAvailable = ranked.filter(
-        (item) => !relevantKeys.has(item.key),
-      );
-
-      res.json({
-        phase,
-        recommended,
-        allRelevant,
-        otherAvailable,
-      });
+      res.json(this.buildSkillRelevance(phase));
     });
+  }
 
-    // API: Get transparency events (prompt lifecycle audit stream)
-    this.app.get("/api/transparency", (_req: Request, res: Response) => {
-      const events = this.getTransparencyEvents(50);
-      res.json({ events });
-    });
-
-    // API: Get risk register
-    this.app.get("/api/risks", (_req: Request, res: Response) => {
-      const risks = this.getRiskRegister();
-      res.json({ risks });
-    });
-
-    // API: Create risk
-    this.app.post("/api/v1/risks", (req: Request, res: Response) => {
-      if (this.rejectIfRemote(req, res)) return;
-      const { title, severity, status, description } = req.body;
-      if (!title || !severity) {
-        res
-          .status(400)
-          .json({ ok: false, error: "title and severity required" });
-        return;
-      }
-      const risk = {
-        id: `risk-${Date.now()}`,
-        title: String(title).slice(0, 200),
-        severity: String(severity),
-        status: String(status || "open"),
-        description: String(description || "").slice(0, 2000),
-        createdAt: new Date().toISOString(),
-      };
-      const risks = this.getRiskRegister();
-      risks.push(risk);
-      this.writeRiskRegister(risks);
-      this.broadcast({ type: "risk.created", payload: risk });
-      res.json({ ok: true, risk });
-    });
-
-    // API: Update risk
-    this.app.put("/api/v1/risks/:id", (req: Request, res: Response) => {
-      if (this.rejectIfRemote(req, res)) return;
-      const id = req.params.id;
-      const risks = this.getRiskRegister();
-      const idx = risks.findIndex((r: any) => r.id === id);
-      if (idx === -1) {
-        res.status(404).json({ ok: false, error: "risk not found" });
-        return;
-      }
-      const updated = { ...risks[idx], ...req.body, id };
-      risks[idx] = updated;
-      this.writeRiskRegister(risks);
-      this.broadcast({ type: "risk.updated", payload: updated });
-      res.json({ ok: true, risk: updated });
-    });
-
-    // API: Delete risk
-    this.app.delete("/api/v1/risks/:id", (req: Request, res: Response) => {
-      if (this.rejectIfRemote(req, res)) return;
-      const id = req.params.id;
-      const risks = this.getRiskRegister();
-      const filtered = risks.filter((r: any) => r.id !== id);
-      if (filtered.length === risks.length) {
-        res.status(404).json({ ok: false, error: "risk not found" });
-        return;
-      }
-      this.writeRiskRegister(filtered);
-      this.broadcast({ type: "risk.deleted", payload: { id } });
-      res.json({ ok: true });
-    });
-
-    // API: Brainstorm — process voice transcript via LLM extraction
-    this.app.post(
-      "/api/v1/brainstorm/transcript",
-      async (req: Request, res: Response) => {
-        if (this.rejectIfRemote(req, res)) return;
-        const transcript = String(req.body.transcript || "")
-          .slice(0, 10000)
-          .trim();
-        if (!transcript) {
-          res.status(400).json({ error: "Empty transcript" });
-          return;
-        }
-        try {
-          const result =
-            await this.brainstormService.processTranscript(transcript);
-          if (result.extraction) {
-            this.broadcast({
-              type: "brainstorm.update",
-              payload: result.extraction,
-            });
-            res.json(result.extraction);
-          } else if (result.queued) {
-            res.status(202).json({
-              status: "queued",
-              message:
-                "LLM returned invalid output or is unavailable — transcript queued",
-              queued: result.queued,
-            });
-          }
-        } catch (err) {
-          const detail = err instanceof Error ? err.message : String(err);
-          console.error("[Brainstorm] Transcript processing error:", detail);
-          // If it's a connectivity error, queue instead of 502
-          if (
-            detail.includes("ECONNREFUSED") ||
-            detail.includes("reachable") ||
-            detail.includes("not available") ||
-            detail.includes("No LLM")
-          ) {
-            const queued = this.brainstormService.queueTranscript(transcript);
-            res.status(202).json({
-              status: "queued",
-              message: "LLM unavailable — transcript queued",
-              queued,
-            });
-            return;
-          }
-          res.status(502).json({ error: "extraction_failed", detail });
-        }
+  /** Delegated API routes + remaining inline API routes */
+  private registerApiRoutes(): void {
+    const apiDeps: ApiRouteDeps = {
+      rejectIfRemote: (req, res) => this.rejectIfRemote(req, res),
+      broadcast: (data) => this.broadcast(data),
+      brainstormService: this.brainstormService,
+      audioVaultService: this.audioVaultService,
+      getRecentCheckpoints: (limit) => this.getRecentCheckpoints(limit),
+      getCheckpointById: (id) => this.getCheckpointById(id),
+      verifyCheckpointChain: () => this.verifyCheckpointChain(),
+      revertService: this.revertService,
+      sentinelDaemon: this.sentinelDaemon,
+      planManager: this.planManager,
+      qorelogicManager: this.qorelogicManager,
+      recordCheckpoint: (input) => this.recordCheckpoint(input),
+      inferPhaseKeyFromPlan: (plan) => this.inferPhaseKeyFromPlan(plan),
+      chainValidAt: this.chainValidAt,
+      cachedChainValid: this.cachedChainValid,
+      setCachedChainValid: (v, at) => {
+        this.cachedChainValid = v;
+        this.chainValidAt = at;
       },
-    );
+      getTransparencyEvents: (limit) => this.getTransparencyEvents(limit),
+      getRiskRegister: () => this.getRiskRegister(),
+      writeRiskRegister: (risks) => this.writeRiskRegister(risks),
+    };
 
-    // API: Brainstorm — add manual node
-    this.app.post(
-      "/api/v1/brainstorm/audio",
-      express.raw({ type: "audio/webm", limit: "50mb" }),
-      async (req: Request, res: Response) => {
-        if (this.rejectIfRemote(req, res)) return;
-        try {
-          const _buffer = Buffer.isBuffer(req.body)
-            ? req.body
-            : Buffer.from("");
-          if (_buffer.length === 0) {
-            res.status(400).json({ error: "Empty body" });
-            return;
-          }
-          const hash = await this.audioVaultService.storeAudio(_buffer);
-          res.json({ audioHash: hash });
-        } catch (err) {
-          res.status(500).json({ error: "Storage failed" });
-        }
-      },
-    );
+    setupTransparencyRiskRoutes(this.app, apiDeps);
+    setupBrainstormRoutes(this.app, apiDeps);
+    setupCheckpointRoutes(this.app, apiDeps);
+    setupActionsRoutes(this.app, apiDeps);
 
-    this.app.get(
-      "/api/v1/brainstorm/audio/:hash",
-      async (req: Request, res: Response) => {
-        if (this.rejectIfRemote(req, res)) return;
-        try {
-          const audioBuffer = await this.audioVaultService.getAudio(
-            String(req.params.hash),
-          );
-          if (!audioBuffer) {
-            res.status(404).send("Not found");
-            return;
-          }
-          res.setHeader("Content-Type", "audio/webm");
-          res.send(audioBuffer);
-        } catch (err) {
-          res.status(500).send("Fetch error");
-        }
-      },
-    );
+    this.registerFeatureAndStatusRoutes();
+    this.registerHookRoutes();
+  }
 
-    // API: Brainstorm — add manual node
-    this.app.post("/api/v1/brainstorm/node", (req: Request, res: Response) => {
-      if (this.rejectIfRemote(req, res)) return;
-      const label = String(req.body.label || "")
-        .slice(0, 200)
-        .trim();
-      if (!label) {
-        res.status(400).json({ error: "Label required" });
-        return;
-      }
-      const type = String(req.body.type || "Feature").slice(0, 50);
-      const clientId = req.body.id ? String(req.body.id).slice(0, 100) : undefined;
-      const node = this.brainstormService.addNode(label, type, clientId);
-      this.broadcast({
-        type: "brainstorm.update",
-        payload: { nodes: [node], edges: [] },
-      });
-      res.json(node);
-    });
-
-    // API: Brainstorm — update a node
-    this.app.patch(
-      "/api/v1/brainstorm/node/:id",
-      (req: Request, res: Response) => {
-        if (this.rejectIfRemote(req, res)) return;
-        const label = String(req.body.label || "")
-          .slice(0, 200)
-          .trim();
-        const type = String(req.body.type || "Feature").slice(0, 50);
-        if (!label) {
-          res.status(400).json({ error: "Label required" });
-          return;
-        }
-        const node = this.brainstormService.updateNode(
-          String(req.params.id),
-          label,
-          type,
-        );
-        if (!node) {
-          res.status(404).json({ error: "Node not found" });
-          return;
-        }
-        this.broadcast({
-          type: "brainstorm.update",
-          payload: { nodes: [node], edges: [] },
-        });
-        res.json(node);
-      },
-    );
-
-    // API: Brainstorm — remove a node
-    this.app.delete(
-      "/api/v1/brainstorm/node/:id",
-      (req: Request, res: Response) => {
-        if (this.rejectIfRemote(req, res)) return;
-        const removed = this.brainstormService.removeNode(
-          String(req.params.id),
-        );
-        if (!removed) {
-          res.status(404).json({ error: "Node not found" });
-          return;
-        }
-        this.broadcast({
-          type: "brainstorm.node-removed",
-          payload: { id: String(req.params.id) },
-        });
-        res.json({ ok: true });
-      },
-    );
-
-    // API: Brainstorm — get full graph
-    this.app.get("/api/v1/brainstorm/graph", (req: Request, res: Response) => {
-      if (this.rejectIfRemote(req, res)) return;
-      res.json(this.brainstormService.getGraph());
-    });
-
-    // API: Brainstorm — clear graph
-    this.app.delete(
-      "/api/v1/brainstorm/graph",
-      (req: Request, res: Response) => {
-        if (this.rejectIfRemote(req, res)) return;
-        this.brainstormService.reset();
-        this.broadcast({ type: "brainstorm.reset" });
-        res.json({ ok: true });
-      },
-    );
-
-    // API: Brainstorm — list queued transcripts awaiting LLM
-    this.app.get(
-      "/api/v1/brainstorm/pending",
-      (req: Request, res: Response) => {
-        if (this.rejectIfRemote(req, res)) return;
-        res.json({ pending: this.brainstormService.getPendingTranscripts() });
-      },
-    );
-
-    // API: Brainstorm — retry all pending transcripts
-    this.app.post(
-      "/api/v1/brainstorm/retry",
-      async (req: Request, res: Response) => {
-        if (this.rejectIfRemote(req, res)) return;
-        try {
-          const results = await this.brainstormService.retryPending();
-          for (const r of results) {
-            if (r.extraction) {
-              this.broadcast({
-                type: "brainstorm.update",
-                payload: r.extraction,
-              });
-            }
-          }
-          res.json({ processed: results.length, results });
-        } catch (err) {
-          const detail = err instanceof Error ? err.message : String(err);
-          res.status(502).json({ error: "retry_failed", detail });
-        }
-      },
-    );
-
-    this.app.get("/api/checkpoints", (req: Request, res: Response) => {
-      const limitRaw = Number.parseInt(String(req.query.limit || "50"), 10);
-      const limit = Number.isFinite(limitRaw)
-        ? Math.max(1, Math.min(200, limitRaw))
-        : 50;
-      res.json({
-        checkpoints: this.getRecentCheckpoints(limit),
-        chainValid: this.verifyCheckpointChain(),
-      });
-    });
-
-    // [V7] API: Get a single checkpoint by ID
-    this.app.get("/api/checkpoints/:id", (req: Request, res: Response) => {
-      if (this.rejectIfRemote(req, res)) return;
-      const id = String(req.params.id || "");
-      if (!id) {
-        res.status(400).json({ ok: false, error: "id required" });
-        return;
-      }
-      const checkpoint = this.getCheckpointById(id);
-      res.json({ ok: true, checkpoint });
-    });
-
-    // [V5] API: Rollback to a checkpoint
-    this.app.post(
-      "/api/actions/rollback",
-      async (req: Request, res: Response) => {
-        if (this.rejectIfRemote(req, res)) return;
-        if (!this.revertService) {
-          res
-            .status(503)
-            .json({ ok: false, error: "revert service unavailable" });
-          return;
-        }
-        const { checkpointId, reason: rawReason } = req.body as {
-          checkpointId?: string;
-          reason?: string;
-        };
-        if (!checkpointId) {
-          res.status(400).json({ ok: false, error: "checkpointId required" });
-          return;
-        }
-        const actor = "user.local";
-        const reason = String(rawReason || "").slice(0, 2000);
-        const checkpoint = this.getCheckpointById(checkpointId);
-        if (!checkpoint) {
-          res.status(404).json({ ok: false, error: "checkpoint not found" });
-          return;
-        }
-        try {
-          const request: RevertRequest = {
-            targetCheckpoint: checkpoint,
-            reason,
-            actor,
-          };
-          const result = await this.revertService.revert(request);
-          this.broadcast({ type: "hub.refresh" });
-          res.json({ ok: result.success, result });
-        } catch (error) {
-          res.status(500).json({ ok: false, error: String(error) });
-        }
-      },
-    );
-
-    // API: Action controls for Hub buttons
-    this.app.post(
-      "/api/actions/resume-monitoring",
-      async (req: Request, res: Response) => {
-        if (this.rejectIfRemote(req, res)) {
-          return;
-        }
-        try {
-          if (!this.sentinelDaemon.isRunning()) {
-            await this.sentinelDaemon.start();
-          }
-          this.recordCheckpoint({
-            checkpointType: "monitoring.resumed",
-            actor: "system",
-            phase: this.inferPhaseKeyFromPlan(this.planManager.getActivePlan()),
-            status: "validated",
-            policyVerdict: "PASS",
-            evidenceRefs: [],
-            payload: { action: "resume-monitoring" },
-          });
-          this.broadcast({ type: "hub.refresh" });
-          res.json({ ok: true, status: this.sentinelDaemon.getStatus() });
-        } catch (error) {
-          res.status(500).json({ ok: false, error: String(error) });
-        }
-      },
-    );
-
-    this.app.post("/api/actions/panic-stop", (req: Request, res: Response) => {
-      if (this.rejectIfRemote(req, res)) {
-        return;
-      }
-      try {
-        this.sentinelDaemon.stop();
-        this.recordCheckpoint({
-          checkpointType: "monitoring.stopped",
-          actor: "system",
-          phase: this.inferPhaseKeyFromPlan(this.planManager.getActivePlan()),
-          status: "validated",
-          policyVerdict: "WARN",
-          evidenceRefs: [],
-          payload: { action: "panic-stop" },
-        });
-        this.broadcast({ type: "hub.refresh" });
-        res.json({ ok: true, status: this.sentinelDaemon.getStatus() });
-      } catch (error) {
-        res.status(500).json({ ok: false, error: String(error) });
-      }
-    });
-
-    // [V4.3.2] Manual checkpoint chain integrity verification
-    this.app.post(
-      "/api/actions/verify-integrity",
-      (req: Request, res: Response) => {
-        if (this.rejectIfRemote(req, res)) {
-          return;
-        }
-        try {
-          const chainValid = this.verifyCheckpointChain();
-          this.chainValidAt = new Date().toISOString();
-          this.cachedChainValid = chainValid;
-          this.broadcast({ type: "hub.refresh" });
-          res.json({ ok: true, chainValid, verifiedAt: this.chainValidAt });
-        } catch (error) {
-          res.status(500).json({ ok: false, error: String(error) });
-        }
-      },
-    );
-
-    // API: Process all pending L3 approvals in batch
-    this.app.post(
-      "/api/actions/approve-l3-batch",
-      async (req: Request, res: Response) => {
-        if (this.rejectIfRemote(req, res)) return;
-        const decision: "APPROVED" | "REJECTED" =
-          req.body.decision === "REJECTED" ? "REJECTED" : "APPROVED";
-        const conditions: string[] = Array.isArray(req.body.conditions)
-          ? req.body.conditions
-          : [];
-        const queue = this.qorelogicManager.getL3Queue();
-        if (!queue.length) {
-          res.json({ ok: true, processed: 0 });
-          return;
-        }
-        const results: Array<{ id: string; ok: boolean; error?: string }> = [];
-        for (const item of queue) {
-          try {
-            await this.qorelogicManager.processL3Decision(
-              item.id,
-              decision,
-              conditions,
-            );
-            results.push({ id: item.id, ok: true });
-          } catch (e: any) {
-            results.push({ id: item.id, ok: false, error: e.message });
-          }
-        }
-        this.broadcast({ type: "l3.batch_processed", payload: { results } });
-        res.json({ ok: true, processed: results.length, results });
-      },
-    );
-
-    // Feature gate: expose available features for UI
+  private registerFeatureAndStatusRoutes(): void {
     this.app.get("/api/v1/features", (_req: Request, res: Response) => {
-      if (!this.featureGate) {
-        res.json({ tier: "free", features: {} });
-        return;
-      }
+      if (!this.featureGate) { res.json({ tier: "free", features: {} }); return; }
       const tier = this.featureGate.getTier();
-      const features: Record<
-        string,
-        { requiredTier: string; enabled: boolean }
-      > = {};
+      const features: Record<string, { requiredTier: string; enabled: boolean }> = {};
       for (const flag of Object.keys(FEATURE_TIER_MAP) as FeatureFlag[]) {
-        features[flag] = {
-          requiredTier: FEATURE_TIER_MAP[flag],
-          enabled: this.featureGate.isEnabled(flag),
-        };
+        features[flag] = { requiredTier: FEATURE_TIER_MAP[flag], enabled: this.featureGate.isEnabled(flag) };
       }
       res.json({ tier, features });
     });
-
-    // API: Unified system status
     this.app.get("/api/v1/status", async (_req: Request, res: Response) => {
       const hub = await this.buildHubSnapshot();
-      const sentinel = hub.sentinelStatus as
-        | Record<string, unknown>
-        | undefined;
+      const s = hub.sentinelStatus as Record<string, unknown> | undefined;
       res.json({
-        sentinel: {
-          running: sentinel?.running ?? false,
-          mode: sentinel?.mode ?? "unknown",
-          eventsProcessed: sentinel?.eventsProcessed ?? 0,
-        },
-        governance: { mode: sentinel?.mode ?? "observe" },
+        sentinel: { running: s?.running ?? false, mode: s?.mode ?? "unknown", eventsProcessed: s?.eventsProcessed ?? 0 },
+        governance: { mode: s?.mode ?? "observe" },
         chain: { valid: hub.chainValid ?? false },
         version: hub.version ?? "unknown",
       });
     });
+    this.registerVerdictAndTrustRoutes();
+  }
 
-    // API: Recent sentinel verdicts
+  private registerVerdictAndTrustRoutes(): void {
     this.app.get("/api/v1/verdicts", (_req: Request, res: Response) => {
       const limit = Math.min(Number(_req.query.limit) || 20, 100);
       res.json(this.recentVerdicts.slice(0, limit));
     });
-
-    // API: Trust scores from checkpoint analysis
     this.app.get("/api/v1/trust", async (_req: Request, res: Response) => {
       const hub = await this.buildHubSnapshot();
-      const checkpoints = Object.values(
-        (hub.checkpoints as Record<string, unknown>) || {},
+      const cps = Object.values((hub.checkpoints as Record<string, unknown>) || {});
+      const total = cps.length || 1;
+      const passed = cps.filter((c: any) => c.policyVerdict !== "VIOLATION").length;
+      res.json({ overall: Math.round((passed / total) * 100), checkpointCount: total, passCount: passed });
+    });
+  }
+
+  /** B107: Workspace hook toggle routes */
+  private registerHookRoutes(): void {
+    this.app.get("/api/hooks/status", (req: Request, res: Response) => {
+      if (this.rejectIfRemote(req, res)) return;
+      const sentinelPath = path.join(
+        this.workspaceRoot, ".claude", "hooks", "disabled",
       );
-      const total = checkpoints.length || 1;
-      const passed = checkpoints.filter(
-        (c: any) => c.policyVerdict !== "VIOLATION",
-      ).length;
-      res.json({
-        overall: Math.round((passed / total) * 100),
-        checkpointCount: total,
-        passCount: passed,
-      });
+      res.json({ enabled: !fs.existsSync(sentinelPath) });
     });
 
-    // v4.2.0: Console UI routes (HTML server-rendered)
-    // SPA fallback for deep links or unknown non-API routes.
+    this.app.post("/api/hooks/toggle", (req: Request, res: Response) => {
+      if (this.rejectIfRemote(req, res)) return;
+      if (typeof req.body?.enabled !== "boolean") {
+        res.status(400).json({ error: "enabled must be a boolean" });
+        return;
+      }
+      const sentinelPath = path.join(
+        this.workspaceRoot, ".claude", "hooks", "disabled",
+      );
+      if (req.body.enabled) {
+        fs.rmSync(sentinelPath, { force: true });
+      } else {
+        fs.mkdirSync(path.dirname(sentinelPath), { recursive: true });
+        fs.writeFileSync(sentinelPath, "disabled by FailSafe Console");
+      }
+      res.json({ enabled: req.body.enabled });
+    });
+  }
+
+  /** SPA fallback for deep links or unknown non-API routes */
+  private registerSpaFallback(): void {
     this.app.use((req: Request, res: Response) => {
       if (req.path.startsWith("/api/") || req.path === "/health") {
         res.status(404).json({ error: "Not found" });
         return;
       }
-
-      // v4.3.2: If requesting a static asset that doesn't exist, return 404 instead of HTML fallback
-      // to avoid confusing the browser (MIME type / SyntaxError).
       const staticExts = [
-        ".js",
-        ".mjs",
-        ".css",
-        ".wasm",
-        ".onnx",
-        ".png",
-        ".jpg",
-        ".svg",
-        ".data",
-        ".json",
-        ".bin",
+        ".js", ".mjs", ".css", ".wasm", ".onnx",
+        ".png", ".jpg", ".svg", ".data", ".json", ".bin",
       ];
       if (staticExts.some((ext) => req.path.toLowerCase().endsWith(ext))) {
         res.status(404).type("text/plain").send("Not found");
         return;
       }
-
       const file = this.getUiEntryFile(req);
       const target = path.join(this.uiDir, file);
-      if (fs.existsSync(target)) {
-        res.sendFile(target);
-        return;
-      }
+      if (fs.existsSync(target)) { res.sendFile(target); return; }
       res.sendFile(path.join(this.uiDir, "command-center.html"));
     });
   }
 
+  // ------------------------------------------------------------------
+  //  UI helpers
+  // ------------------------------------------------------------------
+
   private getUiEntryFile(req: Request): "command-center.html" | "index.html" {
     const uiMode = String(req.query.ui || "").toLowerCase();
     const compactParam = String(req.query.compact || "").toLowerCase();
-
-    // Explicit modes.
-    if (uiMode === "compact") {
-      return "index.html";
-    }
+    if (uiMode === "compact") return "index.html";
     if (uiMode === "console" || uiMode === "extended" || uiMode === "popout") {
       return "command-center.html";
     }
-
-    // Backward-compatible compact toggle.
-    if (
-      compactParam === "1" ||
-      compactParam === "true" ||
-      compactParam === "yes"
-    ) {
+    if (compactParam === "1" || compactParam === "true" || compactParam === "yes") {
       return "index.html";
     }
     return "command-center.html";
   }
 
+  // ------------------------------------------------------------------
+  //  Auth middleware
+  // ------------------------------------------------------------------
+
   private isLocalRequest(req: Request): boolean {
-    const remoteAddress = req.socket?.remoteAddress || req.ip || "";
-    const normalized = String(remoteAddress).trim();
+    const normalized = String(req.socket?.remoteAddress || req.ip || "").trim();
     return (
       normalized === "127.0.0.1" ||
       normalized === "::1" ||
@@ -1072,24 +430,17 @@ export class ConsoleServer {
   }
 
   private rejectIfRemote(req: Request, res: Response): boolean {
-    if (this.isLocalRequest(req)) {
-      return false;
-    }
+    if (this.isLocalRequest(req)) return false;
     res.status(403).json({ error: "Forbidden: local access only" });
     return true;
   }
 
-  /**
-   * Returns true (and sends 402) if the given feature is not enabled in the current configuration.
-   */
   private rejectIfProRequired(
     feature: FeatureFlag,
     _req: Request,
     res: Response,
   ): boolean {
-    if (!this.featureGate || this.featureGate.isEnabled(feature)) {
-      return false;
-    }
+    if (!this.featureGate || this.featureGate.isEnabled(feature)) return false;
     res.status(402).json({
       error: `Feature '${feature}' is not enabled in current configuration`,
       upgrade: true,
@@ -1099,36 +450,32 @@ export class ConsoleServer {
     return true;
   }
 
-  private setupWebSocket(): void {
-    if (!this.server) {
-      return;
-    }
-    this.wss = new WebSocketServer({ server: this.server });
+  // ------------------------------------------------------------------
+  //  WebSocket
+  // ------------------------------------------------------------------
 
+  private setupWebSocket(): void {
+    if (!this.server) return;
+    this.wss = new WebSocketServer({ server: this.server });
     this.wss.on("connection", (ws) => {
-      // Send initial state on connection
       this.buildHubSnapshot().then((hub) => {
         ws.send(JSON.stringify({ type: "init", payload: hub }));
       });
     });
   }
 
-  /**
-   * Broadcast a message to all connected WebSocket clients.
-   */
   private broadcast(data: Record<string, unknown>): void {
-    if (!this.wss) {
-      return;
-    }
+    if (!this.wss) return;
     const message = JSON.stringify(data);
     this.wss.clients.forEach((client) => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(message);
-      }
+      if (client.readyState === WebSocket.OPEN) client.send(message);
     });
   }
 
-  /** v4.2.0: Set dependencies for console UI routes (deferred wiring) */
+  // ------------------------------------------------------------------
+  //  Console UI routes (HTML server-rendered)
+  // ------------------------------------------------------------------
+
   setConsoleDeps(
     enforcement: EnforcementEngine,
     perm: PermissionScopeManager,
@@ -1137,7 +484,6 @@ export class ConsoleServer {
     this.permissionManager = perm;
   }
 
-  /** v4.2.0: Set SystemRegistry for agent coverage route */
   setSystemRegistry(
     registry: import("../qorelogic/SystemRegistry").SystemRegistry,
   ): void {
@@ -1160,121 +506,73 @@ export class ConsoleServer {
 
   private setupConsoleRoutes(): void {
     const deps = () => this.buildRouteDeps();
-    this.app.get("/console/home", async (req, res) =>
-      HomeRoute.render(req, res, deps()),
-    );
-    this.app.get("/console/run/:runId", (req, res) =>
-      RunDetailRoute.render(req, res, deps()),
-    );
-    this.app.get("/console/workflows", (req, res) =>
-      WorkflowsRoute.render(req, res, deps()),
-    );
-    this.app.get("/console/skills", (req, res) =>
-      SkillsRoute.render(req, res, deps()),
-    );
-    this.app.get("/console/genome", async (req, res) =>
-      GenomeRoute.render(req, res, deps()),
-    );
-    this.app.get("/console/reports", async (req, res) =>
-      ReportsRoute.render(req, res, deps()),
-    );
-    this.app.get("/console/settings", (req, res) =>
-      SettingsRoute.render(req, res, deps()),
-    );
+    this.app.get("/console/home", async (req, res) => HomeRoute.render(req, res, deps()));
+    this.app.get("/console/run/:runId", (req, res) => RunDetailRoute.render(req, res, deps()));
+    this.app.get("/console/workflows", (req, res) => WorkflowsRoute.render(req, res, deps()));
+    this.app.get("/console/skills", (req, res) => SkillsRoute.render(req, res, deps()));
+    this.app.get("/console/genome", async (req, res) => GenomeRoute.render(req, res, deps()));
+    this.app.get("/console/reports", async (req, res) => ReportsRoute.render(req, res, deps()));
+    this.app.get("/console/settings", (req, res) => SettingsRoute.render(req, res, deps()));
     this.app.get("/console/kpi", async (req, res) =>
-      GovernanceKPIRoute.render(req, res, {
-        ledgerManager: deps().ledgerManager,
-      }),
+      GovernanceKPIRoute.render(req, res, { ledgerManager: deps().ledgerManager }),
     );
-    this.app.get("/console/agents", async (req, res) => {
-      if (!this.systemRegistry) {
-        res.status(503).send("SystemRegistry not available");
-        return;
-      }
-      AgentCoverageRoute.render(req, res, {
-        systemRegistry: this.systemRegistry,
-      });
-    });
-    if (this.permissionManager) {
-      const pm = this.permissionManager;
-      this.app.get("/console/preflight", (req, res) =>
-        PreflightRoute.render(req, res, { permissionManager: pm }),
-      );
-      this.app.post("/console/preflight/grant", (req, res) =>
-        PreflightRoute.handleGrant(req, res, { permissionManager: pm }),
-      );
-      this.app.post("/console/preflight/deny", (req, res) =>
-        PreflightRoute.handleDeny(req, res, { permissionManager: pm }),
-      );
-    }
+    this.registerConsoleExtras();
   }
 
+  private registerConsoleExtras(): void {
+    this.app.get("/console/agents", async (req, res) => {
+      if (!this.systemRegistry) { res.status(503).send("SystemRegistry not available"); return; }
+      AgentCoverageRoute.render(req, res, { systemRegistry: this.systemRegistry });
+    });
+    if (!this.permissionManager) return;
+    const pm = this.permissionManager;
+    this.app.get("/console/preflight", (req, res) => PreflightRoute.render(req, res, { permissionManager: pm }));
+    this.app.post("/console/preflight/grant", (req, res) => PreflightRoute.handleGrant(req, res, { permissionManager: pm }));
+    this.app.post("/console/preflight/deny", (req, res) => PreflightRoute.handleDeny(req, res, { permissionManager: pm }));
+  }
+
+  // ------------------------------------------------------------------
+  //  Event subscriptions
+  // ------------------------------------------------------------------
+
   private subscribeToEvents(): void {
-    // Stream plan events to connected clients
     this.eventBus.on("genesis.streamEvent" as never, (event: unknown) => {
       const streamPayload = this.extractEventPayload(event);
       this.maybeRecordSubstantiateCompletion(streamPayload);
       this.broadcast({ type: "event", payload: event });
       this.recordCheckpoint({
-        checkpointType: "event.stream",
-        actor: "engine",
+        checkpointType: "event.stream", actor: "engine",
         phase: this.inferPhaseKeyFromPlan(this.planManager.getActivePlan()),
-        status: "validated",
-        policyVerdict: "PASS",
-        evidenceRefs: [],
-        payload: streamPayload,
+        status: "validated", policyVerdict: "PASS", evidenceRefs: [], payload: streamPayload,
       });
     });
+    this.eventBus.on("sentinel.verdict" as never, (event: { payload: unknown }) => {
+      const verdict = event.payload as SentinelVerdict;
+      this.recentVerdicts.unshift(verdict);
+      if (this.recentVerdicts.length > 10) this.recentVerdicts.pop();
+      this.recordVerdictCheckpoint(verdict);
+      this.maybeRecordAuditPassCheckpoint(verdict);
+      this.broadcast({ type: "verdict", payload: event.payload });
+      this.broadcast({ type: "hub.refresh" });
+    });
+    this.subscribeToQorelogicEvents();
+  }
 
-    // Stream sentinel verdicts
-    this.eventBus.on(
-      "sentinel.verdict" as never,
-      (event: { payload: unknown }) => {
-        const verdict = event.payload as SentinelVerdict;
-        this.recentVerdicts.unshift(verdict);
-        if (this.recentVerdicts.length > 10) {
-          this.recentVerdicts.pop();
-        }
-        this.recordCheckpoint({
-          checkpointType: "policy.checked",
-          actor: verdict.agentDid || "sentinel",
-          phase: this.inferPhaseKeyFromPlan(this.planManager.getActivePlan()),
-          status: "validated",
-          policyVerdict: String(verdict.decision || "UNKNOWN"),
-          evidenceRefs: [],
-          payload: {
-            decision: verdict.decision,
-            riskGrade: verdict.riskGrade,
-            summary: verdict.summary,
-          },
-        });
-        this.maybeRecordAuditPassCheckpoint(verdict);
-        this.broadcast({ type: "verdict", payload: event.payload });
-        this.broadcast({ type: "hub.refresh" });
-      },
-    );
-
+  private subscribeToQorelogicEvents(): void {
+    const currentPhase = () => this.inferPhaseKeyFromPlan(this.planManager.getActivePlan());
     this.eventBus.on("qorelogic.l3Queued" as never, (event: unknown) => {
       this.recordCheckpoint({
-        checkpointType: "override.requested",
-        actor: "qorelogic",
-        phase: this.inferPhaseKeyFromPlan(this.planManager.getActivePlan()),
-        status: "proposed",
-        policyVerdict: "ESCALATE",
-        evidenceRefs: [],
-        payload: event,
+        checkpointType: "override.requested", actor: "qorelogic",
+        phase: currentPhase(), status: "proposed", policyVerdict: "ESCALATE",
+        evidenceRefs: [], payload: event,
       });
       this.broadcast({ type: "hub.refresh" });
     });
     this.eventBus.on("qorelogic.l3Decided" as never, (event: unknown) => {
       this.recordCheckpoint({
-        checkpointType: "override.approved",
-        actor: "qorelogic",
-        phase: this.inferPhaseKeyFromPlan(this.planManager.getActivePlan()),
-        status: "sealed",
-        policyVerdict: "PASS",
-        evidenceRefs: [],
-        payload: event,
+        checkpointType: "override.approved", actor: "qorelogic",
+        phase: currentPhase(), status: "sealed", policyVerdict: "PASS",
+        evidenceRefs: [], payload: event,
       });
       this.broadcast({ type: "hub.refresh" });
     });
@@ -1283,18 +581,29 @@ export class ConsoleServer {
     );
   }
 
+  private recordVerdictCheckpoint(verdict: SentinelVerdict): void {
+    this.recordCheckpoint({
+      checkpointType: "policy.checked",
+      actor: verdict.agentDid || "sentinel",
+      phase: this.inferPhaseKeyFromPlan(this.planManager.getActivePlan()),
+      status: "validated",
+      policyVerdict: String(verdict.decision || "UNKNOWN"),
+      evidenceRefs: [],
+      payload: {
+        decision: verdict.decision,
+        riskGrade: verdict.riskGrade,
+        summary: verdict.summary,
+      },
+    });
+  }
+
   private extractEventPayload(event: unknown): unknown {
-    if (!event || typeof event !== "object") {
-      return event;
-    }
-    const value = event as { payload?: unknown };
-    return value.payload ?? event;
+    if (!event || typeof event !== "object") return event;
+    return (event as { payload?: unknown }).payload ?? event;
   }
 
   private maybeRecordAuditPassCheckpoint(verdict: SentinelVerdict): void {
-    if (String(verdict.decision || "").toUpperCase() !== "PASS") {
-      return;
-    }
+    if (String(verdict.decision || "").toUpperCase() !== "PASS") return;
     this.recordCheckpoint({
       checkpointType: "attempt.committed",
       actor: verdict.agentDid || "sentinel",
@@ -1311,9 +620,7 @@ export class ConsoleServer {
   }
 
   private maybeRecordSubstantiateCompletion(streamPayload: unknown): void {
-    if (!streamPayload || typeof streamPayload !== "object") {
-      return;
-    }
+    if (!streamPayload || typeof streamPayload !== "object") return;
     const payload = streamPayload as {
       planEvent?: {
         type?: string;
@@ -1322,20 +629,12 @@ export class ConsoleServer {
       };
     };
     const planEvent = payload.planEvent;
-    if (!planEvent || String(planEvent.type || "") !== "phase.completed") {
-      return;
-    }
-
+    if (!planEvent || String(planEvent.type || "") !== "phase.completed") return;
     const planId = String(planEvent.planId || "");
     const phaseId = String(planEvent.payload?.phaseId || "");
-    if (!planId || !phaseId) {
-      return;
-    }
+    if (!planId || !phaseId) return;
     const dedupeKey = `${planId}:${phaseId}`;
-    if (this.sealedSubstantiateCompletions.has(dedupeKey)) {
-      return;
-    }
-
+    if (this.sealedSubstantiateCompletions.has(dedupeKey)) return;
     const plan = this.planManager.getPlan(planId);
     const phase = plan?.phases.find((item) => item.id === phaseId);
     const phaseTitle = String(phase?.title || "").toLowerCase();
@@ -1343,10 +642,7 @@ export class ConsoleServer {
       phaseTitle.includes("substantiat") ||
       phaseTitle.includes("release") ||
       phaseTitle.includes("ship");
-    if (!isSubstantiate) {
-      return;
-    }
-
+    if (!isSubstantiate) return;
     this.sealedSubstantiateCompletions.add(dedupeKey);
     this.recordCheckpoint({
       checkpointType: "phase.exited",
@@ -1364,43 +660,37 @@ export class ConsoleServer {
     });
   }
 
+  // ------------------------------------------------------------------
+  //  Qore Runtime
+  // ------------------------------------------------------------------
+
   private async fetchQoreRuntimeSnapshot(): Promise<QoreRuntimeSnapshot> {
     const checkedAt = new Date().toISOString();
     if (!this.qoreRuntime.enabled) {
       return {
-        enabled: false,
-        connected: false,
-        baseUrl: this.qoreRuntime.baseUrl,
-        lastCheckedAt: checkedAt,
+        enabled: false, connected: false,
+        baseUrl: this.qoreRuntime.baseUrl, lastCheckedAt: checkedAt,
         error: "disabled",
       };
     }
-
     const startedAt = Date.now();
     const health = await this.fetchQoreJson("/health");
     if (!health.ok) {
       return {
-        enabled: true,
-        connected: false,
+        enabled: true, connected: false,
         baseUrl: this.qoreRuntime.baseUrl,
-        latencyMs: Date.now() - startedAt,
-        lastCheckedAt: checkedAt,
+        latencyMs: Date.now() - startedAt, lastCheckedAt: checkedAt,
         error: health.error || "runtime_unreachable",
       };
     }
-
     const policy = await this.fetchQoreJson("/policy/version");
     return {
-      enabled: true,
-      connected: true,
+      enabled: true, connected: true,
       baseUrl: this.qoreRuntime.baseUrl,
       policyVersion: policy.ok
-        ? String(
-            (policy.body as { policyVersion?: string }).policyVersion || "",
-          )
+        ? String((policy.body as { policyVersion?: string }).policyVersion || "")
         : undefined,
-      latencyMs: Date.now() - startedAt,
-      lastCheckedAt: checkedAt,
+      latencyMs: Date.now() - startedAt, lastCheckedAt: checkedAt,
     };
   }
 
@@ -1410,20 +700,15 @@ export class ConsoleServer {
   ): Promise<
     { ok: true; body: unknown } | { ok: false; error: string; detail?: string }
   > {
-    if (!this.qoreRuntime.enabled) {
-      return { ok: false, error: "disabled" };
-    }
-
-    const timeout = this.qoreRuntime.timeoutMs;
+    if (!this.qoreRuntime.enabled) return { ok: false, error: "disabled" };
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeout);
-    const headers: Record<string, string> = {
-      "content-type": "application/json",
-    };
+    const timer = setTimeout(
+      () => controller.abort(), this.qoreRuntime.timeoutMs,
+    );
+    const headers: Record<string, string> = { "content-type": "application/json" };
     if (this.qoreRuntime.apiKey) {
       headers["x-qore-api-key"] = this.qoreRuntime.apiKey;
     }
-
     try {
       const response = await fetch(`${this.qoreRuntime.baseUrl}${endpoint}`, {
         method: options?.method || "GET",
@@ -1432,14 +717,11 @@ export class ConsoleServer {
         signal: controller.signal,
       });
       clearTimeout(timer);
-
       if (!response.ok) {
         const detail = await response.text();
         return { ok: false, error: `upstream_${response.status}`, detail };
       }
-
-      const body = await response.json();
-      return { ok: true, body };
+      return { ok: true, body: await response.json() };
     } catch (error) {
       clearTimeout(timer);
       const detail = error instanceof Error ? error.message : String(error);
@@ -1447,82 +729,30 @@ export class ConsoleServer {
     }
   }
 
+  // ------------------------------------------------------------------
+  //  Hub snapshot
+  // ------------------------------------------------------------------
+
   private async buildHubSnapshot(): Promise<Record<string, unknown>> {
-    const sprints = this.planManager.getAllSprints();
-    const currentSprint = this.planManager.getCurrentSprint();
     const activePlan = this.planManager.getActivePlan();
     const sentinelStatus = this.sentinelDaemon.getStatus();
     const l3Queue = this.qorelogicManager.getL3Queue();
-
     const agents = await this.qorelogicManager.getTrustEngine().getAllAgents();
-    const totalAgents = agents.length;
-    const avgTrust =
-      totalAgents === 0
-        ? 0
-        : agents.reduce((sum, agent) => sum + agent.trustScore, 0) /
-          totalAgents;
-    const quarantined = agents.filter((agent) => agent.isQuarantined).length;
-    const stageCounts = agents.reduce(
-      (counts, agent) => {
-        counts[agent.trustStage] = (counts[agent.trustStage] || 0) + 1;
-        return counts;
-      },
-      { CBT: 0, KBT: 0, IBT: 0 } as { CBT: number; KBT: number; IBT: number },
-    );
+    const trustSummary = this.buildTrustSummary(agents);
     const qoreRuntime = await this.fetchQoreRuntimeSnapshot();
-
-    const nodeStatus = [
-      {
-        id: "workspace-core",
-        label: "Workspace Core",
-        state: sentinelStatus.running ? "nominal" : "paused",
-        signal: `${sentinelStatus.filesWatched || 0} files watched`,
-      },
-      {
-        id: "verification-queue",
-        label: "Verification Queue",
-        state:
-          l3Queue.length || sentinelStatus.queueDepth > 0
-            ? "reviewing"
-            : "nominal",
-        signal: `${l3Queue.length || 0} pending approvals`,
-      },
-      {
-        id: "trust-engine",
-        label: "Trust Engine",
-        state: quarantined > 0 ? "degraded" : "nominal",
-        signal: `${Math.round(avgTrust * 100)}% avg trust`,
-      },
-      {
-        id: "qore-runtime",
-        label: "Qore Runtime",
-        state: !qoreRuntime.enabled
-          ? "paused"
-          : qoreRuntime.connected
-            ? "nominal"
-            : "degraded",
-        signal: !qoreRuntime.enabled
-          ? "integration disabled"
-          : qoreRuntime.connected
-            ? `connected (${qoreRuntime.policyVersion || "unknown policy"})`
-            : `unreachable (${qoreRuntime.baseUrl})`,
-      },
-    ];
-
+    const nodeStatus = this.buildNodeStatus(
+      sentinelStatus as unknown as { running?: boolean; filesWatched?: number; queueDepth?: number; [k: string]: unknown },
+      l3Queue, trustSummary, qoreRuntime,
+    );
     return {
-      version: '4.4.0',
-      sprints,
-      currentSprint,
+      version: "4.4.0",
+      sprints: this.planManager.getAllSprints(),
+      currentSprint: this.planManager.getCurrentSprint(),
       activePlan,
       sentinelStatus,
       recentVerdicts: this.recentVerdicts,
       l3Queue,
-      trustSummary: {
-        totalAgents,
-        avgTrust,
-        quarantined,
-        stageCounts,
-      },
+      trustSummary,
       nodeStatus,
       checkpointSummary: this.getCheckpointSummary(),
       recentCheckpoints: this.getRecentCheckpoints(12),
@@ -1533,6 +763,63 @@ export class ConsoleServer {
       generatedAt: new Date().toISOString(),
     };
   }
+
+  private buildTrustSummary(
+    agents: Array<{ trustScore: number; isQuarantined: boolean; trustStage: string }>,
+  ): Record<string, unknown> {
+    const totalAgents = agents.length;
+    const avgTrust = totalAgents === 0
+      ? 0
+      : agents.reduce((sum, a) => sum + a.trustScore, 0) / totalAgents;
+    const quarantined = agents.filter((a) => a.isQuarantined).length;
+    const stageCounts = agents.reduce(
+      (counts, a) => {
+        counts[a.trustStage] = (counts[a.trustStage] || 0) + 1;
+        return counts;
+      },
+      { CBT: 0, KBT: 0, IBT: 0 } as Record<string, number>,
+    );
+    return { totalAgents, avgTrust, quarantined, stageCounts };
+  }
+
+  private buildNodeStatus(
+    sentinel: { running?: boolean; filesWatched?: number; queueDepth?: number; [k: string]: unknown },
+    l3Queue: unknown[],
+    trust: Record<string, unknown>,
+    qore: QoreRuntimeSnapshot,
+  ): Array<Record<string, unknown>> {
+    return [
+      {
+        id: "workspace-core", label: "Workspace Core",
+        state: sentinel.running ? "nominal" : "paused",
+        signal: `${sentinel.filesWatched || 0} files watched`,
+      },
+      {
+        id: "verification-queue", label: "Verification Queue",
+        state: l3Queue.length || (sentinel.queueDepth as number) > 0
+          ? "reviewing" : "nominal",
+        signal: `${l3Queue.length || 0} pending approvals`,
+      },
+      {
+        id: "trust-engine", label: "Trust Engine",
+        state: (trust.quarantined as number) > 0 ? "degraded" : "nominal",
+        signal: `${Math.round((trust.avgTrust as number) * 100)}% avg trust`,
+      },
+      {
+        id: "qore-runtime", label: "Qore Runtime",
+        state: !qore.enabled ? "paused" : qore.connected ? "nominal" : "degraded",
+        signal: !qore.enabled
+          ? "integration disabled"
+          : qore.connected
+            ? `connected (${qore.policyVersion || "unknown policy"})`
+            : `unreachable (${qore.baseUrl})`,
+      },
+    ];
+  }
+
+  // ------------------------------------------------------------------
+  //  Server lifecycle
+  // ------------------------------------------------------------------
 
   private actualPort: number = PORT;
 
@@ -1563,9 +850,7 @@ export class ConsoleServer {
   }
 
   private async findAvailablePort(preferred: number): Promise<number> {
-    if (await this.isPortAvailable(preferred)) {
-      return preferred;
-    }
+    if (await this.isPortAvailable(preferred)) return preferred;
     for (let offset = 1; offset <= 10; offset++) {
       const candidate = preferred + offset;
       if (await this.isPortAvailable(candidate)) {
@@ -1580,1144 +865,49 @@ export class ConsoleServer {
     return new Promise((resolve) => {
       const server = net.createServer();
       server.once("error", () => resolve(false));
-      server.once("listening", () => {
-        server.close(() => resolve(true));
-      });
+      server.once("listening", () => server.close(() => resolve(true)));
       server.listen(port, HOST);
     });
   }
 
+  // ------------------------------------------------------------------
+  //  Skills (delegated to extracted modules)
+  // ------------------------------------------------------------------
+
   private getInstalledSkills(): InstalledSkill[] {
-    const discovered = new Map<string, InstalledSkill>();
-    const approvedSkillFiles = this.getApprovedSkillFileSet();
-    const candidates = this.getSkillRoots();
-    for (const root of candidates) {
-      if (!fs.existsSync(root.root)) continue;
-      const markdownFiles = this.collectSkillMarkdownFiles(root.root);
-      for (const markdown of markdownFiles) {
-        const isRegistryApproved = approvedSkillFiles.has(
-          this.toComparablePath(markdown),
-        );
-        const isSystemApproved = root.sourceType === "project-canonical";
-        const isAutoDiscoveredLocal = root.sourceType === "project-local";
-        if (!isRegistryApproved && !isSystemApproved && !isAutoDiscoveredLocal)
-          continue;
-        const parsed = this.parseSkillFile(markdown, root);
-        if (!parsed) continue;
-        const existing = discovered.get(parsed.key);
-        if (!existing || this.isPreferredSkill(parsed, existing)) {
-          discovered.set(parsed.key, parsed);
-        }
-      }
-    }
-    for (const root of candidates.filter(r => r.sourceType === "project-commands")) {
-      if (!fs.existsSync(root.root)) continue;
-      for (const mdFile of this.collectCommandMarkdownFiles(root.root)) {
-        const parsed = this.parseCommandFile(mdFile, root);
-        if (parsed && !discovered.has(parsed.key)) {
-          discovered.set(parsed.key, parsed);
-        }
-      }
-    }
-    if (discovered.size === 0) {
-      for (const fallbackSkill of this.getEmergencyDiscoveredSkills()) {
-        discovered.set(fallbackSkill.key, fallbackSkill);
-      }
-    }
-    return Array.from(discovered.values()).sort((a, b) => {
-      if (a.sourcePriority !== b.sourcePriority)
-        return a.sourcePriority - b.sourcePriority;
-      return a.label.localeCompare(b.label);
-    });
-  }
-
-  private getSkillRoots(): SkillRoot[] {
-    const workspaceRoot = this.getWorkspaceRoot();
-    const bases = new Set<string>();
-    const addAncestors = (start: string): void => {
-      let current = path.resolve(start);
-      for (let i = 0; i < 10; i += 1) {
-        if (bases.has(current)) break;
-        bases.add(current);
-        const parent = path.dirname(current);
-        if (parent === current) break;
-        current = parent;
-      }
-    };
-    addAncestors(workspaceRoot);
-    addAncestors(path.resolve(__dirname, ".."));
-    addAncestors(path.resolve(__dirname, "../.."));
-
-    const roots: SkillRoot[] = [];
-    const add = (
-      rootPath: string,
-      sourceType: string,
-      sourcePriority: number,
-      admissionState: string,
-    ): void => {
-      const normalized = path.resolve(rootPath);
-      if (roots.some((item) => item.root === normalized)) return;
-      roots.push({
-        root: normalized,
-        sourceType,
-        sourcePriority,
-        admissionState,
-      });
-    };
-
-    for (const base of bases) {
-      add(
-        path.join(base, "FailSafe", "VSCode", "skills"),
-        "project-canonical",
-        1,
-        "admitted",
-      );
-      add(
-        path.join(base, "VSCode", "skills"),
-        "project-canonical",
-        1,
-        "admitted",
-      );
-      add(path.join(base, ".agent", "skills"), "project-local", 2, "admitted");
-      add(path.join(base, ".claude", "skills"), "project-local", 2, "admitted");
-      add(path.join(base, ".codex", "skills"), "project-local", 2, "admitted");
-      add(path.join(base, ".github", "skills"), "project-local", 2, "admitted");
-      add(path.join(base, ".claude", "commands"), "project-commands", 2, "admitted");
-      add(
-        path.join(base, ".failsafe", "manual-skills"),
-        "manual-import",
-        3,
-        "conditional",
-      );
-    }
-
-    return roots;
-  }
-
-  private getEmergencyDiscoveredSkills(): InstalledSkill[] {
-    const workspaceRoot = this.getWorkspaceRoot();
-    const emergencyRoots = [
-      path.join(workspaceRoot, "FailSafe", "VSCode", "skills"),
-      path.join(workspaceRoot, "VSCode", "skills"),
-      path.resolve(workspaceRoot, "..", "VSCode", "skills"),
-      path.resolve(workspaceRoot, "..", "FailSafe", "VSCode", "skills"),
-      path.resolve(__dirname, "../../../../VSCode/skills"),
-      path.resolve(__dirname, "../../../../../FailSafe/VSCode/skills"),
-    ];
-    const unique = Array.from(
-      new Set(emergencyRoots.map((item) => path.resolve(item))),
-    );
-    const output = new Map<string, InstalledSkill>();
-    for (const root of unique) {
-      if (!fs.existsSync(root)) continue;
-      const markdown = this.collectSkillMarkdownFiles(root);
-      for (const file of markdown) {
-        const parsed = this.parseSkillFile(file, {
-          root,
-          sourceType: "project-canonical",
-          sourcePriority: 1,
-          admissionState: "admitted",
-        });
-        if (!parsed) continue;
-        if (!output.has(parsed.key)) output.set(parsed.key, parsed);
-      }
-    }
-    return Array.from(output.values());
-  }
-
-  private collectSkillMarkdownFiles(root: string): string[] {
-    const files: string[] = [];
-    const stack = [root];
-    while (stack.length > 0) {
-      const current = stack.pop() as string;
-      let entries: fs.Dirent[];
-      try {
-        entries = fs.readdirSync(current, { withFileTypes: true });
-      } catch {
-        continue;
-      }
-      for (const entry of entries) {
-        const full = path.join(current, entry.name);
-        if (entry.isDirectory()) {
-          // Ignore disabled/hidden skill trees (for example, quarantine buckets).
-          if (entry.name.startsWith(".") || entry.name.startsWith("_")) {
-            continue;
-          }
-          stack.push(full);
-          continue;
-        }
-        if (entry.isFile() && entry.name.toLowerCase() === "skill.md") {
-          files.push(full);
-        }
-      }
-    }
-    return files;
-  }
-
-  private collectCommandMarkdownFiles(root: string): string[] {
-    const files: string[] = [];
-    const stack = [root];
-    while (stack.length > 0) {
-      const current = stack.pop() as string;
-      let entries: fs.Dirent[];
-      try {
-        entries = fs.readdirSync(current, { withFileTypes: true });
-      } catch {
-        continue;
-      }
-      for (const entry of entries) {
-        const full = path.join(current, entry.name);
-        if (entry.isDirectory()) {
-          if (entry.name.startsWith(".") || entry.name.startsWith("_")) continue;
-          stack.push(full);
-          continue;
-        }
-        if (entry.isFile() && entry.name.endsWith(".md")) {
-          files.push(full);
-        }
-      }
-    }
-    return files;
-  }
-
-  private parseCommandFile(
-    filePath: string,
-    rootMeta: SkillRoot,
-  ): InstalledSkill | null {
-    let content = "";
-    try {
-      content = fs.readFileSync(filePath, "utf8");
-    } catch {
-      return null;
-    }
-    const baseName = path.basename(filePath, ".md");
-    const dirName = path.basename(path.dirname(filePath));
-    const isGovernance = baseName.startsWith("ql-");
-    const category = isGovernance ? "governance" : dirName;
-    const skillMatch = content.match(/<skill>[\s\S]*?<\/skill>/);
-    const triggerMatch = skillMatch
-      ? skillMatch[0].match(/<trigger>([^<]+)<\/trigger>/)
-      : null;
-    const displayName = triggerMatch
-      ? triggerMatch[1].replace(/^\//, "").trim()
-      : this.humanizeSkillName(baseName);
-    const descMatch = content.match(/^##\s+Purpose\s*\n+(.*)/m);
-    const desc = descMatch ? descMatch[1].trim().slice(0, 120) : "Command skill";
-    const resolvedId = `cmd:${baseName}`;
-    const tags = this.normalizeSkillTags([
-      category,
-      baseName,
-      rootMeta.sourceType,
-      "command",
-    ]);
-    const wsRoot = this.getWorkspaceRoot();
-    const origin = path.relative(wsRoot, path.dirname(filePath)).replace(/\\/g, "/");
-    return {
-      id: resolvedId,
-      displayName,
-      localName: baseName,
-      key: resolvedId,
-      label: displayName,
-      desc,
-      creator: "QoreLogic",
-      sourceRepo: "local",
-      sourcePath: filePath,
-      versionPin: "unversioned",
-      trustTier: "admitted",
-      sourceType: rootMeta.sourceType,
-      sourcePriority: rootMeta.sourcePriority,
-      admissionState: rootMeta.admissionState,
-      requiredPermissions: [],
-      category,
-      tags,
-      name: displayName,
-      description: desc,
-      installed: true,
-      origin,
-      sourceCredit: "QoreLogic",
-    };
-  }
-
-  private parseSkillFile(
-    filePath: string,
-    rootMeta: SkillRoot,
-  ): InstalledSkill | null {
-    let content = "";
-    try {
-      content = fs.readFileSync(filePath, "utf8");
-    } catch {
-      return null;
-    }
-    const frontmatterMatch = content.match(/^---\s*([\s\S]*?)\s*---/);
-    const frontmatter = frontmatterMatch ? frontmatterMatch[1] : "";
-    const rawName = (
-      this.readFrontmatterValue(frontmatter, "name") ||
-      path.basename(path.dirname(filePath))
-    ).trim();
-    const desc = (
-      this.readFrontmatterValue(frontmatter, "description") || "Installed skill"
-    ).trim();
-    const metadataAuthor =
-      this.readFrontmatterValue(frontmatter, "author") ||
-      this.readFrontmatterValue(frontmatter, "publisher") ||
-      this.readFrontmatterValue(frontmatter, "metadata.author") ||
-      "Unknown";
-    const versionPin =
-      this.readFrontmatterValue(frontmatter, "version") ||
-      this.readFrontmatterValue(frontmatter, "metadata.version") ||
-      "unversioned";
-    const trustTier =
-      this.readFrontmatterValue(frontmatter, "trustTier") ||
-      this.readFrontmatterValue(frontmatter, "trust_tier") ||
-      "conditional";
-    const requiredPermissions = this.readFrontmatterList(
-      frontmatter,
-      "requiredPermissions",
-    ).concat(this.readFrontmatterList(frontmatter, "required_permissions"));
-    const sourceMeta = this.readSourceMetadata(path.dirname(filePath));
-
-    const sourceRepo =
-      sourceMeta.sourceRepo ||
-      this.readFrontmatterValue(frontmatter, "sourceRepo") ||
-      this.readFrontmatterValue(frontmatter, "source_repo") ||
-      "unknown";
-    const sourcePath =
-      sourceMeta.sourcePath ||
-      this.readFrontmatterValue(frontmatter, "sourcePath") ||
-      this.readFrontmatterValue(frontmatter, "source_path") ||
-      filePath;
-    const creator = sourceMeta.creator || metadataAuthor;
-    const admissionState =
-      sourceMeta.admissionState ||
-      this.readFrontmatterValue(frontmatter, "admissionState") ||
-      this.readFrontmatterValue(frontmatter, "admission_state") ||
-      rootMeta.admissionState;
-    const sourceType =
-      sourceMeta.sourceType ||
-      this.readFrontmatterValue(frontmatter, "sourceType") ||
-      this.readFrontmatterValue(frontmatter, "source_type") ||
-      rootMeta.sourceType;
-    const sourcePriorityRaw =
-      sourceMeta.sourcePriority ||
-      this.readFrontmatterValue(frontmatter, "sourcePriority") ||
-      this.readFrontmatterValue(frontmatter, "source_priority");
-    const sourcePriorityNum = Number.parseInt(sourcePriorityRaw, 10);
-    const sourcePriority = Number.isFinite(sourcePriorityNum)
-      ? sourcePriorityNum
-      : rootMeta.sourcePriority;
-    const explicitSkillId =
-      this.readFrontmatterValue(frontmatter, "id") ||
-      this.readFrontmatterValue(frontmatter, "skill_id") ||
-      this.readFrontmatterValue(frontmatter, "qore_id");
-    const displayName =
-      this.readFrontmatterValue(frontmatter, "displayName") ||
-      this.readFrontmatterValue(frontmatter, "display_name") ||
-      this.humanizeSkillName(rawName);
-    const resolvedId = this.resolveQoreSkillId(explicitSkillId || rawName, {
-      creator: String(creator || "").trim(),
-      sourceRepo: String(sourceRepo || "").trim(),
-      desc,
-    });
-    if (!resolvedId) return null;
-    const explicitCategory =
-      this.readFrontmatterValue(frontmatter, "category") ||
-      this.readFrontmatterValue(frontmatter, "domain");
-    const category = explicitCategory ||
-      this.deriveSkillDomainToken(this.toSlug(rawName), desc);
-    const sourceCredit = this.resolveSourceCredit({
-      creator,
-      sourceRepo,
-      sourceName:
-        sourceMeta.sourceName ||
-        this.readFrontmatterValue(frontmatter, "source") ||
-        this.readFrontmatterValue(frontmatter, "provider") ||
-        this.readFrontmatterValue(frontmatter, "publisher"),
-    });
-    const tags = this.normalizeSkillTags([
-      ...this.readFrontmatterList(frontmatter, "tags"),
-      ...this.readFrontmatterList(frontmatter, "categories"),
-      ...this.readFrontmatterList(frontmatter, "keywords"),
-      ...this.readFrontmatterList(frontmatter, "topics"),
-      this.readFrontmatterValue(frontmatter, "tags"),
-      this.readFrontmatterValue(frontmatter, "category"),
-      this.readFrontmatterValue(frontmatter, "domain"),
-      category,
-      rootMeta.sourceType,
-      admissionState,
-      sourceMeta.sourceName,
-      sourceCredit,
-    ]);
-
-    return {
-      id: resolvedId,
-      displayName: String(displayName || rawName || resolvedId).trim(),
-      localName: rawName,
-      key: resolvedId,
-      label: String(displayName || rawName || resolvedId).trim(),
-      desc,
-      creator: String(creator || "Unknown").trim(),
-      sourceRepo: String(sourceRepo || "unknown").trim(),
-      sourcePath: String(sourcePath || filePath).trim(),
-      versionPin: String(versionPin || "unversioned").trim(),
-      trustTier: String(trustTier || "conditional").trim(),
-      sourceType: String(sourceType || rootMeta.sourceType).trim(),
-      sourcePriority,
-      admissionState: String(admissionState || rootMeta.admissionState).trim(),
-      requiredPermissions: Array.from(
-        new Set(requiredPermissions.map((item) => item.trim()).filter(Boolean)),
-      ),
-      category,
-      tags,
-      name: String(displayName || rawName || resolvedId).trim(),
-      description: desc,
-      installed: true,
-      origin: path.relative(this.getWorkspaceRoot(), rootMeta.root).replace(/\\/g, "/"),
-      sourceCredit,
-    };
-  }
-
-  private getWorkspaceRoot(): string {
-    return path.resolve(process.cwd());
-  }
-
-  private getSkillRegistryDir(): string {
-    return path.join(this.getWorkspaceRoot(), ".failsafe", "skill-registry");
-  }
-
-  private getLegacySkillRegistryPath(): string {
-    return path.join(this.getSkillRegistryDir(), "registry.json");
-  }
-
-  private getAppSkillManifestPath(): string {
-    return path.join(this.getSkillRegistryDir(), "app-manifest.json");
-  }
-
-  private getPersonalSkillManifestPath(): string {
-    return path.join(this.getSkillRegistryDir(), "personal-manifest.json");
-  }
-
-  private ensureAppSkillManifest(): void {
-    const registryDir = this.getSkillRegistryDir();
-    fs.mkdirSync(registryDir, { recursive: true });
-    const now = new Date().toISOString();
-    const entries: SkillRegistryEntry[] = [];
-    const roots = this.getSkillRoots().filter(
-      (root) =>
-        root.sourceType === "project-canonical" && fs.existsSync(root.root),
-    );
-    for (const root of roots) {
-      const markdownFiles = this.collectSkillMarkdownFiles(root.root);
-      for (const skillFile of markdownFiles) {
-        const relPath = path.relative(this.getWorkspaceRoot(), skillFile);
-        entries.push({
-          id: crypto
-            .createHash("sha1")
-            .update(skillFile)
-            .digest("hex")
-            .slice(0, 12),
-          timestamp: now,
-          skillName: path.basename(path.dirname(skillFile)),
-          skillPath: relPath,
-          source: "app",
-          owner: "FailSafe",
-          trustTier: "verified",
-          runtimeEligibility: "allowed",
-        });
-      }
-    }
-    try {
-      fs.writeFileSync(
-        this.getAppSkillManifestPath(),
-        JSON.stringify(entries, null, 2),
-        "utf8",
-      );
-    } catch {
-      // Non-fatal. Canonical skills are still admitted by sourceType.
-    }
-  }
-
-  private readRegistryEntries(paths: string[]): SkillRegistryEntry[] {
-    const entries: SkillRegistryEntry[] = [];
-    for (const registryPath of paths) {
-      if (!fs.existsSync(registryPath)) continue;
-      let raw = "";
-      try {
-        raw = fs.readFileSync(registryPath, "utf8");
-      } catch {
-        continue;
-      }
-      if (!raw.trim()) continue;
-      try {
-        const parsed = JSON.parse(raw) as
-          | SkillRegistryEntry[]
-          | SkillRegistryEntry;
-        const list = Array.isArray(parsed) ? parsed : [parsed];
-        entries.push(...list);
-      } catch {
-        continue;
-      }
-    }
-    return entries;
-  }
-
-  private toComparablePath(inputPath: string): string {
-    const normalized = path.resolve(inputPath);
-    return process.platform === "win32"
-      ? normalized.replace(/\//g, "\\").toLowerCase()
-      : normalized;
-  }
-
-  private getApprovedSkillFileSet(): Set<string> {
-    this.ensureAppSkillManifest();
-    const parsed = this.readRegistryEntries([
-      this.getAppSkillManifestPath(),
-      this.getPersonalSkillManifestPath(),
-      this.getLegacySkillRegistryPath(),
-    ]);
-    if (parsed.length === 0) return new Set<string>();
-
-    const latestByPath = new Map<string, SkillRegistryEntry>();
-    for (const entry of parsed) {
-      const rel = String(entry?.skillPath || "").trim();
-      if (!rel) continue;
-      const abs = path.resolve(this.getWorkspaceRoot(), rel);
-      const key = this.toComparablePath(abs);
-      const existing = latestByPath.get(key);
-      const existingTs = Date.parse(String(existing?.timestamp || ""));
-      const nextTs = Date.parse(String(entry?.timestamp || ""));
-      if (
-        !existing ||
-        (Number.isFinite(nextTs) &&
-          (!Number.isFinite(existingTs) || nextTs > existingTs))
-      ) {
-        latestByPath.set(key, entry);
-      }
-    }
-
-    const approved = new Set<string>();
-    for (const [absPath, entry] of latestByPath.entries()) {
-      const trustTier = String(entry.trustTier || "").toLowerCase();
-      const runtimeEligibility = String(
-        entry.runtimeEligibility || "",
-      ).toLowerCase();
-      const approvedTier =
-        trustTier === "verified" || trustTier === "conditional";
-      const allowed = runtimeEligibility === "allowed";
-      if (!approvedTier || !allowed) continue;
-      approved.add(this.toComparablePath(absPath));
-    }
-    return approved;
-  }
-
-  private getWorkspaceDiscoveryRoots(): string[] {
-    const base = this.getWorkspaceRoot();
-    const roots = [
-      path.join(base, ".agent", "skills"),
-      path.join(base, ".claude", "skills"),
-      path.join(base, ".codex", "skills"),
-      path.join(base, ".github", "skills"),
-      path.join(base, "FailSafe", "VSCode", "skills"),
-      path.join(base, "VSCode", "skills"),
-      path.join(base, ".failsafe", "manual-skills"),
-    ];
-    return Array.from(new Set(roots.map((item) => path.resolve(item))));
+    return discoverAllSkills(this.getWorkspaceRoot(), __dirname);
   }
 
   private autoIngestWorkspaceSkills(): Record<string, unknown> {
-    const roots = this.getWorkspaceDiscoveryRoots().filter((root) =>
-      fs.existsSync(root),
+    const ws = this.getWorkspaceRoot();
+    return autoIngest(
+      ws, buildWorkspaceDiscoveryRoots(ws),
+      () => this.getInstalledSkills(), buildSkillRoots(ws, __dirname),
     );
-    const skillFiles = roots.flatMap((root) =>
-      this.collectSkillMarkdownFiles(root),
-    );
-    const approved = this.getApprovedSkillFileSet();
-    const failures: Array<{ file: string; error: string }> = [];
-    let admitted = 0;
-    let skipped = 0;
-
-    for (const skillFile of skillFiles) {
-      const normalized = this.toComparablePath(skillFile);
-      if (approved.has(normalized)) {
-        skipped += 1;
-        continue;
-      }
-      const result = this.admitSkill(skillFile, "workspace");
-      if (result.ok) {
-        admitted += 1;
-      } else {
-        failures.push({ file: skillFile, error: result.error });
-      }
-    }
-
-    return {
-      ok: true,
-      mode: "auto",
-      rootsScanned: roots,
-      discovered: skillFiles.length,
-      admitted,
-      skipped,
-      failed: failures.length,
-      failures,
-      skills: this.getInstalledSkills(),
-    };
   }
 
   private manualIngestSkillPayload(
-    items: unknown[],
-    mode: "file" | "folder",
+    items: unknown[], mode: "file" | "folder",
   ): Record<string, unknown> {
-    const normalizedItems = items
-      .map((item) => ({
-        path: String((item as { path?: unknown }).path || "").trim(),
-        content: String((item as { content?: unknown }).content || ""),
-      }))
-      .filter((item) => item.path.length > 0);
-
-    if (normalizedItems.length === 0) {
-      throw new Error("No files were provided for manual ingest.");
-    }
-    if (normalizedItems.length > 300) {
-      throw new Error("Manual ingest payload is too large.");
-    }
-
-    const batchRoot = path.join(
-      this.getWorkspaceRoot(),
-      ".failsafe",
-      "manual-skills",
-      `manual-${new Date().toISOString().replace(/[:.]/g, "-")}`,
-    );
-    fs.mkdirSync(batchRoot, { recursive: true });
-
-    const writtenSkillFiles: string[] = [];
-    for (const item of normalizedItems) {
-      const safeRelative = this.sanitizeRelativePath(item.path);
-      if (!safeRelative) continue;
-      const target = path.join(batchRoot, safeRelative);
-      fs.mkdirSync(path.dirname(target), { recursive: true });
-      fs.writeFileSync(target, item.content, "utf8");
-      if (path.basename(target).toLowerCase() === "skill.md") {
-        writtenSkillFiles.push(target);
-      }
-    }
-    if (writtenSkillFiles.length === 0) {
-      throw new Error("Manual ingest did not include any SKILL.md files.");
-    }
-
-    const failures: Array<{ file: string; error: string }> = [];
-    let admitted = 0;
-    for (const skillFile of writtenSkillFiles) {
-      const result = this.admitSkill(
-        skillFile,
-        mode === "folder" ? "manual-folder" : "manual-file",
-      );
-      if (result.ok) admitted += 1;
-      else failures.push({ file: skillFile, error: result.error });
-    }
-
-    return {
-      ok: true,
-      mode: "manual",
-      importedTo: batchRoot,
-      filesWritten: normalizedItems.length,
-      discovered: writtenSkillFiles.length,
-      admitted,
-      failed: failures.length,
-      failures,
-      skills: this.getInstalledSkills(),
-    };
+    return manualIngest(items, mode, this.getWorkspaceRoot(), () => this.getInstalledSkills());
   }
 
-  private sanitizeRelativePath(relativePath: string): string {
-    const normalized = relativePath
-      .replace(/\\/g, "/")
-      .replace(/^[A-Za-z]:/, "");
-    const segments = normalized
-      .split("/")
-      .map((segment) => segment.trim())
-      .filter(
-        (segment) => segment.length > 0 && segment !== "." && segment !== "..",
-      );
-    return segments.join(path.sep);
+  private buildSkillRelevance(phase: string): Record<string, unknown> {
+    const catalog = this.getInstalledSkills();
+    const ranked: SkillRelevance[] = catalog
+      .map((skill) => rankSkillForPhase(skill, phase))
+      .sort((a, b) => b.score - a.score || a.label.localeCompare(b.label));
+    let allRelevant = ranked.filter((item) => item.score > 1);
+    if (allRelevant.length === 0) allRelevant = ranked.slice();
+    const recommended = allRelevant.slice(0, Math.min(4, allRelevant.length));
+    const relevantKeys = new Set(allRelevant.map((item) => item.key));
+    const otherAvailable = ranked.filter((item) => !relevantKeys.has(item.key));
+    return { phase, recommended, allRelevant, otherAvailable };
   }
 
-  private admitSkill(
-    skillFile: string,
-    source: string,
-  ): { ok: boolean; error: string } {
-    const scriptPath = path.join(
-      this.getWorkspaceRoot(),
-      "tools",
-      "reliability",
-      "admit-skill.ps1",
-    );
-    if (!fs.existsSync(scriptPath)) {
-      return { ok: false, error: `admission script not found: ${scriptPath}` };
-    }
-
-    const shell = process.platform === "win32" ? "powershell.exe" : "pwsh";
-    const args = [
-      "-NoProfile",
-      "-ExecutionPolicy",
-      "Bypass",
-      "-File",
-      scriptPath,
-      "-SkillPath",
-      skillFile,
-      "-Source",
-      source,
-      "-Owner",
-      "FailSafe",
-      "-VersionPin",
-      "local-main",
-      "-RegistryPath",
-      this.getPersonalSkillManifestPath(),
-    ];
-    const result = spawnSync(shell, args, {
-      cwd: this.getWorkspaceRoot(),
-      encoding: "utf8",
-    });
-    const ok = result.status === 0;
-    const stdErr = String(result.stderr || "").trim();
-    const stdOut = String(result.stdout || "").trim();
-    return {
-      ok,
-      error: ok
-        ? ""
-        : stdErr ||
-          stdOut ||
-          `admit-skill exited with code ${String(result.status ?? "unknown")}`,
-    };
-  }
-
-  private toSlug(value: string): string {
-    return String(value || "")
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/-+/g, "-")
-      .replace(/^-+|-+$/g, "");
-  }
-
-  private humanizeSkillName(value: string): string {
-    const slug = this.toSlug(value);
-    const alias: Record<string, string> = {
-      music: "Generate Music",
-      "sound-effects": "Generate Sound Effects",
-      "speech-to-text": "Transcribe Speech",
-      "text-to-speech": "Synthesize Speech",
-      agents: "Intent Assistant",
-    };
-    if (alias[slug]) return alias[slug];
-    return slug
-      .split("-")
-      .filter(Boolean)
-      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-      .join(" ");
-  }
-
-  private resolveQoreSkillId(
-    base: string,
-    context: { creator: string; sourceRepo: string; desc: string },
-  ): string {
-    const slug = this.toSlug(base);
-    if (!slug) return "";
-    const segments = slug.split("-").filter(Boolean);
-    if (segments.length >= 3) {
-      return this.toSlug(`${segments[0]}-${segments[1]}-${segments.slice(2).join("-")}`);
-    }
-
-    const source = this.deriveSkillSourceToken(context);
-    const domain = this.deriveSkillDomainToken(slug, context.desc);
-    const action = this.deriveSkillActionToken(slug, domain);
-    const synthesized = `${source}-${domain}-${action}`;
-    return this.toSlug(synthesized);
-  }
-
-  private deriveSkillSourceToken(context: {
-    creator: string;
-    sourceRepo: string;
-    desc: string;
-  }): string {
-    const repo = String(context.sourceRepo || "");
-    const creator = String(context.creator || "");
-    if (repo.includes("/")) {
-      const owner = this.toSlug(repo.split("/")[0] || "");
-      if (owner) return owner;
-    }
-    const creatorSlug = this.toSlug(creator);
-    if (creatorSlug) return creatorSlug;
-    return "local";
-  }
-
-  private deriveSkillDomainToken(
-    skillSlug: string,
-    description: string,
-  ): string {
-    const text = `${skillSlug} ${description}`.toLowerCase();
-    if (text.includes("tauri")) return "tauri2";
-    if (text.includes("governance") || text.includes("compliance"))
-      return "governance";
-    if (
-      text.includes("meta") ||
-      text.includes("ledger") ||
-      text.includes("shadow")
-    )
-      return "meta";
-    if (text.includes("docs") || text.includes("writing")) return "docs";
-    if (text.includes("web") || text.includes("wcag")) return "web";
-    if (
-      text.includes("audio") ||
-      text.includes("voice") ||
-      text.includes("speech") ||
-      text.includes("music") ||
-      text.includes("sound")
-    )
-      return "audio";
-    return "operations";
-  }
-
-  private deriveSkillActionToken(skillSlug: string, domain: string): string {
-    const directMap: Record<string, string> = {
-      music: "generate-music",
-      "sound-effects": "generate-sound-effects",
-      "speech-to-text": "transcribe-speech",
-      "text-to-speech": "synthesize-speech",
-      agents: "build-intent-assistant",
-    };
-    if (directMap[skillSlug]) return directMap[skillSlug];
-    if (domain === "operations") return skillSlug || "apply-skill";
-    return skillSlug || `improve-${domain}`;
-  }
-
-  private normalizeSkillTags(values: Array<string | undefined | null>): string[] {
-    const stop = new Set([
-      "a",
-      "an",
-      "and",
-      "as",
-      "at",
-      "by",
-      "for",
-      "from",
-      "in",
-      "into",
-      "of",
-      "on",
-      "or",
-      "the",
-      "to",
-      "with",
-      "skill",
-      "skills",
-      "qore",
-      "local",
-      "project",
-      "unknown",
-      "unversioned",
-      "admitted",
-      "conditional",
-      "quarantined",
-      "general",
-      "cmd",
-      "command",
-      "commands",
-      "source",
-      "type",
-    ]);
-    const out = new Set<string>();
-    for (const value of values) {
-      const raw = String(value || "").replace(/[[\]{}()]/g, " ");
-      const parts = raw.split(/[,;|/\\\n]+/).map((part) => part.trim()).filter(Boolean);
-      for (const part of parts) {
-        const slug = this.toSlug(part);
-        if (!slug || stop.has(slug)) continue;
-        if (slug.length < 2 || slug.length > 48) continue;
-        out.add(slug);
-      }
-    }
-    return Array.from(out).slice(0, 8);
-  }
-
-  private resolveSourceCredit(context: {
-    creator: string;
-    sourceRepo: string;
-    sourceName: string;
-  }): string {
-    const sourceName = String(context.sourceName || "").trim();
-    const creator = String(context.creator || "").trim();
-    const repo = String(context.sourceRepo || "").trim();
-    const repoOwner = repo.includes("/") ? repo.split("/")[0] : "";
-    const picked = sourceName || creator || repoOwner || "Community";
-    const normalized = picked.replace(/^@+/, "").trim();
-    if (normalized.toLowerCase().includes("elevenlabs")) return "ElevenLabs";
-    if (normalized.toLowerCase() === "qorelogic") return "QoreLogic";
-    return normalized;
-  }
-
-  private readFrontmatterValue(frontmatter: string, key: string): string {
-    const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const dotted = escaped.replace("\\.", "\\s*\\.\\s*");
-    const match = frontmatter.match(
-      new RegExp(`^\\s*${dotted}\\s*:\\s*(.+)$`, "mi"),
-    );
-    if (!match?.[1]) return "";
-    return String(match[1])
-      .trim()
-      .replace(/^['"]|['"]$/g, "");
-  }
-
-  private readFrontmatterList(frontmatter: string, key: string): string[] {
-    const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const headerMatch = frontmatter.match(
-      new RegExp(`^\\s*${escaped}\\s*:\\s*(.+)?$`, "mi"),
-    );
-    if (!headerMatch) return [];
-    const trailing = String(headerMatch[1] || "").trim();
-    if (trailing.startsWith("[") && trailing.endsWith("]")) {
-      return trailing
-        .slice(1, -1)
-        .split(",")
-        .map((item) => item.trim().replace(/^['"]|['"]$/g, ""))
-        .filter(Boolean);
-    }
-    const start = headerMatch.index ?? -1;
-    if (start < 0) return [];
-    const rest = frontmatter.slice(start + headerMatch[0].length).split("\n");
-    const items: string[] = [];
-    for (const line of rest) {
-      if (!/^\s*-/.test(line)) {
-        if (line.trim().length > 0) break;
-        continue;
-      }
-      items.push(
-        line
-          .replace(/^\s*-\s*/, "")
-          .trim()
-          .replace(/^['"]|['"]$/g, ""),
-      );
-    }
-    return items;
-  }
-
-  private readSourceMetadata(skillDir: string): {
-    creator: string;
-    sourceRepo: string;
-    sourcePath: string;
-    sourceType: string;
-    sourcePriority: string;
-    admissionState: string;
-    sourceName: string;
-  } {
-    const sourceFile = path.join(skillDir, "SOURCE.yml");
-    if (!fs.existsSync(sourceFile)) {
-      return {
-        creator: "",
-        sourceRepo: "",
-        sourcePath: "",
-        sourceType: "",
-        sourcePriority: "",
-        admissionState: "",
-        sourceName: "",
-      };
-    }
-    let content = "";
-    try {
-      content = fs.readFileSync(sourceFile, "utf8");
-    } catch {
-      return {
-        creator: "",
-        sourceRepo: "",
-        sourcePath: "",
-        sourceType: "",
-        sourcePriority: "",
-        admissionState: "",
-        sourceName: "",
-      };
-    }
-    const read = (pattern: RegExp) =>
-      (content.match(pattern)?.[1] || "").trim().replace(/^['"]|['"]$/g, "");
-    const parsed = (() => {
-      try {
-        return yaml.load(content) as Record<string, unknown> | null;
-      } catch {
-        return null;
-      }
-    })();
-    const source =
-      parsed?.source && typeof parsed.source === "object"
-        ? (parsed.source as Record<string, unknown>)
-        : {};
-    const creatorNode =
-      parsed?.creator && typeof parsed.creator === "object"
-        ? (parsed.creator as Record<string, unknown>)
-        : {};
-    const authorNode =
-      parsed?.author && typeof parsed.author === "object"
-        ? (parsed.author as Record<string, unknown>)
-        : {};
-    const imported =
-      parsed?.imported && typeof parsed.imported === "object"
-        ? (parsed.imported as Record<string, unknown>)
-        : {};
-    const pick = (...values: Array<unknown>) => {
-      for (const value of values) {
-        if (typeof value === "string" && value.trim().length > 0) {
-          return value.trim();
-        }
-      }
-      return "";
-    };
-    return {
-      creator: pick(
-        creatorNode.name,
-        parsed?.creator,
-        authorNode.name,
-        read(/^\s*creator\s*:\s*(.+)$/im),
-      ),
-      sourceRepo: pick(
-        source.repo,
-        source.repository,
-        parsed?.source_repo,
-        read(/^\s*source_repo\s*:\s*(.+)$/im),
-      ),
-      sourcePath: pick(
-        source.path,
-        source.url,
-        parsed?.source_path,
-        read(/^\s*source_path\s*:\s*(.+)$/im),
-      ),
-      sourceType: pick(
-        source.type,
-        parsed?.source_type,
-        read(/^\s*source_type\s*:\s*(.+)$/im),
-      ),
-      sourcePriority: pick(
-        source.source_priority,
-        parsed?.source_priority,
-        read(/^\s*source_priority\s*:\s*(.+)$/im),
-      ),
-      admissionState: pick(
-        imported.admission_state,
-        parsed?.admission_state,
-        read(/^\s*admission_state\s*:\s*(.+)$/im),
-      ),
-      sourceName: pick(
-        source.name,
-        source.provider,
-        source.vendor,
-        parsed?.source_name,
-        read(/^\s*source_name\s*:\s*(.+)$/im),
-      ),
-    };
-  }
-
-  private rankSkillForPhase(
-    skill: InstalledSkill,
-    phase: string,
-  ): SkillRelevance {
-    const phaseKeywordMap: Record<string, string[]> = {
-      plan: ["plan", "strategy", "architecture", "design", "router", "flow"],
-      audit: [
-        "audit",
-        "review",
-        "security",
-        "permission",
-        "verify",
-        "compliance",
-      ],
-      implement: [
-        "implement",
-        "integration",
-        "wiring",
-        "state",
-        "plugin",
-        "build",
-      ],
-      debug: [
-        "debug",
-        "error",
-        "test",
-        "validation",
-        "fix",
-        "mock",
-        "performance",
-      ],
-      substantiate: [
-        "documentation",
-        "release",
-        "narrative",
-        "governance",
-        "evidence",
-        "lifecycle",
-      ],
-    };
-    const text = `${skill.key} ${skill.label} ${skill.desc}`.toLowerCase();
-    const keywords = phaseKeywordMap[phase] || [];
-    let score = 1;
-    const reasons: string[] = [];
-    for (const keyword of keywords) {
-      if (text.includes(keyword)) {
-        score += 1;
-        reasons.push(`keyword:${keyword}`);
-      }
-    }
-    if (skill.trustTier.toLowerCase() === "verified") {
-      score += 1;
-      reasons.push("trust:verified");
-    }
-    const admission = skill.admissionState.toLowerCase();
-    if (admission === "admitted") {
-      score += 1;
-      reasons.push("admission:admitted");
-    } else if (admission === "conditional") {
-      reasons.push("admission:conditional");
-    } else if (admission === "quarantined") {
-      score -= 5;
-      reasons.push("admission:quarantined");
-    }
-    if (skill.sourcePriority <= 1) {
-      score += 2;
-      reasons.push("source:project-canonical");
-    } else if (skill.sourcePriority === 2) {
-      score += 1;
-      reasons.push("source:preferred");
-    } else {
-      reasons.push(`source:priority-${skill.sourcePriority}`);
-    }
-    if (skill.requiredPermissions.length > 0) {
-      reasons.push(`permissions:${skill.requiredPermissions.length}`);
-    }
-    if (reasons.length === 0) {
-      reasons.push("baseline");
-    }
-    return { ...skill, score, reasons };
-  }
-
-  private isPreferredSkill(
-    candidate: InstalledSkill,
-    current: InstalledSkill,
-  ): boolean {
-    if (candidate.sourcePriority !== current.sourcePriority) {
-      return candidate.sourcePriority < current.sourcePriority;
-    }
-    const admissionWeight = (value: string): number => {
-      const normalized = value.toLowerCase();
-      if (normalized === "admitted") return 3;
-      if (normalized === "conditional") return 2;
-      if (normalized === "quarantined") return 1;
-      return 0;
-    };
-    const candidateAdmission = admissionWeight(candidate.admissionState);
-    const currentAdmission = admissionWeight(current.admissionState);
-    if (candidateAdmission !== currentAdmission) {
-      return candidateAdmission > currentAdmission;
-    }
-    const candidatePinned = candidate.versionPin !== "unversioned";
-    const currentPinned = current.versionPin !== "unversioned";
-    if (candidatePinned !== currentPinned) {
-      return candidatePinned;
-    }
-    return candidate.label.localeCompare(current.label) < 0;
-  }
+  // ------------------------------------------------------------------
+  //  Checkpoint management (delegated to CheckpointStore)
+  // ------------------------------------------------------------------
 
   private initializeCheckpointStore(): void {
     try {
@@ -2725,36 +915,8 @@ export class ConsoleServer {
         .getLedgerManager()
         .getDatabase() as unknown as {
         exec: (sql: string) => void;
-        prepare: (sql: string) => {
-          run: (...args: unknown[]) => unknown;
-          get: (...args: unknown[]) => unknown;
-          all: (...args: unknown[]) => unknown;
-        };
-      };
-      ledgerDb.exec(`
-        CREATE TABLE IF NOT EXISTS failsafe_checkpoints (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          checkpoint_id TEXT NOT NULL UNIQUE,
-          run_id TEXT NOT NULL,
-          checkpoint_type TEXT NOT NULL,
-          phase TEXT NOT NULL,
-          status TEXT NOT NULL,
-          timestamp TEXT NOT NULL,
-          parent_id TEXT,
-          git_hash TEXT NOT NULL,
-          policy_verdict TEXT NOT NULL,
-          evidence_refs TEXT NOT NULL,
-          actor TEXT NOT NULL,
-          payload_json TEXT NOT NULL,
-          payload_hash TEXT NOT NULL,
-          entry_hash TEXT NOT NULL UNIQUE,
-          prev_hash TEXT NOT NULL
-        );
-        CREATE INDEX IF NOT EXISTS idx_fs_ckpt_time ON failsafe_checkpoints(timestamp);
-        CREATE INDEX IF NOT EXISTS idx_fs_ckpt_run ON failsafe_checkpoints(run_id);
-        CREATE INDEX IF NOT EXISTS idx_fs_ckpt_phase ON failsafe_checkpoints(phase);
-        CREATE INDEX IF NOT EXISTS idx_fs_ckpt_type ON failsafe_checkpoints(checkpoint_type);
-      `);
+      } & CheckpointDb;
+      ledgerDb.exec(CHECKPOINT_INIT_SQL);
       this.checkpointDb = ledgerDb;
     } catch (error) {
       this.checkpointDb = null;
@@ -2770,11 +932,8 @@ export class ConsoleServer {
       recordRevertCheckpoint: (request: RevertRequest) => {
         this.recordCheckpoint({
           checkpointType: "governance.revert",
-          actor: request.actor,
-          phase: "revert",
-          status: "sealed",
-          policyVerdict: "PASS",
-          evidenceRefs: [],
+          actor: request.actor, phase: "revert", status: "sealed",
+          policyVerdict: "PASS", evidenceRefs: [],
           payload: {
             targetCheckpointId: request.targetCheckpoint.checkpointId,
             targetGitHash: request.targetCheckpoint.gitHash,
@@ -2791,475 +950,177 @@ export class ConsoleServer {
   private getCheckpointById(id: string): CheckpointRef | null {
     if (this.checkpointDb) {
       try {
-        const row = this.checkpointDb
-          .prepare(
-            "SELECT checkpoint_id, git_hash, timestamp, phase, status FROM failsafe_checkpoints WHERE checkpoint_id = ?",
-          )
-          .get(id) as
-          | {
-              checkpoint_id: string;
-              git_hash: string;
-              timestamp: string;
-              phase: string;
-              status: string;
-            }
+        const row = this.checkpointDb.prepare(
+          "SELECT checkpoint_id, git_hash, timestamp, phase, status FROM failsafe_checkpoints WHERE checkpoint_id = ?",
+        ).get(id) as
+          | { checkpoint_id: string; git_hash: string; timestamp: string; phase: string; status: string }
           | undefined;
-        if (!row) return null;
-        return {
-          checkpointId: row.checkpoint_id,
-          gitHash: row.git_hash,
-          timestamp: row.timestamp,
-          phase: row.phase,
-          status: row.status,
-        };
-      } catch {
-        /* fall through */
-      }
+        if (row) {
+          return {
+            checkpointId: row.checkpoint_id, gitHash: row.git_hash,
+            timestamp: row.timestamp, phase: row.phase, status: row.status,
+          };
+        }
+      } catch { /* fall through */ }
     }
     const mem = this.checkpointMemory.find((r) => r.checkpointId === id);
     if (!mem) return null;
     return {
-      checkpointId: mem.checkpointId,
-      gitHash: mem.gitHash,
-      timestamp: mem.timestamp,
-      phase: mem.phase,
-      status: mem.status,
+      checkpointId: mem.checkpointId, gitHash: mem.gitHash,
+      timestamp: mem.timestamp, phase: mem.phase, status: mem.status,
     };
   }
 
   private inferPhaseKeyFromPlan(plan: unknown): string {
-    const phases = Array.isArray(
-      (plan as { phases?: unknown[] } | null)?.phases,
-    )
-      ? (
-          plan as {
-            phases: Array<{ id?: string; title?: string; status?: string }>;
-          }
-        ).phases
-      : [];
-    const currentPhaseId = (plan as { currentPhaseId?: string } | null)
-      ?.currentPhaseId;
-    const active =
-      phases.find((phase) => phase.id === currentPhaseId) ||
-      phases.find((phase) => phase.status === "active") ||
-      phases[0] ||
-      null;
-    const title = String(active?.title || "").toLowerCase();
-    if (
-      title.includes("substantiat") ||
-      title.includes("release") ||
-      title.includes("ship")
-    )
-      return "substantiate";
-    if (
-      title.includes("debug") ||
-      title.includes("fix") ||
-      title.includes("stabil")
-    )
-      return "debug";
-    if (
-      title.includes("implement") ||
-      title.includes("build") ||
-      title.includes("develop")
-    )
-      return "implement";
-    if (
-      title.includes("audit") ||
-      title.includes("review") ||
-      title.includes("verify")
-    )
-      return "audit";
-    return "plan";
-  }
-
-  private stableStringify(value: unknown): string {
-    const normalize = (input: unknown): unknown => {
-      if (Array.isArray(input)) {
-        return input.map((item) => normalize(item));
-      }
-      if (input && typeof input === "object") {
-        const obj = input as Record<string, unknown>;
-        return Object.keys(obj)
-          .sort()
-          .reduce<Record<string, unknown>>((acc, key) => {
-            acc[key] = normalize(obj[key]);
-            return acc;
-          }, {});
-      }
-      return input;
-    };
-    return JSON.stringify(normalize(value));
-  }
-
-  private hash(value: string): string {
-    return crypto.createHash("sha256").update(value).digest("hex");
-  }
-
-  private tryGetGitHead(): string {
-    const candidates = [
-      path.resolve(process.cwd(), ".git", "HEAD"),
-      path.resolve(process.cwd(), "..", ".git", "HEAD"),
-    ];
-    for (const headFile of candidates) {
-      if (!fs.existsSync(headFile)) continue;
-      try {
-        const head = fs.readFileSync(headFile, "utf8").trim();
-        if (head.startsWith("ref:")) {
-          const refPath = head.replace(/^ref:\s*/, "").trim();
-          const refFile = path.resolve(path.dirname(headFile), refPath);
-          if (fs.existsSync(refFile)) {
-            return fs.readFileSync(refFile, "utf8").trim();
-          }
-          return refPath;
-        }
-        return head;
-      } catch {
-        continue;
-      }
-    }
-    return "unknown";
+    return inferPhaseKeyFromPlan(plan);
   }
 
   private recordCheckpoint(input: {
-    checkpointType: string;
-    actor: string;
-    phase: string;
-    status: CheckpointStatus;
-    policyVerdict: string;
-    evidenceRefs: string[];
-    payload: unknown;
+    checkpointType: string; actor: string; phase: string;
+    status: CheckpointStatus; policyVerdict: string;
+    evidenceRefs: string[]; payload: unknown;
   }): void {
-    if (!this.checkpointTypeRegistry.has(input.checkpointType)) {
-      return;
-    }
-    const timestamp = new Date().toISOString();
-
-    // Auto-populate evidenceRefs from recent sentinel observations
+    if (!this.checkpointTypeRegistry.has(input.checkpointType)) return;
     if (input.evidenceRefs.length === 0) {
       const since = new Date(Date.now() - 60_000).toISOString();
-      input.evidenceRefs = this.sentinelDaemon.getRecentObservationIds(
-        since,
-        10,
-      );
+      input.evidenceRefs = this.sentinelDaemon.getRecentObservationIds(since, 10);
     }
-    const runId =
-      this.planManager.getActivePlan()?.id ||
-      this.planManager.getCurrentSprint()?.id ||
-      "global";
-    const payloadJson = this.stableStringify(input.payload || {});
-    const payloadHash = this.hash(payloadJson);
-    const gitHash = this.tryGetGitHead();
-
-    const previous = this.getRecentCheckpoints(1)[0] as
-      | CheckpointRecord
-      | undefined;
-    const prevHash = previous?.entryHash || "GENESIS_CHECKPOINT";
-    const checkpointId = crypto.randomUUID();
-    const parentId = previous?.checkpointId || null;
-    const entryHash = this.hash(
-      this.stableStringify({
-        checkpointId,
-        runId,
-        checkpointType: input.checkpointType,
-        phase: input.phase,
-        status: input.status,
-        timestamp,
-        parentId,
-        gitHash,
-        policyVerdict: input.policyVerdict,
-        evidenceRefs: input.evidenceRefs.slice().sort(),
-        actor: input.actor,
-        payloadHash,
-        prevHash,
-      }),
+    const runId = this.planManager.getActivePlan()?.id ||
+      this.planManager.getCurrentSprint()?.id || "global";
+    const record = ckptBuildRecord(
+      input, new Date().toISOString(), runId,
+      this.checkpointDb, this.checkpointMemory,
     );
-
-    const record: CheckpointRecord = {
-      checkpointId,
-      runId,
-      checkpointType: input.checkpointType,
-      phase: input.phase,
-      status: input.status,
-      timestamp,
-      parentId,
-      gitHash,
-      policyVerdict: input.policyVerdict,
-      evidenceRefs: input.evidenceRefs,
-      actor: input.actor,
-      payloadJson,
-      payloadHash,
-      entryHash,
-      prevHash,
-    };
-
-    if (this.checkpointDb) {
-      try {
-        this.checkpointDb
-          .prepare(
-            `
-          INSERT INTO failsafe_checkpoints (
-            checkpoint_id, run_id, checkpoint_type, phase, status, timestamp,
-            parent_id, git_hash, policy_verdict, evidence_refs, actor,
-            payload_json, payload_hash, entry_hash, prev_hash
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `,
-          )
-          .run(
-            record.checkpointId,
-            record.runId,
-            record.checkpointType,
-            record.phase,
-            record.status,
-            record.timestamp,
-            record.parentId,
-            record.gitHash,
-            record.policyVerdict,
-            JSON.stringify(record.evidenceRefs),
-            record.actor,
-            record.payloadJson,
-            record.payloadHash,
-            record.entryHash,
-            record.prevHash,
-          );
-        return;
-      } catch (error) {
-        console.warn(
-          "Checkpoint persistence failed, using memory fallback:",
-          error,
-        );
-      }
-    }
-
-    this.checkpointMemory.unshift(record);
-    if (this.checkpointMemory.length > 500) {
-      this.checkpointMemory = this.checkpointMemory.slice(0, 500);
-    }
-  }
-
-  private mapCheckpointRow(row: Record<string, unknown>): CheckpointRecord {
-    const evidence = (() => {
-      const raw = row.evidence_refs;
-      if (typeof raw !== "string" || raw.length === 0) return [];
-      try {
-        const parsed = JSON.parse(raw);
-        return Array.isArray(parsed) ? parsed.map((item) => String(item)) : [];
-      } catch {
-        return [];
-      }
-    })();
-
-    return {
-      checkpointId: String(row.checkpoint_id || ""),
-      runId: String(row.run_id || ""),
-      checkpointType: String(row.checkpoint_type || ""),
-      phase: String(row.phase || ""),
-      status: String(row.status || "validated") as CheckpointStatus,
-      timestamp: String(row.timestamp || ""),
-      parentId: row.parent_id ? String(row.parent_id) : null,
-      gitHash: String(row.git_hash || "unknown"),
-      policyVerdict: String(row.policy_verdict || "UNKNOWN"),
-      evidenceRefs: evidence,
-      actor: String(row.actor || "system"),
-      payloadJson: String(row.payload_json || "{}"),
-      payloadHash: String(row.payload_hash || ""),
-      entryHash: String(row.entry_hash || ""),
-      prevHash: String(row.prev_hash || "GENESIS_CHECKPOINT"),
-    };
+    ckptPersist(record, this.checkpointDb, this.checkpointMemory);
   }
 
   private getRecentCheckpoints(limit: number): CheckpointRecord[] {
-    if (this.checkpointDb) {
-      try {
-        const rows = this.checkpointDb
-          .prepare(
-            `
-          SELECT checkpoint_id, run_id, checkpoint_type, phase, status, timestamp,
-                 parent_id, git_hash, policy_verdict, evidence_refs, actor,
-                 payload_json, payload_hash, entry_hash, prev_hash
-          FROM failsafe_checkpoints
-          ORDER BY id DESC
-          LIMIT ?
-        `,
-          )
-          .all(limit) as Record<string, unknown>[];
-        return rows.map((row) => this.mapCheckpointRow(row));
-      } catch {
-        // fall through to memory
-      }
-    }
-    return this.checkpointMemory.slice(0, limit);
+    return ckptGetRecent(this.checkpointDb, this.checkpointMemory, limit);
   }
 
   private verifyCheckpointChain(): boolean {
-    const records = this.checkpointDb
-      ? (() => {
-          try {
-            const rows = this.checkpointDb
-              .prepare(
-                `
-              SELECT checkpoint_id, run_id, checkpoint_type, phase, status, timestamp,
-                     parent_id, git_hash, policy_verdict, evidence_refs, actor,
-                     payload_json, payload_hash, entry_hash, prev_hash
-              FROM failsafe_checkpoints
-              ORDER BY id ASC
-            `,
-              )
-              .all() as Record<string, unknown>[];
-            return rows.map((row) => this.mapCheckpointRow(row));
-          } catch {
-            return this.checkpointMemory.slice().reverse();
-          }
-        })()
-      : this.checkpointMemory.slice().reverse();
-
-    if (records.length === 0) return true;
-    let prevHash = "GENESIS_CHECKPOINT";
-    for (const record of records) {
-      const recomputedPayloadHash = this.hash(record.payloadJson);
-      if (recomputedPayloadHash !== record.payloadHash) {
-        return false;
-      }
-      const recomputedEntryHash = this.hash(
-        this.stableStringify({
-          checkpointId: record.checkpointId,
-          runId: record.runId,
-          checkpointType: record.checkpointType,
-          phase: record.phase,
-          status: record.status,
-          timestamp: record.timestamp,
-          parentId: record.parentId,
-          gitHash: record.gitHash,
-          policyVerdict: record.policyVerdict,
-          evidenceRefs: record.evidenceRefs.slice().sort(),
-          actor: record.actor,
-          payloadHash: record.payloadHash,
-          prevHash: record.prevHash,
-        }),
-      );
-      if (recomputedEntryHash !== record.entryHash) {
-        return false;
-      }
-      if (record.prevHash !== prevHash) {
-        return false;
-      }
-      prevHash = record.entryHash;
-    }
-    return true;
-  }
-
-  /**
-   * Incremental verification of only the latest checkpoint against its parent.
-   * Used by heartbeat polling to detect chain breaks without full traversal.
-   */
-  private verifyLatestCheckpoint(): boolean {
-    const records = this.getRecentCheckpoints(2);
-    if (records.length === 0) return true;
-
-    const latest = records[0];
-    const recomputedPayloadHash = this.hash(latest.payloadJson);
-    if (recomputedPayloadHash !== latest.payloadHash) {
-      return false;
-    }
-
-    const expectedPrev =
-      records.length > 1 ? records[1].entryHash : "GENESIS_CHECKPOINT";
-    return latest.prevHash === expectedPrev;
+    return ckptVerifyChain(this.checkpointDb, this.checkpointMemory);
   }
 
   private getCheckpointSummary(): Record<string, unknown> {
-    const recent = this.getRecentCheckpoints(1)[0];
-    // Use cached chain validity from last manual verification; only do incremental check
-    const latestValid = this.verifyLatestCheckpoint();
-    const chainValid = this.cachedChainValid && latestValid;
-    return {
-      total: this.checkpointDb
-        ? (() => {
-            try {
-              const row = this.checkpointDb
-                ?.prepare("SELECT count(*) as c FROM failsafe_checkpoints")
-                .get() as { c: number };
-              return Number(row?.c || 0);
-            } catch {
-              return this.checkpointMemory.length;
-            }
-          })()
-        : this.checkpointMemory.length,
-      chainValid,
-      chainValidAt: this.chainValidAt,
-      latestType: recent?.checkpointType || null,
-      latestAt: recent?.timestamp || null,
-      latestVerdict: recent?.policyVerdict || null,
-    };
+    return ckptGetSummary(
+      this.checkpointDb, this.checkpointMemory,
+      this.cachedChainValid, this.chainValidAt,
+    );
   }
 
-  /**
-   * Get recent transparency events from the prompt lifecycle audit stream.
-   * These events track prompt builds, dispatches, and governance decisions.
-   */
+  // ------------------------------------------------------------------
+  //  Transparency & Risk helpers (used by buildHubSnapshot + routes)
+  // ------------------------------------------------------------------
+
   private getTransparencyEvents(limit: number): Array<Record<string, unknown>> {
-    // Read from the transparency log file if it exists
     const logPath = path.join(
-      this.workspaceRoot,
-      ".failsafe",
-      "logs",
-      "transparency.jsonl",
+      this.workspaceRoot, ".failsafe", "logs", "transparency.jsonl",
     );
     const events: Array<Record<string, unknown>> = [];
-
     try {
       if (fs.existsSync(logPath)) {
-        const content = fs.readFileSync(logPath, "utf-8");
-        const lines = content.trim().split("\n").filter(Boolean);
-        const recentLines = lines.slice(-limit);
-        for (const line of recentLines) {
-          try {
-            events.push(JSON.parse(line));
-          } catch {
-            // Skip malformed lines
-          }
+        const lines = fs.readFileSync(logPath, "utf-8").trim().split("\n").filter(Boolean);
+        for (const line of lines.slice(-limit)) {
+          try { events.push(JSON.parse(line)); } catch { /* skip malformed */ }
         }
       }
-    } catch {
-      // Return empty array on error
-    }
-
+    } catch { /* return empty */ }
     return events;
   }
 
-  /**
-   * Get the risk register from the QoreLogic risk manager.
-   */
   private getRiskRegister(): Array<Record<string, unknown>> {
-    // The RiskManager stores risks in .failsafe/risks/risks.json
     const risksPath = path.join(
-      this.workspaceRoot,
-      ".failsafe",
-      "risks",
-      "risks.json",
+      this.workspaceRoot, ".failsafe", "risks", "risks.json",
     );
-
     try {
       if (fs.existsSync(risksPath)) {
-        const content = fs.readFileSync(risksPath, "utf-8");
-        const data = JSON.parse(content);
+        const data = JSON.parse(fs.readFileSync(risksPath, "utf-8"));
         return Array.isArray(data.risks) ? data.risks : [];
       }
-    } catch {
-      // Return empty array on error
-    }
-
+    } catch { /* return empty */ }
     return [];
   }
 
   private writeRiskRegister(risks: Array<Record<string, unknown>>): void {
     const risksPath = path.join(
-      this.workspaceRoot,
-      ".failsafe",
-      "risks",
-      "risks.json",
+      this.workspaceRoot, ".failsafe", "risks", "risks.json",
     );
     const dir = path.dirname(risksPath);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(risksPath, JSON.stringify({ risks }, null, 2), "utf-8");
+  }
+
+  // ------------------------------------------------------------------
+  //  Initialization helpers
+  // ------------------------------------------------------------------
+
+  private getWorkspaceRoot(): string {
+    return path.resolve(process.cwd());
+  }
+
+  private resolveUiDir(): string {
+    const candidates = [
+      path.join(__dirname, "ui"),
+      path.resolve(__dirname, "../../src/roadmap/ui"),
+      path.resolve(__dirname, "../../../src/roadmap/ui"),
+    ];
+    for (const candidate of candidates) {
+      if (fs.existsSync(path.join(candidate, "index.html"))) return candidate;
+    }
+    return path.join(__dirname, "ui");
+  }
+
+  private resolveQoreRuntimeOptions(
+    options?: Partial<QoreRuntimeOptions>,
+  ): QoreRuntimeOptions {
+    const baseUrl = String(options?.baseUrl || "http://127.0.0.1:7777")
+      .trim().replace(/\/+$/, "");
+    return {
+      enabled: Boolean(options?.enabled),
+      baseUrl,
+      apiKey: options?.apiKey ? String(options.apiKey) : undefined,
+      timeoutMs: Math.max(500, Math.min(30000, Number(options?.timeoutMs || 4000))),
+    };
+  }
+
+  private createBrainstormService(): BrainstormService {
+    return new BrainstormService(async (prompt, payload) => {
+      const fullPrompt = `${prompt}\n\nTranscript:\n${payload}`;
+      const clean = (raw: string): string => {
+        let c = raw.trim()
+          .replace(/^```(?:json)?\s*/i, "")
+          .replace(/\s*```$/i, "");
+        const first = c.indexOf("{");
+        const last = c.lastIndexOf("}");
+        if (first >= 0 && last > first) c = c.slice(first, last + 1);
+        return c;
+      };
+      if (this.configProvider) {
+        const llm = new LLMClient(this.configProvider);
+        if (await llm.checkAvailability()) {
+          try {
+            const result = await llm.callEndpoint(fullPrompt, 60000);
+            return clean(result.response);
+          } catch (err) {
+            console.warn("[Brainstorm] Ollama callEndpoint failed:", err);
+          }
+        }
+      }
+      try {
+        const vscode = await import("vscode");
+        const models = await vscode.lm.selectChatModels();
+        if (models.length > 0) {
+          const messages = [vscode.LanguageModelChatMessage.User(fullPrompt)];
+          const chatResponse = await models[0].sendRequest(messages);
+          let text = "";
+          for await (const chunk of chatResponse.text) text += chunk;
+          return clean(text);
+        }
+      } catch { /* VS Code LM API not available */ }
+      throw new Error(
+        "No LLM available — start Ollama or enable a VS Code language model",
+      );
+    });
   }
 }

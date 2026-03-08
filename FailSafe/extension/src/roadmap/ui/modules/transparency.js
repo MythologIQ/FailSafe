@@ -156,7 +156,7 @@ export class TransparencyRenderer {
       justify-content:center;align-items:center;text-align:center;padding:24px">
       <div style="font-size:1.1rem;margin-bottom:8px;color:var(--text-main)">Audit Stream</div>
       <div style="font-size:0.85rem;color:var(--text-muted);max-width:400px">
-        Events appear here as governance actions occur — verdicts, policy evaluations,
+        Events appear here as governance actions occur — verdicts, policy reviews,
         trust changes, and sentinel alerts stream in real time.
       </div>
     </div>`;

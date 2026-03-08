@@ -1,35 +1,39 @@
-[![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.5.1?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.5.1?platform=universal)
+[![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.6.0?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.6.0?platform=universal)
 
 # MythologIQ FailSafe for VS Code
 
 FailSafe is a local-first governance extension for AI-assisted development in VS Code and Cursor. It applies deterministic checks at the editor boundary, records decisions to a local ledger, and provides dedicated surfaces for audits, checkpoints, and agent governance.
 
-**Current Release**: v4.5.1 (2026-03-07)
+**Current Release**: v4.6.0 (2026-03-08)
 
 ![FailSafe Banner](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/extension/FailSafe%20Banner.png)
 
-## What's New in v4.5.1
+## What's New in v4.6.0
 
-### Skill Discovery & Filtering
+### Section 4 Razor Decomposition
 
-- **Tag-Based Skill Filter**: Skills panel now offers type-ahead tag filtering with autocomplete suggestions, replacing the previous category chip selector.
-- **Skill Metadata Enrichment**: Each discovered skill carries normalized tags and source credit, extracted from frontmatter, filenames, and categories.
+- **ConsoleServer.ts**: 3265L decomposed to 1124L with 5 extracted route modules (Brainstorm, Checkpoint, Actions, TransparencyRisk) and 7 service modules (SkillParser, SkillFrontmatter, SkillRegistry, SkillDiscovery, SkillRanker, CheckpointStore, CheckpointUtils).
+- **stt-engine.js**: 400L decomposed to 249L with 4 extracted modules (whisper-loader, silence-timer, wake-word-listener, live-transcriber).
+- **EnforcementEngine.ts**: 250L decomposed to 122L with 4 enforcement evaluators (Observe, Assist, Enforce, IntentAutoCreator).
 
-### Mindmap & Ideation Refinements
+### Voice Brainstorm Fixes
 
-- Brainstorm module uses optional chaining and consolidated status maps for cleaner runtime behavior.
-- STT silence timer and mic device switching improved for voice-driven ideation flows.
-- Ideation buffer merge logic and prep bay staging tightened.
+- rAF batching for graph mutations prevents forced reflows during rapid node updates.
+- TTS error handling now surfaces actual error messages instead of `[object Object]`.
+- Node type taxonomy: Idea, Decision, Task, Constraint with color-coded categories.
+- Modal waveform visualizer renders via `onAnalyser` callback.
 
-### Governance Skill Cohesion
+### Release Tooling & Governance
 
-- All 19 QoreLogic skills now carry explicit next-step routing with a canonical routing table and proactive suggestion signals.
-- New `/ql-document` skill handles release metadata authoring with evidence-based claim verification.
+- Hook toggle UI in Console Settings panel with enable/disable controls.
+- Release gate now validates backlog duplicates, version summaries, and help doc markers.
+- Governance doc storage consolidated to `.failsafe/governance/` with `/ql-organize` Phase 6 compliance checking.
 
 ### Under the Hood
 
-- CI workflow consolidation: single-source VSIX build with automated proprietary content scanning.
-- Operator help docs (`COMPONENT_HELP.md`, `PROCESS_GUIDE.md`) updated to v4.5.1.
+- Socket.dev compliance: deprecated API removal and post-build pattern sanitization for clean scan scores.
+- Circular dependency between SkillRegistry and SkillDiscovery eliminated.
+- Operator help docs (`COMPONENT_HELP.md`, `PROCESS_GUIDE.md`) updated to v4.6.0.
 
 > **We'd love your review!** If FailSafe is useful to you, please leave a review on the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe) or [Open VSX](https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe). Your feedback helps other developers discover FailSafe and directly shapes its roadmap. Bug reports and feature requests welcome on [GitHub Issues](https://github.com/MythologIQ/FailSafe/issues).
 

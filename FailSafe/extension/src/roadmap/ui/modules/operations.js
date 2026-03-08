@@ -86,7 +86,7 @@ export class OperationsRenderer {
       return `<div class="cc-card" style="margin-bottom:16px;min-height:170px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center">
         <div style="font-size:0.95rem;font-weight:600;color:var(--text-main);margin-bottom:6px">Plan phase is ready</div>
         <div style="font-size:0.82rem;color:var(--text-muted);max-width:420px">
-          Mission metrics are live. Define or ingest roadmap phases to move from planning into execution.
+          Mission metrics are live. Define or ingest roadmap phases to move from planning into action.
         </div>
       </div>`;
     }

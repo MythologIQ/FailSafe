@@ -45,9 +45,46 @@ export class SettingsRenderer {
             Server: <strong>${window.location.origin}</strong></div>
         </div>
       </div>
-      ${renderVoiceSettings(this.store)}`;
+      ${renderVoiceSettings(this.store)}
+      <div class="cc-card" id="cc-hook-toggle-slot" style="margin-top:16px"></div>`;
     this.bindChips();
     bindVoiceSettings(this.container, this.store);
+    this._renderHookToggle();
+  }
+
+  async _renderHookToggle() {
+    const slot = this.container?.querySelector('#cc-hook-toggle-slot');
+    if (!slot) return;
+    try {
+      const res = await fetch('/api/hooks/status');
+      if (!res.ok) { slot.remove(); return; }
+      const { enabled } = await res.json();
+      slot.innerHTML = `
+        <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;
+          letter-spacing:0.08em;margin-bottom:8px">Claude Code Hooks</div>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" class="cc-hook-toggle" ${enabled ? 'checked' : ''} />
+          <span style="font-size:0.85rem">FailSafe governance hooks</span>
+        </label>`;
+      slot.querySelector('.cc-hook-toggle')?.addEventListener('change', (e) => {
+        this._toggleHook(e.target);
+      });
+    } catch {
+      slot.remove();
+    }
+  }
+
+  async _toggleHook(checkbox) {
+    try {
+      const r = await fetch('/api/hooks/toggle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: checkbox.checked }),
+      });
+      if (!r.ok) throw new Error(`${r.status}`);
+    } catch {
+      checkbox.checked = !checkbox.checked;
+    }
   }
 
   renderChip(theme, current) {

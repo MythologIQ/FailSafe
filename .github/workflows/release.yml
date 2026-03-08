@@ -37,6 +37,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Repository validation gate
+        shell: pwsh
+        run: ./scripts/validate.ps1 -Version ${{ github.ref_name }}
       - uses: actions/setup-node@v4
         with:
           node-version: "20"

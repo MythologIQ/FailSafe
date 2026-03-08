@@ -9,7 +9,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- Post-4.5.1 scope to be scheduled.
+- Post-4.6.0 scope to be scheduled.
+
+## [4.6.0] - 2026-03-08
+
+### Added
+
+- **Section 4 Razor Decomposition** - ConsoleServer.ts decomposed from 3265L to 1124L with 5 extracted route modules and 7 service modules. stt-engine.js decomposed from 400L to 249L with 4 extracted modules. EnforcementEngine.ts decomposed from 250L to 122L with 4 enforcement evaluators.
+- **Skill Discovery & Registry Services** - SkillParser, SkillFrontmatter, SkillRegistry, SkillDiscovery, and SkillRanker extracted as independent service modules from ConsoleServer.
+- **Checkpoint Persistence** - CheckpointStore and CheckpointUtils extracted with hash-chain verification and SQLite persistence.
+- **Hook Toggle UI** - Console Settings panel now shows governance hook status with enable/disable toggles (B107).
+- **Release Gate Enhancements** - Backlog duplicate detection, version summary checks, and COMPONENT_HELP/PROCESS_GUIDE version validation (B108, B138, B139).
+
+### Fixed
+
+- **Brainstorm canvas graph mutations** - rAF batching prevents forced reflows during rapid node updates (B119).
+- **Prep Bay TTS error handling** - Error messages now surface `err.message` instead of `[object Object]` (B120).
+- **Heuristic extractor node taxonomy** - Nodes now carry typed categories: Idea, Decision, Task, Constraint (B125).
+- **Prep Bay modal waveform** - Waveform visualizer renders via `onAnalyser` callback in modal context (B129).
+- **Brainstorm server-side truncation** - BrainstormService logs truncation events for debugging (B132).
+- **Socket.dev compliance** - Replaced deprecated `document.execCommand('copy')` with Clipboard API. Added post-build sanitization for `new Function` patterns from transitive dependencies (ajv, depd) and vendor libraries.
+- **Test type errors** - Fixed TS2345 in AssistModeEvaluator and ObserveModeEvaluator test mocks.
+
+### Changed
+
+- **Governance doc storage** - All generated governance artifacts now stored in `.failsafe/governance/` (gitignored) instead of `.agent/staging/`. `/ql-organize` Phase 6 added for location compliance.
+- **Circular dependency fix** - SkillRegistry ↔ SkillDiscovery re-export cycle eliminated via direct imports.
+
+### Documentation
+
+- Updated `docs/COMPONENT_HELP.md` and `docs/PROCESS_GUIDE.md` to reflect `v4.6.0`.
 
 ## [4.5.1] - 2026-03-07
 

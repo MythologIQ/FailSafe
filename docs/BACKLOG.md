@@ -94,7 +94,6 @@
 - [x] [B8] Implement TimelineView.ts - Gantt-style timeline ✅ | v3.0.0
 - [x] [B9] Risk markers on roadmap visualization ✅ | v3.0.0
 - [x] [B10] Milestone support in PlanManager ✅ | v3.0.0
-- [ ] [B11] UI polish and theme refinements (deferred → v4.2.0) | v4.2.0
 
 **Planning Window**
 

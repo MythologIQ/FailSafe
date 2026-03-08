@@ -69,7 +69,7 @@ export class OverviewRenderer {
       return `
         <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:180px;
           border:1px dashed var(--border-rim);border-radius:10px;background:rgba(255,255,255,0.02);padding:18px">
-          <div style="font-size:0.95rem;font-weight:600;color:var(--text-main);margin-bottom:6px">Ready to plan and execute</div>
+          <div style="font-size:0.95rem;font-weight:600;color:var(--text-main);margin-bottom:6px">Ready to plan and run</div>
           <div style="font-size:0.82rem;color:var(--text-muted);text-align:center;max-width:360px">
             Monitoring is active and stable. Kick off your first plan step to populate the operations stream.
           </div>

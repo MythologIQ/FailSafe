@@ -70,6 +70,46 @@ function preflight(version, extDir, rootDir) {
     message: `Root CHANGELOG.md contains ## [${version}]`,
   });
 
+  // 4. COMPONENT_HELP version marker (B108)
+  const chPath = path.join(extDir, "docs", "COMPONENT_HELP.md");
+  const chContent = fs.existsSync(chPath) ? fs.readFileSync(chPath, "utf8") : "";
+  checks.push({
+    name: "component-help-version",
+    pass: chContent.includes(`v${version}`),
+    message: `COMPONENT_HELP.md contains v${version}`,
+  });
+
+  // 5. PROCESS_GUIDE version marker (B108)
+  const pgPath = path.join(extDir, "docs", "PROCESS_GUIDE.md");
+  const pgContent = fs.existsSync(pgPath) ? fs.readFileSync(pgPath, "utf8") : "";
+  checks.push({
+    name: "process-guide-version",
+    pass: pgContent.includes(`v${version}`),
+    message: `PROCESS_GUIDE.md contains v${version}`,
+  });
+
+  // 6. Backlog duplicate B-items (B139)
+  const blPath = path.join(rootDir, "docs", "BACKLOG.md");
+  const blContent = fs.existsSync(blPath) ? fs.readFileSync(blPath, "utf8") : "";
+  const bNums = [];
+  for (const m of blContent.matchAll(/\[B(\d+)\]/g)) bNums.push(m[1]);
+  const dupes = bNums.filter((n, i) => bNums.indexOf(n) !== i);
+  checks.push({
+    name: "backlog-no-duplicates",
+    pass: dupes.length === 0,
+    message: dupes.length
+      ? `Duplicate B-items: ${[...new Set(dupes)].map((n) => "B" + n).join(", ")}`
+      : "No duplicate B-items",
+  });
+
+  // 7. Backlog version summary current (B139)
+  const summarySection = blContent.match(/## Version Summary[\s\S]*?(?=\n---)/);
+  checks.push({
+    name: "backlog-version-summary",
+    pass: summarySection ? summarySection[0].includes(version) : false,
+    message: `BACKLOG.md version summary includes ${version}`,
+  });
+
   const allPass = checks.every((c) => c.pass);
   return { pass: allPass, checks };
 }

@@ -3,11 +3,14 @@ import { calculateHaptics } from './haptic-engine.js';
 import { escapeHtml } from './brainstorm-templates.js';
 
 const CATEGORY_COLORS = {
-  Feature: '#4f46e5',
+  Idea: '#4f46e5',
   Architecture: '#4f46e5',
   Alignment: '#10b981',
   Risk: '#ef4444',
+  Decision: '#8b5cf6',
+  Task: '#06b6d4',
   Question: '#f59e0b',
+  Constraint: '#f97316',
   Database: '#06b6d4',
   Integration: '#f59e0b',
 };
@@ -133,8 +136,16 @@ export class BrainstormCanvas {
   }
 
   _updateGraph() {
+    if (this._updatePending) return;
+    this._updatePending = true;
+    requestAnimationFrame(() => {
+      this._updatePending = false;
+      this._applyGraphData();
+    });
+  }
+
+  _applyGraphData() {
     const haptics = calculateHaptics(this.nodes, this.edges);
-    
     this.nodes.forEach(n => {
       const h = haptics.get(n.id);
       if (h) {
@@ -145,7 +156,6 @@ export class BrainstormCanvas {
         n.strain = 0;
       }
     });
-
     this.graph.graphData({
       nodes: this.nodes,
       links: this.edges

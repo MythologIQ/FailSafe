@@ -9,7 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- Post-4.6.1 scope to be scheduled.
+- Post-4.6.2 scope to be scheduled.
+
+## [4.6.2] - 2026-03-08
+
+### Fixed
+
+- **Console Server inaccessible** — Express `sendFile()` silently returned 404 when the extension install path contained a dotfile directory (`.vscode/`, `.antigravity/`). Added `{ dotfiles: "allow" }` to all `sendFile` calls. This was a latent bug affecting all versions since the Console Server was introduced.
 
 ## [4.6.1] - 2026-03-08
 

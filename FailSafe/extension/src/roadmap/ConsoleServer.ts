@@ -180,8 +180,9 @@ export class ConsoleServer {
     this.app.get("/", (req: Request, res: Response) => {
       const file = this.getUiEntryFile(req);
       const target = path.join(this.uiDir, file);
-      if (fs.existsSync(target)) { res.sendFile(target); return; }
-      res.sendFile(path.join(this.uiDir, "command-center.html"));
+      const sendOpts = { dotfiles: "allow" as const };
+      if (fs.existsSync(target)) { res.sendFile(target, sendOpts); return; }
+      res.sendFile(path.join(this.uiDir, "command-center.html"), sendOpts);
     });
 
     this.app.get("/health", (_req: Request, res: Response) => {
@@ -394,8 +395,9 @@ export class ConsoleServer {
       }
       const file = this.getUiEntryFile(req);
       const target = path.join(this.uiDir, file);
-      if (fs.existsSync(target)) { res.sendFile(target); return; }
-      res.sendFile(path.join(this.uiDir, "command-center.html"));
+      const sendOpts = { dotfiles: "allow" as const };
+      if (fs.existsSync(target)) { res.sendFile(target, sendOpts); return; }
+      res.sendFile(path.join(this.uiDir, "command-center.html"), sendOpts);
     });
   }
 

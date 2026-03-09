@@ -299,6 +299,7 @@ Minor / UX:
 
 - [ ] [B107] Workspace Hook Toggle: Console Settings UI to enable/disable FailSafe Claude Code hooks per workspace. Toggle writes/removes `.claude/hooks/disabled` sentinel. `resolve.sh` checks sentinel before emitting hook content. ConsoleServer routes: `GET /api/hooks/status`, `POST /api/hooks/toggle`. Unifies extension settings (`failsafe.sentinel.enabled`, `failsafe.governance.mode`) with Claude Code hook layer into one control surface. | v4.5
 - [ ] [B108] Release pre-flight help doc check: `release-gate.cjs --preflight` should validate version markers in `docs/COMPONENT_HELP.md` and `docs/PROCESS_GUIDE.md` in addition to CHANGELOG/README | v4.5
+- [ ] [B140] Monitor S.H.I.E.L.D. state tracking: Monitor shows stale/wrong build phase, empty "Recently Completed", generic recommendations. Need to: (1) parse META_LEDGER.md for actual session history, (2) track /ql-* command invocations via hub events, (3) show context-aware next steps based on current phase | v4.7
 
 ## Wishlist (Nice to Have)
 

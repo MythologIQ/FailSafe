@@ -25,8 +25,9 @@ document.addEventListener('DOMContentLoaded', () => {
     settings:     new SettingsRenderer('settings', { store }),
   };
 
-  // Connection status indicator
+  // Connection status indicator + disconnection banner
   const statusEls = document.querySelectorAll('.connection-status');
+  const disconnectedBanner = document.getElementById('disconnected-banner');
   client.on('connection', (state) => {
     statusEls.forEach(el => {
       const colors = { connected: 'var(--accent-green)', connecting: 'var(--accent-gold)', disconnected: 'var(--accent-red)' };
@@ -34,6 +35,16 @@ document.addEventListener('DOMContentLoaded', () => {
       const c = colors[state] || colors.disconnected;
       el.innerHTML = `<span class="dot" style="background:${c};width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px${state === 'connecting' ? ';animation:pulse 1s infinite' : ''}"></span><span style="color:var(--text-muted);font-size:0.8rem">${labels[state] || 'Unknown'}</span>`;
     });
+    // Show/hide disconnection banner
+    if (disconnectedBanner) {
+      disconnectedBanner.style.display = state === 'disconnected' ? 'flex' : 'none';
+      if (state === 'disconnected') {
+        document.body.classList.add('workspace-disconnected');
+        loadWorkspaceRegistry();
+      } else {
+        document.body.classList.remove('workspace-disconnected');
+      }
+    }
   });
 
   // Route hub data to tickers + all renderers
@@ -144,6 +155,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const saved = store.getTheme();
   if (saved) store.setTheme(saved);
 
+  // Wire workspace isolation client reference
+  if (window.__setWorkspaceRegistryClient) {
+    window.__setWorkspaceRegistryClient(client);
+  }
+
   client.start();
 });
 
@@ -163,9 +179,16 @@ function updateTickers(data) {
     const latColor = latVal != null ? '' : 'color:var(--text-muted)';
     lat.innerHTML = `API <span style="font-family:var(--font-mono);${latColor}">${latLabel}</span>`;
   }
+  // Update workspace identity (prefer top-level workspaceName for multi-workspace isolation)
   const ws = document.querySelector('#ticker-workspace span');
-  if (ws && data.bootstrapState?.workspaceName) {
-    ws.textContent = data.bootstrapState.workspaceName;
+  const wsContainer = document.getElementById('ticker-workspace');
+  const workspaceName = data.workspaceName || data.bootstrapState?.workspaceName;
+  const workspacePath = data.workspacePath || '';
+  if (ws && workspaceName) {
+    ws.textContent = workspaceName;
+  }
+  if (wsContainer && workspacePath) {
+    wsContainer.title = workspacePath;
   }
 }
 
@@ -197,3 +220,54 @@ function updateBootstrapBanner(data) {
   }
   banner.innerHTML = html;
 }
+
+// --- Workspace Isolation: Registry loading and switching --- //
+
+let workspaceRegistryClient = null;
+
+function setWorkspaceRegistryClient(client) {
+  workspaceRegistryClient = client;
+}
+
+async function loadWorkspaceRegistry() {
+  const select = document.getElementById('workspace-select');
+  if (!select) return;
+
+  try {
+    const res = await fetch('/api/v1/workspaces');
+    if (!res.ok) return;
+    const { workspaces, current } = await res.json();
+
+    select.innerHTML = '';
+    for (const ws of workspaces) {
+      const opt = document.createElement('option');
+      opt.value = ws.port;
+      opt.textContent = ws.workspaceName;
+      opt.title = ws.workspacePath;
+      if (ws.workspacePath === current) opt.selected = true;
+      if (ws.status === 'disconnected') {
+        opt.textContent += ' (disconnected)';
+        opt.disabled = true;
+      }
+      select.appendChild(opt);
+    }
+  } catch {
+    // Registry unavailable
+  }
+}
+
+// Wire workspace selector change handler
+document.addEventListener('DOMContentLoaded', () => {
+  const select = document.getElementById('workspace-select');
+  if (select) {
+    select.addEventListener('change', (e) => {
+      const port = parseInt(e.target.value, 10);
+      if (workspaceRegistryClient && port) {
+        workspaceRegistryClient.switchServer(port);
+      }
+    });
+  }
+});
+
+// Export for connection wiring
+window.__setWorkspaceRegistryClient = setWorkspaceRegistryClient;

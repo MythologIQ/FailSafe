@@ -12,11 +12,22 @@ import { ProjectOverviewPanel } from "../genesis/panels/ProjectOverviewPanel";
 import { EventBus } from "../shared/EventBus";
 import * as http from "http";
 
-const ROADMAP_BASE_URL = "http://localhost:9376";
+// Workspace isolation: dynamic port and workspace root
+let serverPort = 9376;
+let workspaceRoot = "";
+
+export function setServerPort(port: number, wsRoot: string): void {
+  serverPort = port;
+  workspaceRoot = wsRoot;
+}
+
+function getBaseUrl(): string {
+  return `http://localhost:${serverPort}`;
+}
 
 function checkConsoleServerReady(timeoutMs = 1200): Promise<boolean> {
   return new Promise((resolve) => {
-    const req = http.get("http://localhost:9376/api/roadmap", (res) => {
+    const req = http.get(`${getBaseUrl()}/api/roadmap`, (res) => {
       res.resume();
       resolve((res.statusCode || 500) >= 200 && (res.statusCode || 500) < 400);
     });
@@ -46,7 +57,11 @@ async function waitForConsoleServerReady(
 
 async function openRoadmapExternal(view?: string): Promise<void> {
   // Open the new Command Center UI
-  const targetUrl = new URL(ROADMAP_BASE_URL);
+  const targetUrl = new URL(getBaseUrl());
+  // Add workspace identity for multi-workspace support
+  if (workspaceRoot) {
+    targetUrl.searchParams.set("workspace", workspaceRoot);
+  }
   targetUrl.searchParams.set("ui", "console");
   if (view) {
     targetUrl.searchParams.set("view", view);
@@ -82,7 +97,7 @@ async function openRoadmapExternal(view?: string): Promise<void> {
 }
 
 async function openRoadmapCompactEditor(): Promise<void> {
-  const targetUrl = new URL(ROADMAP_BASE_URL);
+  const targetUrl = new URL(getBaseUrl());
   targetUrl.searchParams.set("ui", "compact");
 
   const themeKind = vscode.window.activeColorTheme.kind;

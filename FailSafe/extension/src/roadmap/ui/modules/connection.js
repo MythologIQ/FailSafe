@@ -238,4 +238,31 @@ export class ConnectionClient {
     this.webLlmState = { ...this.webLlmState, ...status };
     this.notify('webLlmStatus', this.webLlmState);
   }
+
+  // --- Workspace isolation: switch to a different server --- //
+
+  switchServer(port) {
+    // Close existing connections
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
+    }
+    if (this.eventSource) {
+      this.eventSource.close();
+      this.eventSource = null;
+    }
+    this.clearReconnectTimer();
+    this.reconnectAttempts = 0;
+    this.useFallback = false;
+
+    // Update URLs to new port
+    this.baseUrl = `http://localhost:${port}`;
+    this.wsUrl = `ws://localhost:${port}`;
+
+    // Reassign REST API methods with new baseUrl
+    Object.assign(this, createRestApi(this.baseUrl));
+
+    // Reconnect to new server
+    this.start();
+  }
 }

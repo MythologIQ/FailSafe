@@ -891,3 +891,40 @@ select option {
   line-height: 1.2;
   opacity: 0.85;
 }
+
+/* Workspace Isolation: Disconnection Banner & Selector */
+.disconnected-banner {
+  background: rgba(255, 160, 0, 0.15);
+  border-bottom: 1px solid rgba(255, 160, 0, 0.4);
+  color: #ffb84d;
+  padding: 8px 16px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.disconnected-icon {
+  font-size: 16px;
+}
+
+.workspace-dropdown {
+  margin-left: auto;
+  background: var(--bg-deep, rgba(0, 0, 0, 0.4));
+  color: var(--text-main);
+  border: 1px solid var(--glass-border);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.workspace-dropdown:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.workspace-disconnected .tab-content {
+  opacity: 0.5;
+  pointer-events: none;
+}

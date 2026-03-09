@@ -1460,3 +1460,90 @@ _Reality = Promise: Command Center Polish + LLM Health Monitoring substantiated.
 
 _Reality = Promise: All post-seal fixes substantiated._
 _Session Status: SEALED._
+
+---
+
+## v4.6.6 Workspace Isolation — Implementation State
+
+### Ledger Trail
+
+| Entry | Phase | Verdict |
+|-------|-------|---------|
+| #225 | GATE | PASS with MODIFICATIONS |
+| #226 | IMPLEMENT | Phase 1 complete |
+| #227 | SUBSTANTIATE | SEALED |
+
+### Phase 1: Workspace Isolation (P0)
+
+**Goal**: Enable multiple VS Code windows to run FailSafe independently via dynamic port allocation and workspace identity.
+
+#### Phase 1.1 — Dynamic Port Propagation
+
+| File | Change | Status |
+|------|--------|--------|
+| `ConsoleServer.ts` | Hub snapshot: `workspaceName`, `workspacePath`, `serverPort` | DONE |
+| `bootstrapServers.ts` | `actualPort` in ServerResult, pass to sidebar | DONE |
+| `FailSafeSidebarProvider.ts` | Constructor accepts port, dynamic `baseUrl` | DONE |
+| `commands.ts` | `setServerPort()`, `getBaseUrl()` replace hardcoded 9376 | DONE |
+| `main.ts` | Wire `setServerPort` after bootstrap | DONE |
+
+#### Phase 1.2 — Server Registry
+
+| File | Lines | Purpose | Status |
+|------|-------|---------|--------|
+| `ServerRegistry.ts` | 105 | Multi-workspace registry with atomic writes | NEW |
+| `ConsoleServer.ts` | +28 | Register on start, mark disconnected on stop | DONE |
+| `ConsoleServer.ts` | - | `/api/v1/workspaces` endpoint | DONE |
+
+#### Phase 1.3 — Disconnection Handling
+
+| File | Change | Status |
+|------|--------|--------|
+| `connection.js` | `switchServer(port)` method | DONE |
+| `command-center.html` | Disconnection banner, workspace selector | DONE |
+| `command-center.css` | Banner + dropdown styles | DONE |
+| `command-center.js` | Connection state handler, `loadWorkspaceRegistry()` | DONE |
+
+### Unit Tests
+
+| File | Tests | Status |
+|------|-------|--------|
+| `ServerRegistry.test.ts` | 8 (register, unregister, markDisconnected, readRegistry, stale PID) | NEW |
+
+### Gate Modifications Applied
+
+| Modification | Status |
+|--------------|--------|
+| BACKLOG.md: B111, B112, B114, B117 marked FIXED | DONE |
+| plan-v4.6.6-consolidated.md: Phase 4 marked OBSOLETE | DONE |
+
+### Section 4 Razor Compliance
+
+| File | Lines | Limit | Status |
+|------|-------|-------|--------|
+| ServerRegistry.ts | 105 | 250 | PASS |
+| ServerRegistry.test.ts | 210 | 250 | PASS |
+
+Pre-existing tech debt (not introduced by this plan):
+- ConsoleServer.ts: 1218 lines
+- commands.ts: 630 lines
+- roadmap.js: 515 lines
+
+### Reality vs Blueprint
+
+| Blueprint Item | Status |
+|----------------|--------|
+| ServerRegistry.ts | EXISTS |
+| Dynamic port in hub snapshot | EXISTS |
+| Workspace identity in Command Center | EXISTS |
+| Server registry at `~/.failsafe/servers.json` | EXISTS |
+| Workspace selector dropdown | EXISTS |
+| Disconnection banner | EXISTS |
+| `switchServer()` method | EXISTS |
+
+**Verdict**: Reality = Promise. Phase 1 Workspace Isolation substantiated.
+
+---
+
+_Chain Status: IMPLEMENTATION COMPLETE_
+_Next: Remaining phases (Phase 2: Command Center Verification, Phase 3: Monitor S.H.I.E.L.D. Tracking) deferred to next session_

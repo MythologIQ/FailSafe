@@ -61,6 +61,11 @@ import {
   inferPhaseKeyFromPlan,
   CHECKPOINT_INIT_SQL,
 } from "./services/CheckpointStore";
+import {
+  registerServer,
+  markDisconnected,
+  readRegistry,
+} from "./services/ServerRegistry";
 
 const PORT = 9376;
 const HOST = "127.0.0.1";
@@ -211,6 +216,15 @@ export class ConsoleServer {
 
     this.app.get("/api/hub", async (_req: Request, res: Response) => {
       res.json(await this.buildHubSnapshot());
+    });
+
+    // Workspace isolation: return server registry for workspace selector
+    this.app.get("/api/v1/workspaces", (_req: Request, res: Response) => {
+      const workspaces = readRegistry();
+      res.json({
+        workspaces,
+        current: this.getWorkspaceRoot(),
+      });
     });
 
     this.registerQoreRoutes();
@@ -806,6 +820,10 @@ export class ConsoleServer {
         ),
         workspaceName: path.basename(this.getWorkspaceRoot()),
       },
+      // Workspace isolation: identity for multi-workspace support
+      workspaceName: path.basename(this.getWorkspaceRoot()),
+      workspacePath: this.getWorkspaceRoot(),
+      serverPort: this.actualPort,
       generatedAt: new Date().toISOString(),
     };
   }
@@ -875,6 +893,14 @@ export class ConsoleServer {
       console.log(`Roadmap server: http://localhost:${this.actualPort}`);
     });
     this.setupWebSocket();
+    // Register in multi-workspace server registry
+    registerServer({
+      port: this.actualPort,
+      workspaceName: path.basename(this.getWorkspaceRoot()),
+      workspacePath: this.getWorkspaceRoot(),
+      pid: process.pid,
+      startedAt: new Date().toISOString(),
+    });
     this.recordCheckpoint({
       checkpointType: "snapshot.created",
       actor: "system",
@@ -887,6 +913,8 @@ export class ConsoleServer {
   }
 
   stop(): void {
+    // Mark as disconnected (not unregister) so workspace remains visible
+    markDisconnected(this.actualPort);
     this.wss?.close();
     this.server?.close();
   }

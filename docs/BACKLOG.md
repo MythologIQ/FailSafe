@@ -231,19 +231,19 @@ _Source: Code audit 2026-03-07. All line references against current working tree
 
 Security:
 
-- [ ] [B111] XSS via LLM-extracted node labels: `brainstorm-canvas.js` passes raw `node.label` to ForceGraph3D without escaping. `escapeHtml()` exists in `brainstorm-templates.js` but is not applied in `web-llm-engine.js` or `heuristic-extractor.js` at node creation time | v4.6.0
+- [x] [B111] XSS via LLM-extracted node labels: `brainstorm-canvas.js` passes raw `node.label` to ForceGraph3D without escaping. `escapeHtml()` exists in `brainstorm-templates.js` but is not applied in `web-llm-engine.js` or `heuristic-extractor.js` at node creation time | v4.6.0 (v4.6.6 - Fixed: escapeHtml() applied at brainstorm-canvas.js:65)
 
 Resource Leaks:
 
-- [ ] [B112] Window event listeners leak in `brainstorm.js`: `failsafe:audio-device-changed` and `failsafe:wake-word-changed` listeners bound but never removed in `destroy()` — duplicates accumulate on tab switch | v4.6.0
+- [x] [B112] Window event listeners leak in `brainstorm.js`: `failsafe:audio-device-changed` and `failsafe:wake-word-changed` listeners bound but never removed in `destroy()` — duplicates accumulate on tab switch | v4.6.0 (v4.6.6 - Fixed: handlers removed in destroy() at brainstorm.js:241-243)
 - [ ] [B113] Modal keydown handler leak in `prep-bay.js`: `document.addEventListener('keydown', escHandler)` in `openModal()` never removed on close — stacks on repeated open/close | v4.6.0
-- [ ] [B114] MediaStream not released on failure in `stt-engine.js`: if `MediaRecorder` construction fails after `getUserMedia()` succeeds, `_releaseStream()` is never called — locks microphone | v4.6.0
+- [x] [B114] MediaStream not released on failure in `stt-engine.js`: if `MediaRecorder` construction fails after `getUserMedia()` succeeds, `_releaseStream()` is never called — locks microphone | v4.6.0 (v4.6.6 - Fixed: _releaseStream() called in _createRecorder() catch at stt-engine.js:188-191)
 - [ ] [B115] AudioContext leak in `stt-engine.js` `_stopWhisper()`: `ctx.close()` not in finally block — skipped if `decodeAudioData()` throws | v4.6.0
 - [ ] [B116] Web LLM native AI session never destroyed: `web-llm-engine.js` creates `ai.languageModel` sessions but has no `destroy()` — sessions accumulate across extractions | v4.6.0
 
 State Management / Race Conditions:
 
-- [ ] [B117] Rapid mic toggle race condition: `voice-controller.js` `toggle()` doesn't debounce — clicking twice fast causes `startListening()` while `stopListening()` is still async mid-flight | v4.6.0
+- [x] [B117] Rapid mic toggle race condition: `voice-controller.js` `toggle()` doesn't debounce — clicking twice fast causes `startListening()` while `stopListening()` is still async mid-flight | v4.6.0 (v4.6.6 - Fixed: _toggling guard added at voice-controller.js:62)
 - [ ] [B118] STT callback references not nulled on destroy: `stt-engine.js` stores `onTranscript`, `onStateChange`, `onAutoStop`, etc. but never clears them — stale closures can fire into destroyed modules | v4.6.0
 - [ ] [B119] Graph mutation during render: `brainstorm.js` proxies `canvas.setNodes` with no mutex — concurrent `mergeNodes()` and render frame can collide | v4.6.0
 

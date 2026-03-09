@@ -45,8 +45,12 @@ $claudeAgentsRoot = Join-Path $repo ".claude\agents"
 
 $script:Failures = @()
 
-Assert-Condition -Condition (Test-Path $claudeSkillsRoot) -Message "Missing canonical skills root: $claudeSkillsRoot"
-Assert-Condition -Condition (Test-Path $claudeAgentsRoot) -Message "Missing canonical agents root: $claudeAgentsRoot"
+# .claude/ is gitignored for proprietary content - validation is optional when not present
+if (-not (Test-Path $claudeSkillsRoot) -or -not (Test-Path $claudeAgentsRoot)) {
+  Write-Host "[SKIP] Skill validation skipped - .claude/ directory not present (gitignored)" -ForegroundColor Yellow
+  Write-Host "       Skills are validated locally, not in CI (proprietary content policy)"
+  exit 0
+}
 
 # Validate skill structure
 $claudeSkills = Get-ActiveSkillDirs -Root $claudeSkillsRoot

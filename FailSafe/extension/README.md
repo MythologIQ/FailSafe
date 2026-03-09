@@ -25,6 +25,7 @@ Cross-agent skill consolidation — all SHIELD skills migrated from legacy `.cla
 
 ## What's New in v4.6.4
 
+
 Governance state integrity remediation — trust data that was transient or fabricated is now persisted, verified, and kept in sync.
 
 ### Fixes

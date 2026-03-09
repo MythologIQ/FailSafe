@@ -44,6 +44,7 @@ export class BrainstormRenderer {
     this.webLlm.onProgress = () => {
       this.client?.setWebLlmStatus({
         nativeAvailable: this.webLlm.isNativeAiAvailable,
+        nativeUnavailableReason: this.webLlm.nativeUnavailableReason,
         wasmReady: !!this.webLlm.pipeline,
         loading: this.webLlm.loadingStatus === 'loading' || this.webLlm.loadingStatus === 'downloading'
       });

@@ -20,13 +20,15 @@ export class ConnectionClient {
     const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
     const isEdge = /Edg/.test(navigator.userAgent);
     
-    this.webLlmState = { 
-      nativeAvailable: false, 
-      wasmReady: false, 
+    this.webLlmState = {
+      nativeAvailable: false,
+      nativeUnavailableReason: null,  // 'no-api' | 'not-supported' | 'probe-error' | null
+      wasmReady: false,
       loading: false,
       browserSupported: isChrome || isEdge
     };
 
+    this.lastHubData = null;  // Cache for tab switches
     this.ws = null;
     this.eventSource = null;
     this.state = 'disconnected';
@@ -206,10 +208,10 @@ export class ConnectionClient {
       const res = await fetch(`${this.baseUrl}/api/hub`);
       if (!res.ok) throw new Error(`Hub request failed (${res.status})`);
       const payload = await res.json();
+      this.lastHubData = payload;  // Cache for tab switches
       this.notify('hub', payload);
       return payload;
     } catch (error) {
-      console.error("Failed to load hub data:", error);
       return null;
     }
   }

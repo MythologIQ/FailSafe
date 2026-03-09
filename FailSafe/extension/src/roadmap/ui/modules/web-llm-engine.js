@@ -55,6 +55,7 @@ export class WebLlmEngine {
 
         // Native AI (Chromium Gemini Nano)
         this.isNativeAiAvailable = false;
+        this.nativeUnavailableReason = null; // 'no-api' | 'not-supported' | 'probe-error' | null
         this.nativeModel = null;
         this.onStatusChange = null; // callback for UI updates
     }
@@ -64,13 +65,17 @@ export class WebLlmEngine {
         try {
             const ai = globalThis.ai || globalThis.model;
             const lm = ai?.languageModel || ai?.assistant;
-            if (!lm) return false;
+            if (!lm) {
+                this.nativeUnavailableReason = 'no-api';
+                return false;
+            }
 
             const status = await lm.capabilities();
             console.info('FailSafe WebLLM: Native AI capabilities =', status.available);
 
             if (status.available === 'readily') {
                 this.isNativeAiAvailable = true;
+                this.nativeUnavailableReason = null;
                 this._nativeLmFactory = lm;
                 this.isReady = true;
                 this.loadingStatus = 'ready';
@@ -88,14 +93,21 @@ export class WebLlmEngine {
                 }});
                 session.destroy();
                 this.isNativeAiAvailable = true;
+                this.nativeUnavailableReason = null;
                 this._nativeLmFactory = lm;
                 this.isReady = true;
                 this.loadingStatus = 'ready';
                 this.onStatusChange?.('native-found');
                 return true;
             }
+            if (status.available === 'no') {
+                console.info('FailSafe WebLLM: Gemini Nano not supported on this hardware.');
+                this.nativeUnavailableReason = 'not-supported';
+                return false;
+            }
         } catch (err) {
             console.info('FailSafe WebLLM: Native AI probe failed:', err.message);
+            this.nativeUnavailableReason = 'probe-error';
         }
         return false;
     }

@@ -119,7 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Initial render for tab activation
       const renderer = renderers[targetId];
-      if (renderer) renderer.render?.({});
+      if (renderer) renderer.render?.(client.lastHubData || {});
       
       store.setActiveTab(targetId);
     });

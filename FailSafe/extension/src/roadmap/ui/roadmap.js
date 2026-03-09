@@ -140,15 +140,22 @@ class WebPanelClient {
 
   getPhaseInfo(plan) {
     const runState = this.hub?.runState;
-    if (runState && runState.currentPhase !== 'Plan') {
+
+    // If IDE is actively debugging or building, that takes precedence
+    if (runState && runState.currentPhase && runState.currentPhase !== 'Plan') {
       const title = runState.currentPhase;
       const normalized = title.toLowerCase();
-      let index = 2;
+      let index = 0;  // Default to Plan index
+
       if (normalized.startsWith('debug')) index = 3;
-      else if (normalized.startsWith('build')) index = 2;
+      else if (normalized.startsWith('build') || normalized.includes('implement')) index = 2;
+      else if (normalized.includes('audit') || normalized.includes('review')) index = 1;
+      else if (normalized.includes('substantiat') || normalized.includes('release')) index = 4;
+
       return { title, index };
     }
 
+    // Fall back to plan phase data
     const phases = Array.isArray(plan?.phases) ? plan.phases : [];
     const active = phases.find((phase) => phase.id === plan?.currentPhaseId)
       || phases.find((phase) => phase.status === 'active')
@@ -158,6 +165,7 @@ class WebPanelClient {
     const title = String(active?.title || 'Plan');
     const normalized = title.toLowerCase();
     let index = 0;
+
     if (normalized.includes('substantiat') || normalized.includes('release')) index = 4;
     else if (normalized.includes('debug') || normalized.includes('fix')) index = 3;
     else if (normalized.includes('implement') || normalized.includes('build')) index = 2;

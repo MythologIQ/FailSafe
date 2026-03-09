@@ -154,46 +154,53 @@ function Validate-ReliabilityHardening {
     Assert-PathExists -RelativePath $item.Path -Rule $item.Rule
   }
 
-  $qlImplementWorkflows = @(
-    "FailSafe/Antigravity/skills/ql-implement/SKILL.md"
-  )
+  # Skill content validation: .claude/ is gitignored for proprietary content
+  # These checks run locally but are skipped in CI where .claude/ is not present
+  $claudeSkillsRoot = Join-Path $repoRoot ".claude/skills"
+  if (Test-Path $claudeSkillsRoot) {
+    $qlImplementWorkflows = @(
+      ".claude/skills/ql-implement/SKILL.md"
+    )
 
-  foreach ($workflow in $qlImplementWorkflows) {
-    Assert-FileContains `
-      -RelativePath $workflow `
-      -Pattern "Step 5\.6: Intent Lock Interdiction \(B51\)" `
-      -Rule "ql-implement missing B51 interdiction"
+    foreach ($workflow in $qlImplementWorkflows) {
+      Assert-FileContains `
+        -RelativePath $workflow `
+        -Pattern "Step 5\.6: Intent Lock Interdiction \(B51\)" `
+        -Rule "ql-implement missing B51 interdiction"
 
-    Assert-FileContains `
-      -RelativePath $workflow `
-      -Pattern "Step 5\.7: Skill Admission Interdiction \(B49\)" `
-      -Rule "ql-implement missing B49 interdiction"
+      Assert-FileContains `
+        -RelativePath $workflow `
+        -Pattern "Step 5\.7: Skill Admission Interdiction \(B49\)" `
+        -Rule "ql-implement missing B49 interdiction"
 
-    Assert-FileContains `
-      -RelativePath $workflow `
-      -Pattern "Step 5\.8: Gate-to-Skill Matrix Interdiction \(B50\)" `
-      -Rule "ql-implement missing B50 interdiction"
-  }
+      Assert-FileContains `
+        -RelativePath $workflow `
+        -Pattern "Step 5\.8: Gate-to-Skill Matrix Interdiction \(B50\)" `
+        -Rule "ql-implement missing B50 interdiction"
+    }
 
-  $qlSubstantiateWorkflows = @(
-    "FailSafe/Antigravity/skills/ql-substantiate/SKILL.md"
-  )
+    $qlSubstantiateWorkflows = @(
+      ".claude/skills/ql-substantiate/SKILL.md"
+    )
 
-  foreach ($workflow in $qlSubstantiateWorkflows) {
-    Assert-FileContains `
-      -RelativePath $workflow `
-      -Pattern "validate-reliability-run\.ps1" `
-      -Rule "ql-substantiate missing reliability-run validator gate"
+    foreach ($workflow in $qlSubstantiateWorkflows) {
+      Assert-FileContains `
+        -RelativePath $workflow `
+        -Pattern "validate-reliability-run\.ps1" `
+        -Rule "ql-substantiate missing reliability-run validator gate"
 
-    Assert-FileContains `
-      -RelativePath $workflow `
-      -Pattern "Step 4\.6: Skill Admission Evidence Check \(B49\)" `
-      -Rule "ql-substantiate missing B49 evidence check"
+      Assert-FileContains `
+        -RelativePath $workflow `
+        -Pattern "Step 4\.6: Skill Admission Evidence Check \(B49\)" `
+        -Rule "ql-substantiate missing B49 evidence check"
 
-    Assert-FileContains `
-      -RelativePath $workflow `
-      -Pattern "Step 4\.7: Gate-to-Skill Matrix Evidence Check \(B50\)" `
-      -Rule "ql-substantiate missing B50 evidence check"
+      Assert-FileContains `
+        -RelativePath $workflow `
+        -Pattern "Step 4\.7: Gate-to-Skill Matrix Evidence Check \(B50\)" `
+        -Rule "ql-substantiate missing B50 evidence check"
+    }
+  } else {
+    Write-Log "Skipping skill content validation - .claude/ not present (gitignored)" -Level Warning
   }
 }
 

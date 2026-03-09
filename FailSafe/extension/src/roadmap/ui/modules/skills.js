@@ -1,5 +1,6 @@
 // FailSafe Command Center — Skills & Intent Renderer
 // Intent shell, ingest toolbar, 4-tab browser, category chips, skill card grid.
+import { escHtml, displayTag, skillTags } from './skill-utils.js';
 
 const SKILL_TABS = ['Recommended', 'All Relevant', 'Installed', 'Other'];
 
@@ -69,11 +70,11 @@ export class SkillsRenderer {
   }
 
   renderCategoryChips() {
-    const activeLabel = this.activeCat === 'All' ? '' : this.displayTag(this.activeCat);
+    const activeLabel = this.activeCat === 'All' ? '' : displayTag(this.activeCat);
     return `
       <div class="cc-tag-filter" style="position:relative;margin-bottom:12px;display:flex;gap:6px;align-items:center">
         <input class="cc-tag-input" type="text" placeholder="Filter by tag\u2026"
-          value="${this.esc(activeLabel)}"
+          value="${escHtml(activeLabel)}"
           style="flex:1;max-width:260px;padding:6px 10px;background:var(--bg-dark);color:var(--text-main);
             border:1px solid var(--border-rim);border-radius:6px;font-size:0.8rem;font-family:var(--font-body)">
         ${this.activeCat !== 'All' ? `<button class="cc-btn cc-tag-clear" style="font-size:0.75rem;padding:4px 8px">Clear</button>` : ''}
@@ -88,7 +89,7 @@ export class SkillsRenderer {
     const pool = this.activeTab === 'Installed' ? this.skills.filter(s => s.installed)
       : this.activeTab === 'Other' ? this.skills.filter(s => !s.installed)
       : this.skills;
-    return Array.from(new Set(pool.flatMap(s => this.skillTags(s)))).sort();
+    return Array.from(new Set(pool.flatMap(s => skillTags(s)))).sort();
   }
 
   bindEvents() {
@@ -141,16 +142,16 @@ export class SkillsRenderer {
       const matches = this.getAvailableTags().filter(t => t.includes(q));
       if (!matches.length) { sugBox.style.display = 'none'; return; }
       sugBox.innerHTML = matches.map(t =>
-        `<div class="cc-tag-option" data-tag="${this.esc(t)}"
+        `<div class="cc-tag-option" data-tag="${escHtml(t)}"
           style="padding:6px 10px;cursor:pointer;font-size:0.8rem;color:var(--text-main)"
           onmouseenter="this.style.background='var(--primary)'"
-          onmouseleave="this.style.background='transparent'">${this.esc(this.displayTag(t))}</div>`
+          onmouseleave="this.style.background='transparent'">${escHtml(displayTag(t))}</div>`
       ).join('');
       sugBox.style.display = 'block';
       sugBox.querySelectorAll('.cc-tag-option').forEach(opt => {
         opt.addEventListener('click', () => {
           this.activeCat = opt.dataset.tag;
-          input.value = this.displayTag(opt.dataset.tag);
+          input.value = displayTag(opt.dataset.tag);
           sugBox.style.display = 'none';
           this.reRenderCategoryChips();
           this.renderCards();
@@ -193,22 +194,22 @@ export class SkillsRenderer {
   }
 
   renderCard(s) {
-    const tags = this.skillTags(s).slice(0, 3);
+    const tags = skillTags(s).slice(0, 3);
     const sourceCredit = s.sourceCredit || s.creator || '';
     const normalizedId = s.id || s.key || '';
     return `
       <div class="cc-card" style="padding:12px">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
-          <strong style="font-size:0.9rem">${this.esc(s.name || s.displayName || s.id || 'Skill')}</strong>
+          <strong style="font-size:0.9rem">${escHtml(s.name || s.displayName || s.id || 'Skill')}</strong>
           <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">
-            ${tags.map(tag => `<span class="cc-badge" style="background:var(--primary);color:#fff">${this.esc(this.displayTag(tag))}</span>`).join('')}
+            ${tags.map(tag => `<span class="cc-badge" style="background:var(--primary);color:#fff">${escHtml(displayTag(tag))}</span>`).join('')}
           </div>
         </div>
         <div style="color:var(--text-muted);font-size:0.8rem;margin-top:4px">
-          ${this.esc((s.description || s.desc || '').slice(0, 100))}
+          ${escHtml((s.description || s.desc || '').slice(0, 100))}
         </div>
-        ${normalizedId ? `<div style="margin-top:4px"><span style="font-size:0.65rem;color:var(--text-muted)">ID: ${this.esc(normalizedId)}</span></div>` : ''}
-        ${sourceCredit ? `<div style="margin-top:4px"><span style="font-size:0.65rem;color:var(--text-muted)">Source: ${this.esc(sourceCredit)}</span></div>` : ''}
+        ${normalizedId ? `<div style="margin-top:4px"><span style="font-size:0.65rem;color:var(--text-muted)">ID: ${escHtml(normalizedId)}</span></div>` : ''}
+        ${sourceCredit ? `<div style="margin-top:4px"><span style="font-size:0.65rem;color:var(--text-muted)">Source: ${escHtml(sourceCredit)}</span></div>` : ''}
       </div>`;
   }
 
@@ -219,21 +220,12 @@ export class SkillsRenderer {
     else if (this.activeTab === 'Installed') pool = this.skills.filter(s => s.installed);
     else pool = this.skills.filter(s => !s.installed);
     if (this.activeCat !== 'All') {
-      pool = pool.filter(s => this.skillTags(s).includes(this.activeCat));
+      pool = pool.filter(s => skillTags(s).includes(this.activeCat));
     }
     return pool;
   }
 
   onEvent() {}
-  esc(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
-  displayTag(tag) { return String(tag || '').replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase()); }
-  skillTags(skill) {
-    const tags = Array.isArray(skill?.tags) ? skill.tags : [];
-    const fallback = skill?.category ? [skill.category] : [];
-    return Array.from(new Set([...tags, ...fallback]
-      .map(v => String(v || '').trim().toLowerCase().replace(/\s+/g, '-'))
-      .filter(v => v && v !== 'general')));
-  }
 
   renderRightPanel() {
     return `

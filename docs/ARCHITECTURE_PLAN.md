@@ -338,8 +338,9 @@ These files existed before the Razor contract was adopted. They are acknowledged
 | `qorelogic/planning/events.ts` | 63 (applyEvent) | 353 | File +103, Fn +23 | No growth. applyEvent switch must be decomposed. |
 | `qorelogic/planning/types.ts` | 0 (types only) | 282 | File +32 | No growth. Type-only file; split when next type group added. |
 | `genesis/views/RoadmapViewProvider.ts` | 54 (getStyles) | 350 | File +100, Fn +14 | No growth. getStyles must be extracted to CSS constant. |
+| `roadmap/ui/roadmap.js` | 35 (getPhaseInfo) | 507 | File +257 | No growth. File must be decomposed before next feature addition. |
 
-All values measured via `wc -l` and manual method-boundary counting on 2026-03-05.
+All values measured via `wc -l` and manual method-boundary counting on 2026-03-09.
 
 ---
 

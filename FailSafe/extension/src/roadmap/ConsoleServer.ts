@@ -66,6 +66,14 @@ import {
   markDisconnected,
   readRegistry,
 } from "./services/ServerRegistry";
+import {
+  buildGovernanceState,
+  type GovernanceState,
+} from "./services/GovernancePhaseTracker";
+import {
+  auditWorkspace,
+  type ComplianceReport,
+} from "./services/RepoGovernanceService";
 
 const PORT = 9376;
 const HOST = "127.0.0.1";
@@ -824,8 +832,61 @@ export class ConsoleServer {
       workspaceName: path.basename(this.getWorkspaceRoot()),
       workspacePath: this.getWorkspaceRoot(),
       serverPort: this.actualPort,
+      // S.H.I.E.L.D. governance phase tracking
+      governancePhase: this.buildGovernancePhase(),
+      // Repository governance compliance
+      repoCompliance: this.buildRepoCompliance(),
       generatedAt: new Date().toISOString(),
     };
+  }
+
+  private buildGovernancePhase(): GovernanceState {
+    const ledgerPath = path.join(this.getWorkspaceRoot(), "docs", "META_LEDGER.md");
+    if (!fs.existsSync(ledgerPath)) {
+      return { current: "IDLE", recentCompletions: [], nextSteps: [], activeAlerts: [] };
+    }
+    try {
+      const content = fs.readFileSync(ledgerPath, "utf-8");
+      return buildGovernanceState(content);
+    } catch {
+      return { current: "IDLE", recentCompletions: [], nextSteps: [], activeAlerts: [] };
+    }
+  }
+
+  private buildRepoCompliance(): {
+    score: number;
+    maxScore: number;
+    percentage: number;
+    grade: string;
+    errors: number;
+    warnings: number;
+    topViolations: Array<{ message: string; severity: string }>;
+  } {
+    try {
+      const report = auditWorkspace(this.getWorkspaceRoot());
+      return {
+        score: report.score,
+        maxScore: report.maxScore,
+        percentage: report.percentage,
+        grade: report.grade,
+        errors: report.summary.errors,
+        warnings: report.summary.warnings,
+        topViolations: report.violations
+          .filter((v) => v.severity !== "info")
+          .slice(0, 5)
+          .map((v) => ({ message: v.message, severity: v.severity })),
+      };
+    } catch {
+      return {
+        score: 0,
+        maxScore: 100,
+        percentage: 0,
+        grade: "F",
+        errors: 0,
+        warnings: 0,
+        topViolations: [],
+      };
+    }
   }
 
   private buildTrustSummary(

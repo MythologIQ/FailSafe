@@ -296,7 +296,7 @@ test('US: operations actions post to API endpoints', async ({ page }) => {
   expect(called).toContain('/api/actions/verify-integrity');
 });
 
-test('US: Monitor compact layout keeps 4 workspace tiles in 2x2 at sidebar width', async ({ page }) => {
+test('US: Monitor compact layout keeps workspace tiles in grid at sidebar width', async ({ page }) => {
   const root = path.resolve(__dirname, '../../roadmap/ui');
   const server = http.createServer((req, res) => {
     const requestPath = decodeURIComponent((req.url || '/').split('?')[0]);
@@ -322,7 +322,8 @@ test('US: Monitor compact layout keeps 4 workspace tiles in 2x2 at sidebar width
     await page.setViewportSize({ width: 320, height: 900 });
     await page.goto(`http://127.0.0.1:${address.port}/index.html?theme=dark`);
     const tiles = page.locator('.health-grid .health-item');
-    await expect(tiles).toHaveCount(4);
+    // 5 tiles: trust, gates, intents, checkpoints, compliance
+    await expect(tiles).toHaveCount(5);
 
     const boxes = await tiles.evaluateAll((nodes) =>
       nodes.map((node) => {
@@ -331,7 +332,8 @@ test('US: Monitor compact layout keeps 4 workspace tiles in 2x2 at sidebar width
       }),
     );
     const rowKeys = Array.from(new Set(boxes.map((box) => Math.round(box.y / 10) * 10)));
-    expect(rowKeys.length).toBe(2);
+    // 5 tiles at 2-column layout = 3 rows (2+2+1)
+    expect(rowKeys.length).toBe(3);
   } finally {
     if (typeof (server as { closeAllConnections?: () => void }).closeAllConnections === 'function') {
       (server as { closeAllConnections: () => void }).closeAllConnections();

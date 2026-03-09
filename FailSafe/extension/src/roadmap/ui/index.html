@@ -38,6 +38,7 @@
             <div id="next-step" class="flow-copy flow-copy-action">Continue the active build phase.</div>
           </div>
         </div>
+        <div id="governance-alerts" class="governance-alerts hidden"></div>
       </section>
 
       <section class="card">
@@ -60,30 +61,37 @@
           <span class="eyebrow">Workspace Health</span>
         </header>
         <div class="health-grid">
-          <article class="health-item">
-            <div class="health-label">Critical Blockers</div>
+          <article class="health-item" data-metric="blockers">
+            <div class="health-label">Critical Blockers <span class="info-icon" title="Click for details">?</span></div>
             <div id="health-blockers" class="health-number">0</div>
-            <div id="blockers-graphic" class="rainbow-bar" title="Critical blockers across active phases."><span id="blocker-bar"></span></div>
+            <div id="blockers-graphic" class="rainbow-bar"><span id="blocker-bar"></span></div>
           </article>
 
-          <article class="health-item">
-            <div class="health-label">Unverified Changes</div>
+          <article class="health-item" data-metric="unverified">
+            <div class="health-label">Unverified Changes <span class="info-icon" title="Click for details">?</span></div>
             <div class="bucket-wrap">
-              <div id="bucket-shell" class="bucket-shell" title="Estimated backlog of unverified changes."><div id="bucket-fill" class="bucket-fill" style="height:0%"></div></div>
+              <div id="bucket-shell" class="bucket-shell"><div id="bucket-fill" class="bucket-fill" style="height:0%"></div></div>
             </div>
             <div id="bucket-text" class="tiny">0% Full</div>
           </article>
 
-          <article class="health-item">
-            <div class="health-label">Error Budget Burn</div>
-            <div id="gauge-wrap" class="gauge-wrap" title="Composite burn rate from blockers, queue, and risk verdicts."><svg viewBox="0 0 100 55" class="gauge"><path d="M 10 50 A 40 40 0 0 1 90 50" class="gauge-bg"></path><path id="gauge-value" d="M 10 50 A 40 40 0 0 1 90 50" class="gauge-value"></path></svg></div>
+          <article class="health-item" data-metric="errorbudget">
+            <div class="health-label">Error Budget Burn <span class="info-icon" title="Click for details">?</span></div>
+            <div id="gauge-wrap" class="gauge-wrap"><svg viewBox="0 0 100 55" class="gauge"><path d="M 10 50 A 40 40 0 0 1 90 50" class="gauge-bg"></path><path id="gauge-value" d="M 10 50 A 40 40 0 0 1 90 50" class="gauge-value"></path></svg></div>
             <div id="error-budget" class="health-number small">0%</div>
           </article>
 
-          <article class="health-item">
-            <div class="health-label">Policy Trend</div>
-            <div id="trend-slider" class="slider" title="Recent policy-signal trend from PASS/WARN/BLOCK verdict mix."><div id="trend-fill" class="slider-fill"></div><div id="trend-thumb" class="slider-thumb"></div></div>
+          <article class="health-item" data-metric="trend">
+            <div class="health-label">Policy Trend <span class="info-icon" title="Click for details">?</span></div>
+            <div id="trend-slider" class="slider"><div id="trend-fill" class="slider-fill"></div><div id="trend-thumb" class="slider-thumb"></div></div>
             <div id="policy-trend" class="health-number small">0%</div>
+          </article>
+
+          <article class="health-item" data-metric="compliance">
+            <div class="health-label">Repo Compliance <span class="info-icon" title="Click for details">?</span></div>
+            <div id="compliance-grade" class="compliance-grade">-</div>
+            <div id="compliance-bar" class="compliance-bar"><span id="compliance-fill"></span></div>
+            <div id="compliance-score" class="tiny">0%</div>
           </article>
         </div>
       </section>

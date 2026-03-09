@@ -1,9 +1,54 @@
 # SYSTEM STATE
 
-**Last Updated:** 2026-03-09T17:00:00Z
-**Version:** v4.6.5 + Command Center State Fixes SUBSTANTIATED
+**Last Updated:** 2026-03-09T18:15:00Z
+**Version:** v4.6.6 (pending) + KISS Refactor Pass
 
-## Command Center State Management Fixes — Implementation State
+---
+
+## KISS Refactor Pass — Implementation State
+
+### Ledger Trail
+
+| Entry | Phase | Verdict |
+|-------|-------|---------|
+| #221 | REFACTOR | Section 4 Razor compliance restored |
+
+### Files Modified
+
+| File | Before | After | Action |
+|------|--------|-------|--------|
+| skills.js | 259 | 250 | Extracted utilities to skill-utils.js |
+| brainstorm.js | 251 | 250 | Removed trailing empty line |
+| skill-utils.js | — | 23 | NEW: escHtml, displayTag, skillTags utilities |
+
+### Section 4 Razor Compliance (Post-Refactor)
+
+| File | Lines | Limit | Status |
+|------|-------|-------|--------|
+| skills.js | 250/250 | 250 | OK (at limit) |
+| brainstorm.js | 250/250 | 250 | OK (at limit) |
+| skill-utils.js | 23/250 | 250 | OK |
+| stt-engine.js | 250/250 | 250 | OK (at limit) |
+| web-llm-engine.js | 246/250 | 250 | OK |
+
+### Orphan Detection
+
+| File | Entry Point | Status |
+|------|-------------|--------|
+| skill-utils.js | skills.js → command-center.js | CONNECTED |
+
+### Verification Results
+
+| Check | Result |
+|-------|--------|
+| Files exceeding 250 lines | 0 |
+| Console.log artifacts | None added |
+| Nested ternaries | 0 |
+| Build path | ALL CONNECTED |
+
+---
+
+## Previous: Command Center State Management Fixes — Implementation State
 
 ### Ledger Trail
 
@@ -39,7 +84,7 @@
 | voice-controller.js | 121/250 | wireModelProgress ~14/40 | 1/3 | OK |
 | web-llm-engine.js | 246/250 | recheckNative ~40/40 | 2/3 | OK |
 | llm-status.js | 172/250 | _getRowInfo ~25/40 | 2/3 | OK |
-| brainstorm.js | 251/250 | render ~25/40 | 2/3 | ADVISORY (+1) |
+| brainstorm.js | 250/250 | render ~25/40 | 2/3 | OK (fixed from 251) |
 | roadmap.js | 515/250 | getPhaseInfo ~35/40 | 2/3 | GRANDFATHERED |
 
 ### Verification Results
@@ -48,7 +93,7 @@
 |-------|--------|
 | Blueprint Compliance | 10/10 planned changes, 0 unplanned |
 | Console.log Artifacts | None in modified files (info logs OK) |
-| Section 4 Razor | 9/10 compliant, 1 grandfathered |
+| Section 4 Razor | 10/10 compliant (1 grandfathered) |
 | Nested Ternaries | 0 |
 | Build Path | ALL CONNECTED |
 

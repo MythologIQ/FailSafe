@@ -1,6 +1,6 @@
-[![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.4.0?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.4.0?platform=universal)
+[![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.6.5?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.6.5?platform=universal)
 
-# FailSafe v4.4.0 (OpenVSX Package)
+# FailSafe v4.6.5 (OpenVSX Package)
 
 FailSafe is a local-first governance extension for AI-assisted development distributed through Open VSX. It applies deterministic checks at the editor boundary, records decisions to a local ledger, and provides dedicated surfaces for audits, checkpoints, and agent governance.
 

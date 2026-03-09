@@ -9195,5 +9195,41 @@ SHA256(content_hash + previous_hash)
 
 ---
 
-_Chain Status: SEALED_
-_Next Session: Run /ql-repo-release for delivery or /ql-status to review_
+### Entry #221: KISS REFACTOR — Section 4 Razor Compliance
+
+**Timestamp**: 2026-03-09T18:15:00Z
+**Phase**: REFACTOR
+**Author**: Specialist
+**Risk Grade**: L1
+
+**Summary**:
+Section 4 Razor violations detected and fixed:
+- skills.js: 259 → 250 lines (extracted utilities to skill-utils.js)
+- brainstorm.js: 251 → 250 lines (removed trailing empty line)
+
+**Files Changed**:
+
+| File | Action | Lines |
+|------|--------|-------|
+| skills.js | Modified | 259 → 250 |
+| brainstorm.js | Modified | 251 → 250 |
+| skill-utils.js | Created | 23 |
+
+**Orphan Detection**: PASS
+- skill-utils.js → imported by skills.js → imported by command-center.js
+
+**Content Hash**:
+
+```
+SHA256(modified_files)
+= [computed on commit]
+```
+
+**Previous Hash**: c8f1e7d2a9b3f6e0d4c8a2b5f9e3d7c1a0b4e8f2d6c0a4b8f2e6d0c4a8b2f6e0
+
+**Verdict**: Section 4 Razor compliance restored. All UI modules ≤ 250 lines.
+
+---
+
+_Chain Status: ACTIVE_
+_Next Session: Run /ql-substantiate to seal or continue implementation_

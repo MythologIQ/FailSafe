@@ -155,8 +155,7 @@ function Validate-ReliabilityHardening {
   }
 
   $qlImplementWorkflows = @(
-    "FailSafe/Claude/Qorelogic/workflows/ql-implement.md",
-    "FailSafe/Antigravity/Qorelogic/workflows/ql-implement.md"
+    "FailSafe/Antigravity/skills/ql-implement/SKILL.md"
   )
 
   foreach ($workflow in $qlImplementWorkflows) {
@@ -177,8 +176,7 @@ function Validate-ReliabilityHardening {
   }
 
   $qlSubstantiateWorkflows = @(
-    "FailSafe/Claude/Qorelogic/workflows/ql-substantiate.md",
-    "FailSafe/Antigravity/Qorelogic/workflows/ql-substantiate.md"
+    "FailSafe/Antigravity/skills/ql-substantiate/SKILL.md"
   )
 
   foreach ($workflow in $qlSubstantiateWorkflows) {

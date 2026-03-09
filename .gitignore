@@ -84,10 +84,15 @@ FailSafe/extension/.vscode-test/
 FailSafe/extension/node_modules/
 FailSafe/extension/out/
 FailSafe/extension/*.vsix
-FailSafe/PROD-Extension/**/node_modules/
-FailSafe/PROD-Extension/**/out/
 FailSafe/artifacts/
 FailSafe/_*_OLD/
+
+# Build artifacts (generate fresh, don't track)
+*.vsix
+FailSafe/PROD-Extension/
+
+# Local transfer folders
+transfer to agent-toolkit/
 
 # Windows reserved names
 nul

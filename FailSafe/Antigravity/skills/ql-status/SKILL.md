@@ -1,6 +1,17 @@
 ---
 name: ql-status
 description: /ql-status - Lifecycle Diagnostic
+version: 4.6.4
+category: meta
+tags: [secure-intent, governor, status, diagnostic]
+license: MIT
+author: MythologIQ
+trustTier: verified
+admissionState: admitted
+sourcePriority: 1
+sourceType: project-canonical
+requiredPermissions: []
+model: claude
 ---
 
 # /ql-status - Quick Lifecycle Check

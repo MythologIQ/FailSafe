@@ -4,9 +4,24 @@
 
 FailSafe is a local-first governance extension for AI-assisted development in VS Code and Cursor. It applies deterministic checks at the editor boundary, records decisions to a local ledger, and provides dedicated surfaces for audits, checkpoints, and agent governance.
 
-**Current Release**: v4.6.4 (2026-03-09)
+**Current Release**: v4.6.5 (2026-03-10)
 
 ![FailSafe Banner](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/extension/FailSafe%20Banner.png)
+
+## What's New in v4.6.5
+
+Cross-agent skill consolidation — all SHIELD skills migrated from legacy `.claude/commands/` to modern `.claude/skills/{name}/SKILL.md` format. Agent definitions separated to `.claude/agents/`. ModelAdapter output directories corrected for all 5 supported platforms. VSIX bundling de-complected (skills only, no agents).
+
+### Changed
+
+- **Skills migrated to SKILL.md format** — 17 SHIELD skills + 3 personas now use directory-based `.claude/skills/ql-*/SKILL.md` with YAML frontmatter, matching modern Claude Code SDK conventions.
+- **Agents separated** — 7 agent definitions moved to `.claude/agents/ql-*.md` with subagent frontmatter. Claude Code loads these natively without extension scaffolding.
+- **ModelAdapter output dirs fixed** — Claude (`.claude/skills/`), Codex (`.agents/skills/`), Gemini (`.gemini/skills/`), Copilot (`.github/skills/`), Cursor (`.cursor/rules/`) all corrected.
+- **getOutputPath simplified** — Directory-based output (`{name}/SKILL.md`) is now the default; only Cursor uses flat files.
+- **VSIX bundling de-complected** — Agents removed from bundle patterns, eliminating scaffold collision. Directory-based skill bundling added.
+- **Antigravity restructured** — Genesis/Qorelogic directories replaced with `skills/ql-*/SKILL.md` + `agents/` layout.
+- **Stale duplicates removed** — `FailSafe/Claude/` (20 files) deleted; 12 quarantined skills cleaned up.
+- **Cross-agent instruction file** — `AGENTS.md` created at repo root for Codex/Copilot/Cursor/Windsurf compatibility.
 
 ## What's New in v4.6.4
 

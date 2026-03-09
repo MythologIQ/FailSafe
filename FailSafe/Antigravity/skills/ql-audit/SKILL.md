@@ -1,6 +1,17 @@
 ---
 name: ql-audit
-description: Adversarial audit of blueprint to generate mandatory PASS/VETO verdict. Use when Claude needs to review architecture plans before implementation for: (1) L2/L3 risk grade work, (2) Security-critical paths, (3) Architecture changes, or any work requiring formal approval before proceeding.
+description: Adversarial audit for PASS/VETO verdict. Use for L2/L3 risk, security-critical paths, or architecture changes requiring formal approval before implementation.
+version: 4.6.4
+category: governance
+tags: [gate, judge, adversarial-audit, compliance]
+license: MIT
+author: MythologIQ
+trustTier: verified
+admissionState: admitted
+sourcePriority: 1
+sourceType: project-canonical
+requiredPermissions: []
+model: claude
 ---
 
 # /ql-audit - Gate Tribunal

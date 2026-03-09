@@ -1,6 +1,17 @@
 ---
 name: ql-implement
-description: Specialist Implementation Pass that translates gated blueprint into reality using Section 4 Simplicity Razor and TDD-Light methodology. Use when: (1) Implementing after PASS verdict from /ql-audit, (2) Building features from approved architecture plans, or (3) Creating code under KISS constraints.
+description: Specialist Implementation Pass. Use when: (1) Implementing after PASS verdict from /ql-audit, (2) Building features from approved architecture plans, or (3) Creating code under KISS constraints.
+version: 4.6.4
+category: development
+tags: [execute, specialist, implementation, section-4-razor]
+license: MIT
+author: MythologIQ
+trustTier: verified
+admissionState: admitted
+sourcePriority: 1
+sourceType: project-canonical
+requiredPermissions: []
+model: claude
 ---
 
 # /ql-implement - Implementation Pass
@@ -83,12 +94,15 @@ Template: `.claude/commands/references/ql-implement-patterns.md`.
 **Constraint**: Define exactly ONE success condition that proves Reality matches Promise.
 
 Step 5.6: Intent Lock Interdiction (B51)
+
 - Verify `tools/reliability/validate-intent-gate.ps1` passes before implementation continues.
 
 Step 5.7: Skill Admission Interdiction (B49)
+
 - Verify `tools/reliability/validate-skill-admission.ps1` passes before implementation continues.
 
 Step 5.8: Gate-to-Skill Matrix Interdiction (B50)
+
 - Verify `tools/reliability/validate-gate-skill-matrix.ps1` passes before implementation continues.
 
 ### Step 6: Precision Build

@@ -1,6 +1,17 @@
 ﻿---
 name: ql-bootstrap
 description: Initialize QoreLogic SHIELD DNA for a new project by creating CONCEPT, ARCHITECTURE_PLAN, and META_LEDGER with genesis hash. Use when: (1) Starting a new project, (2) First-time QoreLogic setup, or (3) Re-initializing after project reset.
+version: 4.6.4
+category: meta
+tags: [secure-intent, governor, genesis, bootstrap, shield-lifecycle]
+license: MIT
+author: MythologIQ
+trustTier: verified
+admissionState: admitted
+sourcePriority: 1
+sourceType: project-canonical
+requiredPermissions: []
+model: claude
 ---
 
 # /ql-bootstrap - Project DNA Seeder

@@ -9,7 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- Post-4.6.4 scope to be scheduled.
+- Post-4.6.5 scope to be scheduled.
+
+## [4.6.5] - 2026-03-10
+
+### Changed
+
+- Cross-agent skill consolidation: 200+ files across 7 locations → canonical `.claude/skills/` + `.claude/agents/` + automated transpilation.
+- Skills migrated from flat `.claude/commands/ql-*.md` to directory-based `.claude/skills/ql-*/SKILL.md` with YAML frontmatter.
+- Agent definitions separated to `.claude/agents/ql-*.md` with subagent frontmatter.
+- ModelAdapter output directories corrected for Claude, Codex, Gemini, Copilot, and Cursor.
+- VSIX bundling de-complected: agents removed from skill pipeline, directory-based patterns added.
+- Antigravity restructured from Genesis/Qorelogic to skills/agents layout.
+- `FailSafe/Claude/` (20 stale duplicate files) deleted.
+- 12 quarantined skills cleaned up (9 superseded removed, 3 archived).
+- `AGENTS.md` created at repo root for cross-agent compatibility.
 
 ## [4.6.4] - 2026-03-09
 

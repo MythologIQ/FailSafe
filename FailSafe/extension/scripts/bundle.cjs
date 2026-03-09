@@ -140,6 +140,98 @@ async function main() {
   if (fs.existsSync(webuiPages)) {
     copyDir(webuiPages, path.join(distDir, "webui", "pages"));
   }
+
+  // Bundle proprietary skills into VSIX
+  bundleProprietarySkills();
+}
+
+/**
+ * Bundles proprietary skills from Antigravity directory into VSIX dist.
+ */
+function bundleProprietarySkills() {
+  const sourceDir = path.join(root, "..", "Antigravity");
+  const targetDir = path.join(distDir, "extension", "skills");
+  ensureDirExists(targetDir);
+
+  const patterns = [
+    "skills/ql-*/SKILL.md",
+    "skills/compliance/SKILL.md",
+    "skills/log-decision/SKILL.md",
+    "skills/track-shadow-genome/SKILL.md",
+  ];
+
+  const stats = { bundled: 0, skipped: 0, errors: 0 };
+  for (const p of patterns) {
+    bundlePattern(sourceDir, targetDir, p, stats);
+  }
+  console.log(`  Bundled ${stats.bundled} skill(s), skipped ${stats.skipped}, ${stats.errors} error(s)`);
+}
+
+function bundlePattern(sourceDir, targetDir, pattern, stats) {
+  const parts = pattern.split("/");
+  if (parts.length === 3 && parts[1].includes("*")) {
+    const parentDir = path.join(sourceDir, parts[0]);
+    const dirGlob = parts[1];
+    const fileName = parts[2];
+    if (!fs.existsSync(parentDir)) return;
+    try {
+      for (const entry of fs.readdirSync(parentDir, { withFileTypes: true })) {
+        if (!entry.isDirectory() || !matchesPattern(entry.name, dirGlob)) continue;
+        const filePath = path.join(parentDir, entry.name, fileName);
+        if (fs.existsSync(filePath)) {
+          copySkillIfChanged(filePath, sourceDir, targetDir, stats);
+        }
+      }
+    } catch { stats.errors++; }
+    return;
+  }
+  const fullPattern = path.join(sourceDir, pattern);
+  const dir = path.dirname(fullPattern);
+  const glob = path.basename(fullPattern);
+  if (!fs.existsSync(dir)) return;
+  try {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (!entry.isFile() || !matchesPattern(entry.name, glob)) continue;
+      copySkillIfChanged(path.join(dir, entry.name), sourceDir, targetDir, stats);
+    }
+  } catch { stats.errors++; }
+}
+
+function copySkillIfChanged(sourcePath, sourceDir, targetDir, stats) {
+  const rel = path.relative(sourceDir, sourcePath);
+  const target = path.join(targetDir, rel);
+  ensureDirExists(path.dirname(target));
+  if (fs.existsSync(target) && calculateFileHash(sourcePath) === calculateFileHash(target)) {
+    stats.skipped++;
+    return;
+  }
+  fs.copyFileSync(sourcePath, target);
+  stats.bundled++;
+}
+
+function ensureDirExists(dir) {
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+}
+
+/**
+ * Checks if a filename matches a glob pattern.
+ * Supports * wildcard for any characters.
+ */
+function matchesPattern(filename, pattern) {
+  const regexPattern = pattern
+    .replace(/\./g, "\\.")
+    .replace(/\*/g, ".*");
+  const regex = new RegExp(`^${regexPattern}$`);
+  return regex.test(filename);
+}
+
+/**
+ * Calculates SHA-256 hash of a file.
+ */
+function calculateFileHash(filePath) {
+  const crypto = require("crypto");
+  const content = fs.readFileSync(filePath);
+  return crypto.createHash("sha256").update(content).digest("hex");
 }
 
 main().catch((error) => {

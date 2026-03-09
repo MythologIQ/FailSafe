@@ -11,6 +11,9 @@ import {
 } from "./SkillParser";
 import { isPreferredSkill } from "./SkillRanker";
 import { getApprovedSkillFileSet } from "./SkillRegistry";
+export { adaptSkillContent, adaptSkillsForModel } from "./ModelAdapter";
+export type { AdapterConfig, AdapterResult } from "./ModelAdapterConfigs";
+export { BUILTIN_ADAPTER_CONFIGS } from "./ModelAdapterConfigs";
 
 export function buildSkillRoots(wsRoot: string, dirname: string): SkillRoot[] {
   const bases = new Set<string>();
@@ -42,6 +45,7 @@ export function buildSkillRoots(wsRoot: string, dirname: string): SkillRoot[] {
     add(path.join(base, ".codex", "skills"), "project-local", 2, "admitted");
     add(path.join(base, ".github", "skills"), "project-local", 2, "admitted");
     add(path.join(base, ".claude", "commands"), "project-commands", 2, "admitted");
+    add(path.join(base, ".claude", "agents"), "project-agents", 2, "admitted");
     add(path.join(base, ".failsafe", "manual-skills"), "manual-import", 3, "conditional");
   }
   return roots;

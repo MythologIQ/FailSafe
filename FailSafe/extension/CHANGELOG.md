@@ -9,7 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- Post-4.6.4 scope to be scheduled.
+- Post-4.6.5 scope to be scheduled.
+
+## [4.6.5] - 2026-03-10
+
+Cross-agent skill consolidation. All SHIELD governance skills migrated to modern SDK conventions with automated transpilation support across Claude, Codex, Gemini, Copilot, and Cursor.
+
+### Changed
+
+- **Skills migrated to SKILL.md format** — 17 SHIELD skills + 3 personas now use `.claude/skills/ql-*/SKILL.md` with YAML frontmatter.
+- **Agents separated** — 7 agent definitions moved to `.claude/agents/ql-*.md`. Claude Code loads these natively.
+- **ModelAdapter output dirs corrected** — Claude (`.claude/skills/`), Codex (`.agents/skills/`), Gemini (`.gemini/skills/`), Copilot (`.github/skills/`), Cursor (`.cursor/rules/`).
+- **getOutputPath simplified** — Directory-based `{name}/SKILL.md` is default; only Cursor uses flat files.
+- **VSIX bundling de-complected** — Agents removed from bundle patterns. Directory-based skill bundling added for `skills/ql-*/SKILL.md`.
+- **Scaffolding updated** — WorkspaceMigration targets `.claude/skills/` with parent directory name extraction.
+- **Antigravity restructured** — Genesis/Qorelogic → `skills/ql-*/SKILL.md` + `agents/`.
+- **Stale duplicates removed** — `FailSafe/Claude/` (20 files) deleted; 12 quarantined skills cleaned up.
+- **`AGENTS.md` created** — Cross-agent root instruction file for Codex/Copilot/Cursor/Windsurf compatibility.
 
 ## [4.6.4] - 2026-03-09
 

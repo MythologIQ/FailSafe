@@ -1,90 +1,126 @@
 # File Movement Index
 
-**Generated**: 2026-03-06T07:30:00Z
-**Operation**: /ql-organize
-**Total Files Moved**: 30
-**Total Files Deleted**: 8
+**Generated**: 2026-03-09T22:00:00Z
+**Operation**: /ql-organize (Session 2)
+**Total Files Moved**: 21
 
 ---
 
 ## Executive Summary
 
-- **Plan files relocated**: 19 (root -> docs/Planning/)
-- **Scripts relocated**: 2 (root -> scripts/)
-- **Duplicate PNGs deleted**: 8 (root, copies already in src/roadmap/ui/)
-- **Directories renamed**: 1 (docs/Deep Review -> docs/deep-review)
-- **Directories protected**: 10
+- **Files reorganized**: 21
+- **Directories created**: 2
+- **Directories protected**: 7
+- **Files to `.failsafe/governance/plans/`**: 2 (new plans moved)
+- **Files to `.failsafe/governance/`**: 1 (status doc)
+- **Files to `.failsafe/archive/completion-markers/`**: 7
+- **Files to `.failsafe/archive/stale-configs/`**: 4
+- **Files to `FailSafe/ScreenShots/`**: 1
+- **Duplicate plan files removed from root**: 11 (identical copies already in `.failsafe/governance/plans/`)
 
 ---
 
 ## Protected Directories
 
-| Directory        | Rationale                                    |
-| ---------------- | -------------------------------------------- |
-| `.agent/`        | Managed governance staging area              |
-| `.claude/`       | Claude Code agent configuration              |
-| `.failsafe/`     | FailSafe runtime configuration               |
-| `.qorelogic/`    | QoreLogic governance framework               |
-| `.github/`       | GitHub workflows and templates               |
-| `.vscode/`       | VS Code workspace settings                   |
-| `FailSafe/`      | Extension source tree (app domain)           |
-| `FailSafe-Pro/`  | Proprietary extension (gitignored)           |
-| `PRIVATE/`       | Confidential strategy documents (gitignored) |
-| `docs/`          | Existing doc structure (reorganized in-place)|
+| Directory | Rationale |
+| --------- | --------- |
+| `FailSafe/` | Extension source tree — managed project structure |
+| `docs/` | Tracked governance documentation |
+| `.claude/` | AI agent configuration |
+| `.failsafe/` | Governance artifacts (gitignored) |
+| `.qorelogic/` | Proprietary governance logic |
+| `PRIVATE/` | Confidential content (gitignored) |
+| `FailSafe-Pro/` | Pro tier content (gitignored) |
+
+---
+
+## Directory Creation Log
+
+| Directory | Created At | Purpose |
+| --------- | ---------- | ------- |
+| `.failsafe/archive/completion-markers/` | 2026-03-09T22:00:00Z | Archive stale milestone markers from docs/ |
+| `.failsafe/archive/stale-configs/` | 2026-03-09T22:00:00Z | Archive misplaced config files from docs/Planning/ |
 
 ---
 
 ## File Movement Log
 
-### Plans -> docs/Planning/
+### Plans to `.failsafe/governance/plans/`
 
-| # | File Name | Original Path | New Path | Type |
-|---|-----------|---------------|----------|------|
-| 1 | plan-audit-remediation-v1.md | `./` | `docs/Planning/` | .md |
-| 2 | plan-audit-remediation-v2.md | `./` | `docs/Planning/` | .md |
-| 3 | plan-brainstorm-fixes.md | `./` | `docs/Planning/` | .md |
-| 4 | plan-command-center-fixes.md | `./` | `docs/Planning/` | .md |
-| 5 | plan-command-center-polish.md | `./` | `docs/Planning/` | .md |
-| 6 | plan-console-noise-fix.md | `./` | `docs/Planning/` | .md |
-| 7 | plan-governance-gaps.md | `./` | `docs/Planning/` | .md |
-| 8 | plan-governance-gaps-v2.md | `./` | `docs/Planning/` | .md |
-| 9 | plan-governance-gaps-v3.md | `./` | `docs/Planning/` | .md |
-| 10 | plan-unified-command-center.md | `./` | `docs/Planning/` | .md |
-| 11 | plan-v4.2.0-the-answer.md | `./` | `docs/Planning/` | .md |
-| 12 | plan-v4.2.0-the-answer-v2.md | `./` | `docs/Planning/` | .md |
-| 13 | plan-v4.2.0-the-answer-v3.md | `./` | `docs/Planning/` | .md |
-| 14 | plan-v430-veto-remediation.md | `./` | `docs/Planning/` | .md |
-| 15 | plan-v4-3-2-performance-polish.md | `./` | `docs/Planning/` | .md |
-| 16 | plan-v4-3-2-performance-polish-v2.md | `./` | `docs/Planning/` | .md |
-| 17 | plan-v4-3-2-performance-polish-v3.md | `./` | `docs/Planning/` | .md |
-| 18 | plan-voice-brainstorm.md | `./` | `docs/Planning/` | .md |
-| 19 | plan-voice-brainstorm-v5.md | `./` | `docs/Planning/` | .md |
+| # | File Name | Original Path | New Path | File Type | Timestamp |
+| - | --------- | ------------- | -------- | --------- | --------- |
+| 1 | plan-proprietary-skills-v1.md | `./plan-proprietary-skills-v1.md` | `.failsafe/governance/plans/plan-proprietary-skills-v1.md` | .md | 2026-03-09T22:00:00Z |
+| 2 | plan-workspace-isolation-v1.md | `./plan-workspace-isolation-v1.md` | `.failsafe/governance/plans/plan-workspace-isolation-v1.md` | .md | 2026-03-09T22:00:00Z |
 
-### Scripts -> scripts/
+### Governance Docs to `.failsafe/governance/`
 
-| # | File Name | Original Path | New Path | Type |
-|---|-----------|---------------|----------|------|
-| 1 | lock_manager.ps1 | `./` | `scripts/` | .ps1 |
-| 2 | validate.ps1 | `./` | `scripts/` | .ps1 |
+| # | File Name | Original Path | New Path | File Type | Timestamp |
+| - | --------- | ------------- | -------- | --------- | --------- |
+| 1 | PROPRIETARY_SKILLS_MIGRATION_STATUS.md | `./PROPRIETARY_SKILLS_MIGRATION_STATUS.md` | `.failsafe/governance/PROPRIETARY_SKILLS_MIGRATION_STATUS.md` | .md | 2026-03-09T22:00:00Z |
 
-### Deleted (Duplicates)
+### Completion Markers to `.failsafe/archive/completion-markers/`
 
-| # | File Name | Original Path | Canonical Copy | Type |
-|---|-----------|---------------|----------------|------|
-| 1 | audit.png | `./` | `FailSafe/extension/src/roadmap/ui/audit.png` | .png |
-| 2 | config.png | `./` | `FailSafe/extension/src/roadmap/ui/config.png` | .png |
-| 3 | laws.png | `./` | `FailSafe/extension/src/roadmap/ui/laws.png` | .png |
-| 4 | mindmap.png | `./` | `FailSafe/extension/src/roadmap/ui/mindmap.png` | .png |
-| 5 | operations.png | `./` | `FailSafe/extension/src/roadmap/ui/operations.png` | .png |
-| 6 | overview.png | `./` | `FailSafe/extension/src/roadmap/ui/overview.png` | .png |
-| 7 | risks.png | `./` | `FailSafe/extension/src/roadmap/ui/risks.png` | .png |
-| 8 | skills.png | `./` | `FailSafe/extension/src/roadmap/ui/skills.png` | .png |
+| # | File Name | Original Path | New Path | File Type | Timestamp |
+| - | --------- | ------------- | -------- | --------- | --------- |
+| 1 | _COMPLETE_PHYSICAL_ISOLATION.md | `docs/_COMPLETE_PHYSICAL_ISOLATION.md` | `.failsafe/archive/completion-markers/_COMPLETE_PHYSICAL_ISOLATION.md` | .md | 2026-03-09T22:00:00Z |
+| 2 | _DEPLOYMENT_COMPLETE_v3.0.0.md | `docs/_DEPLOYMENT_COMPLETE_v3.0.0.md` | `.failsafe/archive/completion-markers/_DEPLOYMENT_COMPLETE_v3.0.0.md` | .md | 2026-03-09T22:00:00Z |
+| 3 | _MISSION_COMPLETE.md | `docs/_MISSION_COMPLETE.md` | `.failsafe/archive/completion-markers/_MISSION_COMPLETE.md` | .md | 2026-03-09T22:00:00Z |
+| 4 | _PACKAGE_STRUCTURE_VERIFIED.md | `docs/_PACKAGE_STRUCTURE_VERIFIED.md` | `.failsafe/archive/completion-markers/_PACKAGE_STRUCTURE_VERIFIED.md` | .md | 2026-03-09T22:00:00Z |
+| 5 | _PHYSICAL_ISOLATION_COMPLETE.md | `docs/_PHYSICAL_ISOLATION_COMPLETE.md` | `.failsafe/archive/completion-markers/_PHYSICAL_ISOLATION_COMPLETE.md` | .md | 2026-03-09T22:00:00Z |
+| 6 | _QORELOGIC_GOVERNANCE_COMPLETE.md | `docs/_QORELOGIC_GOVERNANCE_COMPLETE.md` | `.failsafe/archive/completion-markers/_QORELOGIC_GOVERNANCE_COMPLETE.md` | .md | 2026-03-09T22:00:00Z |
+| 7 | _WORKSPACE_ISOLATION_COMPLETE.md | `docs/_WORKSPACE_ISOLATION_COMPLETE.md` | `.failsafe/archive/completion-markers/_WORKSPACE_ISOLATION_COMPLETE.md` | .md | 2026-03-09T22:00:00Z |
 
-### Directory Renames
+### Stale Configs to `.failsafe/archive/stale-configs/`
 
-| # | Original Path | New Path | Rationale |
-|---|---------------|----------|-----------|
-| 1 | `docs/Deep Review/` | `docs/deep-review/` | Normalize to kebab-case, eliminate spaces |
+| # | File Name | Original Path | New Path | File Type | Timestamp |
+| - | --------- | ------------- | -------- | --------- | --------- |
+| 1 | pnpm-lock.yaml | `docs/Planning/pnpm-lock.yaml` | `.failsafe/archive/stale-configs/pnpm-lock.yaml` | .yaml | 2026-03-09T22:00:00Z |
+| 2 | postcss.config.mjs | `docs/Planning/postcss.config.mjs` | `.failsafe/archive/stale-configs/postcss.config.mjs` | .mjs | 2026-03-09T22:00:00Z |
+| 3 | tailwind.config.ts | `docs/Planning/tailwind.config.ts` | `.failsafe/archive/stale-configs/tailwind.config.ts` | .ts | 2026-03-09T22:00:00Z |
+| 4 | tsconfig.json | `docs/Planning/tsconfig.json` | `.failsafe/archive/stale-configs/tsconfig.json` | .json | 2026-03-09T22:00:00Z |
+
+### Screenshot to `FailSafe/ScreenShots/`
+
+| # | File Name | Original Path | New Path | File Type | Timestamp |
+| - | --------- | ------------- | -------- | --------- | --------- |
+| 1 | SetGovernanceMode.PNG | `./SetGovernanceMode.PNG` | `FailSafe/ScreenShots/SetGovernanceMode.PNG` | .PNG | 2026-03-09T22:00:00Z |
+
+### Duplicate Plan Files Removed from Root
+
+The following 11 plan files were removed from root because identical copies already exist in `.failsafe/governance/plans/`:
+
+| # | File Name | Verified Against |
+| - | --------- | --------------- |
+| 1 | plan-brainstorm-production.md | `.failsafe/governance/plans/plan-brainstorm-production.md` |
+| 2 | plan-data-architecture-remediation.md | `.failsafe/governance/plans/plan-data-architecture-remediation.md` |
+| 3 | plan-delivery-gates.md | `.failsafe/governance/plans/plan-delivery-gates.md` |
+| 4 | plan-governance-state-integrity.md | `.failsafe/governance/plans/plan-governance-state-integrity.md` |
+| 5 | plan-hub-data-reliability.md | `.failsafe/governance/plans/plan-hub-data-reliability.md` |
+| 6 | plan-monitor-parity.md | `.failsafe/governance/plans/plan-monitor-parity.md` |
+| 7 | plan-ql-document.md | `.failsafe/governance/plans/plan-ql-document.md` |
+| 8 | plan-skill-lifecycle.md | `.failsafe/governance/plans/plan-skill-lifecycle.md` |
+| 9 | plan-skill-scaffolding.md | `.failsafe/governance/plans/plan-skill-scaffolding.md` |
+| 10 | plan-structural-presentation.md | `.failsafe/governance/plans/plan-structural-presentation.md` |
+| 11 | plan-v4.6.0-consolidated.md | `.failsafe/governance/plans/plan-v4.6.0-consolidated.md` |
+
+---
+
+## Remaining Root Files (Intentionally Preserved)
+
+### Standard Repository Files (tracked)
+- `README.md`, `CHANGELOG.md`, `LICENSE`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `GOVERNANCE.md`, `FILE_INDEX.md`
+
+### AI Instruction Files (gitignored, must stay at root)
+- `CLAUDE.md`, `GEMINI.md`
+
+### Configuration (tracked/dotfiles)
+- `.gitignore`, `.gitattributes`, `.nvmrc`, `.socket.yml`, `socket.yml`
+
+### Images (tracked, referenced by README)
+- `FailSafe-AuditLog.PNG`, `FailSafe-Mindmap.png`, `FailSafe-Operations.PNG`, `FailSafe-Overview.PNG`, `FailSafe-Sidebar.PNG`, `FailSafe-Skills.png` — duplicates exist in `FailSafe/extension/media/`; README references the media/ versions
+- `icon.png`, `icon-bw.png`, `icon-pro.png`, `icon-pro-256.png`, `sidebar-icon.png`, `sidebar-icon.svg` — brand assets, git-tracked
+
+**Note**: Root images are tracked in git. Moving them would require updating git history and potentially breaking external references. They are candidates for future cleanup via `git rm` if confirmed unused.
 
 ---
 
@@ -94,8 +130,10 @@
 - [x] No duplicate entries
 - [x] All original paths documented
 - [x] All new paths documented
+- [x] Timestamps recorded for all movements
 - [x] Protected directories listed
-- [x] Deletion rationale documented (canonical copies cited)
+- [x] Manual decisions documented
+- [x] Duplicate verification performed before deletion (diff confirmed identical)
 
 ---
 

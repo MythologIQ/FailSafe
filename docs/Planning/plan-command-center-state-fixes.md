@@ -249,6 +249,145 @@ voice.wakeWord.onError = (msg) => {
 
 ---
 
+## Phase 5: Gemini Nano Detection Bug
+
+### Problem
+
+Gemini Nano shows "Enable?" even when Chrome flags ARE enabled and user is in Chrome browser. The detection code at `recheckNative()` doesn't handle all `capabilities()` return states properly.
+
+The Prompt API `capabilities()` can return:
+- `'readily'` - model ready (handled)
+- `'after-download'` - needs download (handled)
+- `'no'` - **not available on this hardware** (NOT HANDLED - silent failure)
+
+Additionally, `browserSupported` check only looks at user agent, not actual API availability.
+
+### Affected Files
+
+- [web-llm-engine.js](../../FailSafe/extension/src/roadmap/ui/modules/web-llm-engine.js) - `recheckNative()` doesn't handle `'no'` status
+- [llm-status.js](../../FailSafe/extension/src/roadmap/ui/modules/llm-status.js) - `_getRowInfo()` shows misleading "Enable?"
+- [connection.js](../../FailSafe/extension/src/roadmap/ui/modules/connection.js) - `webLlmState` needs `unavailableReason` field
+
+### Changes
+
+**web-llm-engine.js** - Track unavailability reason:
+
+```javascript
+constructor(store) {
+  // ... existing code ...
+  this.isNativeAiAvailable = false;
+  this.nativeUnavailableReason = null;  // NEW: 'no-api' | 'not-supported' | 'download-failed' | null
+}
+
+async recheckNative() {
+  try {
+    const ai = globalThis.ai || globalThis.model;
+    const lm = ai?.languageModel || ai?.assistant;
+    if (!lm) {
+      this.nativeUnavailableReason = 'no-api';  // API not exposed
+      return false;
+    }
+
+    const status = await lm.capabilities();
+    console.info('FailSafe WebLLM: Native AI capabilities =', status.available);
+
+    if (status.available === 'readily') {
+      this.isNativeAiAvailable = true;
+      this.nativeUnavailableReason = null;
+      // ... existing success handling ...
+      return true;
+    }
+
+    if (status.available === 'after-download') {
+      // ... existing download handling ...
+      return true;
+    }
+
+    if (status.available === 'no') {
+      this.nativeUnavailableReason = 'not-supported';  // Hardware/config not supported
+      this.onStatusChange?.('native-not-supported');
+      return false;
+    }
+
+    // Unknown status
+    this.nativeUnavailableReason = 'unknown';
+    return false;
+  } catch (err) {
+    console.info('FailSafe WebLLM: Native AI probe failed:', err.message);
+    this.nativeUnavailableReason = 'probe-error';
+    return false;
+  }
+}
+```
+
+**connection.js** - Propagate reason in state:
+
+```javascript
+this.webLlmState = {
+  nativeAvailable: false,
+  nativeUnavailableReason: null,  // NEW
+  wasmReady: false,
+  loading: false,
+  browserSupported: isChrome || isEdge
+};
+```
+
+**llm-status.js** - Show accurate status:
+
+```javascript
+_getRowInfo(id, state) {
+  if (id === 'native') {
+    if (state.nativeAvailable) {
+      return { label: 'Gemini Nano (Native)', status: '<span style="color:var(--accent-green)">Active ✓</span>', active: true, color: 'var(--text-main)' };
+    }
+
+    // Show specific reason instead of generic "Enable?"
+    const reason = state.nativeUnavailableReason || this.webLlm.nativeUnavailableReason;
+
+    if (reason === 'not-supported') {
+      return { label: 'Gemini Nano (Native)', status: '<span style="opacity:0.5">Not Supported</span>', active: false, color: 'var(--text-muted)' };
+    }
+
+    if (reason === 'no-api') {
+      // API not exposed - might need flags
+      if (!state.browserSupported) {
+        return { label: 'Gemini Nano (Native)', status: '<span style="opacity:0.4">Chrome/Edge Only</span>', active: false, color: 'var(--text-muted)' };
+      }
+      // Browser supported but API missing - show enable help
+      const helpLabel = this._helpVisible ? 'Close Help ↑' : 'Enable?';
+      return { label: 'Gemini Nano (Native)', status: `<a href="#" class="cc-bs-llm-help-toggle" ...>${helpLabel}</a>`, active: false, color: 'var(--text-muted)' };
+    }
+
+    // Default: unknown issue
+    return { label: 'Gemini Nano (Native)', status: '<span style="opacity:0.4">Unavailable</span>', active: false, color: 'var(--text-muted)' };
+  }
+  // ... rest unchanged
+}
+```
+
+**brainstorm.js** - Propagate reason to client state:
+
+```javascript
+this.webLlm.onProgress = () => {
+  this.client?.setWebLlmStatus({
+    nativeAvailable: this.webLlm.isNativeAiAvailable,
+    nativeUnavailableReason: this.webLlm.nativeUnavailableReason,  // NEW
+    wasmReady: !!this.webLlm.pipeline,
+    loading: this.webLlm.loadingStatus === 'loading' || this.webLlm.loadingStatus === 'downloading'
+  });
+  this.llmStatus.render(this.client);
+};
+```
+
+### Unit Tests
+
+- [web-llm-engine.test.js] - recheckNative sets `nativeUnavailableReason = 'not-supported'` when capabilities returns `'no'`
+- [web-llm-engine.test.js] - recheckNative sets `nativeUnavailableReason = 'no-api'` when `window.ai` is undefined
+- [llm-status.test.js] - Shows "Not Supported" when reason is `'not-supported'`
+- [llm-status.test.js] - Shows "Enable?" only when reason is `'no-api'` AND browser is Chrome/Edge
+
+---
+
 ## Summary
 
 | Phase | Scope | Risk |
@@ -257,6 +396,7 @@ voice.wakeWord.onError = (msg) => {
 | 2 | Scaffold callback init | MEDIUM - requires import changes |
 | 3 | Phase title/index sync | LOW - UI logic fix |
 | 4 | Voice feature feedback | LOW - adds error handling |
+| 5 | Gemini Nano detection | LOW - better error reporting |
 
 ---
 

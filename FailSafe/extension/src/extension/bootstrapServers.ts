@@ -6,10 +6,13 @@
  */
 
 import * as vscode from "vscode";
+import * as fs from "fs";
+import * as path from "path";
 import { Logger } from "../shared/Logger";
 import { ConsoleServer } from "../roadmap";
 import { FailSafeSidebarProvider } from "../roadmap/FailSafeSidebarProvider";
 import { RiskManager } from "../qorelogic/risk";
+import { collectMarkdownFiles } from "../roadmap/services/SkillFileUtils";
 import type { EventBus } from "../shared/EventBus";
 import type { PlanManager } from "../qorelogic/planning/PlanManager";
 import type { QoreLogicManager } from "../qorelogic/QoreLogicManager";
@@ -59,6 +62,41 @@ export async function bootstrapServers(
   consoleServer.setSystemRegistry(deps.systemRegistry);
   await consoleServer.start();
   context.subscriptions.push({ dispose: () => consoleServer?.stop() });
+
+  // Register scaffold callback for "Install Skills" button
+  consoleServer.setScaffoldCallback(async () => {
+    const bundledPath = path.join(context.extensionPath, "skills");
+    const targetDir = path.join(deps.workspaceRoot, ".claude", "skills");
+    let scaffolded = 0;
+    let skipped = 0;
+
+    try {
+      await fs.promises.access(bundledPath);
+      await fs.promises.mkdir(targetDir, { recursive: true });
+
+      const bundledFiles = await collectMarkdownFiles(bundledPath);
+      for (const sourcePath of bundledFiles) {
+        const skillName = path.basename(path.dirname(sourcePath));
+        if (skillName === "skills" || skillName === ".") continue;
+
+        const targetSkillDir = path.join(targetDir, skillName);
+        const targetPath = path.join(targetSkillDir, "SKILL.md");
+
+        try {
+          await fs.promises.access(targetPath);
+          skipped++;
+        } catch {
+          await fs.promises.mkdir(targetSkillDir, { recursive: true });
+          await fs.promises.copyFile(sourcePath, targetPath);
+          scaffolded++;
+        }
+      }
+    } catch {
+      // bundledPath doesn't exist - no skills to scaffold
+    }
+
+    return { scaffolded, skipped };
+  });
 
   // Webview Providers
   context.subscriptions.push(

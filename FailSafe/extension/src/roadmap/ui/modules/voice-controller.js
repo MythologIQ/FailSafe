@@ -20,7 +20,7 @@ export class VoiceController {
   }
 
   wireModelProgress() {
-    this.stt.onModelProgress = (status, progress) => {
+    this.stt.onModelProgress = (status, msg) => {
       if (status === 'downloading') {
         this._setMicContent('🎙️ PREPARING', true, 'Preparing security model...');
       } else if (status === 'loading') {
@@ -28,7 +28,9 @@ export class VoiceController {
       } else if (status === 'ready') {
         this._setMicContent('🎙️ LISTEN', false, 'Click to speak');
       } else if (status === 'error') {
-        this._setMicContent('❌ NO MIC', true, 'Whisper unavailable — check permissions');
+        const title = msg || 'Whisper unavailable — check permissions';
+        this._setMicContent('❌ NO MIC', true, title);
+        this.onStatus?.(title, 'var(--accent-red)');
       }
     };
   }

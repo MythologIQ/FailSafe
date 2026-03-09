@@ -117,9 +117,11 @@ document.addEventListener('DOMContentLoaded', () => {
       // Update Right Panel (Intelligence/Action)
       updateUIForPanelState();
       
-      // Initial render for tab activation
+      // Initial render for tab activation - use cached hub data
       const renderer = renderers[targetId];
-      if (renderer) renderer.render?.({});
+      if (renderer && client.lastHubData) {
+        renderer.render?.(client.lastHubData);
+      }
       
       store.setActiveTab(targetId);
     });

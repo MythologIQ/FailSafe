@@ -60,7 +60,13 @@ export class LlmStatusRenderer {
   _getRowInfo(id, state) {
     if (id === 'native') {
       if (state.nativeAvailable) return { label: 'Gemini Nano (Native)', status: '<span style="color:var(--accent-green)">Active \u2713</span>', active: true, color: 'var(--text-main)' };
-      if (!state.browserSupported) return { label: 'Gemini Nano (Native)', status: '<span style="opacity:0.4">Not Supported</span>', active: false, color: 'var(--text-muted)' };
+      // Hardware doesn't support Gemini Nano (capabilities() returned 'no')
+      if (state.nativeUnavailableReason === 'not-supported') return { label: 'Gemini Nano (Native)', status: '<span style="opacity:0.4">Not Supported</span>', active: false, color: 'var(--text-muted)' };
+      // Probe threw an exception
+      if (state.nativeUnavailableReason === 'probe-error') return { label: 'Gemini Nano (Native)', status: '<span style="opacity:0.4">Unavailable</span>', active: false, color: 'var(--text-muted)' };
+      // Browser not Chrome/Edge - no point showing Enable
+      if (!state.browserSupported) return { label: 'Gemini Nano (Native)', status: '<span style="opacity:0.4">Chrome/Edge Only</span>', active: false, color: 'var(--text-muted)' };
+      // API not exposed - show Enable help (only case where it's actionable)
       const helpLabel = this._helpVisible ? 'Close Help \u2191' : 'Enable?';
       return { label: 'Gemini Nano (Native)', status: `<a href="#" class="cc-bs-llm-help-toggle" style="color:var(--accent-cyan); text-decoration:none;" onclick="event.preventDefault(); window.dispatchEvent(new CustomEvent('fs-toggle-llm-help'))">${helpLabel}</a>`, active: false, color: 'var(--text-muted)' };
     }

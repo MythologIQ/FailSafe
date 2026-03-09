@@ -134,6 +134,7 @@ export class SttEngine {
 
   async _startWhisper() {
     if (!this._whisperReady) {
+      this.onModelProgress?.('error', 'Voice model not loaded — check network connection');
       this._setState('idle');
       return;
     }

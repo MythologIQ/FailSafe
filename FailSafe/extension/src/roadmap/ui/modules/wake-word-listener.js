@@ -30,7 +30,11 @@ export class WakeWordListener {
   }
 
   start(onTriggered, onError, getState) {
-    if (!SpeechRecognitionCtor || this._recognition) return;
+    if (!SpeechRecognitionCtor) {
+      onError?.('Voice activation unavailable in this environment');
+      return false;
+    }
+    if (this._recognition) return true;
     this._recognition = new SpeechRecognitionCtor();
     this._recognition.continuous = true;
     this._recognition.interimResults = true;
@@ -66,6 +70,7 @@ export class WakeWordListener {
     });
 
     try { this._recognition.start(); } catch { /* already started */ }
+    return true;
   }
 
   stop() {

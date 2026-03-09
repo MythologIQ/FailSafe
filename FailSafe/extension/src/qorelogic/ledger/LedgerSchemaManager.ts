@@ -21,6 +21,20 @@ const MIGRATIONS: Migration[] = [
       }
     },
   },
+  {
+    version: 3,
+    description: 'Add agent_rbac table for persistent RBAC assignments',
+    up: (db) => {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS agent_rbac (
+          agent_did TEXT PRIMARY KEY,
+          role TEXT NOT NULL CHECK(role IN ('admin', 'developer', 'viewer')),
+          assigned_at TEXT NOT NULL,
+          assigned_by TEXT NOT NULL DEFAULT 'system'
+        );
+      `);
+    },
+  },
 ];
 
 export class LedgerSchemaManager {

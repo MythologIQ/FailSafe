@@ -78,6 +78,20 @@ export function setupActionsRoutes(
     },
   );
 
+  // Scaffold governance skills into workspace
+  app.post("/api/actions/scaffold-skills", async (_req: Request, res: Response) => {
+    if (!deps.scaffoldSkills) {
+      res.status(501).json({ error: "Scaffold not available" });
+      return;
+    }
+    try {
+      const result = await deps.scaffoldSkills();
+      res.json({ ok: true, ...result });
+    } catch (e) {
+      res.status(500).json({ error: String(e) });
+    }
+  });
+
   // Process all pending L3 approvals in batch
   app.post(
     "/api/actions/approve-l3-batch",

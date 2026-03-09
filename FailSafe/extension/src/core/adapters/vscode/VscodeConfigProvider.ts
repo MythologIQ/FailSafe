@@ -63,6 +63,9 @@ export class VscodeConfigProvider implements IConfigProvider {
                 contributors: sentinelYaml?.architecture?.contributors ?? config.get<number>('architecture.contributors', 1),
                 maxComplexity: sentinelYaml?.architecture?.maxComplexity ?? config.get<number>('architecture.maxComplexity', 20),
             },
+            governance: {
+                overseerId: sentinelYaml?.governance?.overseerId ?? config.get<string>('governance.overseerId', 'did:myth:overseer:local'),
+            },
         };
     }
 

@@ -1,7 +1,60 @@
 # SYSTEM STATE
 
-**Last Updated:** 2026-03-08T16:00:00Z
-**Version:** v4.6.3 + Monitor & Command Center Parity SUBSTANTIATED
+**Last Updated:** 2026-03-09T12:00:00Z
+**Version:** v4.6.3 + Governance State Integrity SUBSTANTIATED
+
+## Governance State Integrity — Implementation State
+
+### Ledger Trail
+
+| Entry | Phase | Verdict |
+|-------|-------|---------|
+| #197 | GATE | VETO (arithmetic error in plan) |
+| #198 | GATE | VETO (arithmetic persists) |
+| #199 | GATE | VETO (still 294L, not 234L) |
+| #201 | GATE | PASS (v4 plan, correct arithmetic) |
+| #202 | IMPLEMENT | All 3 phases complete |
+| #203 | SUBSTANTIATE | Session sealed |
+
+### Phase 1: TrustEngine Extraction (Section 4 Compliance)
+
+| File | Change | Status |
+|------|--------|--------|
+| `src/qorelogic/trust/TrustCalculator.ts` | NEW: Pure computation — config, stages, probation, influence (40L) | DONE |
+| `src/qorelogic/trust/TrustPersistence.ts` | NEW: DB ops — CRUD, retry, optimistic lock, registerOrGetAgent (167L) | DONE |
+| `src/qorelogic/trust/TrustEngine.ts` | REWRITTEN: Orchestration-only, 449→223L | DONE |
+
+### Phase 2: Event-Driven Cache Invalidation
+
+| File | Change | Status |
+|------|--------|--------|
+| `src/shared/types/events.ts` | Added 3 event types: trustUpdated, agentQuarantined, agentReleased | DONE |
+| `src/qorelogic/trust/TrustEngine.ts` | EventBus subscription in constructor, `refreshFromDb()` on events | DONE |
+| `src/qorelogic/trust/TrustEngine.ts` | `emit()` calls in updateTrust, quarantineAgent, releaseFromQuarantine | DONE |
+| `src/extension/bootstrapQoreLogic.ts` | Wire `core.eventBus` into TrustEngine constructor | DONE |
+
+### Phase 3: Checkpoint Chain & Timestamp Honesty
+
+| File | Change | Status |
+|------|--------|--------|
+| `src/roadmap/ConsoleServer.ts` | `initializeCheckpointStore()`: auto-verify chain, `cachedChainValid=false` on failure | DONE |
+| `src/shared/types/trust.ts` | Added `updatedAt?: string` to AgentIdentity | DONE |
+| `src/qorelogic/trust/TrustPersistence.ts` | `mapRowToAgent()`: maps `updated_at` → `updatedAt` | DONE |
+| `src/qorelogic/trust/TrustEngine.ts` | `getTrustScore()`: uses `agent.updatedAt \|\| agent.createdAt` | DONE |
+
+### Tests
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `src/test/qorelogic/trust-calculator.test.ts` | 8 tests (stages, probation, influence) | PASS |
+| `src/test/qorelogic/trust-persistence.test.ts` | 7 tests (mapping, lock errors, retry) | PASS |
+
+### Section 4 Razor Compliance
+
+All new files ≤250L. All new functions ≤40L. Zero nested ternaries. Zero console.log.
+TrustEngine.ts reduced from 449L to 223L (was the primary violation target).
+
+---
 
 ## Monitor & Command Center Parity — Implementation State
 

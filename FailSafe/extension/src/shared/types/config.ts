@@ -48,4 +48,7 @@ export interface FailSafeConfig {
     contributors: number;
     maxComplexity: number;
   };
+  governance?: {
+    overseerId: string;
+  };
 }

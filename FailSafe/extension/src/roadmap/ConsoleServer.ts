@@ -53,6 +53,7 @@ import { rankSkillForPhase, type SkillRelevance } from "./services/SkillRanker";
 import {
   type CheckpointRecord, type CheckpointDb, type CheckpointStatus,
   getRecentCheckpoints as ckptGetRecent,
+  getRecentVerdicts as ckptGetRecentVerdicts,
   verifyCheckpointChain as ckptVerifyChain,
   getCheckpointSummary as ckptGetSummary,
   buildCheckpointRecord as ckptBuildRecord,
@@ -63,6 +64,14 @@ import {
 
 const PORT = 9376;
 const HOST = "127.0.0.1";
+
+// Read version from package.json once at module load
+const EXTENSION_VERSION: string = (() => {
+  try {
+    const pkgPath = path.resolve(__dirname, '..', '..', 'package.json');
+    return JSON.parse(fs.readFileSync(pkgPath, 'utf-8')).version || 'unknown';
+  } catch { return 'unknown'; }
+})();
 
 type QoreRuntimeOptions = {
   enabled: boolean;
@@ -96,7 +105,6 @@ export class ConsoleServer {
   private qorelogicManager: QoreLogicManager;
   private sentinelDaemon: SentinelDaemon;
   private eventBus: EventBus;
-  private recentVerdicts: SentinelVerdict[] = [];
   private uiDir: string;
   private checkpointDb: CheckpointDb = null;
   private checkpointMemory: CheckpointRecord[] = [];
@@ -119,6 +127,7 @@ export class ConsoleServer {
   private ideTracker:
     | import("./services/IdeActivityTracker").IdeActivityTracker
     | null = null;
+  private scaffoldCallback: (() => Promise<{ scaffolded: number; skipped: number }>) | null = null;
   private checkpointTypeRegistry = new Set<string>([
     "snapshot.created",
     "phase.entered",
@@ -304,6 +313,7 @@ export class ConsoleServer {
       getTransparencyEvents: (limit) => this.getTransparencyEvents(limit),
       getRiskRegister: () => this.getRiskRegister(),
       writeRiskRegister: (risks) => this.writeRiskRegister(risks),
+      scaffoldSkills: this.scaffoldCallback ?? undefined,
     };
 
     setupTransparencyRiskRoutes(this.app, apiDeps);
@@ -341,7 +351,7 @@ export class ConsoleServer {
   private registerVerdictAndTrustRoutes(): void {
     this.app.get("/api/v1/verdicts", (_req: Request, res: Response) => {
       const limit = Math.min(Number(_req.query.limit) || 20, 100);
-      res.json(this.recentVerdicts.slice(0, limit));
+      res.json(this.getRecentVerdicts(limit));
     });
     this.app.get("/api/v1/trust", async (_req: Request, res: Response) => {
       const hub = await this.buildHubSnapshot();
@@ -501,6 +511,10 @@ export class ConsoleServer {
     this.ideTracker = tracker;
   }
 
+  setScaffoldCallback(cb: () => Promise<{ scaffolded: number; skipped: number }>): void {
+    this.scaffoldCallback = cb;
+  }
+
   private buildRouteDeps(): RouteDeps {
     const configProfile = new ConfigurationProfile();
     configProfile.loadDefaults({ workspaceRoot: this.workspaceRoot });
@@ -559,8 +573,6 @@ export class ConsoleServer {
     });
     this.eventBus.on("sentinel.verdict" as never, (event: { payload: unknown }) => {
       const verdict = event.payload as SentinelVerdict;
-      this.recentVerdicts.unshift(verdict);
-      if (this.recentVerdicts.length > 10) this.recentVerdicts.pop();
       this.recordVerdictCheckpoint(verdict);
       this.maybeRecordAuditPassCheckpoint(verdict);
       this.broadcast({ type: "verdict", payload: event.payload });
@@ -746,7 +758,17 @@ export class ConsoleServer {
 
   private async buildHubSnapshot(): Promise<Record<string, unknown>> {
     const activePlan = this.planManager.getActivePlan();
-    const sentinelStatus = this.sentinelDaemon.getStatus();
+    const sentinelStatusRaw = this.sentinelDaemon.getStatus();
+    const sentinelStatus = { ...sentinelStatusRaw };
+    if (this.checkpointDb && sentinelStatus.eventsProcessed === 0) {
+      try {
+        const row = this.checkpointDb.prepare(
+          `SELECT COUNT(*) as cnt FROM failsafe_checkpoints
+           WHERE checkpoint_type LIKE 'policy.%'`,
+        ).get() as { cnt: number } | undefined;
+        if (row?.cnt) (sentinelStatus as Record<string, unknown>).eventsProcessed = row.cnt;
+      } catch { /* non-fatal */ }
+    }
     const l3Queue = this.qorelogicManager.getL3Queue();
     const agents = await this.qorelogicManager.getTrustEngine().getAllAgents();
     const trustSummary = this.buildTrustSummary(agents);
@@ -756,12 +778,12 @@ export class ConsoleServer {
       l3Queue, trustSummary, qoreRuntime,
     );
     return {
-      version: "4.4.0",
+      version: EXTENSION_VERSION,
       sprints: this.planManager.getAllSprints(),
       currentSprint: this.planManager.getCurrentSprint(),
       activePlan,
       sentinelStatus,
-      recentVerdicts: this.recentVerdicts,
+      recentVerdicts: this.getRecentVerdicts(10),
       l3Queue,
       trustSummary,
       nodeStatus,
@@ -775,9 +797,15 @@ export class ConsoleServer {
         : { currentPhase: "Plan", activeTasks: [], activeDebugSessions: [] },
       riskSummary: this.buildRiskSummary(),
       recentCompletions: this.buildRecentCompletions(),
-      bootstrapComplete: fs.existsSync(
-        path.join(this.getWorkspaceRoot(), "docs", "CONCEPT.md"),
-      ),
+      bootstrapState: {
+        skillsInstalled: fs.existsSync(
+          path.join(this.getWorkspaceRoot(), ".claude", "commands", "ql-bootstrap.md"),
+        ),
+        governanceInitialized: fs.existsSync(
+          path.join(this.getWorkspaceRoot(), "docs", "CONCEPT.md"),
+        ),
+        workspaceName: path.basename(this.getWorkspaceRoot()),
+      },
       generatedAt: new Date().toISOString(),
     };
   }
@@ -936,9 +964,12 @@ export class ConsoleServer {
       } & CheckpointDb;
       ledgerDb.exec(CHECKPOINT_INIT_SQL);
       this.checkpointDb = ledgerDb;
+      this.cachedChainValid = this.verifyCheckpointChain();
+      this.chainValidAt = new Date().toISOString();
     } catch (error) {
       this.checkpointDb = null;
-      console.warn("Checkpoint store running in memory fallback mode:", error);
+      this.cachedChainValid = false;
+      this.chainValidAt = null;
     }
   }
 
@@ -1016,6 +1047,10 @@ export class ConsoleServer {
     return ckptGetRecent(this.checkpointDb, this.checkpointMemory, limit);
   }
 
+  private getRecentVerdicts(limit = 50): Array<Record<string, unknown>> {
+    return ckptGetRecentVerdicts(this.checkpointDb, this.checkpointMemory, limit);
+  }
+
   private verifyCheckpointChain(): boolean {
     return ckptVerifyChain(this.checkpointDb, this.checkpointMemory);
   }
@@ -1034,7 +1069,10 @@ export class ConsoleServer {
   private inferActivePhaseTitle(
     activePlan: ReturnType<PlanManager["getActivePlan"]>,
   ): string | undefined {
-    if (!activePlan) return undefined;
+    if (!activePlan) {
+      const recent = this.getRecentCheckpoints(1);
+      return recent.length > 0 ? recent[0].phase : undefined;
+    }
     const p = activePlan as unknown as Record<string, unknown>;
     if (p.currentPhaseId) return String(p.currentPhaseId);
     const phases = p.phases as Array<{ status: string; title: string }> | undefined;
@@ -1042,15 +1080,12 @@ export class ConsoleServer {
   }
 
   private buildRiskSummary(): Record<string, number> {
-    const high = this.recentVerdicts.filter(
-      (v) => ["BLOCK", "ESCALATE", "QUARANTINE"].includes(v.decision),
+    const verdicts = this.getRecentVerdicts(50);
+    const high = verdicts.filter(
+      v => ["BLOCK", "ESCALATE", "QUARANTINE"].includes(String(v.decision)),
     ).length;
-    const medium = this.recentVerdicts.filter(
-      (v) => v.decision === "WARN",
-    ).length;
-    const low = this.recentVerdicts.filter(
-      (v) => v.decision === "PASS",
-    ).length;
+    const medium = verdicts.filter(v => String(v.decision) === "WARN").length;
+    const low = verdicts.filter(v => String(v.decision) === "PASS").length;
     return { high, medium, low };
   }
 

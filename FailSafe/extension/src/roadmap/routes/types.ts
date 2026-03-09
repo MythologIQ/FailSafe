@@ -23,4 +23,5 @@ export interface ApiRouteDeps {
   getTransparencyEvents: (limit: number) => any[];
   getRiskRegister: () => any[];
   writeRiskRegister: (risks: any[]) => void;
+  scaffoldSkills?: () => Promise<{ scaffolded: number; skipped: number }>;
 }

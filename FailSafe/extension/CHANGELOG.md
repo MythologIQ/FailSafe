@@ -9,7 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- Post-4.6.3 scope to be scheduled.
+- Post-4.6.4 scope to be scheduled.
+
+## [4.6.4] - 2026-03-09
+
+Governance state integrity remediation. Trust data that was previously transient or fabricated is now persisted, verified, and kept in sync.
+
+### Fixed
+
+- **Trust state was transient** — Agent trust scores, quarantine status, and verification counts lived only in an init-time cache with no path back to the database after startup. All trust state is now event-driven: mutations persist to SQLite immediately and the cache rebuilds from DB on every trust update, quarantine, or release event.
+- **Trust timestamps were fabricated** — `getTrustScore()` generated `new Date().toISOString()` at call time instead of returning the actual DB `updated_at`. Added `updatedAt` to `AgentIdentity` and mapped from the persisted column, so audit trails now reflect real mutation times.
+- **Checkpoint chain validity was assumed** — `cachedChainValid` defaulted to `true` on startup without verification. Chain integrity is now verified against the database during initialization; failures set `false` and clear the timestamp.
+- **Command Center version was hardcoded** — Hub snapshot reported `4.4.0` regardless of actual version. Now reads from `package.json` at module load.
+
+### Added
+
+- **Optimistic locking for trust persistence** — Concurrent agent trust writes use version-based concurrency control with `OptimisticLockError` detection and exponential backoff retry, preventing silent data loss from race conditions.
+- **Three trust event types** — `qorelogic.trustUpdated`, `qorelogic.agentQuarantined`, `qorelogic.agentReleased` added to EventBus for cache invalidation and downstream consumers.
+
+### Changed
+
+- **TrustEngine Section 4 compliance** — Split 449-line monolith into three files: `TrustEngine.ts` (223L orchestration), `TrustPersistence.ts` (167L DB ops + optimistic locking), `TrustCalculator.ts` (40L pure computation).
 
 ## [4.6.3] - 2026-03-08
 

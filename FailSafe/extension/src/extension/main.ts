@@ -86,6 +86,13 @@ export async function activate(
     gov.complianceExporter.setShadowGenomeManager(qore.shadowGenomeManager);
     gov.provenanceTracker.setLedgerManager(qore.ledgerManager);
 
+    // Wire RBAC persistence (deferred — ledgerManager not available at governance bootstrap)
+    if (qore.ledgerManager.isAvailable()) {
+      gov.rbacManager.setDatabase(
+        qore.ledgerManager.getDatabase() as unknown as import('../shared/types/database').CheckpointDb,
+      );
+    }
+
     // 3.5-3.11 Gap commands, ceremony, commit hooks (extracted to bootstrapAdvancedCommands)
     registerAdvancedCommands(
       context,

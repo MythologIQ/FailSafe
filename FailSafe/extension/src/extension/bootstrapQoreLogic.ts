@@ -50,7 +50,7 @@ export async function bootstrapQoreLogic(
   const ledgerManager = new LedgerManager(secretStore, configProvider);
   await ledgerManager.initialize();
 
-  const trustEngine = new TrustEngine(ledgerManager);
+  const trustEngine = new TrustEngine(ledgerManager, core.eventBus);
   await trustEngine.initialize();
 
   const policyEngine = new PolicyEngine(configProvider);
@@ -62,8 +62,8 @@ export async function bootstrapQoreLogic(
   );
   await shadowGenomeManager.initialize();
 
-  const overseerId = vscode.workspace.getConfiguration('failsafe')
-    .get<string>('governance.overseerId', 'did:myth:overseer:local');
+  const overseerId = configProvider.getConfig().governance?.overseerId
+    ?? 'did:myth:overseer:local';
 
   const qorelogicManager = new QoreLogicManager(
     workspaceStateStore,

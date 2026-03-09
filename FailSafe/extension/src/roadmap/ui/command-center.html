@@ -70,6 +70,7 @@
           <div class="status-item" id="ticker-protocol">PROTOCOL <span>...</span></div>
           <div class="status-item" id="ticker-sentinel">SENTINEL <span>...</span></div>
           <div class="status-item" id="ticker-latency">API <span>...</span></div>
+          <div class="status-item" id="ticker-workspace">WORKSPACE <span>...</span></div>
         </div>
         <div style="flex: 1;"></div>
         <button id="panel-toggle" class="panel-toggle-btn" title="Toggle Right Panel">
@@ -77,11 +78,7 @@
         </button>
       </header>
 
-      <div id="bootstrap-banner" style="display:none;align-items:center;gap:8px;padding:8px 16px;
-        background:rgba(245,158,11,0.1);border:1px solid var(--accent-gold);border-radius:6px;margin:8px 16px 0">
-        <span style="color:var(--accent-gold);font-size:0.82rem;font-weight:600">Workspace not bootstrapped.</span>
-        <span style="color:var(--text-muted);font-size:0.78rem">Run <code style="padding:1px 5px;background:var(--bg-dark);border-radius:3px">/ql-bootstrap</code> to initialize governance.</span>
-      </div>
+      <div id="bootstrap-banner" style="display:none"></div>
 
       <div class="viewport-hub">
         <!-- Main Viewport Area -->

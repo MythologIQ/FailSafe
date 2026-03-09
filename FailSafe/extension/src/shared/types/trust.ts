@@ -45,5 +45,6 @@ export interface AgentIdentity {
   isQuarantined: boolean;
   verificationsCompleted: number;
   createdAt: string;
+  updatedAt?: string;
   version: number;
 }

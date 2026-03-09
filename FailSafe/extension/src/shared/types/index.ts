@@ -61,3 +61,6 @@ export type { FailSafeEventType, FailSafeEvent } from "./events";
 
 // Configuration
 export type { FailSafeConfig } from "./config";
+
+// Database
+export type { CheckpointDb } from "./database";

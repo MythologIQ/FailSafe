@@ -30,13 +30,8 @@ export type CheckpointRecord = {
   prevHash: string;
 };
 
-export type CheckpointDb = {
-  prepare: (sql: string) => {
-    run: (...args: unknown[]) => unknown;
-    get: (...args: unknown[]) => unknown;
-    all: (...args: unknown[]) => unknown;
-  };
-} | null;
+import type { CheckpointDb } from "../../shared/types/database";
+export type { CheckpointDb } from "../../shared/types/database";
 
 const CKPT_COLUMNS = `checkpoint_id, run_id, checkpoint_type, phase, status, timestamp,
   parent_id, git_hash, policy_verdict, evidence_refs, actor,
@@ -54,6 +49,25 @@ export function getRecentCheckpoints(
     } catch { /* fall through */ }
   }
   return memory.slice(0, limit);
+}
+
+export function getRecentVerdicts(
+  db: CheckpointDb, memory: CheckpointRecord[], limit: number,
+): Array<Record<string, unknown>> {
+  if (db) {
+    try {
+      const rows = db.prepare(
+        `SELECT payload_json, timestamp FROM failsafe_checkpoints
+         WHERE checkpoint_type = 'policy.checked'
+         ORDER BY id DESC LIMIT ?`,
+      ).all(limit) as Array<{ payload_json: string; timestamp: string }>;
+      return rows.map(row => ({ ...JSON.parse(row.payload_json), timestamp: row.timestamp }));
+    } catch { /* fall through to memory */ }
+  }
+  return memory
+    .filter(r => r.checkpointType === "policy.checked")
+    .slice(0, limit)
+    .map(r => ({ ...JSON.parse(r.payloadJson), timestamp: r.timestamp }));
 }
 
 export function getAllCheckpointsAsc(
@@ -189,6 +203,10 @@ export function persistCheckpoint(
   }
   memory.unshift(record);
   if (memory.length > 500) memory.splice(500);
+  // Evict entries older than 24 hours from memory fallback
+  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const idx = memory.findIndex(r => r.timestamp < cutoff);
+  if (idx >= 0) memory.splice(idx);
 }
 
 export const CHECKPOINT_INIT_SQL = `

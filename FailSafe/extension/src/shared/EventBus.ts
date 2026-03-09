@@ -102,7 +102,10 @@ export class EventBus {
   }
 
   /**
-   * Get event history, optionally filtered by type
+   * Get event history for SSE reconnection recovery ONLY.
+   * Do NOT use this method to derive application state.
+   * All durable state must be read from its single source of truth
+   * (checkpoint DB, ledger DB, trust engine, etc.).
    */
   getHistory(eventType?: FailSafeEventType, limit?: number): FailSafeEvent[] {
     let history = eventType

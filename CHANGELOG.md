@@ -9,7 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- Post-4.6.3 scope to be scheduled.
+- Post-4.6.4 scope to be scheduled.
+
+## [4.6.4] - 2026-03-09
+
+### Fixed
+
+- Trust state was transient: event-driven invalidation via EventBus replaces stale init-only cache. Mutations persist to SQLite and cache rebuilds from DB on trust updates, quarantines, and releases.
+- Trust timestamps fabricated: `getTrustScore()` now returns DB `updated_at` instead of `new Date()`. Audit trails reflect real mutation times.
+- Checkpoint chain validity assumed on startup: now auto-verified during initialization; failures recorded.
+- Command Center version hardcoded to 4.4.0: now reads from package.json.
+
+### Added
+
+- Trust persistence with optimistic locking, version-based concurrency control, and exponential backoff retry for concurrent agent trust updates.
+- Three trust event types (`trustUpdated`, `agentQuarantined`, `agentReleased`) for EventBus cache invalidation.
+
+### Changed
+
+- TrustEngine decomposed: 449L → 3 files (223L + 167L + 40L) for Section 4 compliance.
 
 ## [4.6.3] - 2026-03-08
 

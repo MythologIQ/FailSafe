@@ -1,16 +1,33 @@
-[![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.6.3?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.6.3?platform=universal)
+[![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.6.4?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.6.4?platform=universal)
 
 # MythologIQ FailSafe for VS Code
 
 FailSafe is a local-first governance extension for AI-assisted development in VS Code and Cursor. It applies deterministic checks at the editor boundary, records decisions to a local ledger, and provides dedicated surfaces for audits, checkpoints, and agent governance.
 
-**Current Release**: v4.6.3 (2026-03-08)
+**Current Release**: v4.6.4 (2026-03-09)
 
 ![FailSafe Banner](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/extension/FailSafe%20Banner.png)
 
-## What's New in v4.6.3
+## What's New in v4.6.4
 
-Incremental hotfix — additional UI refinements and hardening are forthcoming.
+Governance state integrity remediation — trust data that was transient or fabricated is now persisted, verified, and kept in sync.
+
+### Fixes
+
+- **Trust state no longer transient** — Agent trust scores, quarantine status, and verification counts now persist through EventBus-driven cache invalidation. Every trust mutation writes to SQLite and rebuilds the in-memory cache from DB.
+- **Trust timestamps are real** — Audit trails reflect actual DB `updated_at` instead of fabricated call-time timestamps.
+- **Checkpoint chain verified on startup** — No longer assumes valid. Auto-verifies integrity and flags failures.
+- **Version display fixed** — Command Center hub snapshot reads version from package.json (was hardcoded 4.4.0).
+
+### Added
+
+- **Optimistic locking for trust persistence** — Concurrent agent trust writes use version-based concurrency control with automatic retry, preventing silent data loss from race conditions.
+
+### Changed
+
+- **TrustEngine refactored** — 449-line monolith split into TrustEngine (223L), TrustPersistence (167L), and TrustCalculator (40L) for Section 4 Razor compliance.
+
+## What's New in v4.6.3
 
 ### Fixes
 

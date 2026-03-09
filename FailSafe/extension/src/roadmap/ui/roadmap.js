@@ -139,6 +139,16 @@ class WebPanelClient {
   }
 
   getPhaseInfo(plan) {
+    const runState = this.hub?.runState;
+    if (runState && runState.currentPhase !== 'Plan') {
+      const title = runState.currentPhase;
+      const normalized = title.toLowerCase();
+      let index = 2;
+      if (normalized.startsWith('debug')) index = 3;
+      else if (normalized.startsWith('build')) index = 2;
+      return { title, index };
+    }
+
     const phases = Array.isArray(plan?.phases) ? plan.phases : [];
     const active = phases.find((phase) => phase.id === plan?.currentPhaseId)
       || phases.find((phase) => phase.status === 'active')
@@ -161,9 +171,16 @@ class WebPanelClient {
       .filter((milestone) => !!milestone.completedAt)
       .sort((a, b) => new Date(String(b.completedAt)).getTime() - new Date(String(a.completedAt)).getTime());
     const completedPhases = phases.filter((phase) => phase.status === 'completed');
-    const recentlyCompletedFeatures = completedMilestones.length > 0
+    let recentlyCompletedFeatures = completedMilestones.length > 0
       ? completedMilestones.slice(0, 3).map((milestone) => milestone.title)
       : completedPhases.slice(-3).reverse().map((phase) => phase.title);
+
+    if (recentlyCompletedFeatures.length === 0) {
+      const completions = this.hub?.recentCompletions || [];
+      recentlyCompletedFeatures = completions
+        .slice(0, 3)
+        .map((c) => `${c.type}: ${c.phase}`);
+    }
 
     return {
       line: recentlyCompletedFeatures.length > 0

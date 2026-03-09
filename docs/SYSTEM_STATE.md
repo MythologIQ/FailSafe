@@ -1,7 +1,64 @@
 # SYSTEM STATE
 
-**Last Updated:** 2026-03-08T05:30:00Z
-**Version:** v4.6.0 + Post-Seal Fixes SUBSTANTIATED
+**Last Updated:** 2026-03-08T16:00:00Z
+**Version:** v4.6.3 + Monitor & Command Center Parity SUBSTANTIATED
+
+## Monitor & Command Center Parity — Implementation State
+
+### Ledger Trail
+
+| Entry | Phase | Verdict |
+|-------|-------|---------|
+| #187 | GATE | VETO (3 violations) |
+| #188 | GATE | PASS (all 3 remediated) |
+| #189 | IMPLEMENT | Phases 1-3 complete |
+| #190 | SUBSTANTIATE | Session sealed |
+
+### Phase 1: Hub Snapshot Enrichment + L3 Queue Hygiene
+
+| File | Change | Status |
+|------|--------|--------|
+| `src/shared/types/l3-approval.ts` | Added `EXPIRED` to `L3ApprovalState` union | DONE |
+| `src/shared/types/events.ts` | Added 4 IDE lifecycle event types | DONE |
+| `src/qorelogic/L3ApprovalService.ts` | Added `pruneExpired()` with debounce + NaN guard, modified `getQueue()` | DONE |
+| `src/extension/bootstrapIdeActivity.ts` | NEW: VS Code task/debug lifecycle → EventBus (46L) | DONE |
+| `src/roadmap/services/IdeActivityTracker.ts` | NEW: Pure state tracker with runtime validation (82L) | DONE |
+| `src/extension/main.ts` | Added step 1.5 `bootstrapIdeActivity()` call | DONE |
+| `src/roadmap/ConsoleServer.ts` | Added `ideTracker` field, `setIdeTracker()`, `runState`/`riskSummary`/`recentCompletions` in snapshot | DONE |
+| `src/extension/bootstrapServers.ts` | Wire `IdeActivityTracker` → `ConsoleServer` | DONE |
+
+### Phase 2: Monitor Sidebar — Consume Enriched Snapshot
+
+| File | Change | Status |
+|------|--------|--------|
+| `src/roadmap/ui/roadmap.js` | `getPhaseInfo()`: IDE-aware phase detection via `hub.runState` | DONE |
+| `src/roadmap/ui/roadmap.js` | `getFeatureSummary()`: fallthrough to `hub.recentCompletions` | DONE |
+
+### Phase 3: Command Center — Sentinel Parity + Live Data
+
+| File | Change | Status |
+|------|--------|--------|
+| `src/roadmap/ui/modules/overview.js` | Replaced `renderActivityMocks()` with `renderActivityLive()` | DONE |
+| `src/roadmap/ui/modules/overview.js` | Added `renderVerdictAlert()` banner for BLOCK/ESCALATE/QUARANTINE | DONE |
+| `src/roadmap/ui/modules/overview.js` | Added `esc()` XSS sanitizer, applied to all interpolations | DONE |
+| `src/roadmap/ui/modules/operations.js` | `renderMissionStrip()`: verdict-aware coloring via `lastVerdict.decision` | DONE |
+
+### Post-Implementation Hardening (Devil's Advocate)
+
+| Issue | Fix |
+|-------|-----|
+| Fire-and-forget persist + write contention | 5-second debounce on `pruneExpired()` |
+| Invalid slaDeadline → NaN defeats pruning | `Number.isNaN(deadline)` guard |
+| Empty task name collapses Map entries | Fallback: `name \|\| definition.type \|\| "unnamed-task"` |
+| XSS via innerHTML interpolation | `esc()` sanitizer on all verdict/checkpoint data |
+| Unsafe `as` casts in IdeActivityTracker | Runtime `typeof` validation before Map operations |
+
+### Section 4 Razor Compliance
+
+All new files ≤250L. All new functions ≤40L. Zero nested ternaries. Zero console.log.
+ConsoleServer.ts grandfathered at ~1185L (pre-existing, +57L from this implementation).
+
+---
 
 ## v4.6.0 Consolidated Release — Implementation State
 

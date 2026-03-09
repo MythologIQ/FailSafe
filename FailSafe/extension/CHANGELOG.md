@@ -9,7 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- Post-4.6.2 scope to be scheduled.
+- Post-4.6.3 scope to be scheduled.
+
+## [4.6.3] - 2026-03-08
+
+Incremental hotfix addressing Monitor and Command Center data parity issues discovered after v4.6.0's decomposition. Additional UI refinements and follow-up hardening are forthcoming.
+
+### Fixed
+
+- **Monitor sidebar now tracks active builds and debug sessions** — Added IDE lifecycle event forwarding (`bootstrapIdeActivity`) and `IdeActivityTracker` service. Build tasks and debug sessions surface in real-time as the active phase.
+- **"Recently Completed" no longer stuck on "None Yet"** — Falls through to checkpoint history (`recentCompletions`) when no plan milestones or phases are available.
+- **L3 approval queue auto-prunes expired items** — `pruneExpired()` enforces SLA deadlines on every queue read, eliminating unbounded growth of stale approval requests.
+- **Command Center now reflects Sentinel critical alerts** — Hub snapshot includes `riskSummary` (high/medium/low threat counts). Overview tab renders verdict alert banner for BLOCK/ESCALATE/QUARANTINE. Operations tab mission strip turns red on critical verdicts.
+- **Console Server assets now load** — `express.static` middleware was also missing `dotfiles: "allow"`, causing all CSS, JS, images, and vendor files to silently 404 even after v4.6.2's `sendFile` fix.
+- **XSS hardening** — All innerHTML interpolations in Command Center overview sanitized via `esc()` helper.
 
 ## [4.6.2] - 2026-03-08
 

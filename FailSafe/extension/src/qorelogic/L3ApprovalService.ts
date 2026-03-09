@@ -41,9 +41,42 @@ export class L3ApprovalService {
     }
 
     /**
-     * Get a copy of the current L3 approval queue.
+     * Remove expired items from the L3 queue based on SLA deadline.
+     */
+    private lastPruneAt = 0;
+
+    private pruneExpired(): L3ApprovalRequest[] {
+        const now = Date.now();
+        if (now - this.lastPruneAt < 5000) return [];
+        this.lastPruneAt = now;
+
+        const expired: L3ApprovalRequest[] = [];
+        this.l3Queue = this.l3Queue.filter(r => {
+            const deadline = new Date(r.slaDeadline).getTime();
+            if (Number.isNaN(deadline) || deadline < now) {
+                r.state = 'EXPIRED';
+                r.decidedAt = new Date().toISOString();
+                expired.push(r);
+                return false;
+            }
+            return true;
+        });
+        return expired;
+    }
+
+    /**
+     * Get a copy of the current L3 approval queue (auto-prunes expired).
      */
     getQueue(): L3ApprovalRequest[] {
+        const expired = this.pruneExpired();
+        if (expired.length > 0) {
+            void this.persistL3Queue();
+            for (const item of expired) {
+                this.eventBus.emit('qorelogic.l3Decided', {
+                    request: item, decision: 'EXPIRED',
+                });
+            }
+        }
         return [...this.l3Queue];
     }
 

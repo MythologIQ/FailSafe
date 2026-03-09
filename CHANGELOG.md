@@ -9,7 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- Post-4.6.2 scope to be scheduled.
+- Post-4.6.3 scope to be scheduled.
+
+## [4.6.3] - 2026-03-08
+
+Incremental hotfix for Monitor & Command Center parity. Further refinements forthcoming.
+
+### Fixed
+
+- Console Server `express.static` missing `dotfiles: "allow"` — all CSS/JS/image assets silently 404'd under dotfile install paths.
+- Monitor sidebar: active build/debug session tracking via IDE lifecycle events.
+- "Recently Completed" falls through to checkpoint history when plan data is empty.
+- L3 approval queue auto-prunes expired items on read (SLA enforcement).
+- Command Center: verdict alert banner, live network activity, verdict-aware mission strip.
+- XSS hardening on Command Center overview innerHTML interpolations.
 
 ## [4.6.2] - 2026-03-08
 

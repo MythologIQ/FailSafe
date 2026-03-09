@@ -16,6 +16,7 @@ import type { QoreLogicManager } from "../qorelogic/QoreLogicManager";
 import type { SentinelDaemon } from "../sentinel/SentinelDaemon";
 import type { SystemRegistry } from "../qorelogic/SystemRegistry";
 import type { ConfigManager } from "../shared/ConfigManager";
+import { IdeActivityTracker } from "../roadmap/services/IdeActivityTracker";
 
 export interface ServerDeps {
   planManager: PlanManager;
@@ -43,6 +44,9 @@ export async function bootstrapServers(
     deps.workspaceRoot.split(/[/\\]/).pop() || "project",
   );
 
+  // IDE Activity Tracker (receives task/debug events via EventBus)
+  const ideTracker = new IdeActivityTracker(deps.eventBus);
+
   // Single unified server on port 9376
   const consoleServer = new ConsoleServer(
     deps.planManager,
@@ -51,6 +55,7 @@ export async function bootstrapServers(
     deps.eventBus,
     { workspaceRoot: deps.workspaceRoot, configProvider: deps.configManager },
   );
+  consoleServer.setIdeTracker(ideTracker);
   consoleServer.setSystemRegistry(deps.systemRegistry);
   await consoleServer.start();
   context.subscriptions.push({ dispose: () => consoleServer?.stop() });

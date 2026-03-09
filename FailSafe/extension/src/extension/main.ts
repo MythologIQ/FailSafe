@@ -31,6 +31,7 @@ import { bootstrapSentinel } from "./bootstrapSentinel";
 import { bootstrapGenesis } from "./bootstrapGenesis";
 import { bootstrapMCP } from "./bootstrapMCP";
 import { bootstrapServers } from "./bootstrapServers";
+import { bootstrapIdeActivity } from "./bootstrapIdeActivity";
 import { registerAdvancedCommands } from "./bootstrapAdvancedCommands";
 import { registerCommands } from "./commands";
 import { createVscodeFeatureGate } from "../core/adapters/vscode";
@@ -65,6 +66,9 @@ export async function activate(
 
     // Hygiene Automation
     await WorkspaceMigration.checkAndRepair(context);
+
+    // 1.5 IDE Activity (task/debug lifecycle → EventBus)
+    bootstrapIdeActivity(context, core);
 
     // 2. Governance
     const gov = await bootstrapGovernance(context, core, logger);

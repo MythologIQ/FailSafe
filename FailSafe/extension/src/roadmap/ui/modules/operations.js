@@ -30,8 +30,22 @@ export class OperationsRenderer {
   renderMissionStrip(run, sentinel) {
     const phase = run.currentPhase || 'Plan';
     const mode = sentinel.mode || 'observe';
-    const running = sentinel.running ? 'Active' : 'Halted';
-    const color = sentinel.running ? 'var(--accent-green)' : 'var(--accent-red)';
+    const lastVerdict = sentinel.lastVerdict;
+
+    let running = 'Active';
+    let color = 'var(--accent-green)';
+
+    if (!sentinel.running) {
+      running = 'Halted';
+      color = 'var(--accent-red)';
+    } else if (lastVerdict && ['BLOCK', 'ESCALATE', 'QUARANTINE'].includes(lastVerdict.decision)) {
+      running = 'Alert';
+      color = 'var(--accent-red)';
+    } else if (lastVerdict && lastVerdict.decision === 'WARN') {
+      running = 'Warnings';
+      color = 'var(--accent-gold)';
+    }
+
     return `
       <div class="cc-card" style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
         <span style="width:10px;height:10px;border-radius:50%;background:${color};

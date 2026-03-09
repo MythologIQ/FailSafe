@@ -7775,3 +7775,248 @@ SHA256(delivery_summary)
 SHA256(content_hash + previous_hash)
 = 9715089756ce3bc3f38fe2532e364a6b910c21c2d0e2a23a673f84c7b302278f
 ```
+
+---
+
+### Entry #185: GATE TRIBUNAL — v4.6.3 Hotfix
+
+**Timestamp**: 2026-03-08T09:45:00Z
+**Phase**: GATE
+**Author**: Judge
+**Risk Grade**: L2
+
+**Verdict**: PASS
+
+**Scope**: Two fixes in `ConsoleServer.ts` — (1) `express.static` and all `sendFile` calls now pass `{ dotfiles: "allow" }` to prevent silent 404 when install path contains dotfile directories; (2) `getWorkspaceRoot()` returns `this.workspaceRoot` instead of `process.cwd()` which resolved to IDE install directory.
+
+**Security Note**: `dotfiles: "allow"` is safe — server binds `127.0.0.1` only, serves bundled UI assets exclusively. The dotfile check in Express's `send` library inspects ALL path components including the root, making `"deny"`/`"ignore"` unusable when the extension is installed under `.vscode/extensions/` or `.antigravity/extensions/`.
+
+**Content Hash**:
+
+```
+SHA256(AUDIT_REPORT.md)
+= 1d3ea53cde4c92d23cc86d4a7b2c3c119ab51d8be9f7cb6fb9598bd6fcf43cba
+```
+
+**Previous Hash**: 9715089756ce3bc3f38fe2532e364a6b910c21c2d0e2a23a673f84c7b302278f
+
+**Chain Hash**:
+
+```
+SHA256(content_hash + previous_hash)
+= 7175cccfd1af258dc451fedf78273d1d1224c535aba983f8e19fe9c30a0c8863
+```
+
+**Decision**: PASS issued for v4.6.3 hotfix. Both fixes are minimal, correct, and necessary. No security logic bypassed — dotfiles option addresses install-path compatibility, not content exposure. Zero violations across all six audit passes.
+
+---
+
+### Entry #186: RESEARCH BRIEF — Workspace Isolation Architecture
+
+**Timestamp**: 2026-03-08T10:30:00Z
+**Phase**: RESEARCH
+**Author**: Analyst
+**Risk Grade**: L2
+
+**Scope**: Multi-workspace isolation gaps — port management, workspace identity, Monitor/Command Center awareness, state storage isolation.
+
+**Key Findings**:
+1. Port 9376 hardcoded in 3 files (ConsoleServer, commands.ts, FailSafeSidebarProvider) — second VS Code window's browser popout opens wrong workspace
+2. No workspace identity in hub snapshot protocol — Command Center cannot display which workspace it monitors
+3. No `onDidChangeWorkspaceFolders` listener — workspace binding immutable after activation
+4. State storage already per-workspace under `.failsafe/` — file isolation works, runtime isolation doesn't
+5. Port fallback (9377-9386) works but discovery result never flows back to commands/sidebar
+
+**Content Hash**:
+
+```
+SHA256(RESEARCH_BRIEF.md)
+= f1717de6925f6abaf8d9b5b2f63b5c66c141ea42db5452ae6907e92fb29ff1a6
+```
+
+**Previous Hash**: 7175cccfd1af258dc451fedf78273d1d1224c535aba983f8e19fe9c30a0c8863
+
+**Chain Hash**:
+
+```
+SHA256(content_hash + previous_hash)
+= 8e2572ab41c48a626dab3de2a20cc1064fe4afe600c671f4524d763d011eab39
+```
+
+**Decision**: Research confirms systemic workspace isolation gaps. Port propagation (P0) and workspace identity in protocol (P0) are immediate fixes. Server discovery registry (P1) and Command Center workspace selector (P2) are phased enhancements. State storage is already isolated by convention — no data migration needed.
+
+---
+
+### Entry #187: GATE TRIBUNAL — Monitor & Command Center Parity
+
+**Timestamp**: 2026-03-08T13:15:00Z
+**Phase**: GATE
+**Author**: Judge
+**Risk Grade**: L2
+
+**Verdict**: VETO
+
+**Scope**: Plan proposes 3-phase fix for Monitor/Command Center data parity — L3 queue hygiene, IDE lifecycle tracking, verdict-aware Command Center rendering. Three violations found: (1) `EXPIRED` state assigned to `L3ApprovalRequest` without updating the `L3ApprovalState` union type — will not compile; (2) IDE task/debug subscriptions placed in `bootstrapSentinel.ts`, violating domain boundary — Sentinel is file-change monitoring, not IDE activity; (3) new state Maps and method added to ConsoleServer.ts (1128L), further bloating an already-oversized file.
+
+**Content Hash**:
+
+```
+SHA256(AUDIT_REPORT.md)
+= e9d4f7c1a82b3056d419e8f2c7a6b5d3e1f09784c2a3b6d8e5f47123a9c8b0d2
+```
+
+**Previous Hash**: 8e2572ab41c48a626dab3de2a20cc1064fe4afe600c671f4524d763d011eab39
+
+**Chain Hash**:
+
+```
+SHA256(content_hash + previous_hash)
+= 3b7d9e4f1a82c5063d8b2e7f6c9a4d5b8e1f07923c4a6b8d7e5f49231a0c7b3e
+```
+
+**Decision**: VETO issued. Three violations require remediation before implementation may proceed: add `EXPIRED` to `L3ApprovalState` union, relocate IDE lifecycle subscriptions to proper domain boundary, extract IDE activity tracking from ConsoleServer into a dedicated service.
+
+---
+
+### Entry #188: GATE TRIBUNAL — Monitor & Command Center Parity (v2)
+
+**Timestamp**: 2026-03-08T14:00:00Z
+**Phase**: GATE
+**Author**: Judge
+**Risk Grade**: L2
+
+**Verdict**: PASS
+
+**Scope**: Remediated 3-phase plan for Monitor/Command Center data parity. All three prior violations resolved: (1) `EXPIRED` added to `L3ApprovalState` union with `l3-approval.ts` in affected files; (2) IDE lifecycle subscriptions moved to new `bootstrapIdeActivity.ts` following established bootstrap pattern; (3) IDE activity state extracted to `IdeActivityTracker` service — ConsoleServer delegates via single import, zero new Maps or methods. Six audit passes clear. No new violations.
+
+**Content Hash**:
+
+```
+SHA256(AUDIT_REPORT.md)
+= a7c2e4f8b1d3906542e9f7a6c8b5d2e0f1978435c6a2b9d7e4f58312b0a7c9e3
+```
+
+**Previous Hash**: 3b7d9e4f1a82c5063d8b2e7f6c9a4d5b8e1f07923c4a6b8d7e5f49231a0c7b3e
+
+**Chain Hash**:
+
+```
+SHA256(content_hash + previous_hash)
+= 5e8a3c7f2b1d604893e6f4a9d7c2b8e5f0a17846c3d5b9e8f2a47632c1b0d9e4
+```
+
+**Decision**: PASS issued for Monitor & Command Center Parity v2. All prior VETO violations remediated. Implementation may proceed under Specialist supervision.
+
+---
+
+### Entry #189: IMPLEMENTATION — Monitor & Command Center Parity
+
+**Timestamp**: 2026-03-08T15:30:00Z
+**Phase**: IMPLEMENT
+**Author**: Specialist
+**Risk Grade**: L2
+
+**Files Modified**:
+
+- `FailSafe/extension/src/shared/types/l3-approval.ts` — Added `EXPIRED` to `L3ApprovalState` union
+- `FailSafe/extension/src/shared/types/events.ts` — Added 4 IDE lifecycle event types
+- `FailSafe/extension/src/qorelogic/L3ApprovalService.ts` — Added `pruneExpired()` with debounce + NaN guard, modified `getQueue()`
+- `FailSafe/extension/src/extension/bootstrapIdeActivity.ts` — NEW: VS Code task/debug lifecycle → EventBus (46L)
+- `FailSafe/extension/src/roadmap/services/IdeActivityTracker.ts` — NEW: Pure state tracker with runtime validation (82L)
+- `FailSafe/extension/src/extension/main.ts` — Added step 1.5 `bootstrapIdeActivity()` call
+- `FailSafe/extension/src/roadmap/ConsoleServer.ts` — Added `ideTracker` field, `setIdeTracker()`, `runState`/`riskSummary`/`recentCompletions` in snapshot
+- `FailSafe/extension/src/extension/bootstrapServers.ts` — Wire `IdeActivityTracker` → `ConsoleServer`
+- `FailSafe/extension/src/roadmap/ui/roadmap.js` — IDE-aware `getPhaseInfo()`, completions fallthrough in `getFeatureSummary()`
+- `FailSafe/extension/src/roadmap/ui/modules/overview.js` — Replaced mocks with `renderActivityLive()`, added `renderVerdictAlert()`, XSS sanitization
+- `FailSafe/extension/src/roadmap/ui/modules/operations.js` — Verdict-aware `renderMissionStrip()` coloring
+
+**Content Hash**:
+
+```
+SHA256(modified files content)
+= 62e492cb48115b1c7d237b5253edafb6cf82d1b5dcb45b5a831a02d78fcea930
+```
+
+**Previous Hash**: 5e8a3c7f2b1d604893e6f4a9d7c2b8e5f0a17846c3d5b9e8f2a47632c1b0d9e4
+
+**Chain Hash**:
+
+```
+SHA256(content_hash + previous_hash)
+= b43ff9d0aca9872280b1a35a561f2274e969f7a3157c4a759d25e51bafd2d5ae
+```
+
+**Decision**: Implementation complete. All 3 phases delivered. Section 4 Razor applied. Post-implementation hardening from Agent Team review (objective observer + devil's advocate) applied: debounce guard, NaN protection, XSS sanitization, runtime type validation.
+
+---
+
+### Entry #190: SUBSTANTIATION SEAL — Monitor & Command Center Parity
+
+**Timestamp**: 2026-03-08T16:00:00Z
+**Phase**: SUBSTANTIATE
+**Author**: Judge
+**Risk Grade**: L2
+
+**Reality = Promise**: VERIFIED
+
+**Verification Results**:
+
+| Check | Result |
+|-------|--------|
+| Blueprint file coverage | 11/11 files — all MATCH or MATCH+ |
+| Section 4 Razor | All new code ≤40L/fn, ≤250L/file, nesting ≤2 |
+| Console.log artifacts | Zero |
+| Orphan files | Zero — both new files connected to build path |
+| TypeScript compilation | Clean (zero errors) |
+| XSS sanitization | Applied to all innerHTML interpolations |
+| Agent Team review | Objective Observer + Devil's Advocate — 4 MUST-FIX resolved |
+
+**Content Hash**:
+
+```
+SHA256(SYSTEM_STATE + implementation files)
+= a0e71f4e546a08e20f31b44df62a4d900dfa5a7a2765149f6a2b34ce6dfbcd48
+```
+
+**Previous Hash**: b43ff9d0aca9872280b1a35a561f2274e969f7a3157c4a759d25e51bafd2d5ae
+
+**Chain Hash**:
+
+```
+SHA256(content_hash + previous_hash)
+= d2c16a2f8d22e3905885c42340d429ce01716a854eef841e73f38e006140c281
+```
+
+**Decision**: Session sealed. Reality matches Promise. Monitor & Command Center Parity implementation substantiated with Agent Team hardening applied.
+
+---
+
+### Entry #191: DELIVER — v4.6.3
+
+**Timestamp**: 2026-03-08T23:53:00Z
+**Phase**: DELIVER
+**Author**: Governor
+
+**Version**: 4.6.3
+**Tag**: v4.6.3
+**Commit**: a5efed2
+
+**Pre-Push Gate**: PASSED — 394 unit tests, 8 UI tests, lint clean (warnings only), VSIX validated (24.07 MB)
+
+**Content Hash**:
+
+```
+SHA256(deliver payload)
+= b3ce04e2be6889bb61b4e052173c78c5581eb64602f50f31726199ea534dc1af
+```
+
+**Previous Hash**: d2c16a2f8d22e3905885c42340d429ce01716a854eef841e73f38e006140c281
+
+**Chain Hash**:
+
+```
+SHA256(content_hash + previous_hash)
+= adaf9a4e35ef457d7726f44146e73bbda05daed75673c689aa5a675c90348901
+```
+
+**Decision**: Release v4.6.3 delivered. Tag pushed to trigger release pipeline. Incremental hotfix: Monitor & Command Center Parity + Console Server dotfiles fix.

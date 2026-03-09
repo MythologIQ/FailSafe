@@ -1,5 +1,8 @@
 # Plan: Repository Consolidation
 
+**Current Version**: v4.6.5
+**Target Version**: v4.6.5 (no bump - cleanup only)
+**Change Type**: plan
 **Risk Grade**: L2
 **Author**: Governor
 **Date**: 2026-03-09

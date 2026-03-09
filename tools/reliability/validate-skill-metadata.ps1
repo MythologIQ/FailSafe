@@ -38,53 +38,44 @@ function Assert-Condition {
 }
 
 $repo = Resolve-RepoRoot -ExplicitRoot $RepoRoot
-$vsRoot = Join-Path $repo "FailSafe\VSCode\skills"
-$agentRoot = Join-Path $repo ".agent\skills"
-$registryPath = Join-Path $repo "FailSafe\VSCode\skills\SOURCE_REGISTRY.md"
+
+# Single source of truth: .claude/skills/ (consolidated from VSCode/Antigravity/.agent)
+$claudeSkillsRoot = Join-Path $repo ".claude\skills"
+$claudeAgentsRoot = Join-Path $repo ".claude\agents"
 
 $script:Failures = @()
 
-Assert-Condition -Condition (Test-Path $vsRoot) -Message "Missing VSCode skills root: $vsRoot"
-Assert-Condition -Condition (Test-Path $agentRoot) -Message "Missing .agent skills root: $agentRoot"
-Assert-Condition -Condition (Test-Path $registryPath) -Message "Missing source registry: $registryPath"
+Assert-Condition -Condition (Test-Path $claudeSkillsRoot) -Message "Missing canonical skills root: $claudeSkillsRoot"
+Assert-Condition -Condition (Test-Path $claudeAgentsRoot) -Message "Missing canonical agents root: $claudeAgentsRoot"
 
-$vsSkills = Get-ActiveSkillDirs -Root $vsRoot
-$agentSkills = Get-ActiveSkillDirs -Root $agentRoot
+# Validate skill structure
+$claudeSkills = Get-ActiveSkillDirs -Root $claudeSkillsRoot
+$skillNames = @($claudeSkills | ForEach-Object { $_.Name } | Sort-Object -Unique)
 
-$vsNames = @($vsSkills | ForEach-Object { $_.Name } | Sort-Object -Unique)
-$agentNames = @($agentSkills | ForEach-Object { $_.Name } | Sort-Object -Unique)
+foreach ($dir in $claudeSkills) {
+  $skillPath = Join-Path $dir.FullName "SKILL.md"
 
-$missingInAgent = @($vsNames | Where-Object { $_ -notin $agentNames })
-$missingInVs = @($agentNames | Where-Object { $_ -notin $vsNames })
-
-if ($missingInAgent.Count -gt 0) {
-  $script:Failures += "Skill parity gap: present in VSCode only -> $($missingInAgent -join ', ')"
-}
-if ($missingInVs.Count -gt 0) {
-  $script:Failures += "Skill parity gap: present in .agent only -> $($missingInVs -join ', ')"
-}
-
-foreach ($root in @($vsRoot, $agentRoot)) {
-  foreach ($dir in (Get-ActiveSkillDirs -Root $root)) {
-    $skillPath = Join-Path $dir.FullName "SKILL.md"
-    $sourcePath = Join-Path $dir.FullName "SOURCE.yml"
-
-    Assert-Condition -Condition (Test-Path $skillPath) -Message "Missing SKILL.md: $skillPath"
-    Assert-Condition -Condition (Test-Path $sourcePath) -Message "Missing SOURCE.yml: $sourcePath"
-    if (-not (Test-Path $skillPath) -or -not (Test-Path $sourcePath)) {
-      continue
-    }
-
-    $skillRaw = Get-Content $skillPath -Raw
-    $sourceRaw = Get-Content $sourcePath -Raw
-
-    Assert-Condition -Condition ($skillRaw.TrimStart().StartsWith('---')) -Message "Missing YAML frontmatter in SKILL.md: $skillPath"
-    Assert-Condition -Condition ($skillRaw -match "(?m)^name:\s*.+$") -Message "Missing frontmatter name in SKILL.md: $skillPath"
-    Assert-Condition -Condition ($skillRaw -match "(?m)^description:\s*.+$") -Message "Missing frontmatter description in SKILL.md: $skillPath"
-
-    Assert-Condition -Condition ($sourceRaw -match "(?m)^source:\s*$") -Message "Missing source block in SOURCE.yml: $sourcePath"
-    Assert-Condition -Condition ($sourceRaw -match "(?m)^creator:\s*$") -Message "Missing creator block in SOURCE.yml: $sourcePath"
+  Assert-Condition -Condition (Test-Path $skillPath) -Message "Missing SKILL.md: $skillPath"
+  if (-not (Test-Path $skillPath)) {
+    continue
   }
+
+  $skillRaw = Get-Content $skillPath -Raw
+
+  Assert-Condition -Condition ($skillRaw.TrimStart().StartsWith('---')) -Message "Missing YAML frontmatter in SKILL.md: $skillPath"
+  Assert-Condition -Condition ($skillRaw -match "(?m)^name:\s*.+$") -Message "Missing frontmatter name in SKILL.md: $skillPath"
+  Assert-Condition -Condition ($skillRaw -match "(?m)^description:\s*.+$") -Message "Missing frontmatter description in SKILL.md: $skillPath"
+}
+
+# Validate agent structure
+$agentFiles = @(Get-ChildItem -Path $claudeAgentsRoot -Filter "*.md" -File -ErrorAction SilentlyContinue)
+$agentNames = @($agentFiles | ForEach-Object { $_.BaseName } | Sort-Object -Unique)
+
+foreach ($agentFile in $agentFiles) {
+  $agentRaw = Get-Content $agentFile.FullName -Raw
+
+  Assert-Condition -Condition ($agentRaw.TrimStart().StartsWith('---')) -Message "Missing YAML frontmatter in agent: $($agentFile.FullName)"
+  Assert-Condition -Condition ($agentRaw -match "(?m)^name:\s*.+$") -Message "Missing frontmatter name in agent: $($agentFile.FullName)"
 }
 
 if ($script:Failures.Count -gt 0) {
@@ -96,6 +87,6 @@ if ($script:Failures.Count -gt 0) {
 }
 
 Write-Host "[OK] Skill metadata validation passed." -ForegroundColor Green
-Write-Host " - VSCode active skills: $($vsNames.Count)"
-Write-Host " - .agent active skills: $($agentNames.Count)"
+Write-Host " - Claude Code skills: $($skillNames.Count)"
+Write-Host " - Claude Code agents: $($agentNames.Count)"
 exit 0

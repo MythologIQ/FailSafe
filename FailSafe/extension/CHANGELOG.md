@@ -9,7 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- Post-4.6.5 scope to be scheduled.
+- Post-4.6.6 scope to be scheduled.
+
+## [4.6.6] - 2026-03-09
+
+Workspace isolation and repository governance. Multiple VS Code windows can now run FailSafe independently, and external workspaces can be validated against governance standards.
+
+### Added
+
+- **Repository Governance as a Service** — New `RepoGovernanceService` validates target workspaces against `REPO_GOVERNANCE.md` standards: structure (src, tests, docs, .github), root files (README, LICENSE, CONTRIBUTING), GitHub config (issue templates, PR template, workflows), commit discipline (semantic format), and security posture (SECURITY.md, .gitignore, dependency scanning).
+- **Compliance scoring with grades** — Automated grading (A-F) based on violations: errors -2 points, warnings -1 point. Thresholds: A (90-100%), B (80-89%), C (70-79%), D (60-69%), F (<60%).
+- **Compliance metric in Monitor** — Workspace Health grid displays compliance grade with color-coded indicator, percentage bar, and violation tooltips.
+- **S.H.I.E.L.D. phase tracker** — `GovernancePhaseTracker` parses META_LEDGER.md to detect current governance phase, recent completions, and context-aware next steps.
+- **Multi-workspace server registry** — `ServerRegistry` tracks active FailSafe instances across VS Code windows with atomic writes and stale PID cleanup.
+- **Workspace selector in Command Center** — Disconnection banner with dropdown to switch between active workspaces when server connection is lost.
+- **Dynamic port propagation** — Sidebar and commands use actual server port instead of hardcoded 9376.
+
+### Changed
+
+- Hub snapshot now includes `workspaceName`, `workspacePath`, `serverPort`, and `repoCompliance` data.
+- Command Center connection module supports `switchServer(port)` for workspace switching.
 
 ## [4.6.5] - 2026-03-10
 

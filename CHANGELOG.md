@@ -9,7 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- Post-4.6.5 scope to be scheduled.
+- Post-4.6.6 scope to be scheduled.
+
+## [4.6.6] - 2026-03-09
+
+### Added
+
+- Repository Governance as a Service: workspace compliance validation with grading (A-F) and remediation guidance.
+- Multi-workspace server registry for independent FailSafe instances across VS Code windows.
+- Compliance metric in Monitor UI with grade display and violation tooltips.
+- S.H.I.E.L.D. phase tracker parsing META_LEDGER.md for governance state awareness.
+- Workspace selector in Command Center for switching between active instances.
+
+### Changed
+
+- Hub snapshot enriched with workspace identity and compliance data.
+- Dynamic port propagation replaces hardcoded 9376.
 
 ## [4.6.5] - 2026-03-10
 

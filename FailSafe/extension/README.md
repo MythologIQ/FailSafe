@@ -1,12 +1,23 @@
-[![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.6.5?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.6.5?platform=universal)
+[![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.6.6?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.6.6?platform=universal)
 
 # MythologIQ FailSafe for VS Code
 
 FailSafe is a local-first governance extension for AI-assisted development in VS Code and Cursor. It applies deterministic checks at the editor boundary, records decisions to a local ledger, and provides dedicated surfaces for audits, checkpoints, and agent governance.
 
-**Current Release**: v4.6.5 (2026-03-10)
+**Current Release**: v4.6.6 (2026-03-09)
 
 ![FailSafe Banner](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/extension/FailSafe%20Banner.png)
+
+## What's New in v4.6.6
+
+Workspace isolation and repository governance — multiple VS Code windows can run FailSafe independently, and external workspaces can be validated against governance standards.
+
+### Added
+
+- **Repository Governance as a Service** — Validates workspaces against `REPO_GOVERNANCE.md` standards (structure, root files, GitHub config, commit discipline, security posture) with automated grading (A-F).
+- **Compliance metric in Monitor** — Workspace Health grid displays compliance grade with color-coded indicator and violation tooltips.
+- **Multi-workspace support** — Server registry tracks active instances; workspace selector in Command Center enables switching between connected workspaces.
+- **S.H.I.E.L.D. phase tracker** — Parses META_LEDGER.md to detect current governance phase and provide context-aware next steps.
 
 ## What's New in v4.6.5
 
@@ -24,7 +35,6 @@ Cross-agent skill consolidation — all SHIELD skills migrated from legacy `.cla
 - **Cross-agent instruction file** — `AGENTS.md` created at repo root for Codex/Copilot/Cursor/Windsurf compatibility.
 
 ## What's New in v4.6.4
-
 
 Governance state integrity remediation — trust data that was transient or fabricated is now persisted, verified, and kept in sync.
 

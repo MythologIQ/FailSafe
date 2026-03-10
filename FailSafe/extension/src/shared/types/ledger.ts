@@ -37,7 +37,10 @@ export type LedgerEventType =
   | "DISCOVERY_PROMOTED" // Discovery item promoted from DRAFT to CONCEIVED
   // Commit governance + provenance (v4.3.0)
   | "COMMIT_CHECKED"      // Pre-commit hook queried commit-check endpoint
-  | "PROVENANCE_RECORDED"; // AI authorship attribution recorded
+  | "PROVENANCE_RECORDED" // AI authorship attribution recorded
+  // Marketplace (v4.7.0)
+  | "MARKETPLACE_INSTALL"   // Agent installed from marketplace
+  | "MARKETPLACE_UNINSTALL"; // Agent uninstalled from marketplace
 
 export interface LedgerEntry {
   id: number;

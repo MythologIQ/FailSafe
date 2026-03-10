@@ -132,6 +132,27 @@ export class ConnectionClient {
           payload: data.payload || {}
         });
         break;
+      // Marketplace events - forward to event subscribers
+      case 'marketplace.installing':
+      case 'marketplace.scanning':
+      case 'marketplace.installed':
+      case 'marketplace.scanned':
+      case 'marketplace.failed':
+      case 'marketplace.uninstalled':
+      case 'marketplace.progress':
+      case 'marketplace.scan.progress':
+        this.notify('event', data);
+        break;
+      // Adapter events - forward to event subscribers
+      case 'adapter.installing':
+      case 'adapter.installed':
+      case 'adapter.uninstalling':
+      case 'adapter.uninstalled':
+      case 'adapter.failed':
+      case 'adapter.progress':
+      case 'adapter.config.updated':
+        this.notify('event', data);
+        break;
       default:
         // Broad catch-all for tab-specific routing (risks, governance, etc)
         this.notify('event', data);

@@ -74,6 +74,12 @@ import {
   auditWorkspace,
   type ComplianceReport,
 } from "./services/RepoGovernanceService";
+import { MarketplaceCatalog } from "./services/MarketplaceCatalog";
+import { MarketplaceInstaller } from "./services/MarketplaceInstaller";
+import { SecurityScanner } from "./services/SecurityScanner";
+import { setupMarketplaceRoutes } from "./routes/MarketplaceRoute";
+import { AdapterService } from "./services/AdapterService";
+import { setupAdapterRoutes } from "./routes/AdapterRoute";
 
 const PORT = 9376;
 const HOST = "127.0.0.1";
@@ -141,6 +147,10 @@ export class ConsoleServer {
     | import("./services/IdeActivityTracker").IdeActivityTracker
     | null = null;
   private scaffoldCallback: (() => Promise<{ scaffolded: number; skipped: number }>) | null = null;
+  private marketplaceCatalog: MarketplaceCatalog;
+  private marketplaceInstaller: MarketplaceInstaller;
+  private securityScanner: SecurityScanner;
+  private adapterService: AdapterService;
   private checkpointTypeRegistry = new Set<string>([
     "snapshot.created",
     "phase.entered",
@@ -184,6 +194,10 @@ export class ConsoleServer {
       .init()
       .catch((err) => console.error("AudioVaultService init error:", err));
     this.brainstormService = this.createBrainstormService();
+    this.marketplaceCatalog = new MarketplaceCatalog();
+    this.marketplaceInstaller = new MarketplaceInstaller(this.eventBus);
+    this.securityScanner = new SecurityScanner(this.eventBus);
+    this.adapterService = new AdapterService(this.eventBus);
     this.setupRoutes();
     this.subscribeToEvents();
   }
@@ -342,6 +356,23 @@ export class ConsoleServer {
     setupBrainstormRoutes(this.app, apiDeps);
     setupCheckpointRoutes(this.app, apiDeps);
     setupActionsRoutes(this.app, apiDeps);
+
+    // Marketplace routes for agent marketplace
+    setupMarketplaceRoutes(this.app, {
+      rejectIfRemote: (req, res) => this.rejectIfRemote(req, res),
+      broadcast: (data) => this.broadcast(data),
+      marketplaceCatalog: this.marketplaceCatalog,
+      marketplaceInstaller: this.marketplaceInstaller,
+      securityScanner: this.securityScanner,
+      ledgerManager: this.qorelogicManager.getLedgerManager(),
+    });
+
+    // Adapter routes for agent-failsafe Python adapter
+    setupAdapterRoutes(this.app, {
+      rejectIfRemote: (req, res) => this.rejectIfRemote(req, res),
+      broadcast: (data) => this.broadcast(data),
+      adapterService: this.adapterService,
+    });
 
     this.registerFeatureAndStatusRoutes();
     this.registerHookRoutes();
@@ -600,6 +631,11 @@ export class ConsoleServer {
       this.broadcast({ type: "verdict", payload: event.payload });
       this.broadcast({ type: "hub.refresh" });
     });
+    // Subscribe to transparency events and log to file + broadcast
+    this.eventBus.on("transparency.prompt" as never, (event: unknown) => {
+      this.logTransparencyEvent(event as Record<string, unknown>);
+      this.broadcast({ type: "transparency", payload: event });
+    });
     this.subscribeToQorelogicEvents();
   }
 
@@ -821,7 +857,7 @@ export class ConsoleServer {
       recentCompletions: this.buildRecentCompletions(),
       bootstrapState: {
         skillsInstalled: fs.existsSync(
-          path.join(this.getWorkspaceRoot(), ".claude", "commands", "ql-bootstrap.md"),
+          path.join(this.getWorkspaceRoot(), ".claude", "skills", "ql-bootstrap", "SKILL.md"),
         ),
         governanceInitialized: fs.existsSync(
           path.join(this.getWorkspaceRoot(), "docs", "CONCEPT.md"),
@@ -1208,6 +1244,17 @@ export class ConsoleServer {
       }
     } catch { /* return empty */ }
     return events;
+  }
+
+  private logTransparencyEvent(event: Record<string, unknown>): void {
+    const logPath = path.join(
+      this.workspaceRoot, ".failsafe", "logs", "transparency.jsonl",
+    );
+    try {
+      const dir = path.dirname(logPath);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      fs.appendFileSync(logPath, JSON.stringify(event) + "\n", "utf-8");
+    } catch { /* ignore write errors */ }
   }
 
   private getRiskRegister(): Array<Record<string, unknown>> {

@@ -1,7 +1,94 @@
 # SYSTEM STATE
 
-**Last Updated:** 2026-03-09
-**Version:** v4.6.6 + Repository Governance as a Service SUBSTANTIATED
+**Last Updated:** 2026-03-10
+**Version:** v4.7.0 Agent Marketplace + Adapter SUBSTANTIATED
+
+## Agent Marketplace + Microsoft Agent Governance Toolkit Adapter — Implementation State
+
+### Ledger Trail
+
+| Entry | Phase | Verdict |
+|-------|-------|---------|
+| #230 | IMPLEMENT + SUBSTANTIATE | Session sealed |
+
+### New Files
+
+| File | Lines | Purpose |
+|------|-------|---------|
+| `src/roadmap/services/MarketplaceTypes.ts` | 138 | Marketplace item, security scan, HITL types |
+| `src/roadmap/services/MarketplaceCatalog.ts` | 396 | Static catalog registry, state persistence |
+| `src/roadmap/services/MarketplaceInstaller.ts` | 291 | Git clone, sandbox setup, progress tracking |
+| `src/roadmap/services/SecurityScanner.ts` | 381 | Garak/Promptfoo CLI integration |
+| `src/roadmap/services/AdapterTypes.ts` | 78 | agent-failsafe adapter types |
+| `src/roadmap/services/AdapterService.ts` | 507 | Python/pip interaction for adapter |
+| `src/roadmap/routes/MarketplaceRoute.ts` | 382 | Marketplace REST API endpoints |
+| `src/roadmap/routes/AdapterRoute.ts` | 194 | Adapter REST API endpoints |
+| `src/roadmap/ui/modules/marketplace.js` | 586 | Marketplace frontend renderer |
+| `src/roadmap/ui/modules/adapter-panel.js` | 465 | Adapter UI panel |
+
+### Modified Files
+
+| File | Change |
+|------|--------|
+| `ConsoleServer.ts` | +marketplace routes, +adapter routes, +service initialization |
+| `skills.js` | +Skills/Marketplace view toggle |
+| `connection.js` | +marketplace and adapter WebSocket event handlers |
+| `ledger.ts` | +MARKETPLACE_INSTALL, +MARKETPLACE_UNINSTALL event types |
+
+### Features Delivered
+
+1. **Agent Marketplace** — Catalog of curated external agent repositories:
+   - 11 pre-configured agents (AutoGen, PyRIT, Garak, Promptfoo, etc.)
+   - Category-based browsing (Autonomous, Safety, UI & Orchestration)
+   - Trust tier system (unverified, scanned, approved, quarantined)
+
+2. **HITL Install Gates** — Human-in-the-loop confirmation:
+   - Nonce-based approval tokens (5 min TTL)
+   - Sandbox toggle, security scan option
+   - WebSocket progress broadcasting
+
+3. **Security Scanner Integration** — Garak/Promptfoo CLI:
+   - Availability detection
+   - Output parsing and risk grading (L1/L2/L3)
+   - Graceful degradation if scanners not installed
+
+4. **Microsoft Agent Governance Toolkit Adapter** — Bridge to agent-os/mesh/hypervisor:
+   - Python/pip availability detection
+   - agent-failsafe PyPI package installation
+   - Toolkit package status (agent-os, agent-mesh, agent-hypervisor, agent-sre)
+   - Health check and configuration management
+   - Trust threshold configuration (CBT/KBT)
+
+### Section 4 Razor Status
+
+| File | Lines | Status |
+|------|-------|--------|
+| MarketplaceTypes.ts | 138 | ✅ PASS |
+| MarketplaceCatalog.ts | 396 | ⚠️ TECH DEBT |
+| MarketplaceInstaller.ts | 291 | ⚠️ TECH DEBT |
+| SecurityScanner.ts | 381 | ⚠️ TECH DEBT |
+| AdapterTypes.ts | 78 | ✅ PASS |
+| AdapterService.ts | 507 | ⚠️ TECH DEBT |
+| MarketplaceRoute.ts | 382 | ⚠️ TECH DEBT |
+| AdapterRoute.ts | 194 | ✅ PASS |
+| marketplace.js | 586 | ⚠️ TECH DEBT |
+| adapter-panel.js | 465 | ⚠️ TECH DEBT |
+
+**Registered Tech Debt** (8 files exceeding 250L limit):
+- MarketplaceCatalog.ts, MarketplaceInstaller.ts, SecurityScanner.ts
+- AdapterService.ts, MarketplaceRoute.ts
+- marketplace.js, adapter-panel.js
+
+### Verification Results
+
+| Check | Result |
+|-------|--------|
+| TypeScript Compilation | ✅ CLEAN |
+| Bundle | ✅ SUCCESS (3.6MB) |
+| Console.log Artifacts | ✅ 0 |
+| Unplanned Files | 0 (adapter extension was user-requested) |
+
+---
 
 ## Repository Governance as a Service — Implementation State
 

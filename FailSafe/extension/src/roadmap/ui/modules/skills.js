@@ -1,8 +1,11 @@
 // FailSafe Command Center — Skills & Intent Renderer
 // Intent shell, ingest toolbar, 4-tab browser, category chips, skill card grid.
+// Includes view toggle for Marketplace (Beta)
 import { escHtml, displayTag, skillTags } from './skill-utils.js';
+import { MarketplaceRenderer } from './marketplace.js';
 
 const SKILL_TABS = ['Recommended', 'All Relevant', 'Installed', 'Other'];
+const VIEW_MODES = ['Skills', 'Marketplace'];
 
 export class SkillsRenderer {
   constructor(containerId, deps = {}) {
@@ -13,23 +16,84 @@ export class SkillsRenderer {
     this.activeTab = 'Recommended';
     this.activeCat = 'All';
     this.currentPhase = '';
+    this.viewMode = 'Skills';
+    this.marketplaceRenderer = null;
   }
 
   async render(hubData) {
     if (!this.container) return;
     this.currentPhase = hubData.runState?.currentPhase || '';
+
+    // Render view toggle first
+    this.container.innerHTML = this.renderViewToggle();
+
+    // Create content container
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'cc-skills-content';
+    this.container.appendChild(contentDiv);
+
+    this.bindViewToggle();
+
+    if (this.viewMode === 'Marketplace') {
+      await this.renderMarketplace(contentDiv, hubData);
+    } else {
+      await this.renderSkillsView(contentDiv, hubData);
+    }
+  }
+
+  renderViewToggle() {
+    return `
+      <div style="display:flex;gap:8px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border-rim)">
+        ${VIEW_MODES.map(mode => `
+          <button class="cc-chip cc-view-toggle${mode === this.viewMode ? ' active' : ''}" data-mode="${mode}">
+            ${mode}${mode === 'Marketplace' ? ' <span style="font-size:0.65rem;opacity:0.7">(Beta)</span>' : ''}
+          </button>
+        `).join('')}
+      </div>`;
+  }
+
+  bindViewToggle() {
+    this.container.querySelectorAll('.cc-view-toggle').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const newMode = btn.dataset.mode;
+        if (newMode === this.viewMode) return;
+        this.viewMode = newMode;
+        this.container.querySelectorAll('.cc-view-toggle').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const contentDiv = this.container.querySelector('.cc-skills-content');
+        if (contentDiv) {
+          if (this.viewMode === 'Marketplace') {
+            await this.renderMarketplace(contentDiv, { runState: { currentPhase: this.currentPhase } });
+          } else {
+            await this.renderSkillsView(contentDiv, { runState: { currentPhase: this.currentPhase } });
+          }
+        }
+      });
+    });
+  }
+
+  async renderMarketplace(contentDiv, hubData) {
+    contentDiv.id = 'cc-marketplace-container';
+    contentDiv.innerHTML = '';
+    if (!this.marketplaceRenderer) {
+      this.marketplaceRenderer = new MarketplaceRenderer('cc-marketplace-container', { client: this.client });
+    }
+    await this.marketplaceRenderer.render(hubData);
+  }
+
+  async renderSkillsView(contentDiv, hubData) {
     if (this.client && !this.skills.length) {
       const data = await this.client.fetchSkills();
       this.skills = data?.skills || [];
     }
-    this.container.innerHTML = `
+    contentDiv.innerHTML = `
       ${this.renderIntentShell()}
       ${this.renderToolbar()}
       ${this.renderTabs()}
       ${this.renderCategoryChips()}
       <div class="cc-skill-grid cc-grid-2"></div>`;
-    this.bindEvents();
-    this.renderCards();
+    this.bindSkillEvents(contentDiv);
+    this.renderCards(contentDiv);
   }
 
   renderIntentShell() {
@@ -92,48 +156,51 @@ export class SkillsRenderer {
     return Array.from(new Set(pool.flatMap(s => skillTags(s)))).sort();
   }
 
-  bindEvents() {
-    this.container.querySelector('.cc-intent-copy')?.addEventListener('click', () => {
-      const text = this.container.querySelector('.cc-intent-input')?.value || '';
+  bindSkillEvents(contentDiv) {
+    const root = contentDiv || this.container;
+    root.querySelector('.cc-intent-copy')?.addEventListener('click', () => {
+      const text = root.querySelector('.cc-intent-input')?.value || '';
       if (text) navigator.clipboard.writeText(text);
     });
-    this.container.querySelector('.cc-skill-auto')?.addEventListener('click', async () => {
+    root.querySelector('.cc-skill-auto')?.addEventListener('click', async () => {
       try {
         if (this.client) await this.client.postAction('/api/skills/ingest/auto');
       } catch (_) { /* logged by postAction */ }
     });
-    this.container.querySelector('.cc-skill-manual')?.addEventListener('click', async () => {
+    root.querySelector('.cc-skill-manual')?.addEventListener('click', async () => {
       try {
         if (this.client) await this.client.postAction('/api/skills/ingest/manual', { items: [], mode: 'file' });
       } catch (_) { /* logged by postAction */ }
     });
-    this.container.querySelector('.cc-skill-phase')?.addEventListener('change', async (e) => {
+    root.querySelector('.cc-skill-phase')?.addEventListener('change', async (e) => {
       if (!this.client) return;
       const data = await this.client.fetchRelevance(e.target.value);
       this.relevance = data?.skills || [];
-      this.renderCards();
+      this.renderCards(contentDiv);
     });
-    this.bindTabChips();
-    this.bindTagFilter();
+    this.bindTabChips(contentDiv);
+    this.bindTagFilter(contentDiv);
   }
 
-  bindTabChips() {
-    this.container.querySelectorAll('.cc-skill-tab').forEach(chip => {
+  bindTabChips(contentDiv) {
+    const root = contentDiv || this.container;
+    root.querySelectorAll('.cc-skill-tab').forEach(chip => {
       chip.addEventListener('click', () => {
         this.activeTab = chip.dataset.tab;
-        this.container.querySelectorAll('.cc-skill-tab').forEach(c => c.classList.remove('active'));
+        root.querySelectorAll('.cc-skill-tab').forEach(c => c.classList.remove('active'));
         chip.classList.add('active');
         this.activeCat = 'All';
-        this.reRenderCategoryChips();
-        this.renderCards();
+        this.reRenderCategoryChips(contentDiv);
+        this.renderCards(contentDiv);
       });
     });
   }
 
-  bindTagFilter() {
-    const input = this.container.querySelector('.cc-tag-input');
-    const sugBox = this.container.querySelector('.cc-tag-suggestions');
-    const clearBtn = this.container.querySelector('.cc-tag-clear');
+  bindTagFilter(contentDiv) {
+    const root = contentDiv || this.container;
+    const input = root.querySelector('.cc-tag-input');
+    const sugBox = root.querySelector('.cc-tag-suggestions');
+    const clearBtn = root.querySelector('.cc-tag-clear');
     if (!input || !sugBox) return;
 
     input.addEventListener('input', () => {
@@ -153,8 +220,8 @@ export class SkillsRenderer {
           this.activeCat = opt.dataset.tag;
           input.value = displayTag(opt.dataset.tag);
           sugBox.style.display = 'none';
-          this.reRenderCategoryChips();
-          this.renderCards();
+          this.reRenderCategoryChips(contentDiv);
+          this.renderCards(contentDiv);
         });
       });
     });
@@ -164,20 +231,22 @@ export class SkillsRenderer {
 
     clearBtn?.addEventListener('click', () => {
       this.activeCat = 'All';
-      this.reRenderCategoryChips();
-      this.renderCards();
+      this.reRenderCategoryChips(contentDiv);
+      this.renderCards(contentDiv);
     });
   }
 
-  reRenderCategoryChips() {
-    const wrapper = this.container.querySelector('.cc-tag-filter');
+  reRenderCategoryChips(contentDiv) {
+    const root = contentDiv || this.container;
+    const wrapper = root.querySelector('.cc-tag-filter');
     if (!wrapper) return;
     wrapper.outerHTML = this.renderCategoryChips();
-    this.bindTagFilter();
+    this.bindTagFilter(contentDiv);
   }
 
-  renderCards() {
-    const grid = this.container.querySelector('.cc-skill-grid');
+  renderCards(contentDiv) {
+    const root = contentDiv || this.container;
+    const grid = root.querySelector('.cc-skill-grid');
     if (!grid) return;
     const filtered = this.filterByTab();
     if (!filtered.length) {
@@ -225,9 +294,20 @@ export class SkillsRenderer {
     return pool;
   }
 
-  onEvent() {}
+  onEvent(data) {
+    // Forward marketplace events to marketplace renderer
+    if (this.viewMode === 'Marketplace' && this.marketplaceRenderer) {
+      if (data?.type?.startsWith('marketplace.')) {
+        this.marketplaceRenderer.onEvent(data);
+      }
+    }
+  }
 
   renderRightPanel() {
+    // Delegate to marketplace if in that view
+    if (this.viewMode === 'Marketplace' && this.marketplaceRenderer) {
+      return this.marketplaceRenderer.renderRightPanel();
+    }
     return `
       <div class="cc-skills-side cc-card" style="padding: 16px;">
         <h3 style="margin: 0 0 16px 0; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;">Codex Statistics</h3>
@@ -247,5 +327,11 @@ export class SkillsRenderer {
     `;
   }
 
-  destroy() { if (this.container) this.container.innerHTML = ''; }
+  destroy() {
+    if (this.marketplaceRenderer) {
+      this.marketplaceRenderer.destroy();
+      this.marketplaceRenderer = null;
+    }
+    if (this.container) this.container.innerHTML = '';
+  }
 }

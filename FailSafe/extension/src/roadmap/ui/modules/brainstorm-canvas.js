@@ -115,6 +115,7 @@ export class BrainstormCanvas {
   }
 
   setLayout(layout) {
+    if (!this.graph) return;
     // Basic layout hooks for ForceGraph
     if (layout === 'TREE' && this.graph.dagMode) {
       this.graph.dagMode('td');
@@ -146,6 +147,7 @@ export class BrainstormCanvas {
   }
 
   _applyGraphData() {
+    if (!this.graph) return;
     const haptics = calculateHaptics(this.nodes, this.edges);
     this.nodes.forEach(n => {
       const h = haptics.get(n.id);

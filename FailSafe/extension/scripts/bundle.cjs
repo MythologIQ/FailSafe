@@ -146,18 +146,16 @@ async function main() {
 }
 
 /**
- * Bundles proprietary skills from Antigravity directory into VSIX dist.
+ * Bundles governance skills from .claude/skills/ into VSIX dist.
  */
 function bundleProprietarySkills() {
-  const sourceDir = path.join(root, "..", "Antigravity");
+  // root = FailSafe/extension, go up 2 levels to workspace root, then into .claude/skills
+  const sourceDir = path.join(root, "..", "..", ".claude", "skills");
   const targetDir = path.join(distDir, "extension", "skills");
   ensureDirExists(targetDir);
 
   const patterns = [
-    "skills/ql-*/SKILL.md",
-    "skills/compliance/SKILL.md",
-    "skills/log-decision/SKILL.md",
-    "skills/track-shadow-genome/SKILL.md",
+    "ql-*/SKILL.md",
   ];
 
   const stats = { bundled: 0, skipped: 0, errors: 0 };
@@ -169,6 +167,23 @@ function bundleProprietarySkills() {
 
 function bundlePattern(sourceDir, targetDir, pattern, stats) {
   const parts = pattern.split("/");
+  // Handle patterns like "ql-*/SKILL.md" (2 parts: dirGlob/fileName)
+  if (parts.length === 2 && parts[0].includes("*")) {
+    const dirGlob = parts[0];
+    const fileName = parts[1];
+    if (!fs.existsSync(sourceDir)) return;
+    try {
+      for (const entry of fs.readdirSync(sourceDir, { withFileTypes: true })) {
+        if (!entry.isDirectory() || !matchesPattern(entry.name, dirGlob)) continue;
+        const filePath = path.join(sourceDir, entry.name, fileName);
+        if (fs.existsSync(filePath)) {
+          copySkillIfChanged(filePath, sourceDir, targetDir, stats);
+        }
+      }
+    } catch { stats.errors++; }
+    return;
+  }
+  // Handle patterns like "skills/ql-*/SKILL.md" (3 parts: parentDir/dirGlob/fileName)
   if (parts.length === 3 && parts[1].includes("*")) {
     const parentDir = path.join(sourceDir, parts[0]);
     const dirGlob = parts[1];

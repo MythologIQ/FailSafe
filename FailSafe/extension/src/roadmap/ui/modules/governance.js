@@ -121,9 +121,10 @@ export class GovernanceRenderer {
   renderAuditLog() {
     const entries = this.verdictLog.slice(-50).reverse().map(v => {
       const level = this.verdictLevel(v);
+      const message = this.formatAuditMessage(v);
       return `<div class="cc-verdict cc-verdict--${level}" style="margin-bottom:6px;font-size:0.8rem">
         <span style="color:var(--text-muted);font-size:0.7rem">${v.time || ''}</span>
-        <span style="margin-left:8px">${v.payload?.message || v.payload?.type || 'Verdict'}</span>
+        <span style="margin-left:8px">${message}</span>
       </div>`;
     }).join('');
     return `
@@ -139,6 +140,19 @@ export class GovernanceRenderer {
           </div>
         `}</div>
       </div>`;
+  }
+
+  formatAuditMessage(v) {
+    if (v.type === 'transparency') {
+      const p = v.payload || {};
+      const eventType = p.type || 'prompt';
+      if (eventType.includes('build_started')) return 'Prompt build started';
+      if (eventType.includes('build_completed')) return `Prompt completed (${p.tokenCount || '?'} tokens)`;
+      if (eventType.includes('dispatched')) return 'Prompt dispatched';
+      if (eventType.includes('blocked')) return `Blocked: ${p.blockedReason || 'policy'}`;
+      return eventType;
+    }
+    return v.payload?.message || v.payload?.type || 'Verdict';
   }
 
   verdictLevel(v) {
@@ -166,8 +180,12 @@ export class GovernanceRenderer {
   onEvent(event) {
     if (!event) return;
     const isVerdict = event.type === 'verdict' || /verdict/i.test(event.type);
-    if (isVerdict) {
-      this.verdictLog.push(event);
+    const isTransparency = event.type === 'transparency';
+    if (isVerdict || isTransparency) {
+      this.verdictLog.push({
+        ...event,
+        time: event.time || new Date().toISOString().slice(11, 19),
+      });
       const logEl = this.container?.querySelector('.cc-verdict')?.parentElement;
       if (logEl) this.render(this._lastHub || {});
     }

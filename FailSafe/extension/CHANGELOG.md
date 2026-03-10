@@ -9,7 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- Post-4.6.6 scope to be scheduled.
+- Post-4.7.0 scope to be scheduled.
+
+## [4.7.0] - 2026-03-10
+
+Agent Marketplace and Microsoft Agent Governance Toolkit integration. Discover, install, and manage external agent repositories with HITL security gates and automated vulnerability scanning.
+
+### Added
+
+- **Agent Marketplace** — New Skills tab sub-section for discovering and managing external agent repositories. Curated catalog of 11 repositories across Autonomous/Multi-Agent (AutoResearch, AutoGen, TaskWeaver, Browser-Use), Safety/Red-Teaming (PyRIT, Garak, Promptfoo, Agent Audit), and UI/Orchestration (Dify, Vercel AI SDK, Langflow) categories.
+- **HITL Security Gates** — Nonce-based approval tokens (5 min TTL) for installation confirmation. Modal shows repo URL, author, permissions, sandbox toggle, and scan options before any install proceeds.
+- **Security Scanner Integration** — Garak and Promptfoo CLI integration for automated vulnerability scanning with L1/L2/L3 risk grades. Graceful degradation when scanners not installed with manual review prompts.
+- **Trust Tiers** — Four-tier classification (unverified → scanned → approved → quarantined) with persistent state tracking in `~/.failsafe/marketplace/state.json`.
+- **Microsoft Agent Governance Toolkit Adapter** — Python package (`agent-failsafe`) bridging FailSafe governance to agent-os, agent-mesh, agent-hypervisor, and agent-sre. REST API at `/api/adapter/*` for status, install, uninstall, health checks, and configuration.
+- **Adapter Panel** — Dedicated UI in Marketplace tab for managing toolkit adapter lifecycle with real-time progress via WebSocket.
+
+### Changed
+
+- Skills tab now includes Skills/Marketplace view toggle.
+- Connection module handles marketplace and adapter WebSocket events.
+- Ledger types extended with `MARKETPLACE_INSTALL` and `MARKETPLACE_UNINSTALL` events.
 
 ## [4.6.6] - 2026-03-09
 

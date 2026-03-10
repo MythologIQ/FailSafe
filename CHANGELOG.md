@@ -9,7 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- Post-4.6.6 scope to be scheduled.
+- Post-4.7.0 scope to be scheduled.
+
+## [4.7.0] - 2026-03-10
+
+### Added
+
+- Agent Marketplace: curated catalog of 11 external agent repositories with HITL security gates.
+- Security Scanner integration: Garak/Promptfoo CLI for vulnerability scanning with risk grades.
+- Microsoft Agent Governance Toolkit Adapter: Python bridge to agent-os, agent-mesh, agent-hypervisor, agent-sre.
+- Trust tiers for marketplace items: unverified → scanned → approved → quarantined.
+
+### Changed
+
+- Skills tab extended with Marketplace view toggle.
+- Connection module handles marketplace/adapter WebSocket events.
+- Ledger types include MARKETPLACE_INSTALL and MARKETPLACE_UNINSTALL events.
 
 ## [4.6.6] - 2026-03-09
 

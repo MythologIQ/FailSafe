@@ -1,12 +1,23 @@
-[![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.6.6?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.6.6?platform=universal)
+[![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.7.0?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.7.0?platform=universal)
 
 # MythologIQ FailSafe for VS Code
 
 FailSafe is a local-first governance extension for AI-assisted development in VS Code and Cursor. It applies deterministic checks at the editor boundary, records decisions to a local ledger, and provides dedicated surfaces for audits, checkpoints, and agent governance.
 
-**Current Release**: v4.6.6 (2026-03-09)
+**Current Release**: v4.7.0 (2026-03-10)
 
 ![FailSafe Banner](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/extension/FailSafe%20Banner.png)
+
+## What's New in v4.7.0
+
+Agent Marketplace and Microsoft Agent Governance Toolkit integration — discover, install, and manage external agent repositories with HITL security gates and automated vulnerability scanning.
+
+### Added
+
+- **Agent Marketplace** — Skills tab sub-section with curated catalog of 11 external agent repos (AutoResearch, AutoGen, TaskWeaver, PyRIT, Garak, Promptfoo, Dify, and more) across Autonomous, Safety, and UI categories.
+- **HITL Security Gates** — Nonce-based approval tokens for installation confirmation with repo URL, author, permissions, and sandbox options.
+- **Security Scanner Integration** — Garak/Promptfoo CLI integration for vulnerability scanning with L1/L2/L3 risk grades.
+- **Microsoft Agent Governance Toolkit Adapter** — Python package (`agent-failsafe`) bridging FailSafe to agent-os, agent-mesh, agent-hypervisor, and agent-sre.
 
 ## What's New in v4.6.6
 

@@ -34,6 +34,7 @@ export interface ServerDeps {
 export interface ServerResult {
   consoleServer: ConsoleServer;
   riskManager: RiskManager;
+  actualPort: number;
 }
 
 export async function bootstrapServers(
@@ -98,13 +99,16 @@ export async function bootstrapServers(
     return { scaffolded, skipped };
   });
 
-  // Webview Providers
+  // Get actual port for workspace isolation
+  const actualPort = consoleServer.getPort();
+
+  // Webview Providers - pass dynamic port for workspace isolation
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(
       FailSafeSidebarProvider.viewType,
-      new FailSafeSidebarProvider(),
+      new FailSafeSidebarProvider(actualPort),
     ),
   );
 
-  return { consoleServer, riskManager };
+  return { consoleServer, riskManager, actualPort };
 }

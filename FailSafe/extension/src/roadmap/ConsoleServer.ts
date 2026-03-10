@@ -61,6 +61,19 @@ import {
   inferPhaseKeyFromPlan,
   CHECKPOINT_INIT_SQL,
 } from "./services/CheckpointStore";
+import {
+  registerServer,
+  markDisconnected,
+  readRegistry,
+} from "./services/ServerRegistry";
+import {
+  buildGovernanceState,
+  type GovernanceState,
+} from "./services/GovernancePhaseTracker";
+import {
+  auditWorkspace,
+  type ComplianceReport,
+} from "./services/RepoGovernanceService";
 
 const PORT = 9376;
 const HOST = "127.0.0.1";
@@ -211,6 +224,15 @@ export class ConsoleServer {
 
     this.app.get("/api/hub", async (_req: Request, res: Response) => {
       res.json(await this.buildHubSnapshot());
+    });
+
+    // Workspace isolation: return server registry for workspace selector
+    this.app.get("/api/v1/workspaces", (_req: Request, res: Response) => {
+      const workspaces = readRegistry();
+      res.json({
+        workspaces,
+        current: this.getWorkspaceRoot(),
+      });
     });
 
     this.registerQoreRoutes();
@@ -806,8 +828,65 @@ export class ConsoleServer {
         ),
         workspaceName: path.basename(this.getWorkspaceRoot()),
       },
+      // Workspace isolation: identity for multi-workspace support
+      workspaceName: path.basename(this.getWorkspaceRoot()),
+      workspacePath: this.getWorkspaceRoot(),
+      serverPort: this.actualPort,
+      // S.H.I.E.L.D. governance phase tracking
+      governancePhase: this.buildGovernancePhase(),
+      // Repository governance compliance
+      repoCompliance: this.buildRepoCompliance(),
       generatedAt: new Date().toISOString(),
     };
+  }
+
+  private buildGovernancePhase(): GovernanceState {
+    const ledgerPath = path.join(this.getWorkspaceRoot(), "docs", "META_LEDGER.md");
+    if (!fs.existsSync(ledgerPath)) {
+      return { current: "IDLE", recentCompletions: [], nextSteps: [], activeAlerts: [] };
+    }
+    try {
+      const content = fs.readFileSync(ledgerPath, "utf-8");
+      return buildGovernanceState(content);
+    } catch {
+      return { current: "IDLE", recentCompletions: [], nextSteps: [], activeAlerts: [] };
+    }
+  }
+
+  private buildRepoCompliance(): {
+    score: number;
+    maxScore: number;
+    percentage: number;
+    grade: string;
+    errors: number;
+    warnings: number;
+    topViolations: Array<{ message: string; severity: string }>;
+  } {
+    try {
+      const report = auditWorkspace(this.getWorkspaceRoot());
+      return {
+        score: report.score,
+        maxScore: report.maxScore,
+        percentage: report.percentage,
+        grade: report.grade,
+        errors: report.summary.errors,
+        warnings: report.summary.warnings,
+        topViolations: report.violations
+          .filter((v) => v.severity !== "info")
+          .slice(0, 5)
+          .map((v) => ({ message: v.message, severity: v.severity })),
+      };
+    } catch {
+      return {
+        score: 0,
+        maxScore: 100,
+        percentage: 0,
+        grade: "F",
+        errors: 0,
+        warnings: 0,
+        topViolations: [],
+      };
+    }
   }
 
   private buildTrustSummary(
@@ -875,6 +954,14 @@ export class ConsoleServer {
       console.log(`Roadmap server: http://localhost:${this.actualPort}`);
     });
     this.setupWebSocket();
+    // Register in multi-workspace server registry
+    registerServer({
+      port: this.actualPort,
+      workspaceName: path.basename(this.getWorkspaceRoot()),
+      workspacePath: this.getWorkspaceRoot(),
+      pid: process.pid,
+      startedAt: new Date().toISOString(),
+    });
     this.recordCheckpoint({
       checkpointType: "snapshot.created",
       actor: "system",
@@ -887,6 +974,8 @@ export class ConsoleServer {
   }
 
   stop(): void {
+    // Mark as disconnected (not unregister) so workspace remains visible
+    markDisconnected(this.actualPort);
     this.wss?.close();
     this.server?.close();
   }

@@ -1,7 +1,5 @@
 import * as vscode from "vscode";
 
-const ROADMAP_BASE_URL = "http://localhost:9376";
-
 type SidebarMessage =
   | { command: "openPopout" }
   | { command: "openEditor" }
@@ -13,6 +11,11 @@ export class FailSafeSidebarProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = "failsafe.sidebarView";
 
   private view: vscode.WebviewView | undefined;
+  private readonly baseUrl: string;
+
+  constructor(port: number = 9376) {
+    this.baseUrl = `http://localhost:${port}`;
+  }
 
   async resolveWebviewView(
     webviewView: vscode.WebviewView,
@@ -70,13 +73,13 @@ export class FailSafeSidebarProvider implements vscode.WebviewViewProvider {
 
   private getHtml(): string {
     const nonce = getNonce();
-    const compactUrl = `${ROADMAP_BASE_URL}/?ui=compact`;
+    const compactUrl = `${this.baseUrl}/?ui=compact`;
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${this.view?.webview.cspSource ?? ""} data: https:; style-src 'unsafe-inline'; script-src 'nonce-${nonce}'; frame-src ${ROADMAP_BASE_URL}; connect-src ${ROADMAP_BASE_URL};" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${this.view?.webview.cspSource ?? ""} data: https:; style-src 'unsafe-inline'; script-src 'nonce-${nonce}'; frame-src ${this.baseUrl}; connect-src ${this.baseUrl};" />
   <style>
     html, body { margin: 0; padding: 0; height: 100%; background: #071539; color: #f3f7ff; font-family: "Segoe UI", sans-serif; }
     .shell { display: grid; grid-template-rows: auto 1fr; height: 100%; }

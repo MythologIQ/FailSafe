@@ -1,7 +1,79 @@
 # SYSTEM STATE
 
 **Last Updated:** 2026-03-09
-**Version:** v4.6.5 + Repository Consolidation SUBSTANTIATED
+**Version:** v4.6.6 + Repository Governance as a Service SUBSTANTIATED
+
+## Repository Governance as a Service — Implementation State
+
+### Ledger Trail
+
+| Entry | Phase | Verdict |
+|-------|-------|---------|
+| #228 | IMPLEMENT + SUBSTANTIATE | Session sealed |
+
+### New Files
+
+| File | Lines | Purpose |
+|------|-------|---------|
+| `src/roadmap/services/RepoGovernanceService.ts` | 678 | Workspace compliance validation |
+| `src/roadmap/services/GovernancePhaseTracker.ts` | 179 | S.H.I.E.L.D. phase detection |
+| `src/test/roadmap/RepoGovernanceService.test.ts` | 226 | 26 unit tests |
+| `src/test/roadmap/GovernancePhaseTracker.test.ts` | 274 | Phase tracker tests |
+
+### Modified Files
+
+| File | Change |
+|------|--------|
+| `ConsoleServer.ts` | +repoCompliance to hub snapshot, +buildRepoCompliance() |
+| `roadmap.js` | +renderRepoCompliance(), +gradeColor(), compliance metric |
+| `roadmap.css` | +compliance grade styles (.grade-a to .grade-f) |
+| `index.html` | +compliance metric card in Workspace Health grid |
+
+### Features Delivered
+
+1. **RepoGovernanceService** — Validates workspaces against REPO_GOVERNANCE.md:
+   - Structure validation (src, tests, docs, .github)
+   - Root files validation (README, LICENSE, CONTRIBUTING, etc.)
+   - GitHub config validation (issue templates, PR template, workflows)
+   - Commit discipline validation (semantic commit format)
+   - Security posture validation (SECURITY.md, .gitignore, dependency scanning)
+   - L3 file detection (security-critical files)
+
+2. **Compliance Scoring** — Automated grading:
+   - Errors: -2 points, Warnings: -1 point
+   - Grade thresholds: A (90-100%), B (80-89%), C (70-79%), D (60-69%), F (<60%)
+
+3. **Monitor Integration** — Compliance displayed in Command Center:
+   - Grade display (A-F) with color coding
+   - Percentage bar visualization
+   - Violation tooltips
+
+4. **GovernancePhaseTracker** — S.H.I.E.L.D. phase detection:
+   - Parses META_LEDGER.md for current phase
+   - Detects VETO/BLOCK alerts
+   - Provides context-aware next steps
+
+### Section 4 Razor Status
+
+| File | Lines | Status |
+|------|-------|--------|
+| GovernancePhaseTracker.ts | 179 | ✅ PASS |
+| RepoGovernanceService.ts | 678 | ⚠️ TECH DEBT (new file, needs decomposition) |
+
+**Registered Tech Debt**:
+- RepoGovernanceService.ts exceeds 250 lines (678L)
+- Functions exceeding 40 lines: validateGitHubConfig (~91L), detectL3Files (~48L), validateCommitMessage (~49L)
+
+### Verification Results
+
+| Check | Result |
+|-------|--------|
+| TypeScript Compilation | CLEAN |
+| Tests | 477 passing |
+| Console.log Artifacts | 0 |
+| Unplanned Files | 0 |
+
+---
 
 ## Repository Consolidation — Implementation State
 
@@ -1460,3 +1532,90 @@ _Reality = Promise: Command Center Polish + LLM Health Monitoring substantiated.
 
 _Reality = Promise: All post-seal fixes substantiated._
 _Session Status: SEALED._
+
+---
+
+## v4.6.6 Workspace Isolation — Implementation State
+
+### Ledger Trail
+
+| Entry | Phase | Verdict |
+|-------|-------|---------|
+| #225 | GATE | PASS with MODIFICATIONS |
+| #226 | IMPLEMENT | Phase 1 complete |
+| #227 | SUBSTANTIATE | SEALED |
+
+### Phase 1: Workspace Isolation (P0)
+
+**Goal**: Enable multiple VS Code windows to run FailSafe independently via dynamic port allocation and workspace identity.
+
+#### Phase 1.1 — Dynamic Port Propagation
+
+| File | Change | Status |
+|------|--------|--------|
+| `ConsoleServer.ts` | Hub snapshot: `workspaceName`, `workspacePath`, `serverPort` | DONE |
+| `bootstrapServers.ts` | `actualPort` in ServerResult, pass to sidebar | DONE |
+| `FailSafeSidebarProvider.ts` | Constructor accepts port, dynamic `baseUrl` | DONE |
+| `commands.ts` | `setServerPort()`, `getBaseUrl()` replace hardcoded 9376 | DONE |
+| `main.ts` | Wire `setServerPort` after bootstrap | DONE |
+
+#### Phase 1.2 — Server Registry
+
+| File | Lines | Purpose | Status |
+|------|-------|---------|--------|
+| `ServerRegistry.ts` | 105 | Multi-workspace registry with atomic writes | NEW |
+| `ConsoleServer.ts` | +28 | Register on start, mark disconnected on stop | DONE |
+| `ConsoleServer.ts` | - | `/api/v1/workspaces` endpoint | DONE |
+
+#### Phase 1.3 — Disconnection Handling
+
+| File | Change | Status |
+|------|--------|--------|
+| `connection.js` | `switchServer(port)` method | DONE |
+| `command-center.html` | Disconnection banner, workspace selector | DONE |
+| `command-center.css` | Banner + dropdown styles | DONE |
+| `command-center.js` | Connection state handler, `loadWorkspaceRegistry()` | DONE |
+
+### Unit Tests
+
+| File | Tests | Status |
+|------|-------|--------|
+| `ServerRegistry.test.ts` | 8 (register, unregister, markDisconnected, readRegistry, stale PID) | NEW |
+
+### Gate Modifications Applied
+
+| Modification | Status |
+|--------------|--------|
+| BACKLOG.md: B111, B112, B114, B117 marked FIXED | DONE |
+| plan-v4.6.6-consolidated.md: Phase 4 marked OBSOLETE | DONE |
+
+### Section 4 Razor Compliance
+
+| File | Lines | Limit | Status |
+|------|-------|-------|--------|
+| ServerRegistry.ts | 105 | 250 | PASS |
+| ServerRegistry.test.ts | 210 | 250 | PASS |
+
+Pre-existing tech debt (not introduced by this plan):
+- ConsoleServer.ts: 1218 lines
+- commands.ts: 630 lines
+- roadmap.js: 515 lines
+
+### Reality vs Blueprint
+
+| Blueprint Item | Status |
+|----------------|--------|
+| ServerRegistry.ts | EXISTS |
+| Dynamic port in hub snapshot | EXISTS |
+| Workspace identity in Command Center | EXISTS |
+| Server registry at `~/.failsafe/servers.json` | EXISTS |
+| Workspace selector dropdown | EXISTS |
+| Disconnection banner | EXISTS |
+| `switchServer()` method | EXISTS |
+
+**Verdict**: Reality = Promise. Phase 1 Workspace Isolation substantiated.
+
+---
+
+_Chain Status: IMPLEMENTATION COMPLETE_
+_Next: Remaining phases (Phase 2: Command Center Verification, Phase 3: Monitor S.H.I.E.L.D. Tracking) deferred to next session_

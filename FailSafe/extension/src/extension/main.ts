@@ -33,7 +33,7 @@ import { bootstrapMCP } from "./bootstrapMCP";
 import { bootstrapServers } from "./bootstrapServers";
 import { bootstrapIdeActivity } from "./bootstrapIdeActivity";
 import { registerAdvancedCommands } from "./bootstrapAdvancedCommands";
-import { registerCommands } from "./commands";
+import { registerCommands, setServerPort } from "./commands";
 import { createVscodeFeatureGate } from "../core/adapters/vscode";
 
 let genesisManager: GenesisManager;
@@ -165,6 +165,9 @@ export async function activate(
       logger,
     );
     consoleServer = servers.consoleServer;
+
+    // Wire dynamic port for workspace isolation
+    setServerPort(servers.actualPort, core.workspaceRoot);
 
     // 9. Commands
     registerCommands(

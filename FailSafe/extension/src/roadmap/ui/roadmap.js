@@ -39,6 +39,11 @@ class WebPanelClient {
       qoreEndpoint: document.getElementById('qore-runtime-endpoint'),
       qoreLatency: document.getElementById('qore-runtime-latency'),
       qoreCheck: document.getElementById('qore-runtime-check'),
+      governanceAlerts: document.getElementById('governance-alerts'),
+      complianceGrade: document.getElementById('compliance-grade'),
+      complianceBar: document.getElementById('compliance-bar'),
+      complianceFill: document.getElementById('compliance-fill'),
+      complianceScore: document.getElementById('compliance-score'),
     };
 
     if (this.elements.qoreCheck) {
@@ -136,9 +141,18 @@ class WebPanelClient {
     this.renderSentinel(this.hub.sentinelStatus || {}, this.hub.recentVerdicts || []);
     this.renderWorkspaceHealth(plan, blockers, risks, this.hub.recentVerdicts || []);
     this.renderQoreRuntime(this.hub.qoreRuntime || {});
+    this.renderGovernanceAlerts(this.hub.governancePhase?.activeAlerts || []);
+    this.renderRepoCompliance(this.hub.repoCompliance || {});
   }
 
   getPhaseInfo(plan) {
+    // Prefer S.H.I.E.L.D. governance phase from META_LEDGER
+    const gov = this.hub?.governancePhase;
+    if (gov?.current && gov.current !== 'IDLE') {
+      const PHASE_INDEX = { PLAN: 0, GATE: 1, IMPLEMENT: 2, SUBSTANTIATE: 4 };
+      return { title: gov.current, index: PHASE_INDEX[gov.current] ?? 0 };
+    }
+
     const runState = this.hub?.runState;
 
     // If IDE is actively debugging or building, that takes precedence
@@ -175,6 +189,22 @@ class WebPanelClient {
   }
 
   getFeatureSummary(phases, milestones, blockers, risks) {
+    // Prefer governance completions from ledger
+    const gov = this.hub?.governancePhase;
+    if (gov?.recentCompletions?.length > 0) {
+      const recentlyCompletedFeatures = gov.recentCompletions
+        .slice(0, 3)
+        .map((c) => `${c.phase}: Entry #${c.entry}`);
+      return {
+        line: recentlyCompletedFeatures.join('\n'),
+        critical: blockers.filter((blocker) => blocker.severity === 'hard').length
+          + risks.filter((risk) => risk.level === 'danger').length
+          + (gov.activeAlerts?.filter((a) => a.type === 'VETO' || a.type === 'BLOCK').length || 0),
+        backlog: phases.filter((phase) => phase.status === 'pending').length,
+        wishlist: milestones.filter((milestone) => !milestone.completedAt && !milestone.targetDate).length,
+      };
+    }
+
     const completedMilestones = milestones
       .filter((milestone) => !!milestone.completedAt)
       .sort((a, b) => new Date(String(b.completedAt)).getTime() - new Date(String(a.completedAt)).getTime());
@@ -202,6 +232,12 @@ class WebPanelClient {
   }
 
   getNextStep(blockers, queue, sentinelStatus, qoreRuntime) {
+    // Prefer governance next steps from ledger
+    const gov = this.hub?.governancePhase;
+    if (gov?.nextSteps?.length > 0) {
+      return gov.nextSteps[0];
+    }
+
     if (qoreRuntime.enabled && !qoreRuntime.connected) {
       return `Qore runtime is unreachable at ${qoreRuntime.baseUrl || 'configured endpoint'}. Restore runtime connectivity first.`;
     }
@@ -345,6 +381,120 @@ class WebPanelClient {
     }
   }
 
+  renderRepoCompliance(compliance) {
+    if (!this.elements.complianceGrade) return;
+
+    const grade = compliance.grade || '-';
+    const percentage = compliance.percentage || 0;
+    const errors = compliance.errors || 0;
+    const warnings = compliance.warnings || 0;
+
+    // Update grade display
+    this.elements.complianceGrade.textContent = grade;
+    this.elements.complianceGrade.className = 'compliance-grade grade-' + grade.toLowerCase();
+
+    // Update progress bar
+    if (this.elements.complianceFill) {
+      this.elements.complianceFill.style.width = `${percentage}%`;
+      this.elements.complianceFill.style.background = this.gradeColor(grade);
+    }
+
+    // Update score text
+    if (this.elements.complianceScore) {
+      this.elements.complianceScore.textContent = `${percentage}%`;
+    }
+
+    // Update tooltip
+    if (this.elements.complianceBar) {
+      const violations = compliance.topViolations || [];
+      const violationText = violations.length > 0
+        ? violations.map((v) => `• ${v.message}`).join('\n')
+        : 'No violations';
+      this.elements.complianceBar.title = `Repo Governance: ${grade} (${percentage}%)\nErrors: ${errors}, Warnings: ${warnings}\n\n${violationText}`;
+    }
+  }
+
+  gradeColor(grade) {
+    switch (grade) {
+      case 'A': return 'var(--good)';
+      case 'B': return '#22d3ee';
+      case 'C': return 'var(--warn)';
+      case 'D': return '#f97316';
+      case 'F': return 'var(--bad)';
+      default: return 'var(--muted)';
+    }
+  }
+
+  renderGovernanceAlerts(alerts) {
+    if (!this.elements.governanceAlerts) return;
+
+    if (!alerts || alerts.length === 0) {
+      this.elements.governanceAlerts.classList.add('hidden');
+      this.elements.governanceAlerts.innerHTML = '';
+      return;
+    }
+
+    this.elements.governanceAlerts.classList.remove('hidden');
+    this.elements.governanceAlerts.innerHTML = alerts.map((alert) => {
+      const typeClass = alert.type?.toLowerCase() || 'warning';
+      const icon = alert.type === 'VETO' ? '⛔' : alert.type === 'BLOCK' ? '🚫' : '⚠️';
+      return `
+        <div class="governance-alert ${typeClass}" data-alert-id="${this.escapeHtml(alert.id)}" title="Click for details">
+          <span class="alert-icon">${icon}</span>
+          <span class="alert-message">${this.escapeHtml(alert.message)}</span>
+          ${alert.entry ? `<span class="alert-entry">#${alert.entry}</span>` : ''}
+        </div>
+      `;
+    }).join('');
+
+    // Add click handlers for details modal
+    this.elements.governanceAlerts.querySelectorAll('.governance-alert').forEach((el) => {
+      el.addEventListener('click', () => {
+        const alertId = el.getAttribute('data-alert-id');
+        const alert = alerts.find((a) => a.id === alertId);
+        if (alert) {
+          this.showAlertDetails(alert);
+        }
+      });
+    });
+  }
+
+  showAlertDetails(alert) {
+    // Create modal overlay
+    const existing = document.getElementById('alert-modal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'alert-modal';
+    modal.className = 'alert-modal-overlay';
+    modal.innerHTML = `
+      <div class="alert-modal">
+        <div class="alert-modal-header">
+          <span class="alert-modal-type ${alert.type?.toLowerCase()}">${this.escapeHtml(alert.type)}</span>
+          <button class="alert-modal-close">&times;</button>
+        </div>
+        <div class="alert-modal-body">
+          <p class="alert-modal-message">${this.escapeHtml(alert.message)}</p>
+          ${alert.entry ? `<p class="alert-modal-entry">Ledger Entry: #${alert.entry}</p>` : ''}
+          ${alert.details ? `<pre class="alert-modal-details">${this.escapeHtml(alert.details)}</pre>` : ''}
+        </div>
+        <div class="alert-modal-footer">
+          <button class="alert-modal-dismiss">Dismiss</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Close handlers
+    const closeModal = () => modal.remove();
+    modal.querySelector('.alert-modal-close').addEventListener('click', closeModal);
+    modal.querySelector('.alert-modal-dismiss').addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeModal();
+    });
+  }
+
   buildPolicyTrend(verdicts) {
     const weighted = verdicts.map((verdict) => {
       if (verdict.decision === 'WARN') return 45;
@@ -371,6 +521,121 @@ class WebPanelClient {
     const div = document.createElement('div');
     div.textContent = String(value || '');
     return div.innerHTML;
+  }
+
+  // Metric Explanations
+  getMetricExplanations() {
+    return {
+      blockers: {
+        title: 'Critical Blockers',
+        description: 'Hard blockers are issues that must be resolved before the project can proceed. They include security vulnerabilities, failing tests, or policy violations that the governance system has flagged as blocking.',
+        formula: 'Count of blockers with severity = "hard"',
+        thresholds: [
+          { level: 'good', text: '0 — Clear to proceed' },
+          { level: 'warn', text: '1-2 — Address before continuing' },
+          { level: 'bad', text: '3+ — Stop and resolve immediately' }
+        ]
+      },
+      unverified: {
+        title: 'Unverified Changes',
+        description: 'This bucket represents changes that have been made but not yet verified by Sentinel or the governance pipeline. A full bucket indicates accumulated technical debt that needs review.',
+        formula: 'artifacts.length - touchedArtifacts.length\n+ sentinelQueue.depth',
+        thresholds: [
+          { level: 'good', text: '0-30% — Healthy pace' },
+          { level: 'warn', text: '31-70% — Consider verification pass' },
+          { level: 'bad', text: '71-100% — Backlog needs attention' }
+        ]
+      },
+      errorbudget: {
+        title: 'Error Budget Burn',
+        description: 'A composite score indicating how much of your "error budget" has been consumed. Higher values mean more issues have accumulated and the project is at risk of instability.',
+        formula: '(hardBlockers × 20)\n+ (dangerRisks × 16)\n+ (queueBacklog × 3)\n+ (severeVerdicts × 12)\n+ (warnVerdicts × 4)',
+        thresholds: [
+          { level: 'good', text: '0-30% — Healthy margin' },
+          { level: 'warn', text: '31-60% — Caution advised' },
+          { level: 'bad', text: '61-100% — Budget exhausted' }
+        ]
+      },
+      trend: {
+        title: 'Policy Trend',
+        description: 'Shows the recent trend of Sentinel verdicts. A lower percentage means more PASS verdicts; higher means more WARN/BLOCK verdicts. This helps identify if code quality is improving or degrading.',
+        formula: 'Weighted average of recent verdicts:\n• PASS = 15 points\n• WARN = 45 points\n• BLOCK/ESCALATE = 85 points',
+        thresholds: [
+          { level: 'good', text: '0-30% — Strong compliance' },
+          { level: 'warn', text: '31-60% — Mixed signals' },
+          { level: 'bad', text: '61-100% — Policy violations trending' }
+        ]
+      },
+      compliance: {
+        title: 'Repository Compliance',
+        description: 'Measures adherence to the Repository Governance Standard (REPO_GOVERNANCE.md). Validates workspace structure, required files, GitHub configuration, commit discipline, and security posture.',
+        formula: 'max_score - (errors × 2) - (warnings × 1)\n\nChecks include:\n• Required directories (src, tests, docs, .github)\n• Root files (README, LICENSE, CONTRIBUTING)\n• Issue templates and PR template\n• CI/CD workflows\n• Security posture',
+        thresholds: [
+          { level: 'good', text: 'A (90-100%) — Exemplary governance' },
+          { level: 'warn', text: 'B-C (70-89%) — Minor gaps' },
+          { level: 'bad', text: 'D-F (<70%) — Significant gaps' }
+        ]
+      }
+    };
+  }
+
+  showMetricExplanation(metricKey) {
+    const explanations = this.getMetricExplanations();
+    const metric = explanations[metricKey];
+    if (!metric) return;
+
+    const existing = document.getElementById('metric-modal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'metric-modal';
+    modal.className = 'metric-modal-overlay';
+    modal.innerHTML = `
+      <div class="metric-modal">
+        <div class="metric-modal-header">
+          <span class="metric-modal-title">${this.escapeHtml(metric.title)}</span>
+          <button class="metric-modal-close">&times;</button>
+        </div>
+        <div class="metric-modal-body">
+          <p class="metric-description">${this.escapeHtml(metric.description)}</p>
+          <div class="metric-formula">
+            <div class="metric-formula-title">How It's Calculated</div>
+            <div class="metric-formula-content">${this.escapeHtml(metric.formula)}</div>
+          </div>
+          <div class="metric-thresholds">
+            ${metric.thresholds.map(t => `
+              <div class="metric-threshold">
+                <span class="metric-threshold-dot ${t.level}"></span>
+                <span class="metric-threshold-label">${this.escapeHtml(t.text)}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+        <div class="metric-modal-footer">
+          <button class="metric-modal-dismiss">Got it</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const closeModal = () => modal.remove();
+    modal.querySelector('.metric-modal-close').addEventListener('click', closeModal);
+    modal.querySelector('.metric-modal-dismiss').addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeModal();
+    });
+  }
+
+  setupMetricClickHandlers() {
+    document.querySelectorAll('.health-item[data-metric]').forEach((item) => {
+      item.addEventListener('click', (e) => {
+        const metricKey = item.getAttribute('data-metric');
+        if (metricKey) {
+          this.showMetricExplanation(metricKey);
+        }
+      });
+    });
   }
 
   // Transparency Stream Methods
@@ -473,7 +738,10 @@ class WebPanelClient {
 
 document.addEventListener('DOMContentLoaded', () => {
   const client = new WebPanelClient();
-  
+
+  // Set up metric click handlers for explanations
+  client.setupMetricClickHandlers();
+
   // Fetch transparency and risks on load
   client.fetchTransparency();
   client.fetchRisks();

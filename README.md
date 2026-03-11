@@ -326,6 +326,10 @@ npm run compile
 
 ---
 
+## What's New in v4.7.1
+
+- Version metadata bumped to v4.7.1 for publishing.
+
 ## What's New in v4.3.2 "Performance & Polish"
 
 > _Operational smoothness, safer UI update paths, and activation resilience._

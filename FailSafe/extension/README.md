@@ -8,6 +8,10 @@ FailSafe is a local-first governance extension for AI-assisted development in VS
 
 ![FailSafe Banner](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/extension/FailSafe%20Banner.png)
 
+## What's New in v4.7.1
+
+- Version metadata bumped to v4.7.1 for publishing.
+
 ## What's New in v4.7.0
 
 Agent Marketplace and Microsoft Agent Governance Toolkit integration — discover, install, and manage external agent repositories with HITL security gates and automated vulnerability scanning.

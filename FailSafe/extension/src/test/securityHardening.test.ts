@@ -23,9 +23,7 @@ suite("Security hardening coverage", () => {
         getActivePlan: () => null,
       };
       const fakeQorelogicManager = {
-        getLedgerManager: () => {
-          throw new Error("test ledger unavailable");
-        },
+        getLedgerManager: () => null,
       };
       const fakeSentinelDaemon = {
         getStatus: () => ({ running: false, queueDepth: 0 }),

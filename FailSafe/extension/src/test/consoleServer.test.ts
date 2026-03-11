@@ -37,9 +37,7 @@ describe("ConsoleServer workspace-root scoped reads", () => {
         getActivePlan: () => null,
       };
       const fakeQorelogicManager = {
-        getLedgerManager: () => {
-          throw new Error("test ledger unavailable");
-        },
+        getLedgerManager: () => null,
       };
       const fakeSentinelDaemon = {
         getStatus: () => ({ running: false, queueDepth: 0 }),

@@ -38,7 +38,6 @@ export class VerdictRouter {
         if (verdict.decision === 'ESCALATE') {
             this.logger.info('Escalating verdict to L3', { filePath: verdict.artifactPath });
 
-            // RELIABILITY FIX: Add error handling for L3 escalation
             try {
                 await this.qorelogic.queueL3Approval({
                     filePath: verdict.artifactPath || 'unknown',

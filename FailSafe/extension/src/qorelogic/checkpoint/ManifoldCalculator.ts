@@ -26,9 +26,13 @@ export class ManifoldCalculator {
     const folders = ["src", "docs", ".agent", "FailSafe"];
     const manifold: Record<string, FolderManifold | null> = {};
 
-    for (const folder of folders) {
-      manifold[folder] = await this.computeFolderManifold(folder);
-    }
+    const results = await Promise.all(
+      folders.map((folder) => this.computeFolderManifold(folder)),
+    );
+
+    folders.forEach((folder, index) => {
+      manifold[folder] = results[index];
+    });
 
     return manifold;
   }

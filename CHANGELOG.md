@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Post-4.7.0 scope to be scheduled.
 
+## [4.7.1] - 2026-03-11
+
+### Changed
+
+- Version metadata and marketplace badge bumped to v4.7.1 for publishing.
+
 ## [4.7.0] - 2026-03-10
 
 ### Added

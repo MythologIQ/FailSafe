@@ -237,13 +237,13 @@ Resource Leaks:
 
 - [x] [B112] Window event listeners leak in `brainstorm.js`: `failsafe:audio-device-changed` and `failsafe:wake-word-changed` listeners bound but never removed in `destroy()` — duplicates accumulate on tab switch | v4.6.0 (v4.6.6 - Fixed: handlers removed in destroy() at brainstorm.js:241-243)
 - [ ] [B113] Modal keydown handler leak in `prep-bay.js`: `document.addEventListener('keydown', escHandler)` in `openModal()` never removed on close — stacks on repeated open/close | v4.6.0
-- [x] [B114] MediaStream not released on failure in `stt-engine.js`: if `MediaRecorder` construction fails after `getUserMedia()` succeeds, `_releaseStream()` is never called — locks microphone | v4.6.0 (v4.6.6 - Fixed: _releaseStream() called in _createRecorder() catch at stt-engine.js:188-191)
+- [x] [B114] MediaStream not released on failure in `stt-engine.js`: if `MediaRecorder` construction fails after `getUserMedia()` succeeds, `_releaseStream()` is never called — locks microphone | v4.6.0 (v4.6.6 - Fixed: \_releaseStream() called in \_createRecorder() catch at stt-engine.js:188-191)
 - [ ] [B115] AudioContext leak in `stt-engine.js` `_stopWhisper()`: `ctx.close()` not in finally block — skipped if `decodeAudioData()` throws | v4.6.0
 - [ ] [B116] Web LLM native AI session never destroyed: `web-llm-engine.js` creates `ai.languageModel` sessions but has no `destroy()` — sessions accumulate across extractions | v4.6.0
 
 State Management / Race Conditions:
 
-- [x] [B117] Rapid mic toggle race condition: `voice-controller.js` `toggle()` doesn't debounce — clicking twice fast causes `startListening()` while `stopListening()` is still async mid-flight | v4.6.0 (v4.6.6 - Fixed: _toggling guard added at voice-controller.js:62)
+- [x] [B117] Rapid mic toggle race condition: `voice-controller.js` `toggle()` doesn't debounce — clicking twice fast causes `startListening()` while `stopListening()` is still async mid-flight | v4.6.0 (v4.6.6 - Fixed: \_toggling guard added at voice-controller.js:62)
 - [ ] [B118] STT callback references not nulled on destroy: `stt-engine.js` stores `onTranscript`, `onStateChange`, `onAutoStop`, etc. but never clears them — stale closures can fire into destroyed modules | v4.6.0
 - [ ] [B119] Graph mutation during render: `brainstorm.js` proxies `canvas.setNodes` with no mutex — concurrent `mergeNodes()` and render frame can collide | v4.6.0
 
@@ -274,6 +274,7 @@ Minor / UX:
 - [ ] [B130] Export filename has no timestamp: `brainstorm-graph.js` hardcodes `brainstorm-session.json` — second export in same session overwrites first | v4.6.0
 - [ ] [B131] Ideation buffer silently discards history beyond 10 entries: `ideation-buffer.js` `MAX_HISTORY=10` with no user warning when oldest thought is dropped | v4.6.0
 - [ ] [B132] Long node labels silently truncated server-side: `ConsoleServer.ts` `.slice(0, 200)` with no client feedback — user's full text accepted but shortened without notice | v4.6.0
+- [ ] [B141] Voice Brainstorm and Mindmap Production Readiness Fixes (plan-voice-brainstorm-mindmap-prod-readiness.md)
 
 **Razor Debt (v4.3.1)**
 
@@ -299,7 +300,7 @@ Minor / UX:
 
 - [ ] [B107] Workspace Hook Toggle: Console Settings UI to enable/disable FailSafe Claude Code hooks per workspace. Toggle writes/removes `.claude/hooks/disabled` sentinel. `resolve.sh` checks sentinel before emitting hook content. ConsoleServer routes: `GET /api/hooks/status`, `POST /api/hooks/toggle`. Unifies extension settings (`failsafe.sentinel.enabled`, `failsafe.governance.mode`) with Claude Code hook layer into one control surface. | v4.5
 - [ ] [B108] Release pre-flight help doc check: `release-gate.cjs --preflight` should validate version markers in `docs/COMPONENT_HELP.md` and `docs/PROCESS_GUIDE.md` in addition to CHANGELOG/README | v4.5
-- [ ] [B140] Monitor S.H.I.E.L.D. state tracking: Monitor shows stale/wrong build phase, empty "Recently Completed", generic recommendations. Need to: (1) parse META_LEDGER.md for actual session history, (2) track /ql-* command invocations via hub events, (3) show context-aware next steps based on current phase | v4.7
+- [ ] [B140] Monitor S.H.I.E.L.D. state tracking: Monitor shows stale/wrong build phase, empty "Recently Completed", generic recommendations. Need to: (1) parse META_LEDGER.md for actual session history, (2) track /ql-\* command invocations via hub events, (3) show context-aware next steps based on current phase | v4.7
 
 ## Wishlist (Nice to Have)
 
@@ -312,38 +313,38 @@ Minor / UX:
 
 ## Version Summary
 
-| Version      | Codename                       | Status         | Description                                                                                                           |
-| ------------ | ------------------------------ | -------------- | --------------------------------------------------------------------------------------------------------------------- |
-| v1.0.7       | Beta                           | ✅ RELEASED    | Current marketplace                                                                                                   |
-| v1.1.0       | Pathfinder                     | ✅ IMPLEMENTED | Event-sourced Plans                                                                                                   |
-| v1.2.0       | Navigator                      | ✅ IMPLEMENTED | Roadmap View                                                                                                          |
-| v1.2.2       | Cleanup                        | ✅ COMPLETE    | Blockers D1-D3, B1-B2                                                                                                 |
-| v1.3.0       | Autopilot                      | ✅ COMPLETE    | B3-B5 all done                                                                                                        |
-| v2.0.0       | Governance                     | ✅ COMPLETE    | Gold Standard + ambient (B12-B28)                                                                                     |
-| v2.0.1       | Tooltip Remediation            | ✅ COMPLETE    | Template modularization + tooltips (B30)                                                                              |
-| v2.0.2       | Marketplace Fix                | ✅ COMPLETE    | README corrections for both marketplaces                                                                              |
-| v3.0.0       | Horizon                        | ✅ COMPLETE    | UI + Analytics (B6-B36)                                                                                               |
-| v3.0.2       | Dashboard Remediation          | ✅ COMPLETE    | Roadmap card, tooltips, wiring (B37-B40)                                                                              |
-| v3.1.0       | Orchestration                  | ✅ SEALED      | Cumulative Roadmap, External Browser (B41-B44)                                                                        |
-| v3.2.0       | Reliability Hardening          | ✅ SEALED      | B45/B47/B48/B49/B50/B51 substantiated with executable gate evidence                                                   |
-| v3.2.5       | Console Overhaul               | ✅ SEALED      | Partial delivery (B52/B58/B59); remainder deferred to v4.2.0                                                          |
-| v4.0.0       | Economics                      | ✅ SEALED      | Token economics, governance modes, risk register, transparency stream                                                 |
-| v4.1.0       | Governance Gaps                | ✅ SEALED      | Mode-change audit trail, break-glass, artifact hash, verdict replay (Gaps 1-4)                                        |
-| **v4.2.0**   | **The Answer**                 | ✅ SEALED      | Full-stack governance: console, release pipeline, schema hardening, multi-agent fabric, and discovery workflow delivery |
-| **v4.3.0**   | **Telemetry Loop**             | ✅ SEALED      | Commit guard, AI provenance tracing, CI governance context export, and post-substantiation quality sweep remediation   |
-| **v4.3.1**   | **Security Hardening**         | ✅ SEALED      | SQL injection protection, XSS prevention, README logo correction (B133-B136)                                          |
-| **v4.4.0**   | **Mindmap Evolution**          | ✅ SEALED      | Mindmap surface upgrade, UI asset expansion, console integration depth                                                |
-| **v4.4.1**   | **Screenshot Refresh**         | ✅ SEALED      | UI screenshots, socket hardening, activation event tightening                                                         |
-| **v4.5.0**   | **Skill Discovery**            | ✅ RELEASED    | Skill discovery tags, tag filter, governance skill cohesion, /ql-document skill, CI/CD hardening                      |
-| **v4.5.1**   | **Hotfix**                     | ✅ RELEASED    | Fix activation crash when ledger DB unavailable, fix validate.ps1 parameter mismatch                                 |
-| **v4.6.0**   | **Section 4 Razor**            | ✅ RELEASED    | Section 4 decomposition, voice brainstorm fixes, hook toggle UI, release gate enhancements                            |
-| **v4.6.1**   | **Hotfix**                     | ✅ RELEASED    | Missing sidebar SVG icon, release pipeline branch policy for tag CI, icon validation gate                             |
-| **v4.6.2**   | **Hotfix**                     | ✅ RELEASED    | Fix Console Server 404 on dotfile install paths (.vscode/, .antigravity/)                                             |
-| **v4.6.3**   | **Hotfix**                     | ✅ RELEASED    | Fix express.static missing dotfiles:allow — CSS/JS/image assets silently 404'd                                        |
-| **v4.6.4**   | **Hotfix**                     | ✅ RELEASED    | Governance state integrity — trust persistence, event-driven cache, checkpoint chain verification, version display fix |
-| **v4.6.5**   | **Skill Consolidation**        | ✅ RELEASED    | Cross-agent skill consolidation, SDK-standard directory layout, ModelAdapter + bundler + scaffolding updates           |
-| **v4.6.6**   | **Workspace Isolation**        | ✅ RELEASED    | Multi-workspace support, Repository Governance as a Service, compliance scoring in Monitor, S.H.I.E.L.D. phase tracker |
-| **v4.7.0**   | **Agent Marketplace**          | ✅ RELEASED    | Agent Marketplace with HITL security gates, Garak/Promptfoo scanning, Microsoft Agent Governance Toolkit Adapter      |
+| Version    | Codename                | Status         | Description                                                                                                             |
+| ---------- | ----------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| v1.0.7     | Beta                    | ✅ RELEASED    | Current marketplace                                                                                                     |
+| v1.1.0     | Pathfinder              | ✅ IMPLEMENTED | Event-sourced Plans                                                                                                     |
+| v1.2.0     | Navigator               | ✅ IMPLEMENTED | Roadmap View                                                                                                            |
+| v1.2.2     | Cleanup                 | ✅ COMPLETE    | Blockers D1-D3, B1-B2                                                                                                   |
+| v1.3.0     | Autopilot               | ✅ COMPLETE    | B3-B5 all done                                                                                                          |
+| v2.0.0     | Governance              | ✅ COMPLETE    | Gold Standard + ambient (B12-B28)                                                                                       |
+| v2.0.1     | Tooltip Remediation     | ✅ COMPLETE    | Template modularization + tooltips (B30)                                                                                |
+| v2.0.2     | Marketplace Fix         | ✅ COMPLETE    | README corrections for both marketplaces                                                                                |
+| v3.0.0     | Horizon                 | ✅ COMPLETE    | UI + Analytics (B6-B36)                                                                                                 |
+| v3.0.2     | Dashboard Remediation   | ✅ COMPLETE    | Roadmap card, tooltips, wiring (B37-B40)                                                                                |
+| v3.1.0     | Orchestration           | ✅ SEALED      | Cumulative Roadmap, External Browser (B41-B44)                                                                          |
+| v3.2.0     | Reliability Hardening   | ✅ SEALED      | B45/B47/B48/B49/B50/B51 substantiated with executable gate evidence                                                     |
+| v3.2.5     | Console Overhaul        | ✅ SEALED      | Partial delivery (B52/B58/B59); remainder deferred to v4.2.0                                                            |
+| v4.0.0     | Economics               | ✅ SEALED      | Token economics, governance modes, risk register, transparency stream                                                   |
+| v4.1.0     | Governance Gaps         | ✅ SEALED      | Mode-change audit trail, break-glass, artifact hash, verdict replay (Gaps 1-4)                                          |
+| **v4.2.0** | **The Answer**          | ✅ SEALED      | Full-stack governance: console, release pipeline, schema hardening, multi-agent fabric, and discovery workflow delivery |
+| **v4.3.0** | **Telemetry Loop**      | ✅ SEALED      | Commit guard, AI provenance tracing, CI governance context export, and post-substantiation quality sweep remediation    |
+| **v4.3.1** | **Security Hardening**  | ✅ SEALED      | SQL injection protection, XSS prevention, README logo correction (B133-B136)                                            |
+| **v4.4.0** | **Mindmap Evolution**   | ✅ SEALED      | Mindmap surface upgrade, UI asset expansion, console integration depth                                                  |
+| **v4.4.1** | **Screenshot Refresh**  | ✅ SEALED      | UI screenshots, socket hardening, activation event tightening                                                           |
+| **v4.5.0** | **Skill Discovery**     | ✅ RELEASED    | Skill discovery tags, tag filter, governance skill cohesion, /ql-document skill, CI/CD hardening                        |
+| **v4.5.1** | **Hotfix**              | ✅ RELEASED    | Fix activation crash when ledger DB unavailable, fix validate.ps1 parameter mismatch                                    |
+| **v4.6.0** | **Section 4 Razor**     | ✅ RELEASED    | Section 4 decomposition, voice brainstorm fixes, hook toggle UI, release gate enhancements                              |
+| **v4.6.1** | **Hotfix**              | ✅ RELEASED    | Missing sidebar SVG icon, release pipeline branch policy for tag CI, icon validation gate                               |
+| **v4.6.2** | **Hotfix**              | ✅ RELEASED    | Fix Console Server 404 on dotfile install paths (.vscode/, .antigravity/)                                               |
+| **v4.6.3** | **Hotfix**              | ✅ RELEASED    | Fix express.static missing dotfiles:allow — CSS/JS/image assets silently 404'd                                          |
+| **v4.6.4** | **Hotfix**              | ✅ RELEASED    | Governance state integrity — trust persistence, event-driven cache, checkpoint chain verification, version display fix  |
+| **v4.6.5** | **Skill Consolidation** | ✅ RELEASED    | Cross-agent skill consolidation, SDK-standard directory layout, ModelAdapter + bundler + scaffolding updates            |
+| **v4.6.6** | **Workspace Isolation** | ✅ RELEASED    | Multi-workspace support, Repository Governance as a Service, compliance scoring in Monitor, S.H.I.E.L.D. phase tracker  |
+| **v4.7.0** | **Agent Marketplace**   | ✅ RELEASED    | Agent Marketplace with HITL security gates, Garak/Promptfoo scanning, Microsoft Agent Governance Toolkit Adapter        |
 
 ---
 

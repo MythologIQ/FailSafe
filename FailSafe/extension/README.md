@@ -4,9 +4,21 @@
 
 FailSafe is a local-first governance extension for AI-assisted development in VS Code and Cursor. It applies deterministic checks at the editor boundary, records decisions to a local ledger, and provides dedicated surfaces for audits, checkpoints, and agent governance.
 
-**Current Release**: v4.7.0 (2026-03-10)
+**Current Release**: v4.7.2 (2026-03-11)
 
 ![FailSafe Banner](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/extension/FailSafe%20Banner.png)
+
+## What's New in v4.7.2
+
+Performance improvements and bug fixes for the FailSafe extension.
+
+### Fixed
+
+- L3 escalation resilience: Added try/catch blocks around L3 queuing in `L3ApprovalService` and `VerdictRouter` to prevent potential crashes on connection failures.
+
+### Performance
+
+- Concurrent Folder Manifold Calculation: Shifted folder processing from sequential to concurrent using `Promise.all`, showing improved execution time during workspace initialization.
 
 ## What's New in v4.7.0
 

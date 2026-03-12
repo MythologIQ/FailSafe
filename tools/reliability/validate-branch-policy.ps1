@@ -44,7 +44,7 @@ if ($effectiveBranch -eq "HEAD") {
   exit 0
 }
 
-$allowedPattern = '^(plan|feat|fix|release|hotfix)\/[a-z0-9][a-z0-9\-._]*$'
+$allowedPattern = '^(plan|feat|fix|perf|release|hotfix|jules)[\/-][a-z0-9][a-z0-9\-._]*$'
 $isMain = $effectiveBranch -eq "main"
 
 if ($isMain -and -not $AllowMain) {

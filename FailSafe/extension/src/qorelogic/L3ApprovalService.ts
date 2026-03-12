@@ -168,14 +168,21 @@ export class L3ApprovalService {
         }
 
         if (decision.tier === 3) {
-            await this.queueL3Approval({
-                agentDid: (event.payload?.intentId as string) || 'system',
-                agentTrust: decision.triage.confidence === 'high' ? 0.9 : 0.7,
-                filePath: event.payload?.targetPath as string,
-                riskGrade: mappedRisk,
-                sentinelSummary: `Tier 3 evaluation: ${decision.triage.risk} risk, ${decision.triage.novelty} novelty`,
-                flags: decision.requiredActions
-            });
+            try {
+                await this.queueL3Approval({
+                    agentDid: (event.payload?.intentId as string) || 'system',
+                    agentTrust: decision.triage.confidence === 'high' ? 0.9 : 0.7,
+                    filePath: event.payload?.targetPath as string,
+                    riskGrade: mappedRisk,
+                    sentinelSummary: `Tier 3 evaluation: ${decision.triage.risk} risk, ${decision.triage.novelty} novelty`,
+                    flags: decision.requiredActions
+                });
+            } catch (error) {
+                this.logger.error('Failed to queue L3 approval from evaluation', {
+                    filePath: event.payload?.targetPath,
+                    error: error instanceof Error ? error.message : String(error)
+                });
+            }
         }
     }
 

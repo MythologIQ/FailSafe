@@ -305,12 +305,22 @@ Minor / UX:
 - [x] [B144] Shadow Genome Debugging Panel: ShadowGenomePanel webview with failure pattern cards, unresolved entries table, inline remediation, negative constraints (v4.8.0 - Complete)
 - [x] [B145] DiffGuard Analysis Panel: DiffGuardPanel webview for AI diff risk analysis with inline approve/reject actions (v4.7.2 - Complete)
 
-### Agent Run Replay (Deterministic Time-Travel Debugging)
+### v4.9.0 Agent Run Replay & Governance Contracts
 
-- [ ] [B146] Agent Run Recorder: Capture full execution traces (prompts, reasoning steps, tool calls, file edits, policy decisions, mitigations) during AI agent runs. Store as structured timeline events via EventBus
-- [ ] [B147] Agent Run Replay Panel: Webview panel for step-by-step replay of recorded agent runs with execution graph, code diffs per step, policy triggers, and Shadow Genome pattern matches
-- [ ] [B148] Agent Run Replay: Interactive "Fix and Rerun" — modify prompt at any step and re-execute from that point, enabling mid-execution correction of agent behavior
-- [ ] [B149] Agent Run Replay: Behavioral telemetry pipeline — feed replay data (actions, risk signals, failure patterns, mitigation outcomes) into Shadow Genome for cumulative agent behavioral intelligence
+- [ ] [B146] Agent Run Recorder: Capture full execution traces (prompts, reasoning steps, tool calls, file edits, policy decisions, mitigations) during AI agent runs. Store as structured timeline events via EventBus | v4.9.0
+- [ ] [B147] Agent Run Replay Panel: Webview panel for step-by-step replay of recorded agent runs with execution graph, code diffs per step, policy triggers, and Shadow Genome pattern matches | v4.9.0
+- [ ] [B150] Governance Decision Contract: Define stable, machine-actionable contract schema for agent framework integration | v4.9.0
+
+### Agent Debugging & Stability (Future)
+
+- [ ] [B148] Agent Run Replay: Interactive re-execution from any replay step with modified parameters
+- [ ] [B149] Agent Run Replay: Behavioral telemetry pipeline — feed replay data into Shadow Genome for cumulative agent behavioral intelligence
+
+### Runtime Architecture (Future)
+
+- [ ] [B151] Universal Governance Interceptor: Drop-in interceptor interface for agent framework integration (LangChain, AutoGen, CrewAI, MCP)
+- [ ] [B152] Runtime Execution Layer: Extract governance engine from VS Code extension into standalone runtime that agents route through
+- [ ] [B153] Standard Telemetry Export: Expose FailSafe-collected data via OpenTelemetry spans and Prometheus metrics endpoints for external observability tool consumption
 
 ## Wishlist (Nice to Have)
 

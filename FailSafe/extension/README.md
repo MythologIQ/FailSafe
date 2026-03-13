@@ -253,28 +253,28 @@ Switch modes via:
 
 FailSafe evaluates save operations against the active Intent and can block writes when no active Intent exists or when a file is out of scope.
 
-### 2. Sentinel Monitoring and Audits
+### 3. Sentinel Monitoring and Audits
 
 - File watcher queues audits for code changes
 - Manual audits via command
 - Modes: `heuristic`, `llm-assisted`, `hybrid` (LLM uses the configured endpoint)
 
-### 3. SOA Ledger and L3 Queue
+### 4. SOA Ledger and L3 Queue
 
 - Append-only ledger database for audit entries
 - L3 approvals surfaced in the UI
 
-### 4. UI Screens
+### 5. UI Screens
 
 - FailSafe Monitor (compact view)
 - FailSafe Command Center (extended popout/editor view)
 - Skills view now includes `Recommended`, `All Relevant`, `All Installed`, and `Other Available` to keep full skill visibility.
 
-### FailSafe Monitor UI (v3.5.2)
+### FailSafe Monitor UI
 
-![FailSafe Monitor UI v3.5.2](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/extension/media/FailSafe-Sidebar.PNG)
+![FailSafe Monitor UI](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/extension/media/FailSafe-Sidebar.PNG)
 
-### 5. Command Center UX (UI-02 + Extended Popout)
+### 6. Command Center UX
 
 - Compact `FailSafe Monitor` webpanel (`UI-02`) provides phase status, prioritized feature counters, Sentinel state, and workspace health at-a-glance.
 - `Open FailSafe Command Center` opens the extended popout console for deeper workflow views (Overview, Operations, Audit, Risks, Skills, Laws, Mindmap, Config).
@@ -291,47 +291,47 @@ FailSafe evaluates save operations against the active Intent and can block write
   - `Command Center` -> Build + Govern
   - `Monitor` -> Watch
 
-### 6. Skill Governance and Provenance
+### 7. Skill Governance and Provenance
 
 - Installed skills are discovered from FailSafe workspace roots (`FailSafe/VSCode/skills`, `.agent/skills`, `.github/skills`) with project-first precedence.
 - Phase-aware relevance ranking returns `recommended`, `allRelevant`, and `otherAvailable` groupings.
 - Skill metadata includes provenance fields (creator, source repo/path, source type/priority, admission state, trust tier, version pin).
 - `SOURCE.yml` metadata is ingested to preserve attribution and authorship for bundled and imported skills.
 
-### 7. Checkpoint Reliability Backbone
+### 8. Checkpoint Reliability Backbone
 
 - Checkpoint events are stored in a local SQLite ledger (`failsafe_checkpoints`) with typed events and parent-chain integrity checks.
 - Hub APIs expose checkpoint summaries and recent checkpoint history for UI transparency.
 
-### 8. Feedback Capture
+### 9. Feedback Capture
 
 - Generate, view, and export feedback snapshots
 
-### 9. QoreLogic Propagation
+### 10. QoreLogic Propagation
 
 Supported via internal sync flows when enabled by workspace governance configuration.
 
-### 10. Break-Glass Protocol (v4.1.0)
+### 11. Break-Glass Protocol (v4.1.0)
 
 Emergency governance overrides for time-sensitive situations. Activate via `FailSafe: Activate Break-Glass Override` with a justification (min 10 chars) and duration (15–240 minutes). Auto-reverts on expiry. Full audit trail recorded in the SOA ledger.
 
-### 11. Verdict Replay (v4.1.0)
+### 12. Verdict Replay (v4.1.0)
 
 Re-execute past governance decisions for audit verification via `FailSafe: Replay Verdict (Audit)`. Compares current policy hash and artifact hash against the original decision to detect drift.
 
-### 12. Commit Governance (v4.3.0)
+### 13. Commit Governance (v4.3.0)
 
 - `FailSafe: Install Commit Hook` writes a thin hook client and per-session token into `.git/`.
 - The hook calls `GET /api/v1/governance/commit-check` and only enforces the server's `allow` decision.
 - If the local API is unreachable or no token is present, the hook fails open by design. This is an operator guardrail, not a hard security boundary.
 
-### 13. AI Provenance Tracking (v4.3.0)
+### 14. AI Provenance Tracking (v4.3.0)
 
 - Save events can emit `PROVENANCE_RECORDED` ledger entries with artifact path, detected agent type, confidence, and active intent.
 - Provenance is observational. It does not mutate source files or inject comments.
 - History is queryable through the governance API and visible in local ledger data.
 
-### 14. Multi-Agent Governance Fabric (v4.2.0)
+### 15. Multi-Agent Governance Fabric (v4.2.0)
 
 FailSafe detects and governs multiple AI coding assistants in your workspace:
 
@@ -341,32 +341,38 @@ FailSafe detects and governs multiple AI coding assistants in your workspace:
 - **Coverage Dashboard** — Console view showing which agents are detected, governed, and compliant.
 - **First-Run Onboarding** — Guides new users through multi-agent governance setup on first activation.
 
-### 15. Intent Schema v2 (v4.2.0)
+### 16. Intent Schema v2 (v4.2.0)
 
 Intents now carry `schemaVersion`, `agentIdentity` (which agent created the intent and via which workflow), and `planId` references. Legacy v1 intents are auto-migrated on read.
 
 ## Commands
 
-| Command                                        | Description                                   |
-| ---------------------------------------------- | --------------------------------------------- |
-| FailSafe: Open Command Center (Browser Popout) | Main governance popout                        |
-| FailSafe: Open Command Center (Browser)        | Browser launch alias                          |
-| FailSafe: Open Command Center (Editor Tab)     | Compact monitor in editor                     |
-| FailSafe: Token Economics Dashboard            | Open token economics and ROI dashboard        |
-| FailSafe: Audit Current File                   | Manual file audit                             |
-| FailSafe: Secure Workspace                     | Apply workspace hardening baseline            |
-| FailSafe: Panic Stop                           | Stop active monitoring and guard actions      |
-| FailSafe: Resume Monitoring                    | Resume Sentinel monitoring                    |
-| FailSafe: Set Governance Mode                  | Switch between Observe/Assist/Enforce         |
-| FailSafe: Open Project Overview                | Project-level governance summary              |
-| FailSafe: Open Risk Register                   | Open the risk tracking panel                  |
-| FailSafe: Add Risk                             | Add a new risk entry                          |
-| FailSafe: Revert to Checkpoint (Time-Travel)   | Revert workspace to a governance checkpoint   |
-| FailSafe: Activate Break-Glass Override        | Emergency time-limited governance bypass      |
-| FailSafe: Revoke Break-Glass Override          | Manually revoke an active break-glass session |
-| FailSafe: Replay Verdict (Audit)               | Re-execute a past governance decision         |
-| FailSafe: Undo Last Attempt                    | Rollback to a specific checkpoint             |
-| FailSafe: Set Up Agent Governance              | Inject governance into detected AI agents     |
+| Command                                        | Description                                    |
+| ---------------------------------------------- | ---------------------------------------------- |
+| FailSafe: Open Command Center (Browser Popout) | Main governance popout                         |
+| FailSafe: Open Command Center (Browser)        | Browser launch alias                           |
+| FailSafe: Open Command Center (Editor Tab)     | Compact monitor in editor                      |
+| FailSafe: Token Economics Dashboard            | Open token economics and ROI dashboard         |
+| FailSafe: Audit Current File                   | Manual file audit                              |
+| FailSafe: Secure Workspace                     | Apply workspace hardening baseline             |
+| FailSafe: Panic Stop                           | Stop active monitoring and guard actions       |
+| FailSafe: Resume Monitoring                    | Resume Sentinel monitoring                     |
+| FailSafe: Set Governance Mode                  | Switch between Observe/Assist/Enforce          |
+| FailSafe: Open Project Overview                | Project-level governance summary               |
+| FailSafe: Open Risk Register                   | Open the risk tracking panel                   |
+| FailSafe: Add Risk                             | Add a new risk entry                           |
+| FailSafe: Revert to Checkpoint (Time-Travel)   | Revert workspace to a governance checkpoint    |
+| FailSafe: Activate Break-Glass Override        | Emergency time-limited governance bypass       |
+| FailSafe: Revoke Break-Glass Override          | Manually revoke an active break-glass session  |
+| FailSafe: Replay Verdict (Audit)               | Re-execute a past governance decision          |
+| FailSafe: Undo Last Attempt                    | Rollback to a specific checkpoint              |
+| FailSafe: Set Up Agent Governance              | Inject governance into detected AI agents      |
+| FailSafe: Install Commit Hook                  | Add pre-commit governance hook to current repo |
+| FailSafe: Remove Commit Hook                   | Remove FailSafe pre-commit hook and token      |
+| FailSafe: Agent Health Status                  | View composite agent health and risk level     |
+| FailSafe: Agent Execution Timeline             | Step-by-step agent action timeline             |
+| FailSafe: Shadow Genome Debugger               | Browse and debug failure patterns              |
+| FailSafe: Agent Run Replay                     | Replay recorded agent execution traces         |
 
 ## Configuration
 
@@ -417,8 +423,6 @@ FailSafe seeds a `.failsafe/` directory in your workspace for configuration, led
 - `curl` (required only if you install the commit hook)
 - Ollama (optional, for LLM-assisted mode)
 
-> **v4.4.0 "Mindmap and Console Evolution"** - expanded ideation tooling, richer command-center module coordination, and documentation alignment for current operator workflows.
-
 > **We'd love your review!** If FailSafe is useful to you, please leave a review on the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe) or [Open VSX](https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe). Your feedback helps other developers discover FailSafe and directly shapes its roadmap. Bug reports and feature requests welcome on [GitHub Issues](https://github.com/MythologIQ/FailSafe/issues).
 
 ## Contributing
@@ -445,17 +449,7 @@ MIT - See `LICENSE`.
 
 ## Publishing
 
-To publish a new version of FailSafe, use the automated Python script which handles staging, artifact generation, and multi-marketplace upload:
-
-```bash
-# From workspace root
-python FailSafe/build/publish.py
-```
-
-**Prerequisites:**
-
-- `deploy.ps1` and `build-release.ps1` must be present in `FailSafe/build/`.
-- Valid tokens must be present in `.claude/.vsce-token` and `.claude/.ovsx-token`.
+Releases are automated via GitHub Actions. Tag pushes trigger the CI/CD pipeline which builds, tests, and publishes to both VS Code Marketplace and Open VSX.
 
 <!-- CHECKPOINT-DEEP-DIVE:START -->
 

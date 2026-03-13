@@ -122,6 +122,28 @@ Removal:
 
 Prerequisite: vendor runtime files for Whisper/Piper must be staged per `src/roadmap/ui/vendor/*/VENDOR.md`.
 
+## Agent Debugging Workflow (v4.8.0)
+
+### Check Agent Health
+
+1. Look at the status bar health indicator (shield icon with level).
+2. If elevated/warning/critical, click the indicator or run `FailSafe: Agent Health Status`.
+3. Use the quick-pick to drill into risk register, timeline, or trust scores.
+
+### Investigate Agent Actions
+
+1. Run `FailSafe: Agent Execution Timeline`.
+2. Use category tabs to filter by Verdicts, Trust, Approvals, or DiffGuard events.
+3. Toggle severity levels to focus on warnings and errors.
+4. Expand entries for detail and click file links to navigate to source.
+
+### Debug Failure Patterns
+
+1. Run `FailSafe: Shadow Genome Debugger`.
+2. Review pattern cards for recurring failure modes.
+3. Check unresolved entries and apply inline remediation (status dropdown + notes).
+4. Review negative constraints (AVOID/REQUIRE) assigned to specific agents.
+
 ## Troubleshooting
 
 ### Console shows disconnected state
@@ -174,3 +196,7 @@ If local scripts still reference `legacy-index.html`, update them to the current
 | Console operations include integrity verification and rollback actions | implemented | `FailSafe/extension/src/roadmap/ui/modules/operations.js`, `FailSafe/extension/src/roadmap/ui/modules/governance.js` |
 | Mindmap tab supports voice + manual node workflows | implemented | `FailSafe/extension/src/roadmap/ui/modules/brainstorm.js`, `FailSafe/extension/src/roadmap/ui/modules/stt-engine.js`, `FailSafe/extension/src/roadmap/ui/modules/tts-engine.js` |
 | Transcript-to-graph API is shipped | implemented | `FailSafe/extension/src/roadmap/ConsoleServer.ts` (`POST /api/v1/brainstorm/transcript`) |
+| Agent Health indicator shows composite health level | implemented | `FailSafe/extension/src/sentinel/AgentHealthIndicator.ts` |
+| Agent Execution Timeline filters by category and severity | implemented | `FailSafe/extension/src/genesis/panels/AgentTimelinePanel.ts` |
+| Shadow Genome Debugger shows failure patterns with remediation | implemented | `FailSafe/extension/src/genesis/panels/ShadowGenomePanel.ts` |
+| Pre-push gate runs branch policy, compile, tests, VSIX validation | implemented | `.githooks/pre-push`, `tools/reliability/prepush-validate.ps1` |

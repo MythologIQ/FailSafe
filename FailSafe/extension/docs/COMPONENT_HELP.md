@@ -18,6 +18,9 @@ Scope: shipped UI surfaces, governance components, and Voice + Mindmap Status in
 | Console: Governance | Sentinel status, policies, L3 queue, protocol audit log | You are reviewing control and approval state |
 | Console: Mindmap | Manual node-based ideation canvas with local session export | You are mapping ideas before implementation |
 | Console: Settings | Theme and local console preferences | You need presentation or workspace preference changes |
+| Agent Health Status | Status bar health indicator | You need at-a-glance agent risk awareness |
+| Agent Execution Timeline | Categorized event timeline | You are debugging agent actions or governance decisions |
+| Shadow Genome Debugger | Failure pattern browser | You are investigating recurring agent failure modes |
 
 ## Monitor vs Console
 
@@ -142,6 +145,40 @@ If a claim is not traceable to code plus ledger evidence, treat it as unverified
 | STT/TTS roundtrip | implemented | `stt-engine.js` + `tts-engine.js` integrated in the Mindmap (`brainstorm`) renderer |
 | Confidence-based node coloring by extraction | implemented | `brainstorm-canvas.js` maps `confidence` to semantic colors |
 
+## Agent Debugging Surfaces (v4.8.0)
+
+### Agent Health Status
+
+Status bar indicator showing composite agent health. Aggregates open risks, trust scores, and queue depth into a single traffic-light level.
+
+| Level | Meaning | Trigger |
+| --- | --- | --- |
+| Healthy | No actionable issues | No critical/high risks, trust >= 0.4, queue <= 3 |
+| Elevated | Watch queue depth | Queue depth > 3 |
+| Warning | Active risks or low trust | Open high-severity risks or avg trust < 0.4 |
+| Critical | Immediate attention | Open critical risks or quarantined agents |
+
+Access: `FailSafe: Agent Health Status` or click the status bar item.
+
+### Agent Execution Timeline
+
+Real-time timeline of agent actions with governance decision overlay. Shows verdicts, trust updates, approvals, and DiffGuard events.
+
+Features:
+
+- Category filter tabs (All, Verdicts, Trust, Approvals, DiffGuard)
+- Severity toggles with visual indicators
+- Expandable detail with file navigation
+- Bounded to 500 entries, newest-first
+
+Access: `FailSafe: Agent Execution Timeline`.
+
+### Shadow Genome Debugger
+
+Interactive browser for failure patterns recorded by the Shadow Genome. Shows pattern cards with count badges, causal vectors, unresolved entries with inline remediation, and negative constraints per agent.
+
+Access: `FailSafe: Shadow Genome Debugger`.
+
 ## Claim Map
 
 | Claim | Status | Source |
@@ -151,3 +188,6 @@ If a claim is not traceable to code plus ledger evidence, treat it as unverified
 | Mindmap in `v4.4.0` supports voice + manual flows | implemented | `FailSafe/extension/src/roadmap/ui/modules/brainstorm.js`, `FailSafe/extension/src/roadmap/ui/modules/stt-engine.js`, `FailSafe/extension/src/roadmap/ui/modules/tts-engine.js` |
 | Transcript-backed graph extraction endpoint is shipped | implemented | `FailSafe/extension/src/roadmap/ConsoleServer.ts` (`POST /api/v1/brainstorm/transcript`) |
 | Voice runtime needs vendored engine assets | implemented | `FailSafe/extension/src/roadmap/ui/vendor/whisper/VENDOR.md`, `FailSafe/extension/src/roadmap/ui/vendor/piper/VENDOR.md` |
+| Agent Health Status indicator in status bar | implemented | `FailSafe/extension/src/sentinel/AgentHealthIndicator.ts`, `FailSafe/extension/src/extension/main.ts` |
+| Agent Execution Timeline with category filters | implemented | `FailSafe/extension/src/genesis/panels/AgentTimelinePanel.ts`, `FailSafe/extension/src/sentinel/AgentTimelineService.ts` |
+| Shadow Genome Debugger with pattern cards | implemented | `FailSafe/extension/src/genesis/panels/ShadowGenomePanel.ts`, `FailSafe/extension/src/genesis/panels/ShadowGenomePanelHelpers.ts` |

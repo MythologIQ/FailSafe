@@ -1,6 +1,6 @@
 # FailSafe Process Guide
 
-Audience: operators who need fast, accurate workflows for the shipped `v4.8.0` UI and governance stack.
+Audience: operators who need fast, accurate workflows for the shipped `v4.9.0` UI and governance stack.
 
 ## First Run (Recommended Path)
 
@@ -122,7 +122,7 @@ Removal:
 
 Prerequisite: vendor runtime files for Whisper/Piper must be staged per `src/roadmap/ui/vendor/*/VENDOR.md`.
 
-## Agent Debugging Workflow (v4.8.0)
+## Agent Debugging Workflow (v4.9.0)
 
 ### Check Agent Health
 

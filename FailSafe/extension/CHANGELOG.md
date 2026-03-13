@@ -5,6 +5,15 @@ All notable changes to the MythologIQ FailSafe extension will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.8.0] - 2026-03-13
+
+### Added
+
+- Agent Execution Timeline: step-by-step visualization of agent actions with governance decision overlay (B142).
+- Risk & Stability Indicators: real-time agent health status with observe-mode notification and fallback logic (B143).
+- Shadow Genome Debugging Panel: interactive browser for failure patterns with filtering and pattern details (B144-B145).
+- New commands: `FailSafe: Agent Health Status`, `FailSafe: Agent Execution Timeline`, `FailSafe: Shadow Genome Debugger`.
+
 ## [4.7.2] - 2026-03-11
 
 ### Fixed
@@ -14,12 +23,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Performance
 
 - Concurrent Folder Manifold Calculation: Shifted folder processing from sequential to concurrent using `Promise.all`, showing improved execution time during workspace initialization.
-
-## [Unreleased]
-
-### Planned
-
-- Post-4.7.2 scope to be scheduled.
 
 ## [4.7.0] - 2026-03-10
 

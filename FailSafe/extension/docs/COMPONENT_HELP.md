@@ -1,6 +1,6 @@
 # FailSafe Component Help
 
-Audience: operators using the packaged VS Code extension (`v4.9.0`).
+Audience: operators using the packaged VS Code extension (`v4.9.2`).
 
 Scope: shipped UI surfaces, governance components, and Voice + Mindmap Status in the current release.
 
@@ -145,7 +145,7 @@ If a claim is not traceable to code plus ledger evidence, treat it as unverified
 | STT/TTS roundtrip | implemented | `stt-engine.js` + `tts-engine.js` integrated in the Mindmap (`brainstorm`) renderer |
 | Confidence-based node coloring by extraction | implemented | `brainstorm-canvas.js` maps `confidence` to semantic colors |
 
-## Agent Debugging Surfaces (v4.9.0)
+## Agent Debugging Surfaces (v4.9.2)
 
 ### Agent Health Status
 

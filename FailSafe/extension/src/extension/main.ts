@@ -16,6 +16,7 @@ import { GenesisManager } from "../genesis/GenesisManager";
 import { QoreLogicManager } from "../qorelogic/QoreLogicManager";
 import { SentinelDaemon } from "../sentinel/SentinelDaemon";
 import { EventBus } from "../shared/EventBus";
+import { syncHookSentinel } from "../shared/hookSentinel";
 import { GovernanceStatusBar } from "../governance/GovernanceStatusBar";
 import { LedgerManager } from "../qorelogic/ledger/LedgerManager";
 import { ShadowGenomeManager } from "../qorelogic/shadow/ShadowGenomeManager";
@@ -212,6 +213,22 @@ export async function activate(
           vscode.commands.executeCommand("failsafe.syncFramework");
       }
     }, 3000);
+
+    // B107: Sync VS Code sentinel.enabled setting with hook sentinel file
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (workspaceFolders?.[0]) {
+      const wsRoot = workspaceFolders[0].uri.fsPath;
+      context.subscriptions.push(
+        vscode.workspace.onDidChangeConfiguration((e) => {
+          if (e.affectsConfiguration("failsafe.sentinel.enabled")) {
+            const enabled = vscode.workspace
+              .getConfiguration("failsafe")
+              .get<boolean>("sentinel.enabled", true);
+            syncHookSentinel(wsRoot, enabled);
+          }
+        }),
+      );
+    }
 
     eventBus.emit("failsafe.ready", {
       timestamp: new Date().toISOString(),

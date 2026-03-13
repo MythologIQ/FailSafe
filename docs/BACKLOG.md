@@ -295,12 +295,12 @@ Minor / UX:
 
 ### v4.9.2 Infrastructure Hardening (plan-infrastructure-hardening-v492.md)
 
-- [ ] [B140] Monitor S.H.I.E.L.D. state tracking: File watcher on META_LEDGER.md, fix phase detection for SUBSTANTIATED verdict, fix Recently Completed display | v4.9.2
-- [ ] [B107] Workspace Hook Toggle: Bridge VS Code `failsafe.sentinel.enabled` setting with `.claude/hooks/disabled` sentinel. Extract shared hookSentinel utility | v4.9.2
-- [ ] [B108] Release pre-flight help doc check: Verify existing release-gate.cjs checks 4-5 (COMPONENT_HELP.md, PROCESS_GUIDE.md), add integration tests | v4.9.2
-- [ ] [B137] Release branch gate: Verify existing validate-branch-policy.ps1 + ql-repo-release enforcement, add branch policy tests | v4.9.2
-- [ ] [B138] Release pipeline CI gate: Verify existing release.yml gate ordering (validate → build → publish), document | v4.9.2
-- [ ] [B139] Release backlog coherence: Verify existing release-gate.cjs checks 6-7 (duplicate B-items, version summary), add integration tests | v4.9.2
+- [x] [B140] Monitor S.H.I.E.L.D. state tracking: File watcher on META_LEDGER.md, fix phase detection for SUBSTANTIATED verdict, fix Recently Completed display | v4.9.2 (v4.9.2 - Complete)
+- [x] [B107] Workspace Hook Toggle: Bridge VS Code `failsafe.sentinel.enabled` setting with `.claude/hooks/disabled` sentinel. Extract shared hookSentinel utility | v4.9.2 (v4.9.2 - Complete)
+- [x] [B108] Release pre-flight help doc check: Verify existing release-gate.cjs checks 4-5 (COMPONENT_HELP.md, PROCESS_GUIDE.md), add integration tests | v4.9.2 (v4.9.2 - Complete)
+- [x] [B137] Release branch gate: Verify existing validate-branch-policy.ps1 + ql-repo-release enforcement, add branch policy tests | v4.9.2 (v4.9.2 - Complete)
+- [x] [B138] Release pipeline CI gate: Verify existing release.yml gate ordering (validate → build → publish), document | v4.9.2 (v4.9.2 - Complete)
+- [x] [B139] Release backlog coherence: Verify existing release-gate.cjs checks 6-7 (duplicate B-items, version summary), add integration tests | v4.9.2 (v4.9.2 - Complete)
 - [x] [B142] Agent Execution Timeline: AgentTimelineService + AgentTimelinePanel webview with category filter tabs, severity toggles, expandable detail, file links (v4.8.0 - Complete)
 - [x] [B143] Risk & Stability Indicators: AgentHealthIndicator status bar item with composite health score, quick-pick drill-down to risk register/timeline/trust (v4.8.0 - Complete)
 - [x] [B144] Shadow Genome Debugging Panel: ShadowGenomePanel webview with failure pattern cards, unresolved entries table, inline remediation, negative constraints (v4.8.0 - Complete)

@@ -369,7 +369,7 @@ Minor / UX:
 | **v4.7.2**   | **GitHub Resilience**          | ✅ RELEASED    | GitHub API resilience, concurrent manifold calculation, DiffGuard analysis panel                                       |
 | **v4.8.0**   | **Agent Debugging Suite**      | ✅ RELEASED    | Agent Execution Timeline, Risk & Stability Indicators, Shadow Genome Debugging Panel (B142-B145)                      |
 | **v4.9.0**   | **Agent Run Replay**           | ✅ RELEASED    | Agent Run Replay, Governance Decision Contracts, marketplace README repositioning (B146/B147/B150)                    |
-| **v4.9.2**   | **Infrastructure Hardening**   | ✅ SEALED      | Monitor state tracking, hook toggle completion, release pipeline verification (B107-B108, B137-B140)                  |
+| **v4.9.2**   | **Infrastructure Hardening**   | ✅ RELEASED    | Monitor state tracking, hook toggle completion, release pipeline verification (B107-B108, B137-B140)                  |
 
 ---
 

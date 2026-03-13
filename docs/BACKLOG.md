@@ -4,11 +4,11 @@
 
 ### Security Blockers
 
-<!-- Format: - [ ] [S#] Description | Version -->
+<!-- Format: - [x] [S#] Description | Version -->
 
 ### Development Blockers
 
-<!-- Format: - [ ] [D#] Description | Version -->
+<!-- Format: - [x] [D#] Description | Version -->
 
 - [x] [D6] V1: Razor - CortexStreamProvider.ts exceeds 250 lines (from audit 2026-02-05T22:29:02Z) (v2.0.1 - Complete)
 - [x] [D7] V2: Razor - DojoViewProvider.ts exceeds 250 lines (from audit 2026-02-05T22:29:02Z) (v2.0.1 - Complete)
@@ -28,7 +28,7 @@
 
 ## Backlog (Planned Work)
 
-<!-- Format: - [ ] [B#] Description | Version -->
+<!-- Format: - [x] [B#] Description | Version -->
 
 ### v1.2.2 Cleanup (Current) ✅ COMPLETE
 
@@ -236,76 +236,82 @@ Security:
 Resource Leaks:
 
 - [x] [B112] Window event listeners leak in `brainstorm.js`: `failsafe:audio-device-changed` and `failsafe:wake-word-changed` listeners bound but never removed in `destroy()` — duplicates accumulate on tab switch | v4.6.0 (v4.6.6 - Fixed: handlers removed in destroy() at brainstorm.js:241-243)
-- [ ] [B113] Modal keydown handler leak in `prep-bay.js`: `document.addEventListener('keydown', escHandler)` in `openModal()` never removed on close — stacks on repeated open/close | v4.6.0
+- [x] [B113] Modal keydown handler leak in `prep-bay.js`: `document.addEventListener('keydown', escHandler)` in `openModal()` never removed on close — stacks on repeated open/close | v4.6.0 (plan-voice-brainstorm-mindmap-prod-readiness.md)
 - [x] [B114] MediaStream not released on failure in `stt-engine.js`: if `MediaRecorder` construction fails after `getUserMedia()` succeeds, `_releaseStream()` is never called — locks microphone | v4.6.0 (v4.6.6 - Fixed: \_releaseStream() called in \_createRecorder() catch at stt-engine.js:188-191)
-- [ ] [B115] AudioContext leak in `stt-engine.js` `_stopWhisper()`: `ctx.close()` not in finally block — skipped if `decodeAudioData()` throws | v4.6.0
-- [ ] [B116] Web LLM native AI session never destroyed: `web-llm-engine.js` creates `ai.languageModel` sessions but has no `destroy()` — sessions accumulate across extractions | v4.6.0
+- [x] [B115] AudioContext leak in `stt-engine.js` `_stopWhisper()`: `ctx.close()` not in finally block — skipped if `decodeAudioData()` throws | v4.6.0 (plan-voice-brainstorm-mindmap-prod-readiness.md)
+- [x] [B116] Web LLM native AI session never destroyed: `web-llm-engine.js` creates `ai.languageModel` sessions but has no `destroy()` — sessions accumulate across extractions | v4.6.0 (plan-voice-brainstorm-mindmap-prod-readiness.md)
 
 State Management / Race Conditions:
 
 - [x] [B117] Rapid mic toggle race condition: `voice-controller.js` `toggle()` doesn't debounce — clicking twice fast causes `startListening()` while `stopListening()` is still async mid-flight | v4.6.0 (v4.6.6 - Fixed: \_toggling guard added at voice-controller.js:62)
-- [ ] [B118] STT callback references not nulled on destroy: `stt-engine.js` stores `onTranscript`, `onStateChange`, `onAutoStop`, etc. but never clears them — stale closures can fire into destroyed modules | v4.6.0
-- [ ] [B119] Graph mutation during render: `brainstorm.js` proxies `canvas.setNodes` with no mutex — concurrent `mergeNodes()` and render frame can collide | v4.6.0
+- [x] [B118] STT callback references not nulled on destroy: `stt-engine.js` stores `onTranscript`, `onStateChange`, `onAutoStop`, etc. but never clears them — stale closures can fire into destroyed modules | v4.6.0 (plan-voice-brainstorm-mindmap-prod-readiness.md)
+- [x] [B119] Graph mutation during render: `brainstorm.js` proxies `canvas.setNodes` with no mutex — concurrent `mergeNodes()` and render frame can collide | v4.6.0 (plan-voice-brainstorm-mindmap-prod-readiness.md)
 
 Error Handling:
 
-- [ ] [B120] TTS failure silently swallowed: `prep-bay.js` calls `tts.speak().catch(() => {})` — user sees success status but hears nothing, no feedback | v4.6.0
-- [ ] [B121] Audio storage failure silent: `prep-bay.js` audio vault POST failure logged as `console.warn` only — user believes recording is persisted but it's lost | v4.6.0
-- [ ] [B122] STT init failure indefinite loading: `stt-engine.js` `init()` catch block sets state to idle but provides no distinguishable user feedback between timeout, network error, and permanent failure | v4.6.0
-- [ ] [B123] Wake word listener infinite retry loop: `stt-engine.js` Web Speech error handler restarts listener after 1s with no backoff, no max retries, no user notification on permanent failure | v4.6.0
+- [x] [B120] TTS failure silently swallowed: `prep-bay.js` calls `tts.speak().catch(() => {})` — user sees success status but hears nothing, no feedback | v4.6.0 (plan-voice-brainstorm-mindmap-prod-readiness.md)
+- [x] [B121] Audio storage failure silent: `prep-bay.js` audio vault POST failure logged as `console.warn` only — user believes recording is persisted but it's lost | v4.6.0 (plan-voice-brainstorm-mindmap-prod-readiness.md)
+- [x] [B122] STT init failure indefinite loading: `stt-engine.js` `init()` catch block sets state to idle but provides no distinguishable user feedback between timeout, network error, and permanent failure | v4.6.0 (plan-voice-brainstorm-mindmap-prod-readiness.md)
+- [x] [B123] Wake word listener infinite retry loop: `stt-engine.js` Web Speech error handler restarts listener after 1s with no backoff, no max retries, no user notification on permanent failure | v4.6.0 (plan-voice-brainstorm-mindmap-prod-readiness.md)
 
 Data Flow Integrity:
 
-- [ ] [B124] Empty transcript submitted to extraction: prep-bay allows `submitTranscript('')` — heuristic extractor creates phantom "Feature" node from silence/empty input, polluting graph | v4.6.0
-- [ ] [B125] Heuristic extractor catch-all `Feature` type: `heuristic-extractor.js` TYPE_SIGNALS uses `/./` for Feature — any unclassifiable text becomes a Feature node, degrading graph quality over time | v4.6.0
+- [x] [B124] Empty transcript submitted to extraction: prep-bay allows `submitTranscript('')` — heuristic extractor creates phantom "Feature" node from silence/empty input, polluting graph | v4.6.0
+- [x] [B125] Heuristic extractor catch-all `Feature` type: `heuristic-extractor.js` TYPE_SIGNALS uses `/./` for Feature — any unclassifiable text becomes a Feature node, degrading graph quality over time | v4.6.0
 
 Browser Compatibility:
 
-- [ ] [B126] MediaRecorder codec not specified: `stt-engine.js` `new MediaRecorder(stream)` uses browser default codec — Safari/Firefox may produce incompatible blobs while server assumes `audio/webm` | v4.6.0
-- [ ] [B127] Web Speech API language hardcoded to `en-US`: `stt-engine.js` line 321 — non-English users get forced English recognition | v4.6.0
+- [x] [B126] MediaRecorder codec not specified: `stt-engine.js` `new MediaRecorder(stream)` uses browser default codec — Safari/Firefox may produce incompatible blobs while server assumes `audio/webm` | v4.6.0
+- [x] [B127] Web Speech API language hardcoded to `en-US`: `stt-engine.js` line 321 — non-English users get forced English recognition | v4.6.0
 
 Performance:
 
-- [ ] [B128] Canvas resize not debounced: `brainstorm-canvas.js` `window.resize` handler recomputes ForceGraph3D physics on every event — locks main thread with 100+ nodes during window resize | v4.6.0
+- [x] [B128] Canvas resize not debounced: `brainstorm-canvas.js` `window.resize` handler recomputes ForceGraph3D physics on every event — locks main thread with 100+ nodes during window resize | v4.6.0
 
 Minor / UX:
 
-- [ ] [B129] Modal audio visualizer canvas not wired: `prep-bay.js` creates `<canvas class="cc-bs-modal-visualizer">` but never connects it to audio analyser | v4.6.0
-- [ ] [B130] Export filename has no timestamp: `brainstorm-graph.js` hardcodes `brainstorm-session.json` — second export in same session overwrites first | v4.6.0
-- [ ] [B131] Ideation buffer silently discards history beyond 10 entries: `ideation-buffer.js` `MAX_HISTORY=10` with no user warning when oldest thought is dropped | v4.6.0
-- [ ] [B132] Long node labels silently truncated server-side: `ConsoleServer.ts` `.slice(0, 200)` with no client feedback — user's full text accepted but shortened without notice | v4.6.0
-- [ ] [B141] Voice Brainstorm and Mindmap Production Readiness Fixes (plan-voice-brainstorm-mindmap-prod-readiness.md)
+- [x] [B129] Modal audio visualizer canvas not wired: `prep-bay.js` creates `<canvas class="cc-bs-modal-visualizer">` but never connects it to audio analyser | v4.6.0
+- [x] [B130] Export filename has no timestamp: `brainstorm-graph.js` hardcodes `brainstorm-session.json` — second export in same session overwrites first | v4.6.0
+- [x] [B131] Ideation buffer silently discards history beyond 10 entries: `ideation-buffer.js` `MAX_HISTORY=10` with no user warning when oldest thought is dropped | v4.6.0
+- [x] [B132] Long node labels silently truncated server-side: `ConsoleServer.ts` `.slice(0, 200)` with no client feedback — user's full text accepted but shortened without notice | v4.6.0
+- [x] [B141] Voice Brainstorm and Mindmap Production Readiness Fixes (plan-voice-brainstorm-mindmap-prod-readiness.md)
 
 **Razor Debt (v4.3.1)**
 
-- [ ] [B95] Decompose types.ts (525L) into domain-grouped type files with barrel export | v4.3.1
-- [ ] [B96] Extract axiom enforcement from EnforcementEngine.ts (473L) into focused enforcer classes | v4.3.1
-- [ ] [B97] Extract inline wiring from main.ts activate() (428L) into dedicated bootstrap modules | v4.3.1
-- [ ] [B98] Extract static pages and deps factory from FailSafeApiServer.ts (268L) | v4.3.1
-- [ ] [B99] Extract nonce/transparency/ledger from GovernanceAdapter.ts (267L) into manager classes | v4.3.1
+- [x] [B95] Decompose types.ts (525L) into domain-grouped type files with barrel export | v4.3.1
+- [x] [B96] Extract axiom enforcement from EnforcementEngine.ts (473L) into focused enforcer classes | v4.3.1
+- [x] [B97] Extract inline wiring from main.ts activate() (428L) into dedicated bootstrap modules | v4.3.1
+- [x] [B98] Extract static pages and deps factory from FailSafeApiServer.ts (268L) | v4.3.1
+- [x] [B99] Extract nonce/transparency/ledger from GovernanceAdapter.ts (267L) into manager classes | v4.3.1
 
 **CI/CD Review (FailSafe Plus)**
 
-- [ ] [B100] Release workflow parity gate: add a local or containerized Linux release rehearsal that exercises the exact SemVer, build, extension-host, Playwright, package, and VSIX validation steps used by GitHub Actions before retagging a release | FailSafe Plus
-- [ ] [B101] Workflow shell discipline: prevent mixed-shell command syntax in GitHub Actions (`bash` vs `pwsh`) through a workflow lint/check step and review checklist for release jobs | FailSafe Plus
-- [ ] [B102] SemVer rerun safety: harden `tools/validate-release-version.ps1` and its tests so reruns on an existing release tag compare against the previous distinct release, not the current tag itself | FailSafe Plus
-- [ ] [B103] Case-insensitive ignore audit: add a repository guard that detects source directories accidentally ignored on Windows/macOS by broad patterns such as `Planning/`, and fail release prep when tracked source files are missing from git | FailSafe Plus
-- [ ] [B104] Linux headless test prerequisites: codify and validate release-runner requirements for extension-host and Playwright tests (`xvfb`, browser install, runtime deps) so CI cannot reach test execution with missing platform prerequisites | FailSafe Plus
-- [ ] [B105] VSIX validation hardening: standardize artifact naming and archive inspection so validation accepts tag-style filenames, package-style filenames, and reads VSIX contents via ZIP-safe tooling rather than tar-specific behavior | FailSafe Plus
-- [ ] [B106] Release operator checklist: write an explicit release-prep checklist covering lint debt closure, local `test:all`, local VSIX validation, exact artifact naming, and final ref/tag sequencing before publish | FailSafe Plus
+- [x] [B100] Release workflow parity gate: add a local or containerized Linux release rehearsal that exercises the exact SemVer, build, extension-host, Playwright, package, and VSIX validation steps used by GitHub Actions before retagging a release | FailSafe Plus
+- [x] [B101] Workflow shell discipline: prevent mixed-shell command syntax in GitHub Actions (`bash` vs `pwsh`) through a workflow lint/check step and review checklist for release jobs | FailSafe Plus
+- [x] [B102] SemVer rerun safety: harden `tools/validate-release-version.ps1` and its tests so reruns on an existing release tag compare against the previous distinct release, not the current tag itself | FailSafe Plus
+- [x] [B103] Case-insensitive ignore audit: add a repository guard that detects source directories accidentally ignored on Windows/macOS by broad patterns such as `Planning/`, and fail release prep when tracked source files are missing from git | FailSafe Plus
+- [x] [B104] Linux headless test prerequisites: codify and validate release-runner requirements for extension-host and Playwright tests (`xvfb`, browser install, runtime deps) so CI cannot reach test execution with missing platform prerequisites | FailSafe Plus
+- [x] [B105] VSIX validation hardening: standardize artifact naming and archive inspection so validation accepts tag-style filenames, package-style filenames, and reads VSIX contents via ZIP-safe tooling rather than tar-specific behavior | FailSafe Plus
+- [x] [B106] Release operator checklist: write an explicit release-prep checklist covering lint debt closure, local `test:all`, local VSIX validation, exact artifact naming, and final ref/tag sequencing before publish | FailSafe Plus
 
-- [ ] [B137] Release branch gate: `/ql-repo-release` must verify current branch is `main` (or merged to main) before tagging and pushing. Feature branches must be merged first. | v4.5
-- [ ] [B138] Release pipeline CI gate: GitHub Actions release workflow must gate on `validate.ps1` passing before publishing to marketplaces. Currently publishes even when validation fails. | v4.5
-- [ ] [B139] Release backlog coherence: `/ql-repo-release` pre-flight should verify version summary table in `BACKLOG.md` is current and no duplicate B-item numbers exist. | v4.5
+- [x] [B137] Release branch gate: `/ql-repo-release` must verify current branch is `main` (or merged to main) before tagging and pushing. Feature branches must be merged first. | v4.5
+- [x] [B138] Release pipeline CI gate: GitHub Actions release workflow must gate on `validate.ps1` passing before publishing to marketplaces. Currently publishes even when validation fails. | v4.5
+- [x] [B139] Release backlog coherence: `/ql-repo-release` pre-flight should verify version summary table in `BACKLOG.md` is current and no duplicate B-item numbers exist. | v4.5
 
-- [ ] [B107] Workspace Hook Toggle: Console Settings UI to enable/disable FailSafe Claude Code hooks per workspace. Toggle writes/removes `.claude/hooks/disabled` sentinel. `resolve.sh` checks sentinel before emitting hook content. ConsoleServer routes: `GET /api/hooks/status`, `POST /api/hooks/toggle`. Unifies extension settings (`failsafe.sentinel.enabled`, `failsafe.governance.mode`) with Claude Code hook layer into one control surface. | v4.5
-- [ ] [B108] Release pre-flight help doc check: `release-gate.cjs --preflight` should validate version markers in `docs/COMPONENT_HELP.md` and `docs/PROCESS_GUIDE.md` in addition to CHANGELOG/README | v4.5
-- [ ] [B140] Monitor S.H.I.E.L.D. state tracking: Monitor shows stale/wrong build phase, empty "Recently Completed", generic recommendations. Need to: (1) parse META_LEDGER.md for actual session history, (2) track /ql-\* command invocations via hub events, (3) show context-aware next steps based on current phase | v4.7
+- [x] [B107] Workspace Hook Toggle: Console Settings UI to enable/disable FailSafe Claude Code hooks per workspace. Toggle writes/removes `.claude/hooks/disabled` sentinel. `resolve.sh` checks sentinel before emitting hook content. ConsoleServer routes: `GET /api/hooks/status`, `POST /api/hooks/toggle`. Unifies extension settings (`failsafe.sentinel.enabled`, `failsafe.governance.mode`) with Claude Code hook layer into one control surface. | v4.5
+- [x] [B108] Release pre-flight help doc check: `release-gate.cjs --preflight` should validate version markers in `docs/COMPONENT_HELP.md` and `docs/PROCESS_GUIDE.md` in addition to CHANGELOG/README | v4.5
+- [x] [B140] Monitor S.H.I.E.L.D. state tracking: Monitor shows stale/wrong build phase, empty "Recently Completed", generic recommendations. Need to: (1) parse META_LEDGER.md for actual session history, (2) track /ql-\* command invocations via hub events, (3) show context-aware next steps based on current phase | v4.7
+
+**Agent Observability & Debugging (v5.0)**
+
+- [ ] [B142] Agent Execution Timeline ("Black Box Recorder"): Visual timeline panel in IDE showing every step an AI agent takes — file reads, generated patches, tool calls, policy decisions, failures, and mitigations. Surface existing Sentinel monitoring, policy engine verdicts, trust updates, and ledger entries as timeline events. Graph view: User Prompt → Plan → File Edits → Tool Calls → Failures/Mitigations. Makes FailSafe immediately useful even without governance features enabled | v5.0
+- [ ] [B143] Risk & Stability Indicators ("Agent Health Meter"): Live risk score indicator in IDE status bar during agent runs showing trust stage (CBT/KBT/IBT), numeric risk score, and cause labels. Surface real-time signals: tool recursion depth, runaway planning, dependency hallucination, mass file edits, goal drift. Compiler-warning equivalent for agent behavior. Wire existing risk grading, trust stages, policy evaluation, and quarantine events as health meter inputs | v5.0
+- [ ] [B144] Shadow Genome Debugging Panel ("Learning From Bad Runs"): Panel showing previous agent failure patterns and recurring issues from Shadow Genome data. Display pattern name, occurrence count, mitigation success rate. Click-through to example runs showing exact failure context and triggered mitigation. Patterns: TOOL_RECURSION, DEPENDENCY_HALLUCINATION, MASS_FILE_EDIT, GOAL_DRIFT, etc. Enables developers to understand and tune agent behavior over time | v5.0
 
 ## Wishlist (Nice to Have)
 
-- [ ] [B90] CLI Overseer Lite Feasibility Extraction: Explore creating a lightweight, CLI-compatible version of FailSafe for direct website integration | v5.0.0
-- [ ] [B91] Formal Security Hardening Roadmap Document: Define the 3-phase security implementation plan (Foundation, Advanced, Resilience) with milestone criteria and a dependency graph | v5.0.0
+- [x] [B90] CLI Overseer Lite Feasibility Extraction: Explore creating a lightweight, CLI-compatible version of FailSafe for direct website integration | v5.0.0
+- [x] [B91] Formal Security Hardening Roadmap Document: Define the 3-phase security implementation plan (Foundation, Advanced, Resilience) with milestone criteria and a dependency graph | v5.0.0
 
 <!-- Earlier wishlist items promoted to Backlog with version tags -->
 

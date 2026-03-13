@@ -1,8 +1,8 @@
-[![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.8.0?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.8.0?platform=universal)
+# FailSafe — Safety layer for AI coding agents
 
-# MythologIQ FailSafe for VS Code
+Prevent runaway AI edits, hallucinated dependencies, and destructive refactors before they break your codebase.
 
-FailSafe is a local-first governance extension for AI-assisted development in VS Code and Cursor. It applies deterministic checks at the editor boundary, records decisions to a local ledger, and provides dedicated surfaces for audits, checkpoints, and agent governance.
+FailSafe runs locally inside VS Code and Cursor. It monitors what AI agents do, applies deterministic policy checks at the editor boundary, and gives you full visibility into every decision — before code ships.
 
 **Current Release**: v4.8.0 (2026-03-13)
 

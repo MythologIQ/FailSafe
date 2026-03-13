@@ -179,6 +179,21 @@
       {
         "command": "failsafe.removeCommitHook",
         "title": "FailSafe: Remove Commit Hook"
+      },
+      {
+        "command": "failsafe.showAgentHealth",
+        "title": "FailSafe: Agent Health Status",
+        "category": "FailSafe"
+      },
+      {
+        "command": "failsafe.showTimeline",
+        "title": "FailSafe: Agent Execution Timeline",
+        "category": "FailSafe"
+      },
+      {
+        "command": "failsafe.showShadowGenome",
+        "title": "FailSafe: Shadow Genome Debugger",
+        "category": "FailSafe"
       }
     ],
     "viewsContainers": {

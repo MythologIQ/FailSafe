@@ -10,6 +10,7 @@ export type FailSafeEventType =
   | "sentinel.confidence"
   | "sentinel.verdict"
   | "sentinel.alert"
+  | "sentinel.healthUpdate"
   | "sentinel.modeChange"
   | "sentinel.escalation_failed"
   | "qorelogic.trustUpdate"
@@ -35,7 +36,12 @@ export type FailSafeEventType =
   | "ide.taskStarted"
   | "ide.taskEnded"
   | "ide.debugStarted"
-  | "ide.debugEnded";
+  | "ide.debugEnded"
+  | "diffguard.analysisReady"
+  | "diffguard.approved"
+  | "diffguard.rejected"
+  | "timeline.entryAdded"
+  | "genome.failureArchived";
 
 export interface FailSafeEvent<T = unknown> {
   type: FailSafeEventType;

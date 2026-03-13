@@ -5,6 +5,18 @@ All notable changes to FailSafe will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.9.0] - 2026-03-13
+
+### Added
+
+- Agent Run Replay: execution trace capture and step-by-step replay panel for agent session debugging (B146).
+- Governance Decision Contracts: typed decision pipeline with risk categorization and sentinel event adapter (B147).
+- Marketplace README repositioned as "AI Coding Safety" category.
+
+### Security
+
+- 3 XSS/path-traversal/re-entrancy fixes in replay panel and run recorder.
+
 ## [4.8.0] - 2026-03-13
 
 ### Added

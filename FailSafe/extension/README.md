@@ -4,9 +4,23 @@ Prevent runaway AI edits, hallucinated dependencies, and destructive refactors b
 
 FailSafe runs locally inside VS Code and Cursor. It monitors what AI agents do, applies deterministic policy checks at the editor boundary, and gives you full visibility into every decision — before code ships.
 
-**Current Release**: v4.8.0 (2026-03-13)
+**Current Release**: v4.9.0 (2026-03-13)
 
 ![FailSafe Banner](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/extension/FailSafe%20Banner.png)
+
+## What's New in v4.9.0
+
+Agent Run Replay & Governance Decision Contracts — capture full execution traces from AI coding agents and replay them step-by-step with governance decision overlay.
+
+### Added
+
+- **Agent Run Replay** — Record and replay complete agent sessions with step navigation, file-level diff inspection, and governance decision cards (B146).
+- **Governance Decision Contracts** — Typed decision pipeline converting raw sentinel events into structured `GovernanceDecision` objects with risk categorization and mitigation suggestions (B147).
+- New command: `FailSafe: Show Run Replay`.
+
+### Security
+
+- 3 fixes: XSS in onclick handlers, path traversal in file viewer, re-entrancy in run recorder.
 
 ## What's New in v4.8.0
 

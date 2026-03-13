@@ -1,12 +1,23 @@
-[![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.7.0?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.7.0?platform=universal)
+[![Socket Badge](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.8.0?platform=universal)](https://badge.socket.dev/openvsx/package/mythologiq.mythologiq-failsafe/4.8.0?platform=universal)
 
 # MythologIQ FailSafe for VS Code
 
 FailSafe is a local-first governance extension for AI-assisted development in VS Code and Cursor. It applies deterministic checks at the editor boundary, records decisions to a local ledger, and provides dedicated surfaces for audits, checkpoints, and agent governance.
 
-**Current Release**: v4.7.2 (2026-03-11)
+**Current Release**: v4.8.0 (2026-03-13)
 
 ![FailSafe Banner](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/extension/FailSafe%20Banner.png)
+
+## What's New in v4.8.0
+
+Agent Debugging & Stability Monitoring Suite — dedicated panels for agent execution timeline, risk indicators, and shadow genome debugging.
+
+### Added
+
+- **Agent Execution Timeline** — Step-by-step visualization of agent actions with governance decision overlay (B142).
+- **Risk & Stability Indicators** — Real-time agent health status with observe-mode notification and fallback logic (B143).
+- **Shadow Genome Debugging Panel** — Interactive browser for failure patterns with filtering and pattern details (B144-B145).
+- New commands: `FailSafe: Agent Health Status`, `FailSafe: Agent Execution Timeline`, `FailSafe: Shadow Genome Debugger`.
 
 ## What's New in v4.7.2
 

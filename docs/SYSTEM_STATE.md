@@ -1,7 +1,61 @@
 # SYSTEM STATE
 
-**Last Updated:** 2026-03-10
-**Version:** v4.7.0 Agent Marketplace + Adapter SUBSTANTIATED
+**Last Updated:** 2026-03-13
+**Version:** v4.8.0 B145 Diff Guard SUBSTANTIATED
+
+## B145 Diff Guard ("Risk-Aware Change Preview") — Implementation State
+
+### Ledger Trail
+
+| Entry | Phase | Verdict |
+|-------|-------|---------|
+| #207 | GATE TRIBUNAL | PASS (L2) |
+| #208 | IMPLEMENT | 8 new files, 5 modified |
+| #209 | SUBSTANTIATE | Session sealed |
+
+### New Files
+
+| File | Lines | Purpose |
+|------|-------|---------|
+| `src/sentinel/diffguard/types.ts` | 67 | DiffHunk, DiffAnalysis, RiskSignal, DiffGuardAction types |
+| `src/sentinel/diffguard/DiffAnalyzer.ts` | 198 | Git diff parser, path traversal protection |
+| `src/sentinel/diffguard/RiskSignalDetector.ts` | 235 | 6 risk signal detectors + overall risk calculator |
+| `src/sentinel/diffguard/DiffGuardService.ts` | 90 | EventBus orchestrator, auto-approve L1, emit analysisReady |
+| `src/genesis/panels/DiffGuardPanel.ts` | 204 | Singleton webview, risk badges, diff view, action buttons |
+| `src/shared/types/diffguard.ts` | 14 | Barrel re-export |
+| `src/test/sentinel/diffguard/DiffAnalyzer.test.ts` | 171 | 7 tests: parseDiff + computeStats |
+| `src/test/sentinel/diffguard/RiskSignalDetector.test.ts` | 289 | 10 tests: 6 signal types + 4 overall risk |
+
+### Modified Files
+
+| File | Change |
+|------|--------|
+| `src/shared/types/events.ts` | +4 diffguard event types |
+| `src/shared/types/index.ts` | +DiffGuard type exports |
+| `src/extension/bootstrapSentinel.ts` | +DiffGuardService wiring, SentinelSubstrate expanded |
+| `src/extension/bootstrapGenesis.ts` | +DiffGuardPanel command registration |
+| `package.json` | +failsafe.showDiffGuard command |
+
+### Features Delivered
+
+1. **Post-Write Risk Review Gate** — Detects agent file changes via chokidar, generates git diff, presents risk-annotated review UI before developer proceeds
+2. **6 Risk Signal Detectors** — dependency_hallucination, security_downgrade, mass_modification, destructive_edit, secret_exposure, config_tampering
+3. **DiffGuardPanel Webview** — Singleton panel with risk badges, syntax-highlighted diff, approve/reject/modify-prompt actions
+4. **Auto-Approve L1** — Low-risk L1 PASS verdicts auto-approved silently (no UI interruption)
+5. **Devil's Advocate Review** — 2 CRITICAL + 4 HIGH issues caught and fixed before merge
+
+### Section 4 Razor
+
+| File | Lines | Limit | Status |
+|------|-------|-------|--------|
+| types.ts | 67 | 250 | PASS |
+| DiffAnalyzer.ts | 198 | 250 | PASS |
+| RiskSignalDetector.ts | 235 | 250 | PASS |
+| DiffGuardService.ts | 90 | 250 | PASS |
+| DiffGuardPanel.ts | 204 | 250 | PASS |
+| diffguard.ts | 14 | 250 | PASS |
+
+---
 
 ## Agent Marketplace + Microsoft Agent Governance Toolkit Adapter — Implementation State
 

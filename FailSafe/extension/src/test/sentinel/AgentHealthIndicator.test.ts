@@ -161,7 +161,7 @@ describe('AgentHealthIndicator.formatDisplayText', () => {
 
     it('should format warning level with risk count', () => {
         const s = { ...makeSnapshot({ openHigh: 2 }), level: 'warning' as HealthLevel };
-        assert.equal(formatDisplayText(s), '$(warning) FS: 2 Risk');
+        assert.equal(formatDisplayText(s), '$(warning) FS: 2 Risks');
     });
 
     it('should format critical level with error icon and FS prefix', () => {
@@ -182,11 +182,11 @@ describe('AgentHealthIndicator.formatTooltip', () => {
         };
         const tooltip = formatTooltip(snapshot);
 
-        assert.ok(tooltip.includes('Agent Health: WARNING'));
+        assert.ok(tooltip.includes('FailSafe Health: WARNING'));
         assert.ok(tooltip.includes('Open Critical: 0'));
         assert.ok(tooltip.includes('Open High: 2'));
         assert.ok(tooltip.includes('Avg Trust: 0.72'));
-        assert.ok(tooltip.includes('Quarantined: 0'));
+        assert.ok(tooltip.includes('Quarantined Agents: 0'));
         assert.ok(tooltip.includes('Queue Depth: 1'));
     });
 
@@ -213,6 +213,6 @@ describe('AgentHealthIndicator.formatTooltip', () => {
             queueDepth: 0,
         };
         const tooltip = formatTooltip(snapshot);
-        assert.ok(tooltip.startsWith('Agent Health: CRITICAL'));
+        assert.ok(tooltip.startsWith('FailSafe Health: CRITICAL'));
     });
 });

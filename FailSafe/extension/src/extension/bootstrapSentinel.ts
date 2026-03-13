@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import * as path from "path";
 import { SentinelDaemon } from "../sentinel/SentinelDaemon";
 import { PatternLoader } from "../sentinel/PatternLoader";
 import { HeuristicEngine } from "../sentinel/engines/HeuristicEngine";
@@ -8,6 +9,7 @@ import { VerdictArbiter } from "../sentinel/VerdictArbiter";
 import { VerdictRouter } from "../sentinel/VerdictRouter";
 import { ArchitectureEngine } from "../sentinel/engines/ArchitectureEngine";
 import { AgentTimelineService } from "../sentinel/AgentTimelineService";
+import { AgentRunRecorder } from "../sentinel/AgentRunRecorder";
 import { CoreSubstrate } from "./bootstrapCore";
 import { QoreLogicSubstrate } from "./bootstrapQoreLogic";
 import { Logger } from "../shared/Logger";
@@ -16,6 +18,7 @@ export interface SentinelSubstrate {
   sentinelDaemon: SentinelDaemon;
   architectureEngine: ArchitectureEngine;
   agentTimelineService: AgentTimelineService;
+  agentRunRecorder: AgentRunRecorder;
 }
 
 export async function bootstrapSentinel(
@@ -68,7 +71,11 @@ export async function bootstrapSentinel(
     const agentTimelineService = new AgentTimelineService(core.eventBus);
     context.subscriptions.push({ dispose: () => agentTimelineService.dispose() });
 
-    return { sentinelDaemon, architectureEngine, agentTimelineService };
+    const runsPath = path.join(core.workspaceRoot, ".failsafe", "runs");
+    const agentRunRecorder = new AgentRunRecorder(core.eventBus, runsPath);
+    context.subscriptions.push({ dispose: () => agentRunRecorder.dispose() });
+
+    return { sentinelDaemon, architectureEngine, agentTimelineService, agentRunRecorder };
   } catch (error) {
     logger.error("Failed to start Sentinel daemon", error);
     vscode.window.showWarningMessage(
@@ -101,6 +108,16 @@ export async function bootstrapSentinel(
         getEntries: () => [],
         getEntriesSince: () => [],
       } as unknown as AgentTimelineService,
+      agentRunRecorder: {
+        dispose: () => {},
+        getActiveRuns: () => [],
+        getCompletedRuns: () => [],
+        getRun: () => undefined,
+        getRunSteps: () => [],
+        startRun: () => ({ id: "", agentDid: "", agentType: "", agentSource: "manual" as const, startedAt: "", status: "failed" as const, steps: [] }),
+        endRun: () => undefined,
+        loadRun: () => null,
+      } as unknown as AgentRunRecorder,
     };
   }
 }

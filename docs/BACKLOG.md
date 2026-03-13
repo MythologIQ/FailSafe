@@ -307,9 +307,9 @@ Minor / UX:
 
 ### v4.9.0 Agent Run Replay & Governance Contracts
 
-- [ ] [B146] Agent Run Recorder: Capture full execution traces (prompts, reasoning steps, tool calls, file edits, policy decisions, mitigations) during AI agent runs. Store as structured timeline events via EventBus | v4.9.0
-- [ ] [B147] Agent Run Replay Panel: Webview panel for step-by-step replay of recorded agent runs with execution graph, code diffs per step, policy triggers, and Shadow Genome pattern matches | v4.9.0
-- [ ] [B150] Governance Decision Contract: Define stable, machine-actionable contract schema for agent framework integration | v4.9.0
+- [x] [B146] Agent Run Recorder: Capture full execution traces (prompts, reasoning steps, tool calls, file edits, policy decisions, mitigations) during AI agent runs. Store as structured timeline events via EventBus | v4.9.0 (v4.9.0 - Complete)
+- [x] [B147] Agent Run Replay Panel: Webview panel for step-by-step replay of recorded agent runs with execution graph, code diffs per step, policy triggers, and Shadow Genome pattern matches | v4.9.0 (v4.9.0 - Complete)
+- [x] [B150] Governance Decision Contract: Define stable, machine-actionable contract schema for agent framework integration | v4.9.0 (v4.9.0 - Complete)
 
 ### Agent Debugging & Stability (Future)
 

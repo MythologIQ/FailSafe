@@ -41,7 +41,11 @@ export type FailSafeEventType =
   | "diffguard.approved"
   | "diffguard.rejected"
   | "timeline.entryAdded"
-  | "genome.failureArchived";
+  | "genome.failureArchived"
+  | "agentRun.started"
+  | "agentRun.stepRecorded"
+  | "agentRun.completed"
+  | "agentRun.replaying";
 
 export interface FailSafeEvent<T = unknown> {
   type: FailSafeEventType;

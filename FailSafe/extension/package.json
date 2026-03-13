@@ -194,6 +194,11 @@
         "command": "failsafe.showShadowGenome",
         "title": "FailSafe: Shadow Genome Debugger",
         "category": "FailSafe"
+      },
+      {
+        "command": "failsafe.showRunReplay",
+        "title": "FailSafe: Agent Run Replay",
+        "category": "FailSafe"
       }
     ],
     "viewsContainers": {

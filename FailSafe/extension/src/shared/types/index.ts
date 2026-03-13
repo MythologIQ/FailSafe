@@ -59,6 +59,22 @@ export type {
 // Event Bus
 export type { FailSafeEventType, FailSafeEvent } from "./events";
 
+// Governance Decision Contract
+export type {
+  GovernanceAction,
+  RiskCategory,
+  GovernanceDecision,
+} from "./governance";
+export { toGovernanceDecision } from "./governance";
+
+// Agent Run Types
+export type {
+  RunStepKind,
+  RunStep,
+  AgentRunSource,
+  AgentRun,
+} from "./agentRun";
+
 // Configuration
 export type { FailSafeConfig } from "./config";
 

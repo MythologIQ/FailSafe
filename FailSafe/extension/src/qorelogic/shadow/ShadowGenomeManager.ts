@@ -36,6 +36,7 @@ import {
     SHADOW_GENOME_V1_DDL,
     MigrationResult
 } from './SchemaVersionManager';
+import type { EventBus } from '../../shared/EventBus';
 
 interface ArchiveRequest {
     verdict: SentinelVerdict;
@@ -45,7 +46,7 @@ interface ArchiveRequest {
     causalVector?: string;
 }
 
-interface FailurePattern {
+export interface FailurePattern {
     failureMode: FailureMode;
     count: number;
     agentDids: string[];
@@ -85,7 +86,8 @@ export class ShadowGenomeManager {
 
     constructor(
         configProvider: IConfigProvider,
-        ledgerManager: LedgerManager
+        ledgerManager: LedgerManager,
+        private eventBus?: EventBus,
     ) {
         this.configProvider = configProvider;
         this.ledgerManager = ledgerManager;
@@ -239,6 +241,12 @@ export class ShadowGenomeManager {
             negativeConstraint,
             remediationStatus: 'UNRESOLVED'
         };
+
+        this.eventBus?.emit('genome.failureArchived', {
+            failureMode: entry.failureMode,
+            agentDid: entry.agentDid,
+            entryId: entry.id,
+        });
 
         return entry;
     }

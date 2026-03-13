@@ -21,6 +21,7 @@ import { LedgerManager } from "../qorelogic/ledger/LedgerManager";
 import { ShadowGenomeManager } from "../qorelogic/shadow/ShadowGenomeManager";
 import { ConsoleServer } from "../roadmap";
 import { CheckpointManager } from "../qorelogic/checkpoint/CheckpointManager";
+import { AgentHealthIndicator } from "../sentinel/AgentHealthIndicator";
 import type { ICheckpointMetrics } from "../core/interfaces";
 
 // Bootstrap Modules
@@ -168,6 +169,15 @@ export async function activate(
 
     // Wire dynamic port for workspace isolation
     setServerPort(servers.actualPort, core.workspaceRoot);
+
+    // 8.5. Agent Health Indicator (needs sentinelDaemon + riskManager + trustEngine)
+    const agentHealthIndicator = new AgentHealthIndicator(
+      eventBus,
+      servers.riskManager,
+      qore.trustEngine,
+      sentinelDaemon,
+    );
+    context.subscriptions.push(agentHealthIndicator);
 
     // 9. Commands
     registerCommands(

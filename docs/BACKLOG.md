@@ -293,13 +293,14 @@ Minor / UX:
 - [ ] [B105] VSIX validation hardening: standardize artifact naming and archive inspection so validation accepts tag-style filenames, package-style filenames, and reads VSIX contents via ZIP-safe tooling rather than tar-specific behavior | FailSafe Plus
 - [ ] [B106] Release operator checklist: write an explicit release-prep checklist covering lint debt closure, local `test:all`, local VSIX validation, exact artifact naming, and final ref/tag sequencing before publish | FailSafe Plus
 
-- [ ] [B137] Release branch gate: `/ql-repo-release` must verify current branch is `main` (or merged to main) before tagging and pushing. Feature branches must be merged first. | v4.5
-- [ ] [B138] Release pipeline CI gate: GitHub Actions release workflow must gate on `validate.ps1` passing before publishing to marketplaces. Currently publishes even when validation fails. | v4.5
-- [ ] [B139] Release backlog coherence: `/ql-repo-release` pre-flight should verify version summary table in `BACKLOG.md` is current and no duplicate B-item numbers exist. | v4.5
+### v4.9.2 Infrastructure Hardening (plan-infrastructure-hardening-v492.md)
 
-- [ ] [B107] Workspace Hook Toggle: Console Settings UI to enable/disable FailSafe Claude Code hooks per workspace. Toggle writes/removes `.claude/hooks/disabled` sentinel. `resolve.sh` checks sentinel before emitting hook content. ConsoleServer routes: `GET /api/hooks/status`, `POST /api/hooks/toggle`. Unifies extension settings (`failsafe.sentinel.enabled`, `failsafe.governance.mode`) with Claude Code hook layer into one control surface. | v4.5
-- [ ] [B108] Release pre-flight help doc check: `release-gate.cjs --preflight` should validate version markers in `docs/COMPONENT_HELP.md` and `docs/PROCESS_GUIDE.md` in addition to CHANGELOG/README | v4.5
-- [ ] [B140] Monitor S.H.I.E.L.D. state tracking: Monitor shows stale/wrong build phase, empty "Recently Completed", generic recommendations. Need to: (1) parse META_LEDGER.md for actual session history, (2) track /ql-* command invocations via hub events, (3) show context-aware next steps based on current phase | v4.7
+- [ ] [B140] Monitor S.H.I.E.L.D. state tracking: File watcher on META_LEDGER.md, fix phase detection for SUBSTANTIATED verdict, fix Recently Completed display | v4.9.2
+- [ ] [B107] Workspace Hook Toggle: Bridge VS Code `failsafe.sentinel.enabled` setting with `.claude/hooks/disabled` sentinel. Extract shared hookSentinel utility | v4.9.2
+- [ ] [B108] Release pre-flight help doc check: Verify existing release-gate.cjs checks 4-5 (COMPONENT_HELP.md, PROCESS_GUIDE.md), add integration tests | v4.9.2
+- [ ] [B137] Release branch gate: Verify existing validate-branch-policy.ps1 + ql-repo-release enforcement, add branch policy tests | v4.9.2
+- [ ] [B138] Release pipeline CI gate: Verify existing release.yml gate ordering (validate → build → publish), document | v4.9.2
+- [ ] [B139] Release backlog coherence: Verify existing release-gate.cjs checks 6-7 (duplicate B-items, version summary), add integration tests | v4.9.2
 - [x] [B142] Agent Execution Timeline: AgentTimelineService + AgentTimelinePanel webview with category filter tabs, severity toggles, expandable detail, file links (v4.8.0 - Complete)
 - [x] [B143] Risk & Stability Indicators: AgentHealthIndicator status bar item with composite health score, quick-pick drill-down to risk register/timeline/trust (v4.8.0 - Complete)
 - [x] [B144] Shadow Genome Debugging Panel: ShadowGenomePanel webview with failure pattern cards, unresolved entries table, inline remediation, negative constraints (v4.8.0 - Complete)
@@ -367,6 +368,8 @@ Minor / UX:
 | **v4.7.0**   | **Agent Marketplace**          | ✅ RELEASED    | Agent Marketplace with HITL security gates, Garak/Promptfoo scanning, Microsoft Agent Governance Toolkit Adapter      |
 | **v4.7.2**   | **GitHub Resilience**          | ✅ RELEASED    | GitHub API resilience, concurrent manifold calculation, DiffGuard analysis panel                                       |
 | **v4.8.0**   | **Agent Debugging Suite**      | ✅ RELEASED    | Agent Execution Timeline, Risk & Stability Indicators, Shadow Genome Debugging Panel (B142-B145)                      |
+| **v4.9.0**   | **Agent Run Replay**           | ✅ SEALED      | Agent Run Recorder, Agent Run Replay Panel, Governance Decision Contract (B146-B147, B150)                            |
+| **v4.9.2**   | **Infrastructure Hardening**   | 📋 PLANNED     | Monitor state tracking, hook toggle completion, release pipeline verification (B107-B108, B137-B140)                  |
 
 ---
 

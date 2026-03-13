@@ -9778,5 +9778,149 @@ SHA256(content_hash + previous_hash)
 
 ---
 
+### Entry #218: GATE TRIBUNAL
+
+**Timestamp**: 2026-03-13T18:30:00Z
+**Phase**: GATE
+**Author**: Judge
+**Risk Grade**: L2
+
+**Verdict**: PASS
+
+**Target**: B146/B147/B150 Agent Run Replay & Governance Decision Contract (v4.9.0)
+**Plan**: `.failsafe/governance/plans/plan-agent-run-replay-and-governance-contracts.md`
+
+**Audit Summary**:
+- Security Pass: PASS — no credentials, no auth bypass, bounded storage
+- Ghost UI Pass: PASS — all handlers specified, bootstrap wiring documented
+- Section 4 Razor: PASS — max file 220L, max function 35L, nesting 2
+- Dependency Pass: PASS — no new dependencies
+- Orphan Pass: PASS — 7 files, all connected to build path
+- Macro-Level Architecture: PASS — clear boundaries, no cycles, correct layering
+- Repository Governance: PASS — README, LICENSE, SECURITY present
+
+**Recommendations** (non-blocking):
+- R1: Add `agentSource` discriminator to `AgentRun` type for multi-surface run detection (terminal CLI, IDE extension, IDE native chat)
+- R2: `riskScore = 1 - confidence` conflates confidence direction with decision severity; refine in v5.0 migration
+
+**Content Hash**:
+
+```
+SHA256(audit_verdict)
+= 6214832479dc645253783469511fcb34d3d4d44049d0ebb53e5dd0687361045a
+```
+
+**Previous Hash**: b180055ad08f59e1c29d9e2d1fe744eca03afbc88f190b980da202c1eb630174
+
+**Chain Hash**:
+
+```
+SHA256(content_hash + previous_hash)
+= ec2624466701d190ac87292e19c0c1ebdf2a634a5438da22781440681a481524
+```
+
+**Decision**: PASS. Blueprint approved for implementation. Two non-blocking recommendations issued regarding multi-surface run boundary detection and riskScore semantics.
+
+---
+
+### Entry #219: IMPLEMENTATION
+
+**Timestamp**: 2026-03-13T21:00:00Z
+**Phase**: IMPLEMENT
+**Author**: Specialist (Agent Team: 3x typescript-pro + code-reviewer)
+**Risk Grade**: L2
+
+**Files Created**:
+
+- `FailSafe/extension/src/shared/types/governance.ts` (71 lines) — GovernanceDecision contract, toGovernanceDecision adapter, inferRiskCategory helper
+- `FailSafe/extension/src/shared/types/agentRun.ts` (46 lines) — RunStepKind, RunStep, AgentRunSource, AgentRun types
+- `FailSafe/extension/src/sentinel/AgentRunRecorder.ts` (243 lines) — EventBus subscriber capturing execution traces, bounded storage
+- `FailSafe/extension/src/genesis/panels/AgentRunReplayPanel.ts` (186 lines) — Singleton webview with step navigation, CSP nonce
+- `FailSafe/extension/src/genesis/panels/AgentRunReplayHelpers.ts` (216 lines) — Render helpers for run list, replay view, governance cards
+- `FailSafe/extension/src/test/governance/GovernanceDecision.test.ts` (132 lines) — 16 tests for decision mapping, risk, mitigation
+- `FailSafe/extension/src/test/sentinel/AgentRunRecorder.test.ts` (189 lines) — 18 tests for lifecycle, event mapping, persistence
+
+**Files Modified**:
+
+- `FailSafe/extension/src/shared/types/events.ts` — Added agentRun.* event types
+- `FailSafe/extension/src/shared/types/index.ts` — Barrel exports for governance + agentRun types
+- `FailSafe/extension/src/extension/bootstrapSentinel.ts` — AgentRunRecorder instantiation
+- `FailSafe/extension/src/extension/bootstrapGenesis.ts` — failsafe.showRunReplay command registration
+- `FailSafe/extension/package.json` — failsafe.showRunReplay command entry
+
+**Security Fixes Applied** (from Devil's Advocate review):
+
+- C1: XSS in onclick handlers — switched from escapeHtml to escapeJsString for JS string contexts
+- C2: Path traversal in handleViewFile — added workspace folder validation
+- C3: Re-entrancy in AgentRunRecorder — guard against own agentRun.* events
+- W1: Cleanup ordering — sort by mtime instead of UUID filename
+
+**Test Results**: 590 passing (37 new), 0 failures, 1 pending (pre-existing)
+
+**Backlog**: B146, B147, B150 marked complete (v4.9.0)
+
+**Content Hash**:
+
+```
+SHA256(implementation files)
+= a926670ba0bfc3087f53b6e2e95f20b3c641dda524e9777d8c74d5640c17f70e
+```
+
+**Previous Hash**: ec2624466701d190ac87292e19c0c1ebdf2a634a5438da22781440681a481524
+
+**Chain Hash**:
+
+```
+SHA256(content_hash + previous_hash)
+= fbe7c61aaab0b092e72b4295e37b0ec1eacfe3e46d8d72f1cb39161bd099d93b
+```
+
+**Decision**: Implementation complete. Section 4 Razor applied. All 3 critical security findings fixed. Reality matches Promise.
+
+---
+
+### Entry #220: SESSION SEAL — Agent Run Replay & Governance Decision Contract
+
+**Timestamp**: 2026-03-13T21:30:00Z
+**Phase**: SUBSTANTIATE
+**Author**: Judge
+**Risk Grade**: L2
+
+**Reality Audit**:
+
+| Check | Result |
+|-------|--------|
+| Blueprint files (11) | All present — 7 new, 4 modified integration points |
+| Unplanned files | 0 |
+| Section 4 Razor | PASS — max 243L file, max 28L function, max 3 nesting |
+| console.log | 0 artifacts |
+| Hardcoded colors | 0 — all VS Code theme variables |
+| Security blockers | 0 open |
+| Skill files modified | 0 |
+| Test coverage | 590 passing (37 new), 0 failures |
+| Version | v4.8.0 → v4.9.0 (feature) |
+
+**Verdict**: SUBSTANTIATED. Reality matches Promise.
+
+**Content Hash**:
+
+```
+SHA256(seal_artifacts)
+= 58ced5f5d1d3a40fc71a33f8822eea6068b9a9eff40ef79ffb018a603c1ebe31
+```
+
+**Previous Hash**: fbe7c61aaab0b092e72b4295e37b0ec1eacfe3e46d8d72f1cb39161bd099d93b
+
+**Chain Hash**:
+
+```
+SHA256(content_hash + previous_hash)
+= 0a30f912a2d492639b9d40d3cc521662dbfceb588e4e114c960bc6ea359cffa9
+```
+
+**Decision**: Session sealed. v4.9.0 Agent Run Replay & Governance Decision Contract verified against blueprint. 3 phases implemented (B146/B147/B150), 3 security findings fixed, Section 4 Razor compliant.
+
+---
+
 _Chain Status: SEALED_
-_Next Session: Run /ql-status to review or /ql-repo-release for v4.8.0_
+_Next Session: Run /ql-repo-release to deliver v4.9.0 or start new feature with /ql-plan_

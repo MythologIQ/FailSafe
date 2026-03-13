@@ -1,7 +1,81 @@
 # SYSTEM STATE
 
 **Last Updated:** 2026-03-13
-**Version:** v4.8.0 Agent Debugging & Stability Monitoring Suite SUBSTANTIATED
+**Version:** v4.9.0 Agent Run Replay & Governance Decision Contract SUBSTANTIATED
+
+## Agent Run Replay & Governance Decision Contract (B146/B147/B150) — Implementation State
+
+### Ledger Trail
+
+| Entry | Phase | Verdict |
+|-------|-------|---------|
+| #218 | GATE | PASS (L2, 7 audit passes) |
+| #219 | IMPLEMENT | 7 new files, 5 modified, 3 security fixes |
+| #220 | SUBSTANTIATE | Session sealed |
+
+### New Files
+
+| File | Lines | Purpose |
+|------|-------|---------|
+| `src/shared/types/governance.ts` | 71 | GovernanceDecision contract, toGovernanceDecision adapter, inferRiskCategory |
+| `src/shared/types/agentRun.ts` | 46 | RunStepKind, RunStep, AgentRunSource, AgentRun types |
+| `src/sentinel/AgentRunRecorder.ts` | 243 | EventBus subscriber capturing execution traces, bounded storage |
+| `src/genesis/panels/AgentRunReplayPanel.ts` | 186 | Singleton webview with step navigation, CSP nonce |
+| `src/genesis/panels/AgentRunReplayHelpers.ts` | 216 | Render helpers for run list, replay view, governance cards |
+| `src/test/governance/GovernanceDecision.test.ts` | 132 | 16 tests for decision mapping, risk, mitigation |
+| `src/test/sentinel/AgentRunRecorder.test.ts` | 189 | 18 tests for lifecycle, event mapping, persistence |
+
+### Modified Files
+
+| File | Change |
+|------|--------|
+| `events.ts` | +agentRun.started, +agentRun.stepRecorded, +agentRun.completed, +agentRun.replaying |
+| `index.ts` | +barrel exports for governance + agentRun types |
+| `bootstrapSentinel.ts` | +AgentRunRecorder instantiation, SentinelSubstrate extended |
+| `bootstrapGenesis.ts` | +failsafe.showRunReplay command registration |
+| `package.json` | +failsafe.showRunReplay command entry |
+
+### Features Delivered
+
+1. **B150 Governance Decision Contract** — Machine-actionable decision type:
+   - GovernanceAction: ALLOW | BLOCK | MODIFY | ESCALATE | QUARANTINE
+   - 10 risk categories (execution_instability through dependency_hallucination)
+   - Trust stage awareness (CBT/KBT/IBT)
+   - toGovernanceDecision() adapter from SentinelVerdict (v4.9.0 bridge, full migration v5.0)
+   - inferRiskCategory() from matched heuristic patterns
+
+2. **B146 Agent Run Recorder** — Execution trace capture:
+   - EventBus subscriber via onAll(), maps events to RunStep entries
+   - IDE task lifecycle detection (ide.taskStarted/ide.taskEnded)
+   - AgentRunSource discriminator: ide-task | terminal | chat | manual
+   - Bounded buffer: 50 completed runs in memory and on disk
+   - Re-entrancy guard against own agentRun.* events
+
+3. **B147 Agent Run Replay Panel** — Step-by-step replay:
+   - Singleton webview with run list and replay views
+   - Step sidebar with kind icons, navigation buttons
+   - Governance decision cards with risk bars and action badges
+   - File navigation with workspace path validation (anti-traversal)
+   - CSP nonce on all style/script tags, escapeJsString for onclick contexts
+
+### Section 4 Razor Status
+
+| File | Lines | Status |
+|------|-------|--------|
+| governance.ts | 71 | PASS |
+| agentRun.ts | 46 | PASS |
+| AgentRunRecorder.ts | 243 | PASS |
+| AgentRunReplayPanel.ts | 186 | PASS |
+| AgentRunReplayHelpers.ts | 216 | PASS |
+
+### Security Findings Addressed
+
+- C1: XSS in onclick handlers — escapeJsString for JS string contexts
+- C2: Path traversal in handleViewFile — workspace folder validation
+- C3: Re-entrancy in AgentRunRecorder — guard against own events
+- W1: Cleanup ordering — sort by mtime instead of UUID filename
+
+---
 
 ## Agent Debugging & Stability Monitoring Suite (B142/B143/B144) — Implementation State
 

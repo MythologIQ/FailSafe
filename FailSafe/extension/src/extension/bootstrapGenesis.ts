@@ -3,6 +3,7 @@ import { GenesisManager } from "../genesis/GenesisManager";
 import { HallucinationDecorator } from "../genesis/decorators/HallucinationDecorator";
 import { AgentTimelinePanel } from "../genesis/panels/AgentTimelinePanel";
 import { ShadowGenomePanel } from "../genesis/panels/ShadowGenomePanel";
+import { AgentRunReplayPanel } from "../genesis/panels/AgentRunReplayPanel";
 import { CoreSubstrate } from "./bootstrapCore";
 import { QoreLogicSubstrate } from "./bootstrapQoreLogic";
 import { SentinelSubstrate } from "./bootstrapSentinel";
@@ -53,6 +54,16 @@ export async function bootstrapGenesis(
           context.extensionUri,
           core.eventBus,
           qore.shadowGenomeManager,
+        );
+      }),
+    );
+
+    context.subscriptions.push(
+      vscode.commands.registerCommand("failsafe.showRunReplay", () => {
+        AgentRunReplayPanel.createOrShow(
+          context.extensionUri,
+          core.eventBus,
+          sentinel.agentRunRecorder,
         );
       }),
     );

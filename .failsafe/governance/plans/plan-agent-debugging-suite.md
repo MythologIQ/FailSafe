@@ -37,7 +37,11 @@
 - Display format: `$(shield) FS: Healthy` / `$(warning) FS: 2 Risks` / `$(error) FS: Critical`
 - Color mapping via `ThemeColor`: green/yellow/orange/red
 - Tooltip: multi-line summary (open risks, trust avg, quarantined agents, queue depth)
-- Click action: opens risk register command (`failsafe.openRiskRegister`)
+- Click action: opens a quick-pick detail view showing all health metrics with actionable items:
+  - Open risks → click to open Risk Register
+  - Quarantined agents → click to open Trust panel
+  - Queue depth → click to open Timeline
+  - Each row is clickable for deeper drill-down (progressive disclosure: tooltip → click → detail panel)
 - Debounced refresh (500ms) to avoid flicker on rapid events
 
 ```typescript
@@ -94,7 +98,7 @@ Add `sentinel.healthUpdate` to `FailSafeEventType` — emitted by AgentHealthInd
 
 - `FailSafe/extension/src/genesis/panels/AgentTimelinePanel.ts` — NEW: Singleton webview panel showing event timeline
 - `FailSafe/extension/src/sentinel/AgentTimelineService.ts` — NEW: Aggregates EventBus events into timeline entries
-- `FailSafe/extension/src/sentinel/diffguard/types.ts` — no changes (reuses existing types)
+- `FailSafe/extension/src/extension/bootstrapSentinel.ts` — MODIFY: instantiate AgentTimelineService, extend SentinelSubstrate
 - `FailSafe/extension/src/shared/types/events.ts` — ADD: `timeline.entryAdded` event type
 - `FailSafe/extension/src/extension/bootstrapGenesis.ts` — MODIFY: register `failsafe.showTimeline` command
 - `FailSafe/extension/package.json` — ADD: `failsafe.showTimeline` command
@@ -167,6 +171,34 @@ interface TimelineFilter {
 - CSP: nonce-based, same pattern as DiffGuardPanel
 - Max rendered entries: 200 (virtual scroll not needed at this scale)
 
+#### `bootstrapSentinel.ts` — Instantiation + SentinelSubstrate extension
+
+Extend SentinelSubstrate interface:
+```typescript
+export interface SentinelSubstrate {
+  sentinelDaemon: SentinelDaemon;
+  architectureEngine: ArchitectureEngine;
+  diffGuardService: DiffGuardService;        // from B145
+  agentTimelineService: AgentTimelineService; // NEW
+}
+```
+
+After AgentHealthIndicator construction (Phase 1), instantiate:
+```typescript
+const agentTimelineService = new AgentTimelineService(core.eventBus);
+context.subscriptions.push({ dispose: () => agentTimelineService.dispose() });
+```
+
+Return on substrate:
+```typescript
+return { sentinelDaemon, architectureEngine, diffGuardService, agentTimelineService };
+```
+
+Add stub to catch block:
+```typescript
+agentTimelineService: { dispose: () => {}, getEntries: () => [], getEntriesSince: () => [] } as unknown as AgentTimelineService,
+```
+
 #### Bootstrap + package.json wiring
 
 Register command in `bootstrapGenesis.ts`:
@@ -209,6 +241,8 @@ Add to `package.json` commands:
 
 - `FailSafe/extension/src/genesis/panels/ShadowGenomePanel.ts` — NEW: Singleton webview panel showing failure patterns
 - `FailSafe/extension/src/extension/bootstrapGenesis.ts` — MODIFY: register `failsafe.showShadowGenome` command
+- `FailSafe/extension/src/extension/bootstrapQoreLogic.ts` — MODIFY: pass EventBus to ShadowGenomeManager constructor
+- `FailSafe/extension/src/qorelogic/shadow/ShadowGenomeManager.ts` — MODIFY: add optional EventBus parameter, emit on archiveFailure
 - `FailSafe/extension/src/shared/types/events.ts` — ADD: `genome.failureArchived` event type
 - `FailSafe/extension/package.json` — ADD: `failsafe.showShadowGenome` command
 
@@ -278,7 +312,32 @@ this.eventBus.emit('genome.failureArchived', {
 });
 ```
 
-This requires passing EventBus to ShadowGenomeManager constructor. Check if it already has it — if not, add as optional parameter with null-check on emit.
+#### ShadowGenomeManager constructor update
+
+Add optional EventBus parameter:
+```typescript
+constructor(
+    configProvider: IConfigProvider,
+    ledgerManager: LedgerManager,
+    private eventBus?: EventBus,  // NEW — optional to preserve backward compat
+) {
+```
+
+Null-check on emit:
+```typescript
+this.eventBus?.emit('genome.failureArchived', { ... });
+```
+
+#### `bootstrapQoreLogic.ts` wiring (line 59)
+
+Pass EventBus to ShadowGenomeManager construction:
+```typescript
+const shadowGenomeManager = new ShadowGenomeManager(
+    configProvider,
+    ledgerManager,
+    core.eventBus,  // NEW — enables genome.failureArchived events
+);
+```
 
 #### Bootstrap + package.json wiring
 

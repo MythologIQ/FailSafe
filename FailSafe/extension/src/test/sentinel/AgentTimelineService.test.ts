@@ -8,7 +8,7 @@ class StubEventBus {
   private allHandlers: EventCallback[] = [];
   private seq = 0;
 
-  on(_type: string, _cb: Function) { return () => {}; }
+  on(_type: string, _cb: (...args: unknown[]) => void) { return () => {}; }
   onAll(cb: EventCallback) {
     this.allHandlers.push(cb);
     return () => {

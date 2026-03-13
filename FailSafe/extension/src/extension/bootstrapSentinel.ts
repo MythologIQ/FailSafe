@@ -7,6 +7,7 @@ import { ExistenceEngine } from "../sentinel/engines/ExistenceEngine";
 import { VerdictArbiter } from "../sentinel/VerdictArbiter";
 import { VerdictRouter } from "../sentinel/VerdictRouter";
 import { ArchitectureEngine } from "../sentinel/engines/ArchitectureEngine";
+import { AgentTimelineService } from "../sentinel/AgentTimelineService";
 import { CoreSubstrate } from "./bootstrapCore";
 import { QoreLogicSubstrate } from "./bootstrapQoreLogic";
 import { Logger } from "../shared/Logger";
@@ -14,6 +15,7 @@ import { Logger } from "../shared/Logger";
 export interface SentinelSubstrate {
   sentinelDaemon: SentinelDaemon;
   architectureEngine: ArchitectureEngine;
+  agentTimelineService: AgentTimelineService;
 }
 
 export async function bootstrapSentinel(
@@ -63,7 +65,10 @@ export async function bootstrapSentinel(
     await sentinelDaemon.start();
     logger.info("Sentinel daemon started successfully");
 
-    return { sentinelDaemon, architectureEngine };
+    const agentTimelineService = new AgentTimelineService(core.eventBus);
+    context.subscriptions.push({ dispose: () => agentTimelineService.dispose() });
+
+    return { sentinelDaemon, architectureEngine, agentTimelineService };
   } catch (error) {
     logger.error("Failed to start Sentinel daemon", error);
     vscode.window.showWarningMessage(
@@ -91,6 +96,11 @@ export async function bootstrapSentinel(
     return {
       sentinelDaemon: stubDaemon as unknown as SentinelDaemon,
       architectureEngine,
+      agentTimelineService: {
+        dispose: () => {},
+        getEntries: () => [],
+        getEntriesSince: () => [],
+      } as unknown as AgentTimelineService,
     };
   }
 }

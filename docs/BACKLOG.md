@@ -300,6 +300,17 @@ Minor / UX:
 - [ ] [B107] Workspace Hook Toggle: Console Settings UI to enable/disable FailSafe Claude Code hooks per workspace. Toggle writes/removes `.claude/hooks/disabled` sentinel. `resolve.sh` checks sentinel before emitting hook content. ConsoleServer routes: `GET /api/hooks/status`, `POST /api/hooks/toggle`. Unifies extension settings (`failsafe.sentinel.enabled`, `failsafe.governance.mode`) with Claude Code hook layer into one control surface. | v4.5
 - [ ] [B108] Release pre-flight help doc check: `release-gate.cjs --preflight` should validate version markers in `docs/COMPONENT_HELP.md` and `docs/PROCESS_GUIDE.md` in addition to CHANGELOG/README | v4.5
 - [ ] [B140] Monitor S.H.I.E.L.D. state tracking: Monitor shows stale/wrong build phase, empty "Recently Completed", generic recommendations. Need to: (1) parse META_LEDGER.md for actual session history, (2) track /ql-* command invocations via hub events, (3) show context-aware next steps based on current phase | v4.7
+- [x] [B142] Agent Execution Timeline: AgentTimelineService + AgentTimelinePanel webview with category filter tabs, severity toggles, expandable detail, file links (v4.8.0 - Complete)
+- [x] [B143] Risk & Stability Indicators: AgentHealthIndicator status bar item with composite health score, quick-pick drill-down to risk register/timeline/trust (v4.8.0 - Complete)
+- [x] [B144] Shadow Genome Debugging Panel: ShadowGenomePanel webview with failure pattern cards, unresolved entries table, inline remediation, negative constraints (v4.8.0 - Complete)
+- [x] [B145] DiffGuard Analysis Panel: DiffGuardPanel webview for AI diff risk analysis with inline approve/reject actions (v4.7.2 - Complete)
+
+### Agent Run Replay (Deterministic Time-Travel Debugging)
+
+- [ ] [B146] Agent Run Recorder: Capture full execution traces (prompts, reasoning steps, tool calls, file edits, policy decisions, mitigations) during AI agent runs. Store as structured timeline events via EventBus
+- [ ] [B147] Agent Run Replay Panel: Webview panel for step-by-step replay of recorded agent runs with execution graph, code diffs per step, policy triggers, and Shadow Genome pattern matches
+- [ ] [B148] Agent Run Replay: Interactive "Fix and Rerun" — modify prompt at any step and re-execute from that point, enabling mid-execution correction of agent behavior
+- [ ] [B149] Agent Run Replay: Behavioral telemetry pipeline — feed replay data (actions, risk signals, failure patterns, mitigation outcomes) into Shadow Genome for cumulative agent behavioral intelligence
 
 ## Wishlist (Nice to Have)
 
@@ -344,6 +355,8 @@ Minor / UX:
 | **v4.6.5**   | **Skill Consolidation**        | ✅ RELEASED    | Cross-agent skill consolidation, SDK-standard directory layout, ModelAdapter + bundler + scaffolding updates           |
 | **v4.6.6**   | **Workspace Isolation**        | ✅ RELEASED    | Multi-workspace support, Repository Governance as a Service, compliance scoring in Monitor, S.H.I.E.L.D. phase tracker |
 | **v4.7.0**   | **Agent Marketplace**          | ✅ RELEASED    | Agent Marketplace with HITL security gates, Garak/Promptfoo scanning, Microsoft Agent Governance Toolkit Adapter      |
+| **v4.7.2**   | **GitHub Resilience**          | ✅ RELEASED    | GitHub API resilience, concurrent manifold calculation, DiffGuard analysis panel                                       |
+| **v4.8.0**   | **Agent Debugging Suite**      | ✅ SEALED      | Agent Execution Timeline, Risk & Stability Indicators, Shadow Genome Debugging Panel (B142-B145)                      |
 
 ---
 

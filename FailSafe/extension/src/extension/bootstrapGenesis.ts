@@ -1,6 +1,8 @@
-import type * as vscode from "vscode";
+import * as vscode from "vscode";
 import { GenesisManager } from "../genesis/GenesisManager";
 import { HallucinationDecorator } from "../genesis/decorators/HallucinationDecorator";
+import { AgentTimelinePanel } from "../genesis/panels/AgentTimelinePanel";
+import { ShadowGenomePanel } from "../genesis/panels/ShadowGenomePanel";
 import { CoreSubstrate } from "./bootstrapCore";
 import { QoreLogicSubstrate } from "./bootstrapQoreLogic";
 import { SentinelSubstrate } from "./bootstrapSentinel";
@@ -34,6 +36,26 @@ export async function bootstrapGenesis(
       core.eventBus,
     );
     context.subscriptions.push(hallucinationDecorator);
+
+    context.subscriptions.push(
+      vscode.commands.registerCommand("failsafe.showTimeline", () => {
+        AgentTimelinePanel.createOrShow(
+          context.extensionUri,
+          core.eventBus,
+          sentinel.agentTimelineService,
+        );
+      }),
+    );
+
+    context.subscriptions.push(
+      vscode.commands.registerCommand("failsafe.showShadowGenome", () => {
+        ShadowGenomePanel.createOrShow(
+          context.extensionUri,
+          core.eventBus,
+          qore.shadowGenomeManager,
+        );
+      }),
+    );
 
     return genesisManager;
   } catch (error) {

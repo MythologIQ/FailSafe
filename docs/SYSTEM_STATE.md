@@ -1,7 +1,87 @@
 # SYSTEM STATE
 
-**Last Updated:** 2026-03-10
-**Version:** v4.7.0 Agent Marketplace + Adapter SUBSTANTIATED
+**Last Updated:** 2026-03-13
+**Version:** v4.8.0 Agent Debugging & Stability Monitoring Suite SUBSTANTIATED
+
+## Agent Debugging & Stability Monitoring Suite (B142/B143/B144) — Implementation State
+
+### Ledger Trail
+
+| Entry | Phase | Verdict |
+|-------|-------|---------|
+| Plan | PLAN | agent-debugging-suite (3 phases) |
+| Audit | GATE | PASS (re-audit after V1/V2 remediation) |
+| Implement | IMPLEMENT | 7 new files, 7 modified |
+| Substantiate | SUBSTANTIATE | Session sealed |
+
+### New Files
+
+| File | Lines | Purpose |
+|------|-------|---------|
+| `src/sentinel/AgentHealthIndicator.ts` | 224 | Status bar composite health (healthy/elevated/warning/critical) |
+| `src/sentinel/AgentTimelineService.ts` | 215 | EventBus event aggregation to timeline entries |
+| `src/genesis/panels/AgentTimelinePanel.ts` | 250 | Webview: filter tabs, severity toggles, expandable detail |
+| `src/genesis/panels/ShadowGenomePanel.ts` | 173 | Webview: failure pattern debugging, remediation |
+| `src/genesis/panels/ShadowGenomePanelHelpers.ts` | 225 | HTML rendering (Section 4 split from ShadowGenomePanel) |
+| `src/test/sentinel/AgentHealthIndicator.test.ts` | 218 | 17 unit tests: calculateHealth, formatDisplayText, formatTooltip |
+| `src/test/sentinel/AgentTimelineService.test.ts` | 200 | 14 unit tests: mapping, filtering, bounding, ordering |
+
+### Modified Files
+
+| File | Change |
+|------|--------|
+| `bootstrapSentinel.ts` | +AgentTimelineService instantiation, SentinelSubstrate extended |
+| `bootstrapGenesis.ts` | +showTimeline, +showShadowGenome command registration |
+| `bootstrapQoreLogic.ts` | +EventBus passed to ShadowGenomeManager |
+| `main.ts` | +AgentHealthIndicator instantiation (after bootstrapServers) |
+| `ShadowGenomeManager.ts` | +optional EventBus param, +genome.failureArchived emit |
+| `events.ts` | +sentinel.healthUpdate, +timeline.entryAdded, +genome.failureArchived |
+| `package.json` | +3 commands (showAgentHealth, showTimeline, showShadowGenome) |
+
+### Features Delivered
+
+1. **B143 Risk & Stability Indicators** — Status bar health meter:
+   - Composite score from RiskManager, TrustEngine, SentinelDaemon
+   - Traffic-light colors (green/yellow/orange/red) via ThemeColor
+   - Quick-pick drill-down to risk register, timeline, trust scores
+   - 500ms debounced refresh, level-transition event emission
+
+2. **B142 Agent Execution Timeline** — Real-time event timeline:
+   - 9 event types mapped to categorized timeline entries
+   - Category filter tabs (All/Verdicts/Trust/Approvals/DiffGuard)
+   - Severity toggle buttons with visual indicators
+   - Expandable detail with file navigation
+   - Bounded to 500 entries, newest-first
+
+3. **B144 Shadow Genome Debugging Panel** — Failure pattern analysis:
+   - Pattern overview cards with count badges and causal vectors
+   - Unresolved entries table with inline remediation (status dropdown + notes)
+   - Negative constraints display (AVOID/REQUIRE per agent)
+   - Live refresh via genome.failureArchived events
+
+### Section 4 Razor Status
+
+| File | Lines | Status |
+|------|-------|--------|
+| AgentHealthIndicator.ts | 224 | PASS |
+| AgentTimelineService.ts | 215 | PASS |
+| AgentTimelinePanel.ts | 250 | PASS (at limit) |
+| ShadowGenomePanel.ts | 173 | PASS |
+| ShadowGenomePanelHelpers.ts | 225 | PASS |
+
+### Review Findings Addressed
+
+- C1: Payload field mismatch (sentinel.healthUpdate) — fixed
+- C2: Event cycle invariant — documented
+- C3: Implicit event global in viewFile — fixed
+- W1: Test mirror functions misaligned — fixed
+- W5: Missing SUPERSEDED status option — added
+- W6: Double panel dispose — guarded
+- UI-C1: Hardcoded hex colors — theme variables
+- UI-C2: Dead-end drill-downs — action buttons added
+- UI-I1: Info=orange severity inversion — neutral foreground
+
+---
 
 ## Agent Marketplace + Microsoft Agent Governance Toolkit Adapter — Implementation State
 

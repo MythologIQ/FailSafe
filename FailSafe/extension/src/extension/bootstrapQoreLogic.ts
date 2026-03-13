@@ -59,6 +59,7 @@ export async function bootstrapQoreLogic(
   const shadowGenomeManager = new ShadowGenomeManager(
     configProvider,
     ledgerManager,
+    core.eventBus,
   );
   await shadowGenomeManager.initialize();
 

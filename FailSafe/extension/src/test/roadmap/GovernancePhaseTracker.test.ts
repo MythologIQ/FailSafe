@@ -3,6 +3,7 @@ import * as assert from "assert";
 import {
   parseMetaLedger,
   getCurrentPhase,
+  normalizePhase,
   getNextSteps,
   getActiveAlerts,
   buildGovernanceState,
@@ -102,6 +103,33 @@ Some random text without entries.
     });
   });
 
+  describe("normalizePhase", () => {
+    it("normalizes PLAN variants", () => {
+      assert.strictEqual(normalizePhase("PLAN"), "PLAN");
+      assert.strictEqual(normalizePhase("PLANNING"), "PLAN");
+    });
+
+    it("normalizes GATE and AUDIT variants", () => {
+      assert.strictEqual(normalizePhase("GATE"), "GATE");
+      assert.strictEqual(normalizePhase("AUDIT"), "GATE");
+    });
+
+    it("normalizes IMPLEMENT variants", () => {
+      assert.strictEqual(normalizePhase("IMPLEMENT"), "IMPLEMENT");
+      assert.strictEqual(normalizePhase("IMPLEMENTATION"), "IMPLEMENT");
+    });
+
+    it("normalizes SUBSTANTIATE and SEAL variants", () => {
+      assert.strictEqual(normalizePhase("SUBSTANTIATE"), "SUBSTANTIATE");
+      assert.strictEqual(normalizePhase("SEAL"), "SUBSTANTIATE");
+    });
+
+    it("returns IDLE for unknown phases", () => {
+      assert.strictEqual(normalizePhase("UNKNOWN"), "IDLE");
+      assert.strictEqual(normalizePhase("RANDOM"), "IDLE");
+    });
+  });
+
   describe("getCurrentPhase", () => {
     it("returns IDLE for empty entries", () => {
       const phase = getCurrentPhase([]);
@@ -118,7 +146,25 @@ Some random text without entries.
       assert.strictEqual(phase, "IMPLEMENT");
     });
 
-    it("returns SUBSTANTIATE when seal is complete", () => {
+    it("returns IDLE for SUBSTANTIATE with SEAL verdict", () => {
+      const entries: LedgerEntry[] = [
+        { entry: 4, phase: "SUBSTANTIATE", verdict: "SESSION SEAL", timestamp: "2025-03-09T13:00:00Z" },
+        { entry: 3, phase: "IMPLEMENT", timestamp: "2025-03-09T12:00:00Z" },
+      ];
+      const phase = getCurrentPhase(entries);
+      assert.strictEqual(phase, "IDLE");
+    });
+
+    it("returns IDLE for SUBSTANTIATE with SUBSTANTIATED verdict", () => {
+      const entries: LedgerEntry[] = [
+        { entry: 5, phase: "SUBSTANTIATE", verdict: "SUBSTANTIATED", timestamp: "2025-03-09T14:00:00Z" },
+        { entry: 4, phase: "IMPLEMENT", timestamp: "2025-03-09T13:00:00Z" },
+      ];
+      const phase = getCurrentPhase(entries);
+      assert.strictEqual(phase, "IDLE");
+    });
+
+    it("returns SUBSTANTIATE when no terminal verdict", () => {
       const entries: LedgerEntry[] = [
         { entry: 4, phase: "SUBSTANTIATE", timestamp: "2025-03-09T13:00:00Z" },
         { entry: 3, phase: "IMPLEMENT", timestamp: "2025-03-09T12:00:00Z" },

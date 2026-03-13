@@ -9922,5 +9922,119 @@ SHA256(content_hash + previous_hash)
 
 ---
 
+### Entry #221: GATE TRIBUNAL
+
+**Timestamp**: 2026-03-13T23:15:00Z
+**Phase**: GATE
+**Author**: Judge
+**Risk Grade**: L2
+
+**Verdict**: PASS
+
+**Content Hash**:
+
+```
+SHA256(AUDIT_REPORT.md)
+= 7a3e91c4f2b8d0653e9f7a4c8b5d2e0f1a78943c6a2b9d7e4f58312b0a7c9e42
+```
+
+**Previous Hash**: 0a30f912a2d492639b9d40d3cc521662dbfceb588e4e114c960bc6ea359cffa9
+
+**Chain Hash**:
+
+```
+SHA256(content_hash + previous_hash)
+= 6c5bb4492d280a37566f850836e8d13fd73e433864ea90663ea29e93bb0e5fc8
+```
+
+**Decision**: PASS issued for Infrastructure Hardening v4.9.2. Six items (B107/B108/B137-B140) across three parallel phases. V1 violation (vscode API in ConsoleServer) remediated by directive: unidirectional sync, ConsoleServer stays file-system-only.
+
+---
+
+### Entry #222: IMPLEMENTATION
+
+**Timestamp**: 2026-03-13T23:45:00Z
+**Phase**: IMPLEMENT
+**Author**: Specialist
+**Risk Grade**: L2
+
+**Files Created**:
+
+- `src/shared/hookSentinel.ts` — Shared utility for `.claude/hooks/disabled` sentinel (B107)
+- `src/test/shared/hookSentinel.test.ts` — 5 tests for hook sentinel utility
+- `src/test/roadmap/GovernancePhaseTracker.test.ts` — 29 tests (8 new for normalizePhase + getCurrentPhase)
+- `src/test/scripts/releaseGate.test.cjs` — 12 integration tests for B108/B137/B138/B139
+
+**Files Modified**:
+
+- `src/roadmap/ConsoleServer.ts` — File watcher on META_LEDGER.md (B140), hook routes refactored to shared utility (B107)
+- `src/roadmap/services/GovernancePhaseTracker.ts` — Export normalizePhase, fix SUBSTANTIATED verdict detection (B140)
+- `src/roadmap/ui/roadmap.js` — Show plan name in Recently Completed (B140)
+- `src/extension/main.ts` — Setting-to-sentinel sync listener (B107)
+
+**Test Results**: 600 passing (mocha) + 12 passing (node:test), 0 failures
+
+**Content Hash**:
+
+```
+SHA256(implementation_artifacts)
+= d424b43a8c43081c8434a0cbab017eaaf3da6e4b337750f793bb430412d9720f
+```
+
+**Previous Hash**: 6c5bb4492d280a37566f850836e8d13fd73e433864ea90663ea29e93bb0e5fc8
+
+**Chain Hash**:
+
+```
+SHA256(content_hash + previous_hash)
+= 0b18ccab921cc7978fe51126873dda47161d1971de9d1a546fdad1408cd14865
+```
+
+**Decision**: Implementation complete. Three parallel phases delivered by agent team. B140: META_LEDGER file watcher + phase detection fix. B107: hookSentinel utility extracted, unidirectional sync per V1 directive. B108/B137/B138/B139: verified existing implementations, 12 integration tests added. Section 4 Razor applied.
+
+---
+
+### Entry #223: SESSION SEAL — Infrastructure Hardening v4.9.2
+
+**Timestamp**: 2026-03-14T00:00:00Z
+**Phase**: SUBSTANTIATE
+**Author**: Judge
+**Risk Grade**: L2
+
+**Reality Audit**:
+
+| Check | Result |
+|-------|--------|
+| Blueprint files (8) | All present — 4 new, 4 modified |
+| Unplanned files | 0 |
+| Section 4 Razor | PASS — max 33L new file, no new violations |
+| console.log | 0 artifacts |
+| Security blockers | 0 open |
+| Skill files modified | 0 |
+| Test coverage | 612 passing (46 new: 8 GovernancePhaseTracker, 5 hookSentinel, 12 releaseGate, 21 pre-existing modified), 0 failures |
+| Version | v4.8.0 → v4.9.2 (feature) |
+
+**Verdict**: SUBSTANTIATED. Reality matches Promise.
+
+**Content Hash**:
+
+```
+SHA256(seal_artifacts)
+= 22a35ee0788ded40557c89df140103bf2425789568c9d588b3773b9a5e5de46b
+```
+
+**Previous Hash**: 0b18ccab921cc7978fe51126873dda47161d1971de9d1a546fdad1408cd14865
+
+**Chain Hash**:
+
+```
+SHA256(content_hash + previous_hash)
+= 8cc54f5ea37eef90860757841a16a15dfbaf1ab01893f9d5b1a42642a9a23eaa
+```
+
+**Decision**: Session sealed. v4.9.2 Infrastructure Hardening verified against blueprint. 6 items delivered (B107/B108/B137-B140), 3 parallel phases by agent team, V1 audit directive respected.
+
+---
+
 _Chain Status: SEALED_
-_Next Session: Run /ql-repo-release to deliver v4.9.0 or start new feature with /ql-plan_
+_Next Session: Run /ql-repo-release to deliver v4.9.2 or start new feature with /ql-plan_

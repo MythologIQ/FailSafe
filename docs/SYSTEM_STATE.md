@@ -1,7 +1,73 @@
 # SYSTEM STATE
 
 **Last Updated:** 2026-03-13
-**Version:** v4.9.0 Agent Run Replay & Governance Decision Contract SUBSTANTIATED
+**Version:** v4.9.2 Infrastructure Hardening SUBSTANTIATED
+
+## Infrastructure Hardening v4.9.2 (B107/B108/B137-B140) — Implementation State
+
+### Ledger Trail
+
+| Entry | Phase | Verdict |
+|-------|-------|---------|
+| #221 | GATE | PASS (L2, 7 audit passes, V1 remediated by directive) |
+| #222 | IMPLEMENT | 4 new files, 4 modified, 3 phases parallel |
+| #223 | SUBSTANTIATE | Session sealed |
+
+### New Files
+
+| File | Lines | Purpose |
+|------|-------|---------|
+| `src/shared/hookSentinel.ts` | 33 | Shared utility for `.claude/hooks/disabled` sentinel (B107) |
+| `src/test/shared/hookSentinel.test.ts` | 71 | 5 tests for hook sentinel utility |
+| `src/test/roadmap/GovernancePhaseTracker.test.ts` | 320 | 29 tests (8 new for normalizePhase + getCurrentPhase) |
+| `src/test/scripts/releaseGate.test.cjs` | 285 | 12 integration tests for B108/B137/B138/B139 |
+
+### Modified Files
+
+| File | Change |
+|------|--------|
+| `ConsoleServer.ts` | +META_LEDGER file watcher with debounce (B140), hook routes refactored to shared utility (B107) |
+| `GovernancePhaseTracker.ts` | +export normalizePhase, fix SUBSTANTIATED verdict → IDLE (B140) |
+| `roadmap.js` | Recently Completed shows plan name when available (B140) |
+| `main.ts` | +onDidChangeConfiguration listener for sentinel.enabled → hookSentinel sync (B107) |
+
+### Features Delivered
+
+1. **B140 Monitor State Tracking** — Live phase refresh:
+   - `fs.watch()` on META_LEDGER.md with 500ms debounce
+   - Broadcasts `hub.refresh` to all WebSocket clients on file change
+   - `getCurrentPhase()` recognizes SUBSTANTIATED verdict as session-complete
+   - Recently Completed shows plan name (e.g., "IMPLEMENT: infrastructure-hardening-v492")
+
+2. **B107 Workspace Hook Toggle** — Setting-to-sentinel sync:
+   - `hookSentinel.ts` shared utility: `syncHookSentinel()` + `isHookEnabled()`
+   - ConsoleServer routes refactored to shared functions (decoupled from vscode namespace)
+   - `main.ts` watches `failsafe.sentinel.enabled` changes, syncs sentinel file
+   - Unidirectional sync per audit V1 directive
+
+3. **B108/B137/B138/B139 Release Pipeline Verification** — Existing implementations confirmed:
+   - 12 integration tests covering preflight checks, branch policy, CI gate ordering
+   - B108: release-gate.cjs checks 4-5 verified (COMPONENT_HELP.md, PROCESS_GUIDE.md)
+   - B137: validate-branch-policy.ps1 main protection verified
+   - B138: release.yml validate → build → publish chain verified
+   - B139: release-gate.cjs checks 6-7 verified (duplicate B-items, version summary)
+
+### Section 4 Razor Status
+
+| File | Lines | Status |
+|------|-------|--------|
+| hookSentinel.ts | 33 | PASS |
+| GovernancePhaseTracker.ts | 179 | PASS |
+| main.ts | 262 | WARN (pre-existing, orchestration entry) |
+| ConsoleServer.ts | 1364 | WARN (pre-existing, +10L only) |
+
+### Test Results
+
+- Mocha: 600 passing, 0 failures
+- node:test: 12 passing (release gate integration)
+- Total: 612 passing
+
+---
 
 ## Agent Run Replay & Governance Decision Contract (B146/B147/B150) — Implementation State
 

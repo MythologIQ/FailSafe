@@ -194,7 +194,7 @@ class WebPanelClient {
     if (gov?.recentCompletions?.length > 0) {
       const recentlyCompletedFeatures = gov.recentCompletions
         .slice(0, 3)
-        .map((c) => `${c.phase}: Entry #${c.entry}`);
+        .map((c) => c.plan ? `${c.phase}: ${c.plan}` : `${c.phase}: Entry #${c.entry}`);
       return {
         line: recentlyCompletedFeatures.join('\n'),
         critical: blockers.filter((blocker) => blocker.severity === 'hard').length

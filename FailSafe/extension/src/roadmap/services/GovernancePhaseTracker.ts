@@ -67,7 +67,7 @@ export function parseMetaLedger(content: string): LedgerEntry[] {
   return entries.sort((a, b) => b.entry - a.entry);
 }
 
-function normalizePhase(raw: string): ShieldPhase {
+export function normalizePhase(raw: string): ShieldPhase {
   if (raw.includes("PLAN")) return "PLAN";
   if (raw.includes("GATE") || raw.includes("AUDIT")) return "GATE";
   if (raw.includes("IMPLEMENT")) return "IMPLEMENT";
@@ -81,7 +81,7 @@ export function getCurrentPhase(entries: LedgerEntry[]): ShieldPhase {
   const latest = entries[0];
 
   // If last entry was a sealed session, we're idle
-  if (latest.phase === "SUBSTANTIATE" && latest.verdict?.includes("SEAL")) {
+  if (latest.phase === "SUBSTANTIATE" && (latest.verdict?.includes("SEAL") || latest.verdict?.includes("SUBSTANTIATED"))) {
     return "IDLE";
   }
 

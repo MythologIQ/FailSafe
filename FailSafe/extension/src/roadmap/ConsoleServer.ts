@@ -16,6 +16,7 @@ import { QoreLogicManager } from "../qorelogic/QoreLogicManager";
 import { SentinelDaemon } from "../sentinel/SentinelDaemon";
 import { EventBus } from "../shared/EventBus";
 import { SentinelVerdict } from "../shared/types";
+import { syncHookSentinel, isHookEnabled } from "../shared/hookSentinel";
 import { IFeatureGate, FeatureFlag } from "../core/interfaces/IFeatureGate";
 import { FEATURE_TIER_MAP } from "../core/FeatureGateService";
 import { GitResetService } from "../governance/revert/GitResetService";
@@ -151,6 +152,8 @@ export class ConsoleServer {
   private marketplaceInstaller: MarketplaceInstaller;
   private securityScanner: SecurityScanner;
   private adapterService: AdapterService;
+  private ledgerWatcher: fs.FSWatcher | null = null;
+  private ledgerDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   private checkpointTypeRegistry = new Set<string>([
     "snapshot.created",
     "phase.entered",
@@ -419,10 +422,7 @@ export class ConsoleServer {
   private registerHookRoutes(): void {
     this.app.get("/api/hooks/status", (req: Request, res: Response) => {
       if (this.rejectIfRemote(req, res)) return;
-      const sentinelPath = path.join(
-        this.workspaceRoot, ".claude", "hooks", "disabled",
-      );
-      res.json({ enabled: !fs.existsSync(sentinelPath) });
+      res.json({ enabled: isHookEnabled(this.workspaceRoot) });
     });
 
     this.app.post("/api/hooks/toggle", (req: Request, res: Response) => {
@@ -431,15 +431,7 @@ export class ConsoleServer {
         res.status(400).json({ error: "enabled must be a boolean" });
         return;
       }
-      const sentinelPath = path.join(
-        this.workspaceRoot, ".claude", "hooks", "disabled",
-      );
-      if (req.body.enabled) {
-        fs.rmSync(sentinelPath, { force: true });
-      } else {
-        fs.mkdirSync(path.dirname(sentinelPath), { recursive: true });
-        fs.writeFileSync(sentinelPath, "disabled by FailSafe Console");
-      }
+      syncHookSentinel(this.workspaceRoot, req.body.enabled);
       res.json({ enabled: req.body.enabled });
     });
   }
@@ -538,6 +530,21 @@ export class ConsoleServer {
     this.wss.clients.forEach((client) => {
       if (client.readyState === WebSocket.OPEN) client.send(message);
     });
+  }
+
+  private watchMetaLedger(): void {
+    const ledgerPath = path.join(this.getWorkspaceRoot(), "docs", "META_LEDGER.md");
+    if (!fs.existsSync(ledgerPath)) return;
+    try {
+      this.ledgerWatcher = fs.watch(ledgerPath, () => {
+        if (this.ledgerDebounceTimer) clearTimeout(this.ledgerDebounceTimer);
+        this.ledgerDebounceTimer = setTimeout(() => {
+          this.broadcast({ type: "hub.refresh" });
+        }, 500);
+      });
+    } catch {
+      // File watcher not supported or ledger inaccessible — degrade silently
+    }
   }
 
   // ------------------------------------------------------------------
@@ -990,6 +997,7 @@ export class ConsoleServer {
       console.log(`Roadmap server: http://localhost:${this.actualPort}`);
     });
     this.setupWebSocket();
+    this.watchMetaLedger();
     // Register in multi-workspace server registry
     registerServer({
       port: this.actualPort,
@@ -1012,6 +1020,8 @@ export class ConsoleServer {
   stop(): void {
     // Mark as disconnected (not unregister) so workspace remains visible
     markDisconnected(this.actualPort);
+    this.ledgerWatcher?.close();
+    this.ledgerWatcher = null;
     this.wss?.close();
     this.server?.close();
   }

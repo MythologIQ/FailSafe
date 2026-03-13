@@ -9778,5 +9778,50 @@ SHA256(content_hash + previous_hash)
 
 ---
 
+### Entry #218: GATE TRIBUNAL
+
+**Timestamp**: 2026-03-13T18:30:00Z
+**Phase**: GATE
+**Author**: Judge
+**Risk Grade**: L2
+
+**Verdict**: PASS
+
+**Target**: B146/B147/B150 Agent Run Replay & Governance Decision Contract (v4.9.0)
+**Plan**: `.failsafe/governance/plans/plan-agent-run-replay-and-governance-contracts.md`
+
+**Audit Summary**:
+- Security Pass: PASS — no credentials, no auth bypass, bounded storage
+- Ghost UI Pass: PASS — all handlers specified, bootstrap wiring documented
+- Section 4 Razor: PASS — max file 220L, max function 35L, nesting 2
+- Dependency Pass: PASS — no new dependencies
+- Orphan Pass: PASS — 7 files, all connected to build path
+- Macro-Level Architecture: PASS — clear boundaries, no cycles, correct layering
+- Repository Governance: PASS — README, LICENSE, SECURITY present
+
+**Recommendations** (non-blocking):
+- R1: Add `agentSource` discriminator to `AgentRun` type for multi-surface run detection (terminal CLI, IDE extension, IDE native chat)
+- R2: `riskScore = 1 - confidence` conflates confidence direction with decision severity; refine in v5.0 migration
+
+**Content Hash**:
+
+```
+SHA256(audit_verdict)
+= 6214832479dc645253783469511fcb34d3d4d44049d0ebb53e5dd0687361045a
+```
+
+**Previous Hash**: b180055ad08f59e1c29d9e2d1fe744eca03afbc88f190b980da202c1eb630174
+
+**Chain Hash**:
+
+```
+SHA256(content_hash + previous_hash)
+= ec2624466701d190ac87292e19c0c1ebdf2a634a5438da22781440681a481524
+```
+
+**Decision**: PASS. Blueprint approved for implementation. Two non-blocking recommendations issued regarding multi-surface run boundary detection and riskScore semantics.
+
+---
+
 _Chain Status: SEALED_
-_Next Session: Run /ql-status to review or /ql-repo-release for v4.8.0_
+_Next Session: Run /ql-implement for v4.9.0 or /ql-status to review_

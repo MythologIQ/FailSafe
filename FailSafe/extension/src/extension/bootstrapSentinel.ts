@@ -7,6 +7,9 @@ import { ExistenceEngine } from "../sentinel/engines/ExistenceEngine";
 import { VerdictArbiter } from "../sentinel/VerdictArbiter";
 import { VerdictRouter } from "../sentinel/VerdictRouter";
 import { ArchitectureEngine } from "../sentinel/engines/ArchitectureEngine";
+import { DiffAnalyzer } from "../sentinel/diffguard/DiffAnalyzer";
+import { RiskSignalDetector } from "../sentinel/diffguard/RiskSignalDetector";
+import { DiffGuardService } from "../sentinel/diffguard/DiffGuardService";
 import { CoreSubstrate } from "./bootstrapCore";
 import { QoreLogicSubstrate } from "./bootstrapQoreLogic";
 import { Logger } from "../shared/Logger";
@@ -14,6 +17,7 @@ import { Logger } from "../shared/Logger";
 export interface SentinelSubstrate {
   sentinelDaemon: SentinelDaemon;
   architectureEngine: ArchitectureEngine;
+  diffGuardService: DiffGuardService;
 }
 
 export async function bootstrapSentinel(
@@ -63,7 +67,18 @@ export async function bootstrapSentinel(
     await sentinelDaemon.start();
     logger.info("Sentinel daemon started successfully");
 
-    return { sentinelDaemon, architectureEngine };
+    // DiffGuard: risk-aware change preview
+    const diffAnalyzer = new DiffAnalyzer(core.workspaceRoot);
+    const riskSignalDetector = new RiskSignalDetector(patternLoader);
+    const diffGuardService = new DiffGuardService(
+      diffAnalyzer,
+      riskSignalDetector,
+      core.eventBus,
+    );
+    context.subscriptions.push({ dispose: () => diffGuardService.dispose() });
+    logger.info("DiffGuard service initialized");
+
+    return { sentinelDaemon, architectureEngine, diffGuardService };
   } catch (error) {
     logger.error("Failed to start Sentinel daemon", error);
     vscode.window.showWarningMessage(
@@ -88,9 +103,15 @@ export async function bootstrapSentinel(
       }),
     };
 
+    const stubDiffGuard = {
+      recordDecision: async () => {},
+      dispose: () => {},
+    };
+
     return {
       sentinelDaemon: stubDaemon as unknown as SentinelDaemon,
       architectureEngine,
+      diffGuardService: stubDiffGuard as unknown as DiffGuardService,
     };
   }
 }

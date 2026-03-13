@@ -1,6 +1,7 @@
-import type * as vscode from "vscode";
+import * as vscode from "vscode";
 import { GenesisManager } from "../genesis/GenesisManager";
 import { HallucinationDecorator } from "../genesis/decorators/HallucinationDecorator";
+import { DiffGuardPanel } from "../genesis/panels/DiffGuardPanel";
 import { CoreSubstrate } from "./bootstrapCore";
 import { QoreLogicSubstrate } from "./bootstrapQoreLogic";
 import { SentinelSubstrate } from "./bootstrapSentinel";
@@ -34,6 +35,17 @@ export async function bootstrapGenesis(
       core.eventBus,
     );
     context.subscriptions.push(hallucinationDecorator);
+
+    // DiffGuard panel command
+    context.subscriptions.push(
+      vscode.commands.registerCommand('failsafe.showDiffGuard', () => {
+        DiffGuardPanel.createOrShow(
+          context.extensionUri,
+          core.eventBus,
+          (action) => sentinel.diffGuardService.recordDecision(action),
+        );
+      }),
+    );
 
     return genesisManager;
   } catch (error) {

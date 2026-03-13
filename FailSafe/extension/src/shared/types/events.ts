@@ -35,7 +35,11 @@ export type FailSafeEventType =
   | "ide.taskStarted"
   | "ide.taskEnded"
   | "ide.debugStarted"
-  | "ide.debugEnded";
+  | "ide.debugEnded"
+  | "diffguard.analysisReady"
+  | "diffguard.approved"
+  | "diffguard.rejected"
+  | "diffguard.modifyPrompt";
 
 export interface FailSafeEvent<T = unknown> {
   type: FailSafeEventType;

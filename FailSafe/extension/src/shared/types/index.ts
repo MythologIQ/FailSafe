@@ -64,3 +64,16 @@ export type { FailSafeConfig } from "./config";
 
 // Database
 export type { CheckpointDb } from "./database";
+
+// DiffGuard
+export type {
+  DiffHunk,
+  DiffLine,
+  DiffAnalysis,
+  DiffStats,
+  RiskLevel,
+  RiskSignalType,
+  RiskSignal,
+  DiffGuardDecision,
+  DiffGuardAction,
+} from "./diffguard";

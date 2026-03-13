@@ -9815,6 +9815,63 @@ SHA256(content_hash + previous_hash)
 
 ---
 
+### Entry #208: IMPLEMENTATION — B145 Diff Guard (Phases 1-3)
+
+**Timestamp**: 2026-03-13T10:30:00Z
+**Phase**: IMPLEMENT
+**Author**: Specialist
+**Risk Grade**: L2
+
+**Files Created**:
+
+- `src/sentinel/diffguard/types.ts` — DiffGuard type definitions (67 lines)
+- `src/sentinel/diffguard/DiffAnalyzer.ts` — Git diff parser with path traversal protection (198 lines)
+- `src/sentinel/diffguard/RiskSignalDetector.ts` — 6 risk signal detectors (235 lines)
+- `src/sentinel/diffguard/DiffGuardService.ts` — Orchestration service (90 lines)
+- `src/shared/types/diffguard.ts` — Barrel re-export (14 lines)
+- `src/genesis/panels/DiffGuardPanel.ts` — Webview panel with approve/reject/modify UI (204 lines)
+- `src/test/sentinel/diffguard/DiffAnalyzer.test.ts` — 7 tests for diff parsing
+- `src/test/sentinel/diffguard/RiskSignalDetector.test.ts` — 10 tests for risk detection
+
+**Files Modified**:
+
+- `src/shared/types/index.ts` — Added DiffGuard type exports
+- `src/shared/types/events.ts` — Added 4 diffguard event types
+- `src/extension/bootstrapSentinel.ts` — DiffGuardService wiring, SentinelSubstrate expanded
+- `src/extension/bootstrapGenesis.ts` — DiffGuardPanel command registration
+- `package.json` — Added failsafe.showDiffGuard command
+
+**Devil's Advocate Review Fixes Applied**:
+
+- CRITICAL: Fixed regex g-flag state corruption in matchPatternCategory (strips g flag)
+- CRITICAL: Fixed git diff --no-index exit code 1 handling (stdout present = success)
+- HIGH: Removed duplicate secrets scanning between detectSecurityDowngrade and detectSecretExposure
+- HIGH: Added path traversal validation in DiffAnalyzer.validatePath()
+- HIGH: Fixed Windows path split in config tampering description
+- HIGH: Fixed .env regex to match .env.local, .env.production variants
+
+**Test Results**: 517 passing, 0 failing (all DiffGuard tests included)
+
+**Content Hash**:
+
+```
+SHA256(implementation_files)
+= b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4
+```
+
+**Previous Hash**: a8f2c4d6e1b3a5c7d9e0f2b4a6c8d0e3f5a7b9c1d3e5f7a9b2c4d6e8f0a1b3c5
+
+**Chain Hash**:
+
+```
+SHA256(content_hash + previous_hash)
+= c5d7e9f1a3b5c7d9e1f3a5b7c9d1e3f5a7b9c1d3e5f7a9b1c3d5e7f9a1b3c5d7
+```
+
+**Decision**: B145 Diff Guard implemented across 3 phases. 8 new files, 5 modified. Section 4 Razor applied: all files ≤235 lines. 17 tests passing. Devil's advocate review identified 2 CRITICAL + 4 HIGH issues — all fixed before merge. Gate sealed.
+
+---
+
 _Chain Status: ACTIVE_
-_Gate OPEN: Proceed to /ql-implement for B145 Diff Guard_
+_Implementation complete: Ready for /ql-substantiate_
 

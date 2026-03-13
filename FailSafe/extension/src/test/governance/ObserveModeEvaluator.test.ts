@@ -10,28 +10,37 @@ suite("ObserveModeEvaluator", () => {
     workspaceRoot: "/workspace",
   };
 
-  function makeDeps(axiom1Status: "ALLOW" | "BLOCK" = "ALLOW") {
+  function makeDeps(axiom1Status: "ALLOW" | "BLOCK" | "ESCALATE" = "ALLOW", notificationChoice: string | undefined = undefined) {
     const logged: unknown[] = [];
     const notifications: string[] = [];
+    const executedCommands: string[] = [];
+
+    let enforceResult: any;
+    if (axiom1Status === "ALLOW") {
+      enforceResult = { status: "ALLOW" as const, reason: "ok", intentId: "test" };
+    } else if (axiom1Status === "BLOCK") {
+      enforceResult = { status: "BLOCK" as const, violation: "No intent", reason: "blocked" };
+    } else if (axiom1Status === "ESCALATE") {
+      enforceResult = { status: "ESCALATE" as const, escalationTo: "HUMAN_REVIEW", reason: "escalated" };
+    }
+
     return {
       deps: {
         axiom1: {
-          enforce: () =>
-            axiom1Status === "ALLOW"
-              ? { status: "ALLOW" as const, reason: "ok", intentId: "test" }
-              : { status: "BLOCK" as const, violation: "No intent", reason: "blocked" },
+          enforce: () => enforceResult,
         } as any,
         logger: { info: (...args: unknown[]) => logged.push(args) } as any,
         notifications: {
           showInfo: (...args: unknown[]) => {
             notifications.push(String(args[0]));
-            return Promise.resolve(undefined);
+            return Promise.resolve(notificationChoice);
           },
         } as any,
-        executeCommand: () => {},
+        executeCommand: (command: string) => { executedCommands.push(command); },
       } as ObserveDeps,
       logged,
       notifications,
+      executedCommands,
     };
   }
 
@@ -49,5 +58,32 @@ suite("ObserveModeEvaluator", () => {
     assert.ok(result.reason.includes("logged but not blocked"));
     assert.strictEqual(logged.length, 1);
     assert.strictEqual(notifications.length, 1);
+  });
+
+  test("executes create intent command when user selects 'Create Intent' on failure", async () => {
+    const { deps, executedCommands } = makeDeps("BLOCK", "Create Intent");
+    const result = evaluateObserveMode(baseContext, deps as any);
+    assert.strictEqual(result.status, "ALLOW");
+
+    // We need to wait for the promise from showInfo to resolve and execute the callback
+    await new Promise(process.nextTick);
+
+    assert.strictEqual(executedCommands.length, 1);
+    assert.strictEqual(executedCommands[0], "failsafe.createIntent");
+  });
+
+  test("uses 'Policy violation' default message when violation property is missing", async () => {
+    const { deps, logged, notifications } = makeDeps("ESCALATE");
+    const result = evaluateObserveMode(baseContext, deps as any);
+    assert.strictEqual(result.status, "ALLOW");
+    assert.ok(result.reason.includes("Policy violation"));
+
+    assert.strictEqual(logged.length, 1);
+    const logArgs = logged[0] as unknown[];
+    assert.strictEqual(logArgs[0], "OBSERVE MODE: Would have blocked");
+    assert.strictEqual((logArgs[1] as any).violation, "Policy violation");
+
+    assert.strictEqual(notifications.length, 1);
+    assert.ok(notifications[0].includes("Policy violation"));
   });
 });

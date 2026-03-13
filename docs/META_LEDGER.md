@@ -9994,5 +9994,47 @@ SHA256(content_hash + previous_hash)
 
 ---
 
-_Chain Status: ACTIVE_
-_Next Session: Run /ql-substantiate to seal Infrastructure Hardening v4.9.2_
+### Entry #223: SESSION SEAL — Infrastructure Hardening v4.9.2
+
+**Timestamp**: 2026-03-14T00:00:00Z
+**Phase**: SUBSTANTIATE
+**Author**: Judge
+**Risk Grade**: L2
+
+**Reality Audit**:
+
+| Check | Result |
+|-------|--------|
+| Blueprint files (8) | All present — 4 new, 4 modified |
+| Unplanned files | 0 |
+| Section 4 Razor | PASS — max 33L new file, no new violations |
+| console.log | 0 artifacts |
+| Security blockers | 0 open |
+| Skill files modified | 0 |
+| Test coverage | 612 passing (46 new: 8 GovernancePhaseTracker, 5 hookSentinel, 12 releaseGate, 21 pre-existing modified), 0 failures |
+| Version | v4.8.0 → v4.9.2 (feature) |
+
+**Verdict**: SUBSTANTIATED. Reality matches Promise.
+
+**Content Hash**:
+
+```
+SHA256(seal_artifacts)
+= 22a35ee0788ded40557c89df140103bf2425789568c9d588b3773b9a5e5de46b
+```
+
+**Previous Hash**: 0b18ccab921cc7978fe51126873dda47161d1971de9d1a546fdad1408cd14865
+
+**Chain Hash**:
+
+```
+SHA256(content_hash + previous_hash)
+= 8cc54f5ea37eef90860757841a16a15dfbaf1ab01893f9d5b1a42642a9a23eaa
+```
+
+**Decision**: Session sealed. v4.9.2 Infrastructure Hardening verified against blueprint. 6 items delivered (B107/B108/B137-B140), 3 parallel phases by agent team, V1 audit directive respected.
+
+---
+
+_Chain Status: SEALED_
+_Next Session: Run /ql-repo-release to deliver v4.9.2 or start new feature with /ql-plan_

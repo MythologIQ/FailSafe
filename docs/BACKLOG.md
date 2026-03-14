@@ -10,11 +10,11 @@
 
 <!-- Format: - [ ] [D#] Description | Version -->
 
-- [ ] [D16] V1: Security — path traversal in AgentRunRecorder.loadRun() via unsanitized runId (from audit 2026-03-14)
-- [ ] [D17] V2/V9: Razor — ConsoleServer.ts at 1365 lines, plan adds 65 inline routes bypassing extraction pattern (from audit 2026-03-14)
-- [ ] [D18] V4-V6: Architecture — wrong method names/signatures: getFailurePatterns→analyzeFailurePatterns, nonexistent currentMetrics, wrong getEntries signature (from audit 2026-03-14)
-- [ ] [D19] V7: Architecture — /api/v1/genome duplicates existing GenomeRoute.ts (from audit 2026-03-14)
-- [ ] [D20] V8: Architecture — service wiring in bootstrapServers.ts but services created in bootstrapSentinel.ts (from audit 2026-03-14)
+- [x] [D16] V1: Security — path traversal in AgentRunRecorder.loadRun() via unsanitized runId (addressed in amended plan: UUID validation in AgentApiRoute.ts)
+- [x] [D17] V2/V9: Razor — ConsoleServer.ts at 1365 lines, plan adds 65 inline routes bypassing extraction pattern (addressed: routes extracted to AgentApiRoute.ts, +20 lines only)
+- [x] [D18] V4-V6: Architecture — wrong method names/signatures (addressed: use analyzeFailurePatterns(), public buildMetrics(), getEntries(filter?))
+- [x] [D19] V7: Architecture — /api/v1/genome duplicates existing GenomeRoute.ts (addressed: JSON API delegates to same ShadowGenomeManager methods via ApiRouteDeps)
+- [x] [D20] V8: Architecture — service wiring in bootstrapServers.ts but services created in bootstrapSentinel.ts (addressed: wire in main.ts where both substrates available)
 
 - [x] [D6] V1: Razor - CortexStreamProvider.ts exceeds 250 lines (from audit 2026-02-05T22:29:02Z) (v2.0.1 - Complete)
 - [x] [D7] V2: Razor - DojoViewProvider.ts exceeds 250 lines (from audit 2026-02-05T22:29:02Z) (v2.0.1 - Complete)

@@ -311,23 +311,140 @@ The existing `broadcast({ type: "transparency", payload: event })` call (line 64
   - Events have required fields (type, timestamp)
   - Duplicate writes prevented (only ConsoleServer writes)
 
+## Phase 4: Wire B146/B150 — Agent Run Replay & Governance Decisions
+
+Expose AgentRunRecorder data and GovernanceDecision contracts through the ConsoleServer API and render in Command Center. Currently these are VS Code WebView-only (`AgentRunReplayPanel`, `failsafe.showRunReplay` command) with zero browser integration.
+
+### Affected Files
+
+- `src/roadmap/ConsoleServer.ts` — Accept AgentRunRecorder; add 3 API endpoints for runs
+- `src/extension/bootstrapServers.ts` — Pass `agentRunRecorder` to ConsoleServer
+- `src/roadmap/ui/command-center.html` — Add Replay tab
+- `src/roadmap/ui/modules/replay.js` — NEW (~150 lines)
+- `src/roadmap/ui/command-center.js` — Register ReplayRenderer
+
+### Changes
+
+**4a. Wire AgentRunRecorder to ConsoleServer**
+
+Add setter method (matches existing pattern):
+
+```typescript
+setAgentRunRecorder(recorder: AgentRunRecorder): void {
+  this.agentRunRecorder = recorder;
+}
+```
+
+In `bootstrapServers.ts`, after ConsoleServer creation:
+```typescript
+consoleServer.setAgentRunRecorder(agentRunRecorder);
+```
+
+**4b. Add API endpoints**
+
+Three new routes:
+
+```typescript
+app.get("/api/v1/runs", (req, res) => {
+  if (this.rejectIfRemote(req, res)) return;
+  const active = this.agentRunRecorder?.getActiveRuns() || [];
+  const completed = this.agentRunRecorder?.getCompletedRuns() || [];
+  res.json({ active, completed });
+});
+
+app.get("/api/v1/runs/:runId", (req, res) => {
+  if (this.rejectIfRemote(req, res)) return;
+  const run = this.agentRunRecorder?.getRun(req.params.runId)
+    ?? this.agentRunRecorder?.loadRun(req.params.runId);
+  if (!run) { res.status(404).json({ error: "Run not found" }); return; }
+  res.json({ run });
+});
+
+app.get("/api/v1/runs/:runId/steps", (req, res) => {
+  if (this.rejectIfRemote(req, res)) return;
+  const steps = this.agentRunRecorder?.getRunSteps(req.params.runId) || [];
+  res.json({ steps });
+});
+```
+
+**4c. Create `replay.js` module**
+
+New Command Center module (~150 lines). Renders:
+- Run list: active runs (with pulsing indicator) and recent completed runs
+- Run detail view: step-by-step timeline with governance decision cards
+- Step cards show: seq, kind badge (color-coded), title, timestamp, diff stats if present
+- GovernanceDecision cards show: action badge (ALLOW/BLOCK/MODIFY/ESCALATE/QUARANTINE), risk category, mitigation, confidence score
+- Click a run → fetches `/api/v1/runs/:runId` → renders step timeline
+
+```javascript
+export class ReplayRenderer {
+  constructor(containerId) { this.container = document.getElementById(containerId); }
+
+  async render() {
+    const res = await fetch('/api/v1/runs');
+    const { active, completed } = await res.json();
+    // Render run list + detail panel
+  }
+
+  async renderRun(runId) {
+    const res = await fetch(`/api/v1/runs/${runId}`);
+    const { run } = await res.json();
+    // Render step timeline with governance decision cards
+  }
+}
+```
+
+**4d. Add Replay tab to `command-center.html`**
+
+```html
+<button class="tab-btn" data-target="replay">Replay</button>
+<div id="replay" class="tab-panel"></div>
+<script type="module" src="/modules/replay.js"></script>
+```
+
+**4e. Register renderer in `command-center.js`**
+
+Import and instantiate `ReplayRenderer`. Add to renderers object. Wire tab switching.
+
+**4f. Broadcast run events to Command Center**
+
+In ConsoleServer event subscriptions, broadcast run lifecycle events so the ReplayRenderer can update in real-time:
+
+```typescript
+this.eventBus.on("agentRun.started", (event) => {
+  this.broadcast({ type: "agentRun", payload: { action: "started", ...event } });
+});
+this.eventBus.on("agentRun.completed", (event) => {
+  this.broadcast({ type: "agentRun", payload: { action: "completed", ...event } });
+});
+this.eventBus.on("agentRun.stepRecorded", (event) => {
+  this.broadcast({ type: "agentRun", payload: { action: "step", ...event } });
+});
+```
+
+### Unit Tests
+
+- `src/test/roadmap/ConsoleServer.test.ts` — Verify `/api/v1/runs`, `/api/v1/runs/:id`, `/api/v1/runs/:id/steps` return expected shapes
+- `src/test/roadmap/AgentRunRecorder.test.ts` — Verify `getActiveRuns()`, `getCompletedRuns()`, `getRun()` return bounded arrays
+
 ## Summary
 
 | File | Action | Est. Lines |
 |------|--------|-----------|
-| `src/roadmap/ConsoleServer.ts` | EDIT | +40 (endpoints, hub fields, event routing) |
-| `src/extension/bootstrapServers.ts` | EDIT | +2 (wire services) |
+| `src/roadmap/ConsoleServer.ts` | EDIT | +65 (endpoints, hub fields, event routing, run APIs) |
+| `src/extension/bootstrapServers.ts` | EDIT | +3 (wire services) |
 | `src/roadmap/ui/modules/overview.js` | EDIT | +15 (health card, fix checkpoints field) |
 | `src/roadmap/ui/modules/operations.js` | EDIT | ~3 (fix checkpoints field) |
 | `src/roadmap/ui/modules/risks.js` | EDIT | ~5 (fix risks consumption) |
 | `src/roadmap/ui/modules/timeline.js` | NEW | ~120 |
 | `src/roadmap/ui/modules/genome.js` | NEW | ~100 |
-| `src/roadmap/ui/command-center.html` | EDIT | +8 (2 tabs, 2 panels, 2 imports) |
-| `src/roadmap/ui/command-center.js` | EDIT | +10 (register renderers) |
+| `src/roadmap/ui/modules/replay.js` | NEW | ~150 |
+| `src/roadmap/ui/command-center.html` | EDIT | +12 (3 tabs, 3 panels, 3 imports) |
+| `src/roadmap/ui/command-center.js` | EDIT | +15 (register 3 renderers) |
 | `src/roadmap/ui/roadmap.js` | EDIT | -80 (remove dead code) |
 | `src/genesis/panels/TransparencyPanel.ts` | EDIT | -5 (remove writes) |
 | `src/shared/types/events.ts` | EDIT | +1 (add event type) |
 | `src/sentinel/AgentTimelineService.ts` | EDIT | +4 (expose getEntries) |
 | `src/sentinel/AgentHealthIndicator.ts` | EDIT | +4 (expose getMetrics) |
-| `src/test/roadmap/ConsoleServer.test.ts` | EDIT | +30 |
+| `src/test/roadmap/ConsoleServer.test.ts` | EDIT | +50 |
 | `src/test/roadmap/TransparencyPipeline.test.ts` | NEW | ~60 |

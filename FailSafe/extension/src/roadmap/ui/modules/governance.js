@@ -1,6 +1,8 @@
 // FailSafe Command Center — Governance Panel Renderer
 // Sentinel status, verify button, policies, L3 queue, audit log.
 
+import { renderIntegrityCard, renderUnattributedCard, derivePolicies } from './integrity.js';
+
 export class GovernanceRenderer {
   constructor(containerId, deps = {}) {
     this.container = document.getElementById(containerId);
@@ -19,14 +21,18 @@ export class GovernanceRenderer {
     this._lastHub = hubData;
     const sentinel = hubData.sentinelStatus || {};
     const l3Queue = hubData.l3Queue || [];
-    const policies = hubData.activePolicies || hubData.policies || [];
+    const policies = derivePolicies(hubData);
     const chainValid = hubData.chainValid ?? null;
+    const integrity = hubData.metricIntegrity || [];
+    const unattributed = hubData.unattributedFileActivity || { count: 0, recent: [] };
 
     this.container.innerHTML = `
       <div class="cc-grid-2" style="margin-bottom:16px">
         ${this.renderSentinelCard(sentinel, chainValid)}
         ${this.renderPoliciesCard(policies)}
       </div>
+      ${renderIntegrityCard(integrity)}
+      ${renderUnattributedCard(unattributed)}
       ${this.renderL3Queue(l3Queue)}
       ${this.renderAuditLog()}`;
     this.bindActions();

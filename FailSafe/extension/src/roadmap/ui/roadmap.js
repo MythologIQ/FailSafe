@@ -149,7 +149,7 @@ class WebPanelClient {
     // Prefer S.H.I.E.L.D. governance phase from META_LEDGER
     const gov = this.hub?.governancePhase;
     if (gov?.current && gov.current !== 'IDLE') {
-      const PHASE_INDEX = { PLAN: 0, GATE: 1, IMPLEMENT: 2, SUBSTANTIATE: 4 };
+      const PHASE_INDEX = { PLAN: 0, GATE: 1, IMPLEMENT: 2, SUBSTANTIATE: 4, SEALED: 4 };
       return { title: gov.current, index: PHASE_INDEX[gov.current] ?? 0 };
     }
 

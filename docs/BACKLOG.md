@@ -14,6 +14,7 @@
 - [x] [D17] V2: GHOST_PATH — Agents TabGroup imports 3 non-existent renderers (from audit 2026-03-14) — Remediated: Agents uses OperationsRenderer directly
 - [x] [D18] V3: FACTUAL_ERROR — Plan says "11 → 5" tabs but codebase has 8 tabs (from audit 2026-03-14) — Corrected to 8 → 5
 - [x] [D19] V4: AFFECTED_FILES_GAP — ConsoleServer.ts listed in Phase 3 but no code changes provided (from audit 2026-03-14) — Removed from affected files
+- [x] [D20] V1: RAZOR — governance.js at 277 lines exceeds 250-line limit (from Codex post-hoc audit 2026-03-14). Extract integrity/unattributed rendering to separate module. (Remediated — governance.js 202 lines, integrity.js 84 lines)
 
 - [x] [D6] V1: Razor - CortexStreamProvider.ts exceeds 250 lines (from audit 2026-02-05T22:29:02Z) (v2.0.1 - Complete)
 - [x] [D7] V2: Razor - DojoViewProvider.ts exceeds 250 lines (from audit 2026-02-05T22:29:02Z) (v2.0.1 - Complete)

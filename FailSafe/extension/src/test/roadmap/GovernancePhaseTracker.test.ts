@@ -90,6 +90,26 @@ Some random text without entries.
       assert.deepStrictEqual(entries, []);
     });
 
+    it("deduplicates entries with same number (last wins)", () => {
+      const content = `### Entry #5: OLD SEAL
+
+**Phase**: IMPLEMENT
+**Timestamp**: 2025-03-08T10:00:00Z
+
+---
+
+### Entry #5: NEW SUBSTANTIATE
+
+**Phase**: SUBSTANTIATE
+**Verdict**: PASS
+**Timestamp**: 2025-03-09T10:00:00Z
+`;
+      const entries = parseMetaLedger(content);
+      assert.strictEqual(entries.length, 1);
+      assert.strictEqual(entries[0].phase, "SUBSTANTIATE");
+      assert.strictEqual(entries[0].verdict, "PASS");
+    });
+
     it("parses Date field as timestamp", () => {
       const content = `### Entry #10: SESSION SEAL
 
@@ -146,22 +166,40 @@ Some random text without entries.
       assert.strictEqual(phase, "IMPLEMENT");
     });
 
-    it("returns IDLE for SUBSTANTIATE with SEAL verdict", () => {
+    it("returns SEALED for SUBSTANTIATE with SEAL verdict", () => {
       const entries: LedgerEntry[] = [
         { entry: 4, phase: "SUBSTANTIATE", verdict: "SESSION SEAL", timestamp: "2025-03-09T13:00:00Z" },
         { entry: 3, phase: "IMPLEMENT", timestamp: "2025-03-09T12:00:00Z" },
       ];
       const phase = getCurrentPhase(entries);
-      assert.strictEqual(phase, "IDLE");
+      assert.strictEqual(phase, "SEALED");
     });
 
-    it("returns IDLE for SUBSTANTIATE with SUBSTANTIATED verdict", () => {
+    it("returns SEALED for SUBSTANTIATE with SUBSTANTIATED verdict", () => {
       const entries: LedgerEntry[] = [
         { entry: 5, phase: "SUBSTANTIATE", verdict: "SUBSTANTIATED", timestamp: "2025-03-09T14:00:00Z" },
         { entry: 4, phase: "IMPLEMENT", timestamp: "2025-03-09T13:00:00Z" },
       ];
       const phase = getCurrentPhase(entries);
-      assert.strictEqual(phase, "IDLE");
+      assert.strictEqual(phase, "SEALED");
+    });
+
+    it("returns SEALED for SUBSTANTIATE with PASS verdict (case-insensitive)", () => {
+      const entries: LedgerEntry[] = [
+        { entry: 6, phase: "SUBSTANTIATE", verdict: "PASS. Reality matches Promise. Session sealed.", timestamp: "2025-03-09T15:00:00Z" },
+        { entry: 5, phase: "IMPLEMENT", timestamp: "2025-03-09T14:00:00Z" },
+      ];
+      const phase = getCurrentPhase(entries);
+      assert.strictEqual(phase, "SEALED");
+    });
+
+    it("returns SEALED for SUBSTANTIATE with lowercase sealed verdict", () => {
+      const entries: LedgerEntry[] = [
+        { entry: 7, phase: "SUBSTANTIATE", verdict: "Session sealed successfully", timestamp: "2025-03-09T16:00:00Z" },
+        { entry: 6, phase: "IMPLEMENT", timestamp: "2025-03-09T15:00:00Z" },
+      ];
+      const phase = getCurrentPhase(entries);
+      assert.strictEqual(phase, "SEALED");
     });
 
     it("returns SUBSTANTIATE when no terminal verdict", () => {
@@ -217,7 +255,13 @@ Some random text without entries.
     it("returns completion message for SUBSTANTIATE phase", () => {
       const steps = getNextSteps("SUBSTANTIATE");
       assert.ok(steps.length > 0);
-      assert.ok(steps[0].toLowerCase().includes("complete") || steps[0].toLowerCase().includes("status"));
+      assert.ok(steps[0].toLowerCase().includes("complete") || steps[0].toLowerCase().includes("verify"));
+    });
+
+    it("returns release guidance for SEALED phase", () => {
+      const steps = getNextSteps("SEALED");
+      assert.ok(steps.length > 0);
+      assert.ok(steps[0].toLowerCase().includes("release") || steps[0].toLowerCase().includes("next plan"));
     });
   });
 
@@ -315,6 +359,18 @@ Some random text without entries.
       assert.deepStrictEqual(state.recentCompletions, []);
       assert.ok(state.nextSteps.length > 0);
       assert.deepStrictEqual(state.activeAlerts, []);
+    });
+
+    it("reports SEALED state for a substantiated latest ledger entry", () => {
+      const content = `### Entry #227: SUBSTANTIATE
+
+**Timestamp**: 2026-03-14T17:30:00Z
+**Phase**: SUBSTANTIATE
+**Verdict**: Session substantiated. Reality matches Promise. Merkle seal applied.
+`;
+      const state = buildGovernanceState(content);
+      assert.strictEqual(state.current, "SEALED");
+      assert.ok(state.nextSteps[0].toLowerCase().includes("release"));
     });
   });
 });

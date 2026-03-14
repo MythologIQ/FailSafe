@@ -10,6 +10,12 @@
 
 <!-- Format: - [ ] [D#] Description | Version -->
 
+- [ ] [D16] V1: Security — path traversal in AgentRunRecorder.loadRun() via unsanitized runId (from audit 2026-03-14)
+- [ ] [D17] V2/V9: Razor — ConsoleServer.ts at 1365 lines, plan adds 65 inline routes bypassing extraction pattern (from audit 2026-03-14)
+- [ ] [D18] V4-V6: Architecture — wrong method names/signatures: getFailurePatterns→analyzeFailurePatterns, nonexistent currentMetrics, wrong getEntries signature (from audit 2026-03-14)
+- [ ] [D19] V7: Architecture — /api/v1/genome duplicates existing GenomeRoute.ts (from audit 2026-03-14)
+- [ ] [D20] V8: Architecture — service wiring in bootstrapServers.ts but services created in bootstrapSentinel.ts (from audit 2026-03-14)
+
 - [x] [D6] V1: Razor - CortexStreamProvider.ts exceeds 250 lines (from audit 2026-02-05T22:29:02Z) (v2.0.1 - Complete)
 - [x] [D7] V2: Razor - DojoViewProvider.ts exceeds 250 lines (from audit 2026-02-05T22:29:02Z) (v2.0.1 - Complete)
 - [x] [D8] V3: Razor - DashboardPanel.ts exceeds 250 lines (from audit 2026-02-05T22:29:02Z) (v2.0.1 - Complete)

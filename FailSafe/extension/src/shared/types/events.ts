@@ -45,7 +45,8 @@ export type FailSafeEventType =
   | "agentRun.started"
   | "agentRun.stepRecorded"
   | "agentRun.completed"
-  | "agentRun.replaying";
+  | "agentRun.replaying"
+  | "transparency.prompt";
 
 export interface FailSafeEvent<T = unknown> {
   type: FailSafeEventType;

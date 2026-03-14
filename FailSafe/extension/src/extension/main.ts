@@ -180,6 +180,11 @@ export async function activate(
     );
     context.subscriptions.push(agentHealthIndicator);
 
+    // 8.6. Wire agent services to ConsoleServer for Command Center API
+    consoleServer.setAgentTimelineService(sentinel.agentTimelineService);
+    consoleServer.setAgentHealthIndicator(agentHealthIndicator);
+    consoleServer.setAgentRunRecorder(sentinel.agentRunRecorder);
+
     // 9. Commands
     registerCommands(
       context,

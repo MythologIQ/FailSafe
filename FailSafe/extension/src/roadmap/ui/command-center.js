@@ -9,6 +9,10 @@ import { SkillsRenderer } from './modules/skills.js';
 import { GovernanceRenderer } from './modules/governance.js';
 import { BrainstormRenderer } from './modules/brainstorm.js';
 import { SettingsRenderer } from './modules/settings.js';
+import { TimelineRenderer } from './modules/timeline.js';
+import { GenomeRenderer } from './modules/genome.js';
+import { ReplayRenderer } from './modules/replay.js';
+import { setWorkspaceRegistryClient, loadWorkspaceRegistry, initWorkspaceSelector } from './modules/workspace-registry.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   const client = new ConnectionClient();
@@ -23,6 +27,9 @@ document.addEventListener('DOMContentLoaded', () => {
     governance:   new GovernanceRenderer('governance', { client }),
     brainstorm:   new BrainstormRenderer('brainstorm', { store, client }),
     settings:     new SettingsRenderer('settings', { store }),
+    timeline:     new TimelineRenderer('timeline'),
+    genome:       new GenomeRenderer('genome'),
+    replay:       new ReplayRenderer('replay'),
   };
 
   // Connection status indicator + disconnection banner
@@ -61,6 +68,9 @@ document.addEventListener('DOMContentLoaded', () => {
     renderers.operations.onEvent?.(evt);
     renderers.governance.onEvent?.(evt);
     renderers.risks.onEvent?.(evt);
+    renderers.timeline.onEvent?.(evt);
+    renderers.genome.onEvent?.(evt);
+    renderers.replay.onEvent?.(evt);
     if (evt.type?.startsWith('brainstorm.'))
       renderers.brainstorm.onEvent(evt);
   });
@@ -89,7 +99,6 @@ document.addEventListener('DOMContentLoaded', () => {
         contextHub.classList.add('hidden');
       } else {
         contextHub.classList.remove('hidden');
-        // Re-render panel content if shown
         contextHub.innerHTML = renderer.renderRightPanel();
         if (renderer.bindToolbar) renderer.bindToolbar();
       }
@@ -97,8 +106,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (panelToggle) {
       panelToggle.classList.toggle('collapsed', panelUserCollapsed);
-      panelToggle.innerHTML = panelUserCollapsed 
-        ? '<span class="btn-icon">◂</span> Show Sidebar' 
+      panelToggle.innerHTML = panelUserCollapsed
+        ? '<span class="btn-icon">◂</span> Show Sidebar'
         : '<span class="btn-icon">▸</span> Hide Sidebar';
       panelToggle.style.display = hasContext ? 'flex' : 'none';
     }
@@ -115,23 +124,20 @@ document.addEventListener('DOMContentLoaded', () => {
     tab.addEventListener('click', () => {
       tabs.forEach(t => t.classList.remove('active'));
       panels.forEach(p => p.classList.remove('active'));
-      
+
       tab.classList.add('active');
       const targetId = tab.dataset.target;
       const target = document.getElementById(targetId);
       if (target) target.classList.add('active');
 
-      // Brainstorm is a full-viewport canvas — no scrolling allowed
       const contentArea = document.querySelector('.content-area');
       if (contentArea) contentArea.style.overflowY = targetId === 'brainstorm' ? 'hidden' : 'auto';
-      
-      // Update Right Panel (Intelligence/Action)
+
       updateUIForPanelState();
-      
-      // Initial render for tab activation
+
       const renderer = renderers[targetId];
       if (renderer) renderer.render?.(client.lastHubData || {});
-      
+
       store.setActiveTab(targetId);
     });
   });
@@ -156,10 +162,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const saved = store.getTheme();
   if (saved) store.setTheme(saved);
 
-  // Wire workspace isolation client reference
-  if (window.__setWorkspaceRegistryClient) {
-    window.__setWorkspaceRegistryClient(client);
-  }
+  // Wire workspace isolation
+  setWorkspaceRegistryClient(client);
+  initWorkspaceSelector();
 
   client.start();
 });
@@ -180,17 +185,12 @@ function updateTickers(data) {
     const latColor = latVal != null ? '' : 'color:var(--text-muted)';
     lat.innerHTML = `API <span style="font-family:var(--font-mono);${latColor}">${latLabel}</span>`;
   }
-  // Update workspace identity (prefer top-level workspaceName for multi-workspace isolation)
   const ws = document.querySelector('#ticker-workspace span');
   const wsContainer = document.getElementById('ticker-workspace');
   const workspaceName = data.workspaceName || data.bootstrapState?.workspaceName;
   const workspacePath = data.workspacePath || '';
-  if (ws && workspaceName) {
-    ws.textContent = workspaceName;
-  }
-  if (wsContainer && workspacePath) {
-    wsContainer.title = workspacePath;
-  }
+  if (ws && workspaceName) ws.textContent = workspaceName;
+  if (wsContainer && workspacePath) wsContainer.title = workspacePath;
 }
 
 function updateBootstrapBanner(data) {
@@ -221,54 +221,3 @@ function updateBootstrapBanner(data) {
   }
   banner.innerHTML = html;
 }
-
-// --- Workspace Isolation: Registry loading and switching --- //
-
-let workspaceRegistryClient = null;
-
-function setWorkspaceRegistryClient(client) {
-  workspaceRegistryClient = client;
-}
-
-async function loadWorkspaceRegistry() {
-  const select = document.getElementById('workspace-select');
-  if (!select) return;
-
-  try {
-    const res = await fetch('/api/v1/workspaces');
-    if (!res.ok) return;
-    const { workspaces, current } = await res.json();
-
-    select.innerHTML = '';
-    for (const ws of workspaces) {
-      const opt = document.createElement('option');
-      opt.value = ws.port;
-      opt.textContent = ws.workspaceName;
-      opt.title = ws.workspacePath;
-      if (ws.workspacePath === current) opt.selected = true;
-      if (ws.status === 'disconnected') {
-        opt.textContent += ' (disconnected)';
-        opt.disabled = true;
-      }
-      select.appendChild(opt);
-    }
-  } catch {
-    // Registry unavailable
-  }
-}
-
-// Wire workspace selector change handler
-document.addEventListener('DOMContentLoaded', () => {
-  const select = document.getElementById('workspace-select');
-  if (select) {
-    select.addEventListener('change', (e) => {
-      const port = parseInt(e.target.value, 10);
-      if (workspaceRegistryClient && port) {
-        workspaceRegistryClient.switchServer(port);
-      }
-    });
-  }
-});
-
-// Export for connection wiring
-window.__setWorkspaceRegistryClient = setWorkspaceRegistryClient;

@@ -34,23 +34,12 @@ class WebPanelClient {
       trendThumb: document.getElementById('trend-thumb'),
       policyTrend: document.getElementById('policy-trend'),
       statusLine: document.getElementById('status-line'),
-      qoreState: document.getElementById('qore-runtime-state'),
-      qoreVersion: document.getElementById('qore-policy-version'),
-      qoreEndpoint: document.getElementById('qore-runtime-endpoint'),
-      qoreLatency: document.getElementById('qore-runtime-latency'),
-      qoreCheck: document.getElementById('qore-runtime-check'),
       governanceAlerts: document.getElementById('governance-alerts'),
       complianceGrade: document.getElementById('compliance-grade'),
       complianceBar: document.getElementById('compliance-bar'),
       complianceFill: document.getElementById('compliance-fill'),
       complianceScore: document.getElementById('compliance-score'),
     };
-
-    if (this.elements.qoreCheck) {
-      this.elements.qoreCheck.addEventListener('click', () => {
-        this.fetchHub();
-      });
-    }
 
     this.connect();
     this.fetchHub();
@@ -169,7 +158,12 @@ class WebPanelClient {
       return { title, index };
     }
 
-    // Fall back to plan phase data
+    // If governance data exists and is IDLE, session is sealed — show Plan
+    if (gov?.recentCompletions?.length > 0) {
+      return { title: 'Plan', index: 0 };
+    }
+
+    // Fall back to plan phase data (non-governed workspaces only)
     const phases = Array.isArray(plan?.phases) ? plan.phases : [];
     const active = phases.find((phase) => phase.id === plan?.currentPhaseId)
       || phases.find((phase) => phase.status === 'active')
@@ -310,7 +304,7 @@ class WebPanelClient {
     this.elements.sentinelAlert.textContent = String(alert.summary || 'Sentinel raised a risk signal.');
     this.elements.sentinelAlert.title = 'Click to view details in Command Center';
     this.elements.sentinelAlert.onclick = () => {
-      window.location.href = '/command-center.html#governance';
+      window.open('/command-center.html#governance', '_blank');
     };
   }
 
@@ -365,25 +359,8 @@ class WebPanelClient {
     if (this.elements.trendSlider) this.elements.trendSlider.title = `Policy trend index: ${trend}%. Lower is healthier.`;
   }
 
-  renderQoreRuntime(qoreRuntime) {
-    if (!this.elements.qoreState) return;
-
-    if (!qoreRuntime || !qoreRuntime.enabled) {
-      this.elements.qoreState.textContent = 'Disabled';
-      if (this.elements.qoreVersion) this.elements.qoreVersion.textContent = 'n/a';
-      if (this.elements.qoreEndpoint) this.elements.qoreEndpoint.textContent = qoreRuntime?.baseUrl || 'not configured';
-      if (this.elements.qoreLatency) this.elements.qoreLatency.textContent = 'n/a';
-      return;
-    }
-
-    this.elements.qoreState.textContent = qoreRuntime.connected ? 'Connected' : 'Unreachable';
-    if (this.elements.qoreVersion) this.elements.qoreVersion.textContent = qoreRuntime.policyVersion || 'unknown';
-    if (this.elements.qoreEndpoint) this.elements.qoreEndpoint.textContent = qoreRuntime.baseUrl || 'unknown';
-    if (this.elements.qoreLatency) {
-      this.elements.qoreLatency.textContent = Number.isFinite(Number(qoreRuntime.latencyMs))
-        ? `${Math.round(Number(qoreRuntime.latencyMs))} ms`
-        : 'n/a';
-    }
+  renderQoreRuntime() {
+    // Qore runtime data now rendered in Command Center overview; Monitor no longer owns it.
   }
 
   renderRepoCompliance(compliance) {
@@ -643,102 +620,7 @@ class WebPanelClient {
     });
   }
 
-  // Transparency Stream Methods
-  async fetchTransparency() {
-    try {
-      const res = await fetch('/api/transparency');
-      if (!res.ok) throw new Error(`Transparency request failed (${res.status})`);
-      const data = await res.json();
-      this.renderTransparency(data.events || []);
-    } catch {
-      const container = document.getElementById('transparency-events');
-      if (container) {
-        container.innerHTML = '<div class="transparency-empty">Unable to load events</div>';
-      }
-    }
-  }
-
-  renderTransparency(events) {
-    const container = document.getElementById('transparency-events');
-    if (!container) return;
-
-    if (events.length === 0) {
-      container.innerHTML = '<div class="transparency-empty">No transparency events yet</div>';
-      return;
-    }
-
-    container.innerHTML = events.slice(0, 20).map((event) => {
-      const type = String(event.type || 'unknown').replace('prompt.', '');
-      const time = event.timestamp ? new Date(event.timestamp).toLocaleTimeString() : '';
-      const details = event.intentId ? `Intent: ${event.intentId.substring(0, 8)}...` :
-                      event.tokenCount ? `Tokens: ${event.tokenCount}` :
-                      event.riskGrade ? `Risk: ${event.riskGrade}` : '';
-      return `
-        <div class="transparency-item">
-          <span class="transparency-type ${type}">${this.escapeHtml(type)}</span>
-          <span class="transparency-details">${this.escapeHtml(details)}</span>
-          <span class="transparency-time">${this.escapeHtml(time)}</span>
-        </div>
-      `;
-    }).join('');
-  }
-
-  // Risk Register Methods
-  async fetchRisks() {
-    try {
-      const res = await fetch('/api/risks');
-      if (!res.ok) throw new Error(`Risks request failed (${res.status})`);
-      const data = await res.json();
-      this.renderRisks(data.risks || []);
-    } catch {
-      const container = document.getElementById('risk-items');
-      if (container) {
-        container.innerHTML = '<div class="risk-empty">Unable to load risks</div>';
-      }
-    }
-  }
-
-  renderRisks(risks) {
-    const container = document.getElementById('risk-items');
-    if (!container) return;
-
-    // Update summary counts
-    const counts = { critical: 0, high: 0, medium: 0, low: 0 };
-    risks.forEach((risk) => {
-      if (risk.status !== 'resolved' && counts[risk.severity] !== undefined) {
-        counts[risk.severity]++;
-      }
-    });
-
-    const criticalEl = document.getElementById('risk-critical');
-    const highEl = document.getElementById('risk-high');
-    const mediumEl = document.getElementById('risk-medium');
-    const lowEl = document.getElementById('risk-low');
-
-    if (criticalEl) criticalEl.textContent = counts.critical;
-    if (highEl) highEl.textContent = counts.high;
-    if (mediumEl) mediumEl.textContent = counts.medium;
-    if (lowEl) lowEl.textContent = counts.low;
-
-    // Render risk items
-    if (risks.length === 0) {
-      container.innerHTML = '<div class="risk-empty">No risks registered</div>';
-      return;
-    }
-
-    container.innerHTML = risks.slice(0, 10).map((risk) => `
-      <div class="risk-item">
-        <div class="risk-item-header">
-          <span class="risk-item-title">${this.escapeHtml(risk.title)}</span>
-          <div class="risk-item-badges">
-            <span class="risk-badge ${risk.severity}">${this.escapeHtml(risk.severity)}</span>
-            <span class="risk-badge ${risk.status}">${this.escapeHtml(risk.status)}</span>
-          </div>
-        </div>
-        <div class="risk-item-desc">${this.escapeHtml(risk.description || risk.impact || '')}</div>
-      </div>
-    `).join('');
-  }
+  // Transparency and risk data now served via Command Center modules only.
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -747,42 +629,4 @@ document.addEventListener('DOMContentLoaded', () => {
   // Set up metric click handlers for explanations
   client.setupMetricClickHandlers();
 
-  // Fetch transparency and risks on load
-  client.fetchTransparency();
-  client.fetchRisks();
-
-  // Set up refresh handlers
-  const transparencyRefresh = document.getElementById('transparency-refresh');
-  if (transparencyRefresh) {
-    transparencyRefresh.addEventListener('click', () => client.fetchTransparency());
-  }
-
-  const riskRefresh = document.getElementById('risk-refresh');
-  if (riskRefresh) {
-    riskRefresh.addEventListener('click', () => client.fetchRisks());
-  }
-
-  // Verify Integrity button handler
-  const verifyBtn = document.getElementById('verify-integrity-btn');
-  if (verifyBtn) {
-    verifyBtn.addEventListener('click', async () => {
-      verifyBtn.disabled = true;
-      verifyBtn.textContent = 'Verifying...';
-      try {
-        const res = await fetch('/api/actions/verify-integrity', { method: 'POST' });
-        const data = await res.json();
-        verifyBtn.textContent = data.chainValid ? 'Verified OK' : 'Integrity Failed!';
-        setTimeout(() => {
-          verifyBtn.textContent = 'Verify Integrity';
-          verifyBtn.disabled = false;
-        }, 2000);
-      } catch {
-        verifyBtn.textContent = 'Error';
-        setTimeout(() => {
-          verifyBtn.textContent = 'Verify Integrity';
-          verifyBtn.disabled = false;
-        }, 2000);
-      }
-    });
-  }
 });

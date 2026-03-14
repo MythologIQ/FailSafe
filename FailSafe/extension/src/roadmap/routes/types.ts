@@ -24,4 +24,14 @@ export interface ApiRouteDeps {
   getRiskRegister: () => any[];
   writeRiskRegister: (risks: any[]) => void;
   scaffoldSkills?: () => Promise<{ scaffolded: number; skipped: number }>;
+  // Agent API route delegates (Phase 2: B142/B143/B144)
+  getTimelineEntries: (filter?: any) => any[];
+  getHealthMetrics: () => any | null;
+  getGenomePatterns: () => Promise<any[]>;
+  getGenomeUnresolved: (limit: number) => Promise<any[]>;
+  getActiveRuns: () => any[];
+  getCompletedRuns: () => any[];
+  getRun: (runId: string) => any | undefined;
+  loadRun: (runId: string) => any | null;
+  getRunSteps: (runId: string) => any[];
 }

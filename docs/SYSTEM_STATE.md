@@ -1,7 +1,80 @@
 # SYSTEM STATE
 
 **Last Updated:** 2026-03-14
-**Version:** v4.9.3 Governance Propagation Fix SUBSTANTIATED
+**Version:** v4.9.3 Command Center Production Readiness SUBSTANTIATED
+
+## Command Center Production Readiness (v4.9.3) — B154-B157
+
+### Ledger Trail
+
+| Entry | Phase | Verdict |
+|-------|-------|---------|
+| #233 | GATE | VETO (9 violations: path traversal, wrong method names, Razor) |
+| #234 | GATE (RE-AUDIT) | PASS (L2, all 9 remediated, 4 binding notes S1-S3/G1) |
+| #235 | IMPLEMENT | 19 files (5 new, 12 modified, 2 governance) |
+| #236 | SUBSTANTIATE | Session sealed |
+
+### New Files
+
+| File | Lines | Purpose |
+|------|-------|---------|
+| `src/roadmap/routes/AgentApiRoute.ts` | 68 | Extracted route module: 6 agent API endpoints with UUID validation |
+| `src/roadmap/ui/modules/timeline.js` | 109 | TimelineRenderer with category/severity filters |
+| `src/roadmap/ui/modules/genome.js` | 91 | GenomeRenderer with failure pattern cards and unresolved table |
+| `src/roadmap/ui/modules/replay.js` | 188 | ReplayRenderer with run list, step timeline, GovernanceDecision cards |
+| `src/roadmap/ui/modules/workspace-registry.js` | 47 | Extracted workspace registry functions (binding note G1) |
+
+### Modified Files
+
+| File | Lines | Change |
+|------|-------|--------|
+| `src/roadmap/ConsoleServer.ts` | 1440 | +3 setters, +9 apiDeps delegates, +3 hub fields, transparency routing, run lifecycle events |
+| `src/roadmap/routes/types.ts` | +10 | Extended ApiRouteDeps with 9 sentinel service accessors |
+| `src/extension/main.ts` | +5 | Wire 3 services to ConsoleServer |
+| `src/sentinel/AgentHealthIndicator.ts` | -1 | Make buildMetrics() public |
+| `src/sentinel/AgentRunRecorder.ts` | +4 | UUID validation in loadRun() (S3) |
+| `src/genesis/panels/TransparencyPanel.ts` | -1 | Remove dual-write (single writer: ConsoleServer) |
+| `src/shared/types/events.ts` | +1 | Add transparency.prompt event type |
+| `src/roadmap/ui/command-center.html` | +15 | Add Timeline, Genome, Replay tabs and panels |
+| `src/roadmap/ui/command-center.js` | 223 | Import new renderers, extract workspace-registry, wire events |
+| `src/roadmap/ui/modules/overview.js` | 198 | Fix checkpoints→recentCheckpoints, add Agent Health card |
+| `src/roadmap/ui/modules/operations.js` | 180 | Fix checkpoints→recentCheckpoints |
+| `src/roadmap/ui/roadmap.js` | 632 | Remove dead code (-176 lines: Qore runtime, transparency, risks) |
+
+### Binding Notes Addressed
+
+| ID | Category | Resolution |
+|----|----------|------------|
+| S1 | Security | `event.payload` access with `as Record<string, unknown>` pattern |
+| S2 | Security | Explicit field allowlisting for L3 transparency events |
+| S3 | Security | UUID validation in `AgentRunRecorder.loadRun()` |
+| G1 | Ghost UI | `workspace-registry.js` loaded via ES module import |
+
+### Section 4 Razor Status
+
+| File | Lines | Limit | Status |
+|------|-------|-------|--------|
+| AgentApiRoute.ts | 68 | 250 | PASS |
+| timeline.js | 109 | 250 | PASS |
+| genome.js | 91 | 250 | PASS |
+| replay.js | 188 | 250 | PASS |
+| workspace-registry.js | 47 | 250 | PASS |
+| command-center.js | 223 | 250 | PASS |
+| overview.js | 198 | 250 | PASS |
+| operations.js | 180 | 250 | PASS |
+| ConsoleServer.ts | 1440 | 250 | WARN (pre-existing debt, +76L) |
+
+### Console.log Artifacts
+
+None in new/modified files.
+
+### Blockers
+
+- No open security blockers
+- B154-B157 marked complete in BACKLOG.md
+- D16-D20 (audit violations) marked complete
+
+---
 
 ## Fix Governance Propagation Pipeline (v4.9.3) — Implementation State
 

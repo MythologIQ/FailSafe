@@ -317,6 +317,12 @@ Minor / UX:
 - [ ] [B148] Agent Run Replay: Interactive re-execution from any replay step with modified parameters
 - [ ] [B149] Agent Run Replay: Behavioral telemetry pipeline — feed replay data into Shadow Genome for cumulative agent behavioral intelligence
 
+### v4.9.3 Command Center Production Readiness (plan-cc-prod-readiness)
+
+- [ ] [B154] Phase 1: Fix disconnected hub data — align renderers with `buildHubSnapshot()` output, fix phantom fields (`checkpoints` → `recentCheckpoints`), remove dead Monitor code (Qore runtime card, orphaned transparency/risk methods)
+- [ ] [B155] Phase 2: Wire B142/B143/B144 into Command Center — expose AgentTimelineService, AgentHealthIndicator, ShadowGenomeManager via API endpoints (`/api/v1/timeline`, `/api/v1/health`, `/api/v1/genome`), create Timeline and Genome tab modules, add health card to Overview
+- [ ] [B156] Phase 3: Fix transparency pipeline — route sentinel verdicts, L3 events, governance decisions into audit stream, fix dual-write race condition (single writer: ConsoleServer), add `transparency.prompt` event type
+
 ### Runtime Architecture (Future)
 
 - [ ] [B151] Universal Governance Interceptor: Drop-in interceptor interface for agent framework integration (LangChain, AutoGen, CrewAI, MCP)
@@ -370,7 +376,7 @@ Minor / UX:
 | **v4.8.0**   | **Agent Debugging Suite**      | ✅ RELEASED    | Agent Execution Timeline, Risk & Stability Indicators, Shadow Genome Debugging Panel (B142-B145)                      |
 | **v4.9.0**   | **Agent Run Replay**           | ✅ RELEASED    | Agent Run Replay, Governance Decision Contracts, marketplace README repositioning (B146/B147/B150)                    |
 | **v4.9.2**   | **Infrastructure Hardening**   | ✅ RELEASED    | Monitor state tracking, hook toggle completion, release pipeline verification (B107-B108, B137-B140)                  |
-| **v4.9.3**   | **UX Polish**                  | 🔄 PENDING     | Clickable Sentinel alert banner navigates to Command Center governance tab                                             |
+| **v4.9.3**   | **Command Center Readiness**   | 🔄 PENDING     | Fix disconnected hub data, wire B142/B143/B144 into Command Center, fix transparency pipeline (B154-B156)             |
 
 ---
 

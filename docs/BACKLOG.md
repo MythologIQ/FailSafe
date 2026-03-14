@@ -10,12 +10,6 @@
 
 <!-- Format: - [ ] [D#] Description | Version -->
 
-- [x] [D16] V1: HALLUCINATION — Plan Phase 2 references TimelineRenderer, ReplayRenderer, GenomeRenderer that do not exist (from audit 2026-03-14) — Remediated in plan v2
-- [x] [D17] V2: GHOST_PATH — Agents TabGroup imports 3 non-existent renderers (from audit 2026-03-14) — Remediated: Agents uses OperationsRenderer directly
-- [x] [D18] V3: FACTUAL_ERROR — Plan says "11 → 5" tabs but codebase has 8 tabs (from audit 2026-03-14) — Corrected to 8 → 5
-- [x] [D19] V4: AFFECTED_FILES_GAP — ConsoleServer.ts listed in Phase 3 but no code changes provided (from audit 2026-03-14) — Removed from affected files
-- [x] [D20] V1: RAZOR — governance.js at 277 lines exceeds 250-line limit (from Codex post-hoc audit 2026-03-14). Extract integrity/unattributed rendering to separate module. (Remediated — governance.js 202 lines, integrity.js 84 lines)
-
 - [x] [D6] V1: Razor - CortexStreamProvider.ts exceeds 250 lines (from audit 2026-02-05T22:29:02Z) (v2.0.1 - Complete)
 - [x] [D7] V2: Razor - DojoViewProvider.ts exceeds 250 lines (from audit 2026-02-05T22:29:02Z) (v2.0.1 - Complete)
 - [x] [D8] V3: Razor - DashboardPanel.ts exceeds 250 lines (from audit 2026-02-05T22:29:02Z) (v2.0.1 - Complete)
@@ -323,11 +317,11 @@ Minor / UX:
 - [ ] [B148] Agent Run Replay: Interactive re-execution from any replay step with modified parameters
 - [ ] [B149] Agent Run Replay: Behavioral telemetry pipeline — feed replay data into Shadow Genome for cumulative agent behavioral intelligence
 
-### v4.9.3 CC Consolidation, Audit Fix, Skills Propagation (plan-cc-consolidation-audit-skills)
+### v4.9.3 Command Center Production Readiness (plan-cc-prod-readiness)
 
-- [x] [B158] Phase 1: Fix audit log blank — fetch history on load, fix event type loss in WS wrapper, route verdicts to audit stream (v4.10.0 - Complete)
-- [x] [B159] Phase 2: Tab consolidation 8→5 — create TabGroup component, consolidate tabs (Overview, Agents, Governance, Workspace, Settings) (v4.10.0 - Complete)
-- [x] [B160] Phase 3: Wire skills propagation — connect adaptSkillsForModel to autoIngest, add windsurf/kilocode adapter configs (v4.10.0 - Complete)
+- [ ] [B154] Phase 1: Fix disconnected hub data — align renderers with `buildHubSnapshot()` output, fix phantom fields (`checkpoints` → `recentCheckpoints`), remove dead Monitor code (Qore runtime card, orphaned transparency/risk methods)
+- [ ] [B155] Phase 2: Wire B142/B143/B144 into Command Center — expose AgentTimelineService, AgentHealthIndicator, ShadowGenomeManager via API endpoints (`/api/v1/timeline`, `/api/v1/health`, `/api/v1/genome`), create Timeline and Genome tab modules, add health card to Overview
+- [ ] [B156] Phase 3: Fix transparency pipeline — route sentinel verdicts, L3 events, governance decisions into audit stream, fix dual-write race condition (single writer: ConsoleServer), add `transparency.prompt` event type
 
 ### Runtime Architecture (Future)
 
@@ -382,7 +376,7 @@ Minor / UX:
 | **v4.8.0**   | **Agent Debugging Suite**      | ✅ RELEASED    | Agent Execution Timeline, Risk & Stability Indicators, Shadow Genome Debugging Panel (B142-B145)                      |
 | **v4.9.0**   | **Agent Run Replay**           | ✅ RELEASED    | Agent Run Replay, Governance Decision Contracts, marketplace README repositioning (B146/B147/B150)                    |
 | **v4.9.2**   | **Infrastructure Hardening**   | ✅ RELEASED    | Monitor state tracking, hook toggle completion, release pipeline verification (B107-B108, B137-B140)                  |
-| **v4.9.3**   | **UX Polish**                  | 🔄 PENDING     | Clickable Sentinel alert banner navigates to Command Center governance tab                                             |
+| **v4.9.3**   | **Command Center Readiness**   | 🔄 PENDING     | Fix disconnected hub data, wire B142/B143/B144 into Command Center, fix transparency pipeline (B154-B156)             |
 
 ---
 

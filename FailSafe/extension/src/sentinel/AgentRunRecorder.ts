@@ -100,6 +100,10 @@ export class AgentRunRecorder {
   }
 
   loadRun(runId: string): AgentRun | null {
+    // S3: Defense-in-depth UUID validation to prevent path traversal
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(runId)) {
+      return null;
+    }
     const filePath = path.join(this.storagePath, `${runId}.json`);
     try {
       const data = fs.readFileSync(filePath, "utf-8");

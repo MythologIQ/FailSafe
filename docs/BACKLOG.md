@@ -325,10 +325,10 @@ Minor / UX:
 
 ### v4.9.3 Command Center Production Readiness (plan-cc-prod-readiness)
 
-- [ ] [B154] Phase 1: Fix disconnected hub data — align renderers with `buildHubSnapshot()` output, fix phantom fields (`checkpoints` → `recentCheckpoints`), remove dead Monitor code (Qore runtime card, orphaned transparency/risk methods)
-- [ ] [B155] Phase 2: Wire B142/B143/B144 into Command Center — expose AgentTimelineService, AgentHealthIndicator, ShadowGenomeManager via API endpoints (`/api/v1/timeline`, `/api/v1/health`, `/api/v1/genome`), create Timeline and Genome tab modules, add health card to Overview
-- [ ] [B156] Phase 3: Fix transparency pipeline — route sentinel verdicts, L3 events, governance decisions into audit stream, fix dual-write race condition (single writer: ConsoleServer), add `transparency.prompt` event type
-- [ ] [B157] Phase 4: Wire B146/B150 into Command Center — expose AgentRunRecorder via API endpoints (`/api/v1/runs`, `/api/v1/runs/:id`, `/api/v1/runs/:id/steps`), create Replay tab module with step timeline and GovernanceDecision cards, broadcast run lifecycle events
+- [x] [B154] Phase 1: Fix disconnected hub data — align renderers with `buildHubSnapshot()` output, fix phantom fields (`checkpoints` → `recentCheckpoints`), remove dead Monitor code (Qore runtime card, orphaned transparency/risk methods) (v4.9.3 - Complete)
+- [x] [B155] Phase 2: Wire B142/B143/B144 into Command Center — expose AgentTimelineService, AgentHealthIndicator, ShadowGenomeManager via API endpoints (`/api/v1/timeline`, `/api/v1/health`, `/api/v1/genome`), create Timeline and Genome tab modules, add health card to Overview (v4.9.3 - Complete)
+- [x] [B156] Phase 3: Fix transparency pipeline — route sentinel verdicts, L3 events, governance decisions into audit stream, fix dual-write race condition (single writer: ConsoleServer), add `transparency.prompt` event type (v4.9.3 - Complete)
+- [x] [B157] Phase 4: Wire B146/B150 into Command Center — expose AgentRunRecorder via API endpoints (`/api/v1/runs`, `/api/v1/runs/:id`, `/api/v1/runs/:id/steps`), create Replay tab module with step timeline and GovernanceDecision cards, broadcast run lifecycle events (v4.9.3 - Complete)
 
 ### Runtime Architecture (Future)
 

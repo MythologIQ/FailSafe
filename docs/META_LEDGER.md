@@ -10446,3 +10446,57 @@ SHA256(content_hash + previous_hash)
 ```
 
 **Decision**: PASS — Amended Command Center Production Readiness plan resolves all 9 prior violations. UUID validation fixes path traversal. Routes extracted to AgentApiRoute.ts. Correct method names/signatures verified against source. 4 binding implementation notes (S1-S3, G1) issued.
+
+---
+
+### Entry #235: IMPLEMENTATION
+
+**Timestamp**: 2026-03-14T15:30:00Z
+**Phase**: IMPLEMENT
+**Author**: Specialist
+**Risk Grade**: L2
+
+**Files Modified**:
+
+- `src/roadmap/ConsoleServer.ts` — Add chainValid/risks/agentHealth to hub snapshot, 3 service setters, 9 apiDeps delegates, transparency event routing, run lifecycle broadcasting
+- `src/roadmap/routes/AgentApiRoute.ts` — NEW: Extracted route module for timeline/health/genome/runs API endpoints with UUID validation
+- `src/roadmap/routes/types.ts` — Extend ApiRouteDeps with 9 sentinel service accessors
+- `src/extension/main.ts` — Wire agentTimelineService, agentHealthIndicator, agentRunRecorder to ConsoleServer
+- `src/sentinel/AgentHealthIndicator.ts` — Make buildMetrics() public
+- `src/sentinel/AgentRunRecorder.ts` — Add UUID validation in loadRun() (defense-in-depth, binding note S3)
+- `src/genesis/panels/TransparencyPanel.ts` — Remove dual-write (single writer: ConsoleServer)
+- `src/shared/types/events.ts` — Add transparency.prompt to FailSafeEventType union
+- `src/roadmap/ui/command-center.html` — Add Timeline, Genome, Replay tabs and panels
+- `src/roadmap/ui/command-center.js` — Import/register new renderers, extract workspace-registry, wire events
+- `src/roadmap/ui/modules/overview.js` — Fix checkpoints→recentCheckpoints, add Agent Health card (4-column grid)
+- `src/roadmap/ui/modules/operations.js` — Fix checkpoints→recentCheckpoints
+- `src/roadmap/ui/modules/timeline.js` — NEW: TimelineRenderer with category/severity filters
+- `src/roadmap/ui/modules/genome.js` — NEW: GenomeRenderer with failure pattern cards and unresolved table
+- `src/roadmap/ui/modules/replay.js` — NEW: ReplayRenderer with run list, step timeline, governance decision cards
+- `src/roadmap/ui/modules/workspace-registry.js` — NEW: Extracted from command-center.js (binding note G1)
+- `src/roadmap/ui/roadmap.js` — Remove dead code (Qore runtime refs, fetchTransparency, fetchRisks, renderTransparency, renderRisks, verify-integrity handler)
+
+**Binding Notes Addressed**:
+
+- S1: Access event.payload not event root for sentinel.verdict transparency events
+- S2: Explicit field allowlisting for L3 transparency events (no spread)
+- S3: UUID validation in AgentRunRecorder.loadRun() for defense-in-depth
+- G1: workspace-registry.js extracted as ES module, imported in command-center.js
+
+**Content Hash**:
+
+```
+SHA256(implementation-command-center-prod-readiness-v4.9.3-B154-B157-complete)
+= 6e88fcc9868f22c148988c01c175206cf6891c0a47772b615b032c0316cdb458
+```
+
+**Previous Hash**: d6f9a2c5e8b1d4f7a0c3e6b9d2f5a8c1e4d7b0f3a6c9e2b5d8f1a4c7b0e3d6f9
+
+**Chain Hash**:
+
+```
+SHA256(content_hash + previous_hash)
+= 4ac72a7c077ec4c9f1b1bc53fe7063796127bea25ccf19dfff7a5cd6465ce445
+```
+
+**Decision**: Implementation complete. All 4 phases of Command Center Production Readiness delivered. Section 4 Razor applied. All binding notes S1-S3 and G1 addressed. TypeScript compiles cleanly.

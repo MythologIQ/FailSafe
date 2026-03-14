@@ -81,6 +81,10 @@ import { SecurityScanner } from "./services/SecurityScanner";
 import { setupMarketplaceRoutes } from "./routes/MarketplaceRoute";
 import { AdapterService } from "./services/AdapterService";
 import { setupAdapterRoutes } from "./routes/AdapterRoute";
+import { setupAgentApiRoutes } from "./routes/AgentApiRoute";
+import type { AgentHealthIndicator } from "../sentinel/AgentHealthIndicator";
+import type { AgentTimelineService } from "../sentinel/AgentTimelineService";
+import type { AgentRunRecorder } from "../sentinel/AgentRunRecorder";
 
 const PORT = 9376;
 const HOST = "127.0.0.1";
@@ -167,6 +171,9 @@ export class ConsoleServer {
   private marketplaceInstaller: MarketplaceInstaller;
   private securityScanner: SecurityScanner;
   private adapterService: AdapterService;
+  private agentTimelineService: AgentTimelineService | null = null;
+  private agentHealthIndicator: AgentHealthIndicator | null = null;
+  private agentRunRecorder: AgentRunRecorder | null = null;
   private ledgerWatcher: fs.FSWatcher | null = null;
   private ledgerDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   private unattributedFileChanges: UnattributedFileChange[] = [];
@@ -369,9 +376,20 @@ export class ConsoleServer {
       getRiskRegister: () => this.getRiskRegister(),
       writeRiskRegister: (risks) => this.writeRiskRegister(risks),
       scaffoldSkills: this.scaffoldCallback ?? undefined,
+      // Agent API delegates (B142/B143/B144)
+      getTimelineEntries: (filter) => this.agentTimelineService?.getEntries(filter) || [],
+      getHealthMetrics: () => this.agentHealthIndicator?.buildMetrics() || null,
+      getGenomePatterns: () => this.qorelogicManager.getShadowGenomeManager().analyzeFailurePatterns(),
+      getGenomeUnresolved: (limit) => this.qorelogicManager.getShadowGenomeManager().getUnresolvedEntries(limit),
+      getActiveRuns: () => this.agentRunRecorder?.getActiveRuns() || [],
+      getCompletedRuns: () => this.agentRunRecorder?.getCompletedRuns() || [],
+      getRun: (runId) => this.agentRunRecorder?.getRun(runId),
+      loadRun: (runId) => this.agentRunRecorder?.loadRun(runId) || null,
+      getRunSteps: (runId) => this.agentRunRecorder?.getRunSteps(runId) || [],
     };
 
     setupTransparencyRiskRoutes(this.app, apiDeps);
+    setupAgentApiRoutes(this.app, apiDeps);
     setupBrainstormRoutes(this.app, apiDeps);
     setupCheckpointRoutes(this.app, apiDeps);
     setupActionsRoutes(this.app, apiDeps);
@@ -591,6 +609,18 @@ export class ConsoleServer {
     this.scaffoldCallback = cb;
   }
 
+  setAgentTimelineService(service: AgentTimelineService): void {
+    this.agentTimelineService = service;
+  }
+
+  setAgentHealthIndicator(indicator: AgentHealthIndicator): void {
+    this.agentHealthIndicator = indicator;
+  }
+
+  setAgentRunRecorder(recorder: AgentRunRecorder): void {
+    this.agentRunRecorder = recorder;
+  }
+
   private buildRouteDeps(): RouteDeps {
     const configProfile = new ConfigurationProfile();
     configProfile.loadDefaults({ workspaceRoot: this.workspaceRoot });
@@ -653,6 +683,18 @@ export class ConsoleServer {
       this.maybeRecordAuditPassCheckpoint(verdict);
       this.broadcast({ type: "verdict", payload: event.payload });
       this.broadcast({ type: "hub.refresh" });
+      // S1: Access event.payload, not event root
+      const p = (event.payload ?? {}) as Record<string, unknown>;
+      this.logTransparencyEvent({
+        type: "sentinel.verdict",
+        decision: p.decision,
+        riskGrade: p.riskGrade,
+        filePath: p.filePath,
+        timestamp: new Date().toISOString(),
+      });
+      this.broadcast({ type: "transparency", payload: {
+        type: "sentinel.verdict", decision: p.decision, riskGrade: p.riskGrade,
+      } });
     });
     this.eventBus.on(
       "sentinel.activityObserved" as never,
@@ -677,6 +719,16 @@ export class ConsoleServer {
         evidenceRefs: [], payload: event,
       });
       this.broadcast({ type: "hub.refresh" });
+      // S2: Explicit field allowlisting for L3 transparency events
+      const p = ((event as Record<string, unknown>)?.payload ?? event ?? {}) as Record<string, unknown>;
+      this.logTransparencyEvent({
+        type: "governance.l3Queued",
+        filePath: p.filePath, riskGrade: p.riskGrade, id: p.id,
+        timestamp: new Date().toISOString(),
+      });
+      this.broadcast({ type: "transparency", payload: {
+        type: "governance.l3Queued", riskGrade: p.riskGrade, id: p.id,
+      } });
     });
     this.eventBus.on("qorelogic.l3Decided" as never, (event: unknown) => {
       this.recordCheckpoint({
@@ -685,10 +737,30 @@ export class ConsoleServer {
         evidenceRefs: [], payload: event,
       });
       this.broadcast({ type: "hub.refresh" });
+      // S2: Explicit field allowlisting for L3 transparency events
+      const p = ((event as Record<string, unknown>)?.payload ?? event ?? {}) as Record<string, unknown>;
+      this.logTransparencyEvent({
+        type: "governance.l3Decided",
+        decision: p.decision, riskGrade: p.riskGrade, id: p.id,
+        timestamp: new Date().toISOString(),
+      });
+      this.broadcast({ type: "transparency", payload: {
+        type: "governance.l3Decided", decision: p.decision, id: p.id,
+      } });
     });
     this.eventBus.on("qorelogic.trustUpdate" as never, () =>
       this.broadcast({ type: "hub.refresh" }),
     );
+    // Broadcast run lifecycle events to Command Center Replay tab
+    this.eventBus.on("agentRun.started" as never, (event: unknown) => {
+      this.broadcast({ type: "agentRun", payload: { action: "started", ...(event as Record<string, unknown>) } });
+    });
+    this.eventBus.on("agentRun.completed" as never, (event: unknown) => {
+      this.broadcast({ type: "agentRun", payload: { action: "completed", ...(event as Record<string, unknown>) } });
+    });
+    this.eventBus.on("agentRun.stepRecorded" as never, (event: unknown) => {
+      this.broadcast({ type: "agentRun", payload: { action: "step", ...(event as Record<string, unknown>) } });
+    });
   }
 
   private recordVerdictCheckpoint(verdict: SentinelVerdict): void {
@@ -933,6 +1005,10 @@ export class ConsoleServer {
       governancePhase,
       // Repository governance compliance
       repoCompliance: this.buildRepoCompliance(),
+      // Chain integrity and risk register for Command Center
+      chainValid: this.cachedChainValid ?? null,
+      risks: this.getRiskRegister(),
+      agentHealth: this.agentHealthIndicator?.buildMetrics() || null,
       generatedAt: new Date().toISOString(),
     };
   }

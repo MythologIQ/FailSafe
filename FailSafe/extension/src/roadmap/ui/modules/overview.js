@@ -14,7 +14,7 @@ export class OverviewRenderer {
   render(hubData) {
     this.lastHubData = hubData;
     if (!this.container || !hubData) return;
-    const { sentinelStatus, runState, checkpoints } = hubData;
+    const { sentinelStatus, runState, recentCheckpoints: checkpoints } = hubData;
     const isLive = sentinelStatus?.running;
 
 
@@ -24,9 +24,19 @@ export class OverviewRenderer {
       ? 'var(--accent-green)'
       : (hubData?.chainValid === false ? 'var(--accent-red)' : 'var(--accent-cyan)');
 
+    const health = hubData.agentHealth;
+    const healthLevel = health?.level || 'healthy';
+    const levelColors = {
+      healthy: 'var(--accent-green)',
+      elevated: 'var(--accent-gold)',
+      warning: 'var(--accent-orange)',
+      critical: 'var(--accent-red)',
+    };
+    const healthColor = levelColors[healthLevel] || 'var(--text-muted)';
+
     let html = `
-      <div class="overview-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px;">
-        
+      <div class="overview-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;">
+
         <div class="card" style="background: var(--bg-panel); border: 1px solid var(--border-rim); border-radius: 12px; padding: 16px;">
           <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Sentinel Events</div>
           <div style="font-size: 1.8rem; font-weight: 700; color: var(--text-main); font-family: var(--font-display); margin-top: 8px;">
@@ -47,6 +57,14 @@ export class OverviewRenderer {
             ${chainLabel}
           </div>
           <div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px">${hasChainSignal ? 'Verification state' : 'No chain verdict yet'}</div>
+        </div>
+
+        <div class="card" style="background: var(--bg-panel); border: 1px solid var(--border-rim); border-radius: 12px; padding: 16px;">
+          <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Agent Health</div>
+          <div style="font-size: 1.8rem; font-weight: 700; color: ${healthColor}; font-family: var(--font-display); margin-top: 8px;">
+            ${healthLevel.charAt(0).toUpperCase() + healthLevel.slice(1)}
+          </div>
+          <div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px">${health ? `${health.openCritical || 0} critical, ${health.openHigh || 0} high` : 'No health data'}</div>
         </div>
       </div>
 

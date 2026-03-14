@@ -146,8 +146,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (br?.llmStatus) { br.llmStatus.toggleHelp(); br.llmStatus.render(br.client); }
   });
 
-  // Restore saved tab
-  const savedTab = store.getActiveTab();
+  // Restore saved tab (URL hash takes priority)
+  const hashTab = window.location.hash?.replace('#', '');
+  const savedTab = hashTab || store.getActiveTab();
   const savedBtn = [...tabs].find(t => t.dataset.target === savedTab);
   if (savedBtn) savedBtn.click();
 

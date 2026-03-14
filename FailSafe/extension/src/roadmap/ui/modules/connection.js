@@ -116,7 +116,7 @@ export class ConnectionClient {
         // Transparent prompt/lifecycle event
         this.notify('event', {
           time: new Date().toLocaleTimeString(),
-          type: data.type,
+          type: data.payload?.type || data.type,
           payload: data.payload || {}
         });
         // If it's a structural change, refresh the hub

@@ -9,20 +9,26 @@ import { SkillsRenderer } from './modules/skills.js';
 import { GovernanceRenderer } from './modules/governance.js';
 import { BrainstormRenderer } from './modules/brainstorm.js';
 import { SettingsRenderer } from './modules/settings.js';
+import { TabGroup } from './modules/tab-group.js';
+import { updateTickers, updateBootstrapBanner } from './modules/tickers.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   const client = new ConnectionClient();
   const store = new StateStore();
 
   const renderers = {
-    overview:     new OverviewRenderer('overview', {}),
-    operations:   new OperationsRenderer('operations', { client }),
-    transparency: new TransparencyRenderer('transparency', {}),
-    risks:        new RisksRenderer('risks', { client }),
-    skills:       new SkillsRenderer('skills', { client }),
-    governance:   new GovernanceRenderer('governance', { client }),
-    brainstorm:   new BrainstormRenderer('brainstorm', { store, client }),
-    settings:     new SettingsRenderer('settings', { store }),
+    overview:   new OverviewRenderer('overview', {}),
+    agents:     new OperationsRenderer('agents', { client }),
+    governance: new TabGroup('governance', [
+      { key: 'audit',      label: 'Audit Log',  renderer: new TransparencyRenderer('governance') },
+      { key: 'risks',      label: 'Risks',      renderer: new RisksRenderer('governance', { client }) },
+      { key: 'compliance', label: 'Compliance',  renderer: new GovernanceRenderer('governance', { client }) },
+    ]),
+    workspace: new TabGroup('workspace', [
+      { key: 'skills',     label: 'Skills',     renderer: new SkillsRenderer('workspace', { client }) },
+      { key: 'brainstorm', label: 'Mindmap',    renderer: new BrainstormRenderer('workspace', { store, client }) },
+    ]),
+    settings:   new SettingsRenderer('settings', { store }),
   };
 
   // Connection status indicator + disconnection banner
@@ -56,13 +62,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Route events to relevant renderers
   client.on('event', (evt) => {
-    renderers.transparency.onEvent(evt);
     renderers.overview.onEvent?.(evt);
-    renderers.operations.onEvent?.(evt);
+    renderers.agents.onEvent?.(evt);
     renderers.governance.onEvent?.(evt);
-    renderers.risks.onEvent?.(evt);
-    if (evt.type?.startsWith('brainstorm.'))
-      renderers.brainstorm.onEvent(evt);
+    renderers.workspace.onEvent?.(evt);
   });
 
   client.on('verdict', (v) => {
@@ -123,7 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Brainstorm is a full-viewport canvas — no scrolling allowed
       const contentArea = document.querySelector('.content-area');
-      if (contentArea) contentArea.style.overflowY = targetId === 'brainstorm' ? 'hidden' : 'auto';
+      if (contentArea) contentArea.style.overflowY = targetId === 'workspace' ? 'hidden' : 'auto';
       
       // Update Right Panel (Intelligence/Action)
       updateUIForPanelState();
@@ -162,64 +165,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   client.start();
 });
-
-function updateTickers(data) {
-  const proto = document.getElementById('ticker-protocol');
-  const sent = document.getElementById('ticker-sentinel');
-  const lat = document.getElementById('ticker-latency');
-  if (proto) proto.innerHTML = `PROTOCOL <span>${data.sentinelStatus?.mode || 'Unknown'}</span>`;
-  if (sent) {
-    const live = data.sentinelStatus?.running;
-    const c = live ? 'var(--accent-green)' : 'var(--accent-red)';
-    sent.innerHTML = `SENTINEL <span style="color:${c}">${live ? 'Active' : 'Halted'}</span>`;
-  }
-  if (lat) {
-    const latVal = data.qoreRuntime?.latencyMs;
-    const latLabel = latVal != null ? `${Math.round(latVal)}ms` : 'N/A';
-    const latColor = latVal != null ? '' : 'color:var(--text-muted)';
-    lat.innerHTML = `API <span style="font-family:var(--font-mono);${latColor}">${latLabel}</span>`;
-  }
-  // Update workspace identity (prefer top-level workspaceName for multi-workspace isolation)
-  const ws = document.querySelector('#ticker-workspace span');
-  const wsContainer = document.getElementById('ticker-workspace');
-  const workspaceName = data.workspaceName || data.bootstrapState?.workspaceName;
-  const workspacePath = data.workspacePath || '';
-  if (ws && workspaceName) {
-    ws.textContent = workspaceName;
-  }
-  if (wsContainer && workspacePath) {
-    wsContainer.title = workspacePath;
-  }
-}
-
-function updateBootstrapBanner(data) {
-  const banner = document.getElementById('bootstrap-banner');
-  if (!banner) return;
-  const bs = data.bootstrapState;
-  if (!bs || (bs.skillsInstalled && bs.governanceInitialized)) {
-    banner.style.display = 'none';
-    return;
-  }
-  banner.style.display = 'flex';
-  banner.style.cssText += 'flex-direction:column;gap:8px;padding:12px 16px;' +
-    'background:rgba(245,158,11,0.08);border:1px solid var(--accent-gold);border-radius:6px;margin:8px 16px 0';
-  let html = '<div style="font-size:0.85rem;font-weight:600;color:var(--accent-gold)">Get Started</div>';
-  if (!bs.skillsInstalled) {
-    html += '<div style="display:flex;align-items:center;gap:8px">' +
-      '<span style="color:var(--text-muted);font-size:0.78rem">Governance skills not installed.</span>' +
-      '<button onclick="fetch(\'/api/actions/scaffold-skills\',{method:\'POST\'}).then(()=>location.reload())"' +
-      ' class="cc-btn cc-btn--primary" style="font-size:0.75rem;padding:4px 10px">Install Skills</button>' +
-      '</div>';
-  }
-  if (!bs.governanceInitialized) {
-    html += '<div style="display:flex;align-items:center;gap:8px">' +
-      '<span style="color:var(--text-muted);font-size:0.78rem">Run <code style="padding:1px 5px;background:var(--bg-dark);border-radius:3px">/ql-bootstrap</code> in Claude Code to initialize.</span>' +
-      '<button onclick="navigator.clipboard.writeText(\'/ql-bootstrap\')"' +
-      ' class="cc-btn" style="font-size:0.75rem;padding:4px 10px">Copy</button>' +
-      '</div>';
-  }
-  banner.innerHTML = html;
-}
 
 // --- Workspace Isolation: Registry loading and switching --- //
 

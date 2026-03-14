@@ -10036,5 +10036,154 @@ SHA256(content_hash + previous_hash)
 
 ---
 
+### Entry #224: GATE TRIBUNAL — B158-B160 CC Consolidation/Audit/Skills
+
+**Timestamp**: 2026-03-14T15:30:00Z
+**Phase**: GATE
+**Author**: Judge
+**Risk Grade**: L2
+
+**Verdict**: VETO
+
+**Violations**:
+- V1: HALLUCINATION — Plan references `TimelineRenderer`, `ReplayRenderer`, `GenomeRenderer` that do not exist in the codebase
+- V2: GHOST_PATH — Agents TabGroup would import 3 non-existent renderers
+- V3: FACTUAL_ERROR — Plan says "11 → 5" tabs but codebase has 8 tabs
+- V4: AFFECTED_FILES_GAP — `ConsoleServer.ts` listed but no code changes provided
+
+**Content Hash**:
+
+```
+SHA256(AUDIT_REPORT.md)
+= 89eac9af845d7b3dbca87a3d16c606543bfbc488e59921447eee94de938636d6
+```
+
+**Previous Hash**: 8cc54f5ea37eef90860757841a16a15dfbaf1ab01893f9d5b1a42642a9a23eaa
+
+**Chain Hash**:
+
+```
+SHA256(content_hash + previous_hash)
+= 1de2480f92cf6dd5c946c706999c7a9587cbc4e4135ce107d1643ef872bfd5bd
+```
+
+**Decision**: VETO issued. Plan Phase 2 hallucinates 3 renderer modules (timeline, replay, genome) that don't exist. Correct tab count to 8→5 and fix Agents group composition before re-audit.
+
+---
+
+### Entry #225: GATE TRIBUNAL — B158-B160 CC Consolidation/Audit/Skills (Re-Audit)
+
+**Timestamp**: 2026-03-14T16:00:00Z
+**Phase**: GATE
+**Author**: Judge
+**Risk Grade**: L2
+
+**Verdict**: PASS
+
+**Prior VETO Remediation**:
+- V1 HALLUCINATION: Removed — Agents tab uses existing OperationsRenderer
+- V2 GHOST_PATH: Removed — no non-existent renderer imports
+- V3 FACTUAL_ERROR: Corrected — "8 → 5" tabs
+- V4 AFFECTED_FILES_GAP: Removed — ConsoleServer.ts dropped from affected files
+
+**Content Hash**:
+
+```
+SHA256(AUDIT_REPORT.md)
+= 5657ee063ef4bbe9a3a1527bdef1b0d7aad6d535676e55a4da23bf4ff3d82b66
+```
+
+**Previous Hash**: 1de2480f92cf6dd5c946c706999c7a9587cbc4e4135ce107d1643ef872bfd5bd
+
+**Chain Hash**:
+
+```
+SHA256(content_hash + previous_hash)
+= 2fc734984b45772a697e8c9470a34c6271074f7f9eee9d06867bb2d5e3a7cf5e
+```
+
+**Decision**: PASS. Plan v2 remediates all 4 prior violations. 8→5 tab consolidation with 2 TabGroups (Governance, Workspace), 3 standalone renderers. Ticker extraction brings command-center.js under 250-line Razor. Implementation may proceed.
+
+---
+
+### Entry #226: IMPLEMENTATION — B158-B160 CC Consolidation, Audit Log Fix, Skills Propagation
+
+**Timestamp**: 2026-03-14T17:00:00Z
+**Phase**: IMPLEMENT
+**Author**: Specialist
+**Risk Grade**: L2
+
+**Files Modified**:
+
+- `FailSafe/extension/src/roadmap/ui/modules/transparency.js` — Added fetchHistory() for historical event loading
+- `FailSafe/extension/src/roadmap/ui/modules/connection.js` — Fixed event type passthrough (data.payload?.type)
+- `FailSafe/extension/src/roadmap/ui/command-center.js` — Consolidated 8→5 tabs, TabGroup imports, simplified event routing
+- `FailSafe/extension/src/roadmap/ui/command-center.html` — 5 tab buttons + 5 panels (was 8)
+- `FailSafe/extension/src/roadmap/ui/command-center.css` — Added .cc-pill styles for sub-view switcher
+- `FailSafe/extension/src/roadmap/ui/modules/tab-group.js` — NEW: Sub-view pill switcher component (54 lines)
+- `FailSafe/extension/src/roadmap/ui/modules/tickers.js` — NEW: Extracted ticker utilities (51 lines)
+- `FailSafe/extension/src/roadmap/services/ModelAdapterConfigs.ts` — Added windsurf + kilocode adapter configs
+- `FailSafe/extension/src/roadmap/services/ModelAdapter.ts` — Extended flat-file condition for windsurf/kilocode
+- `FailSafe/extension/src/roadmap/services/SkillRegistry.ts` — Wired adaptSkillsForModel into autoIngest propagation loop
+- `docs/BACKLOG.md` — Marked B158-B160 complete
+
+**Content Hash**:
+
+```
+SHA256(modified files content)
+= c2a182c41c2118137768d840ef424277c10557e1dbbdcdda3b53cac6d9fce6f5
+```
+
+**Previous Hash**: 2fc734984b45772a697e8c9470a34c6271074f7f9eee9d06867bb2d5e3a7cf5e
+
+**Chain Hash**:
+
+```
+SHA256(content_hash + previous_hash)
+= 6b2d74198a5611bd1ab77fdf11344aab59f1a0318c90c8c146850040f1bf349c
+```
+
+**Decision**: Implementation complete. All 3 phases delivered: (1) Audit log fetches history and receives correctly-typed events, (2) 8→5 tab consolidation with TabGroup pill switchers, command-center.js reduced from 273→218 lines, (3) Skills propagate to all detected agent config spaces via autoIngest. Section 4 Razor applied — all files under 250 lines.
+
+---
+
+### Entry #227: SUBSTANTIATE — B158-B160 CC Consolidation, Audit Log Fix, Skills Propagation
+
+**Timestamp**: 2026-03-14T17:30:00Z
+**Phase**: SUBSTANTIATE
+**Author**: Judge
+**Risk Grade**: L2
+
+**Reality Audit**:
+- 11 planned file changes: 11 verified (1 deviation remediated — kilocode outputDir corrected from `.kilocode/skills/` to `.kilocode/workflows/`)
+- 0 unplanned files
+- 0 missing files
+- Section 4 Razor: All files under 250 lines, all functions under 40 lines
+- No console.log artifacts in modified files
+- No open security blockers
+- B158-B160 marked complete in BACKLOG.md
+
+**Version**: v4.9.2 → v4.9.3 (hotfix)
+
+**Content Hash**:
+
+```
+SHA256(substantiation_content)
+= 8fa0e9947a52bd3a75faa64099927dfaa2e4a5f85be39b2f514935fe31292c68
+```
+
+**Previous Hash**: 6b2d74198a5611bd1ab77fdf11344aab59f1a0318c90c8c146850040f1bf349c
+
+**Chain Hash**:
+
+```
+SHA256(content_hash + previous_hash)
+= ddb91cb4916483263078322629232633f16fe6a9be103c7a4c2861e53b5731cb
+```
+
+**Decision**: Session substantiated. Reality matches Promise. All 3 phases verified: audit log fix (3 bugs), tab consolidation 8→5, skills propagation wired. Merkle seal applied.
+
+---
+
 _Chain Status: SEALED_
-_Next Session: Run /ql-repo-release to deliver v4.9.2 or start new feature with /ql-plan_
+_Next Session: Run /ql-repo-release to deliver v4.9.3_

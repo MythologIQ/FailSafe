@@ -142,7 +142,7 @@ function getOutputPath(
   workspaceRoot: string,
 ): string {
   const dirname = applyNaming(skill.localName, config.conventions.fileNaming);
-  if (config.modelId === "cursor") {
+  if (config.modelId === "cursor" || config.modelId === "windsurf" || config.modelId === "kilocode") {
     return path.join(workspaceRoot, config.outputDir, `${dirname}.md`);
   }
   return path.join(workspaceRoot, config.outputDir, dirname, "SKILL.md");

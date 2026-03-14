@@ -10,6 +10,8 @@ import {
   type InstalledSkill, type SkillRoot,
   collectSkillMarkdownFiles, toComparablePath,
 } from "./SkillParser";
+import { adaptSkillsForModel } from "./ModelAdapter";
+import { BUILTIN_ADAPTER_CONFIGS } from "./ModelAdapterConfigs";
 
 export { toComparablePath } from "./SkillParser";
 
@@ -148,10 +150,20 @@ export function autoIngest(
     if (res.ok) admitted += 1;
     else failures.push({ file: sf, error: res.error });
   }
+  // Propagate admitted skills to all detected agent config spaces
+  const installed = getInstalledSkills();
+  const propagation: Record<string, unknown> = {};
+  for (const [id, cfg] of Object.entries(BUILTIN_ADAPTER_CONFIGS)) {
+    if (id === "claude") continue; // source format — skip
+    const outDir = path.join(ws, cfg.outputDir);
+    if (!fs.existsSync(path.dirname(outDir))) continue;
+    propagation[id] = adaptSkillsForModel(installed, cfg, ws);
+  }
+
   return {
     ok: true, mode: "auto", rootsScanned: roots,
     discovered: skillFiles.length, admitted, skipped,
-    failed: failures.length, failures, skills: getInstalledSkills(),
+    failed: failures.length, failures, skills: installed, propagation,
   };
 }
 

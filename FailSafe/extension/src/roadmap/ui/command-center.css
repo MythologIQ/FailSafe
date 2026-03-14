@@ -573,6 +573,10 @@ body {
 .cc-chip:hover { border-color: var(--primary); color: var(--text-main); background: rgba(255,255,255,0.05); box-shadow: 0 0 12px var(--primary-glow); }
 .cc-chip.active { background: var(--primary); color: #fff; border-color: var(--primary); box-shadow: 0 0 16px var(--primary-glow); }
 
+.cc-pill { background: var(--console-bg); border: 1px solid var(--border-rim); color: var(--text-muted); padding: 4px 12px; border-radius: 14px; font-size: 0.75rem; cursor: pointer; transition: all 0.15s ease; }
+.cc-pill:hover:not(.active) { border-color: var(--primary); color: var(--text-main); }
+.cc-pill.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
 .cc-btn {
   background: var(--glass-bg);
   border: 1px solid var(--border-rim);

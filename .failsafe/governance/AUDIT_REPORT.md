@@ -1,19 +1,21 @@
 # AUDIT REPORT
 
-**Tribunal Date**: 2026-03-13T18:30:00Z
-**Target**: B146/B147/B150 Agent Run Replay & Governance Decision Contract (v4.9.0)
+**Tribunal Date**: 2026-03-14T15:30:00Z
+**Target**: Command Center Consolidation, Audit Log Fix, and Skills Propagation (B158-B160)
 **Risk Grade**: L2
 **Auditor**: The QoreLogic Judge
 
 ---
 
-## VERDICT: PASS
+## VERDICT: VETO
 
 ---
 
 ### Executive Summary
 
-Plan for v4.9.0 (Agent Run Recorder, Replay Panel, Governance Decision Contract) passes all seven audit gates. Architecture follows established patterns (AgentTimelineService for recorder, ShadowGenomePanel for replay), type contracts align with existing SentinelVerdict/VerdictDecision types, Section 4 Razor limits respected, no new dependencies, all files connected to build path. Two non-blocking recommendations issued regarding run boundary detection across multiple execution surfaces and riskScore inversion semantics.
+The plan hallucinates three renderer modules (`TimelineRenderer`, `ReplayRenderer`, `GenomeRenderer`) that do not exist in the codebase. The plan claims "11 → 5 tabs" but the actual Command Center has 8 tabs and 8 renderers. Phase 2 constructs a TabGroup for "Agents" referencing three non-existent imports, which would produce runtime import errors. This is a factual misalignment between the plan and the physical codebase that prevents implementation.
+
+Phases 1 (audit log fix) and 3 (skills propagation) are sound and verified against the source code. Only Phase 2 (tab consolidation) contains violations.
 
 ### Audit Results
 
@@ -21,72 +23,65 @@ Plan for v4.9.0 (Agent Run Recorder, Replay Panel, Governance Decision Contract)
 
 **Result**: PASS
 
-- No hardcoded credentials or secrets in plan
-- No placeholder auth or bypassed security checks
-- `toGovernanceDecision` adapter uses existing trusted `SentinelVerdict` type
-- Webview panels follow established nonce-based CSP pattern
-- Run trace storage in `.failsafe/runs/` (gitignored) — no sensitive data leaks to remote
-- Bounded buffer (max 50 runs) prevents unbounded disk/memory growth
+- No placeholder auth logic found in proposed changes
+- No hardcoded credentials or secrets
+- No bypassed security checks
+- No mock authentication returns
+- `fetchHistory()` uses relative `/api/transparency` — correct same-origin pattern
+- `adaptSkillsForModel()` uses existence check before write — safe
+- No path traversal vectors in skill propagation (uses `path.join` with config-defined dirs)
 
 #### Ghost UI Pass
 
-**Result**: PASS
+**Result**: FAIL
 
-- [x] AgentRunReplayPanel `registerMessageHandler()` specifies all handlers:
-  - `selectRun` → load run and render replay view
-  - `viewFile` → open file in editor
-  - `nextStep` / `prevStep` → navigate steps
-  - `refresh` → reload run list
-- [x] AgentRunRecorder wired in `bootstrapSentinel.ts` via SentinelSubstrate extension
-- [x] Replay panel command registered in `bootstrapGenesis.ts`
-- [x] Command entry added to `package.json`
-- [x] Catch block stub provided for graceful degradation on bootstrap failure
-- [x] Governance decision card renders all fields: action badge, risk score bar, trust stage, mitigation, failure mode
+- Phase 2 proposes "Agents" tab containing `TimelineRenderer('agents')`, `ReplayRenderer('agents')`, `GenomeRenderer('agents')` — none of these modules exist in `src/roadmap/ui/modules/`. No `timeline.js`, `replay.js`, or `genome.js` found anywhere in the codebase.
+- These would be ghost renderers with no backing implementation — runtime import errors.
+- Phase 2 omits the existing `OperationsRenderer` from the Agents TabGroup composition despite it being the only agent-observability renderer that currently exists.
 
 #### Section 4 Razor Pass
 
-**Result**: PASS
+**Result**: PASS (with caveat)
 
-| Check | Limit | Blueprint Proposes | Status |
-|---|---|---|---|
-| Max function lines | 40 | ~35 (renderReplayView) | OK |
-| Max file lines | 250 | ~220 (AgentRunReplayHelpers) | OK |
-| Max nesting depth | 3 | 2 | OK |
-| Nested ternaries | 0 | 0 | OK |
+| Check              | Limit | Blueprint Proposes | Status |
+| ------------------ | ----- | ------------------ | ------ |
+| Max function lines | 40    | ~15 (TabGroup methods) | OK |
+| Max file lines     | 250   | tab-group.js ~60 lines | OK |
+| Max nesting depth  | 3     | 2 levels max       | OK |
+| Nested ternaries   | 0     | 0                  | OK |
+
+**Caveat**: `command-center.js` is currently 274 lines (exceeds 250 limit). Plan must reduce it below 250 after consolidation. Tab reduction from 8→5 should achieve this by removing event routing lines, but implementation must verify.
 
 #### Dependency Pass
 
-**Result**: PASS — No new dependencies. All functionality uses existing EventBus, VS Code API, and Node.js `fs` module.
-
-| Package | Justification | <10 Lines Vanilla? | Verdict |
-|---|---|---|---|
-| (none) | N/A | N/A | PASS |
-
-#### Orphan Pass
-
 **Result**: PASS
 
-| Proposed File | Entry Point Connection | Status |
-|---|---|---|
-| `shared/types/governance.ts` | → `types/index.ts` → AgentRunRecorder, ReplayPanel | Connected |
-| `shared/types/agentRun.ts` | → `types/index.ts` → AgentRunRecorder, ReplayPanel | Connected |
-| `sentinel/AgentRunRecorder.ts` | → bootstrapSentinel.ts → SentinelSubstrate → main.ts | Connected |
-| `genesis/panels/AgentRunReplayPanel.ts` | → bootstrapGenesis.ts command → main.ts | Connected |
-| `genesis/panels/AgentRunReplayHelpers.ts` | → AgentRunReplayPanel.ts | Connected |
-| `test/governance/GovernanceDecision.test.ts` | → mocha test runner | Connected |
-| `test/sentinel/AgentRunRecorder.test.ts` | → mocha test runner | Connected |
+No new external dependencies proposed. All changes use existing imports (`fs`, `path`, `crypto`) and internal modules.
+
+| Package | Justification | <10 Lines Vanilla? | Verdict |
+| ------- | ------------- | ------------------ | ------- |
+| (none)  | N/A           | N/A                | PASS    |
 
 #### Macro-Level Architecture Pass
 
 **Result**: PASS
 
-- [x] Clear module boundaries: types in `shared/types/`, service in `sentinel/`, panels in `genesis/panels/`
-- [x] No cyclic dependencies: types ← service ← bootstrap ← main; types ← helpers ← panel ← bootstrap
-- [x] Layering direction enforced: UI (panels) → domain (recorder) → data (types), no reverse imports
-- [x] Single source of truth: `GovernanceDecision` defined once in `shared/types/governance.ts`, re-exported via barrel
-- [x] Cross-cutting concerns: EventBus subscription pattern consistent with AgentTimelineService/AgentHealthIndicator
-- [x] No duplicated domain logic: `toGovernanceDecision` adapter is single conversion point from SentinelVerdict
-- [x] Build path intentional: entry points via bootstrapSentinel (service) and bootstrapGenesis (command)
+- TabGroup composition pattern is clean — no inheritance, pure delegation
+- Skills propagation follows existing adapter pattern (BUILTIN_ADAPTER_CONFIGS → adaptSkillsForModel)
+- Layering direction maintained (UI modules → services, no reverse imports)
+- Single source of truth preserved for adapter configs
+- Event forwarding via `TabGroup.onEvent()` to ALL children — correct for state accumulation
+
+#### Orphan Pass
+
+**Result**: FAIL
+
+| Proposed File | Entry Point Connection | Status |
+| ------------- | ---------------------- | ------ |
+| `tab-group.js` | imported by `command-center.js` | Connected |
+| `TimelineRenderer` import | **No source file exists** | ORPHAN IMPORT |
+| `ReplayRenderer` import | **No source file exists** | ORPHAN IMPORT |
+| `GenomeRenderer` import | **No source file exists** | ORPHAN IMPORT |
 
 #### Repository Governance Pass
 
@@ -96,27 +91,35 @@ Plan for v4.9.0 (Agent Run Recorder, Replay Panel, Governance Decision Contract)
 - [x] README.md exists: PASS
 - [x] LICENSE exists: PASS
 - [x] SECURITY.md exists: PASS
-- [x] CONTRIBUTING.md exists: WARN (not found at root, non-blocking)
+- [x] CONTRIBUTING.md exists: PASS
 
 **GitHub Templates Check**:
-- [x] .github/ISSUE_TEMPLATE/ exists: PASS
-- [x] .github/PULL_REQUEST_TEMPLATE.md exists: PASS
+- [x] .github/ISSUE_TEMPLATE/ exists: PASS (non-blocking)
+- [x] .github/PULL_REQUEST_TEMPLATE.md exists: PASS (non-blocking)
 
 ### Violations Found
 
-None.
-
-### Recommendations (Non-Blocking)
-
 | ID | Category | Location | Description |
-|---|---|---|---|
-| R1 | Architecture | Open Question #1 | Plan recommends IDE task lifecycle as primary run boundary signal. User correctly identifies agents run via **terminal CLI**, **IDE extension**, AND **IDE native chat** — not one-size-fits-all. The plan's `startRun()` public API and command palette trigger partially address this, but the plan should explicitly document the three execution surfaces and how each triggers run start/end. Recommendation: Add an `agentSource` discriminator to the `AgentRun` type (e.g., `"ide-task" | "terminal" | "chat" | "manual"`) and document that TerminalCorrelator detects CLI agents, `ide.taskStarted`/`ide.taskEnded` handles IDE extensions, and manual/command palette handles native chat. |
-| R2 | Semantics | `toGovernanceDecision` | `riskScore: 1 - verdict.confidence` inverts the confidence axis. This means a high-confidence PASS gets riskScore=0.05 (good) but a high-confidence BLOCK also gets riskScore=0.05 (misleading — should be high risk). Consider factoring in the decision severity, not just inverting confidence. Acceptable for v4.9.0 adapter; should be refined when full GovernanceDecision migration occurs in v5.0. |
+| --- | -------- | -------- | ----------- |
+| V1 | HALLUCINATION | Plan Phase 2, renderers map | Plan references `TimelineRenderer`, `ReplayRenderer`, `GenomeRenderer` — these modules do not exist anywhere in the codebase. No `timeline.js`, `replay.js`, or `genome.js` in `src/roadmap/ui/modules/` |
+| V2 | GHOST_PATH | Plan Phase 2, Agents TabGroup | Agents TabGroup would import 3 non-existent renderers, causing runtime import failures on page load |
+| V3 | FACTUAL_ERROR | Plan Phase 2 header | Plan states "11 → 5" tabs but codebase has 8 tabs (overview, operations, transparency, risks, skills, governance, brainstorm, settings) and 8 renderers |
+| V4 | AFFECTED_FILES_GAP | Plan Phase 3, affected files | `ConsoleServer.ts` listed as affected file but no code changes provided for it |
+
+### Required Remediation
+
+1. **Fix tab count**: Correct "11 → 5" to "8 → 5" throughout the plan
+2. **Fix Agents group composition**: Replace hallucinated renderers with `OperationsRenderer` (the only agent-observability renderer that exists). Agents tab becomes a single-renderer tab, not a TabGroup — OR create the missing renderers as new file plans with full implementation
+3. **Remove hallucinated imports**: Remove references to `TimelineRenderer`, `ReplayRenderer`, `GenomeRenderer` from the renderers map, import list, and HTML
+4. **Resolve ConsoleServer.ts**: Either remove from Phase 3 affected files or add concrete code changes
 
 ### Verdict Hash
 
-SHA256(this_report) = pending
+```
+SHA256(this_report)
+= 89eac9af845d7b3dbca87a3d16c606543bfbc488e59921447eee94de938636d6
+```
 
 ---
 
-_This verdict is binding. Implementation may proceed with recommendations noted._
+_This verdict is binding. Implementation may NOT proceed without modification._

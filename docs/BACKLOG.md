@@ -317,6 +317,12 @@ Minor / UX:
 - [ ] [B148] Agent Run Replay: Interactive re-execution from any replay step with modified parameters
 - [ ] [B149] Agent Run Replay: Behavioral telemetry pipeline — feed replay data into Shadow Genome for cumulative agent behavioral intelligence
 
+### v4.9.3 CC Consolidation, Audit Fix, Skills Propagation (plan-cc-consolidation-audit-skills)
+
+- [ ] [B158] Phase 1: Fix audit log blank — fetch history on load, fix event type loss in WS wrapper, route verdicts to audit stream
+- [ ] [B159] Phase 2: Tab consolidation 11→5 — create TabGroup component, consolidate tabs (Overview, Agents, Governance, Workspace, Settings)
+- [ ] [B160] Phase 3: Wire skills propagation — connect adaptSkillsForModel to autoIngest, add windsurf/kilocode adapter configs
+
 ### Runtime Architecture (Future)
 
 - [ ] [B151] Universal Governance Interceptor: Drop-in interceptor interface for agent framework integration (LangChain, AutoGen, CrewAI, MCP)

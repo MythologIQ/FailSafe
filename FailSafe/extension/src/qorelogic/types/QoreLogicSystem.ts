@@ -111,7 +111,7 @@ export interface SystemManifest {
   /** Semantic version of the manifest schema */
   version?: string;
   /** Source directory containing the governance framework files */
-  sourceDir: string;
+  sourceDir?: string;
   /** Target directory for synchronization (null if no target directory needed) */
   targetDir: string | null;
   /** Detection rules for determining if the system is installed/active */

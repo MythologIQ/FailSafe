@@ -224,17 +224,9 @@ cd ..  # Back to workspace root
 
 ---
 
-## Migration Status
+## Agent Definitions
 
-**Old Structure**:
-
-- `src/` → Moved to `FailSafe/_CANONICAL_SOURCE_OLD/`
-- `qorelogic/` → Moved to `FailSafe/_STAGING_OLD/`
-
-**New Structure**:
-
-- Environment-specific source in `Antigravity/`, `Claude/`, `VSCode/`
-- Each environment has Genesis, Qorelogic, Sentinel modules
+Built-in agent definitions are now declared in-code at `extension/src/qorelogic/AgentDefinitions.ts`. Supported agents: Claude Code, GitHub Copilot, Cursor, OpenAI Codex, Windsurf, Gemini CLI.
 
 ---
 

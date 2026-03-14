@@ -14,8 +14,8 @@ function createMockSystem(id: string, name: string): QoreLogicSystem {
     id,
     name,
     description: `Mock ${name} system`,
-    sourceDir: `qorelogic/${id}`,
-    targetDir: `.${id}`,
+    sourceDir: undefined,
+    targetDir: null,
   };
   return { getManifest: () => manifest };
 }
@@ -26,22 +26,6 @@ suite('AgentConfigInjector Test Suite', () => {
 
   suiteSetup(() => {
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'failsafe-injector-test-'));
-    const stagingDir = path.join(tempDir, 'FailSafe', '_STAGING_OLD');
-    fs.mkdirSync(stagingDir, { recursive: true });
-
-    const claudeDir = path.join(stagingDir, 'Claude');
-    fs.mkdirSync(claudeDir);
-    fs.writeFileSync(
-      path.join(claudeDir, 'manifest.json'),
-      JSON.stringify({
-        id: 'claude',
-        name: 'Claude Code',
-        description: 'Claude agent governance',
-        sourceDir: 'qorelogic/Claude',
-        targetDir: '.claude',
-        detection: { alwaysInstalled: true },
-      }),
-    );
     registry = new SystemRegistry(tempDir);
   });
 

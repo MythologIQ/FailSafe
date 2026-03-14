@@ -10,6 +10,7 @@ import {
   SystemManifest,
 } from "./types/QoreLogicSystem";
 import { PluginRegistry } from "./PluginRegistry";
+import { BUILT_IN_AGENTS } from "./AgentDefinitions";
 
 export interface AgentTerminalInfo {
   name: string;
@@ -44,7 +45,7 @@ export class SystemRegistry {
     if (this.cached) {
       return this.cached;
     }
-    const manifests = await this.loadManifests();
+    const manifests = this.loadBuiltInSystems();
     for (const manifest of manifests) {
       this.pluginRegistry.register({
         plugin: new DefaultSystemPlugin(manifest),
@@ -138,24 +139,8 @@ export class SystemRegistry {
     return { registeredSystems, activeTerminals, agentTeams };
   }
 
-  private async loadManifests(): Promise<SystemManifest[]> {
-    const baseDir = path.join(this.workspaceRoot, "FailSafe", "_STAGING_OLD");
-    if (!fs.existsSync(baseDir)) return [];
-    const entries = await fs.promises.readdir(baseDir, { withFileTypes: true });
-    const manifests: SystemManifest[] = [];
-    for (const entry of entries) {
-      if (!entry.isDirectory()) continue;
-      const manifestPath = path.join(baseDir, entry.name, "manifest.json");
-      if (!fs.existsSync(manifestPath)) continue;
-      try {
-        const content = await fs.promises.readFile(manifestPath, "utf-8");
-        const manifest = JSON.parse(content) as SystemManifest;
-        manifests.push(manifest);
-      } catch (error) {
-        this.logger.warn(`Failed to load manifest for ${entry.name}`, error);
-      }
-    }
-    return manifests;
+  private loadBuiltInSystems(): SystemManifest[] {
+    return [...BUILT_IN_AGENTS];
   }
 
   private matchesFolderDetection(pathsToCheck: string[]): boolean {

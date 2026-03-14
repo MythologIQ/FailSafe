@@ -1,7 +1,60 @@
 # SYSTEM STATE
 
-**Last Updated:** 2026-03-13
-**Version:** v4.9.2 Infrastructure Hardening SUBSTANTIATED
+**Last Updated:** 2026-03-14
+**Version:** v4.9.3 Governance Propagation Fix SUBSTANTIATED
+
+## Fix Governance Propagation Pipeline (v4.9.3) — Implementation State
+
+### Ledger Trail
+
+| Entry | Phase | Verdict |
+|-------|-------|---------|
+| #227 | GATE | VETO (missing description field) |
+| #228 | GATE (RE-AUDIT) | PASS (L2, 7 audit passes, V1 remediated) |
+| #229 | IMPLEMENT | 12 files (2 new, 8 modified, 1 deleted, 1 README edit) |
+| #230 | SUBSTANTIATE | Session sealed |
+
+### New Files
+
+| File | Lines | Purpose |
+|------|-------|---------|
+| `src/qorelogic/AgentDefinitions.ts` | 78 | 6 built-in agent manifests (claude, copilot, cursor, codex, windsurf, gemini) |
+| `src/test/qorelogic/AgentDefinitions.test.ts` | 54 | 6 tests for agent definitions |
+
+### Modified Files
+
+| File | Lines | Change |
+|------|-------|--------|
+| `src/qorelogic/types/QoreLogicSystem.ts` | 530 | `sourceDir` made optional (`sourceDir?: string`) |
+| `src/qorelogic/SystemRegistry.ts` | 193 | `loadManifests()` replaced with `loadBuiltInSystems()`, imports `BUILT_IN_AGENTS` |
+| `src/qorelogic/AgentConfigInjector.ts` | 108 | `gemini` added to `AGENT_CONFIG_MAP` |
+| `src/qorelogic/FrameworkSync.ts` | 228 | `sourceDir` guard added in `syncSystem()` |
+| `src/test/qorelogic/SystemRegistry.test.ts` | 92 | Rewritten for built-in agents (7 tests) |
+| `src/test/qorelogic/AgentConfigInjector.test.ts` | 92 | `sourceDir: undefined` in mocks |
+| `src/test/governance/GovernanceCeremony.test.ts` | 260 | `sourceDir: undefined`, `targetDir: null` in mocks |
+| `src/test/roadmap/AgentCoverageRoute.test.ts` | 116 | `sourceDir: undefined` in mocks |
+
+### Deleted
+
+| Path | Reason |
+|------|--------|
+| `FailSafe/_STAGING_OLD/` | Dead code; agent definitions moved in-code |
+
+### Section 4 Razor Status
+
+| File | Lines | Limit | Status |
+|------|-------|-------|--------|
+| AgentDefinitions.ts | 78 | 250 | PASS |
+| SystemRegistry.ts | 193 | 250 | PASS |
+| FrameworkSync.ts | 228 | 250 | PASS |
+| AgentConfigInjector.ts | 108 | 250 | PASS |
+| GovernanceCeremony.test.ts | 260 | 250 | WARN (pre-existing, +2L only) |
+
+### Test Results
+
+- 616 tests passing, 0 failures
+
+---
 
 ## Infrastructure Hardening v4.9.2 (B107/B108/B137-B140) — Implementation State
 

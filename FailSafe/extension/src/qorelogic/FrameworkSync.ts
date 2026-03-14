@@ -120,8 +120,8 @@ export class FrameworkSync {
 
     private async syncSystem(system: QoreLogicSystem): Promise<void> {
         const manifest = system.getManifest();
-        if (!manifest.targetDir) {
-            this.logger.info(`Skipping sync for ${manifest.id} (no targetDir)`);
+        if (!manifest.targetDir || !manifest.sourceDir) {
+            this.logger.info(`Skipping dir-copy for ${manifest.id} (no sourceDir/targetDir)`);
             return;
         }
         const sourceDir = this.registry.resolvePath(manifest.sourceDir);

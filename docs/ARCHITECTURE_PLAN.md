@@ -26,14 +26,14 @@
 
 Export `BUILT_IN_AGENTS: SystemManifest[]` with 6 agents:
 
-| ID | Name | detection.folderExists | detection.extensionKeywords | detection.hostAppNames | governancePaths | configPath |
-|---|---|---|---|---|---|---|
-| `claude` | Claude Code | `.claude` | `claude`, `anthropic` | — | `.claude/skills`, `.claude/agents`, `.claude/CLAUDE.md` | `.claude/CLAUDE.md` |
-| `copilot` | GitHub Copilot | `.github/copilot-instructions.md` | `copilot` | — | `.github/copilot-instructions.md` | `.github/copilot-instructions.md` |
-| `cursor` | Cursor | `.cursor` | — | `cursor` | `.cursor/rules/failsafe.mdc` | `.cursor/rules/failsafe.mdc` |
-| `codex` | OpenAI Codex | `codex.md`, `AGENTS.md` | `codex` | — | `codex.md` | `codex.md` |
-| `windsurf` | Windsurf | `.windsurfrules`, `.windsurf` | — | `windsurf` | `.windsurfrules` | `.windsurfrules` |
-| `gemini` | Gemini CLI | `.gemini`, `GEMINI.md` | `gemini` | — | `GEMINI.md`, `.gemini/settings.json` | `GEMINI.md` |
+| ID | Name | Description | detection.folderExists | detection.extensionKeywords | detection.hostAppNames | governancePaths | configPath |
+|---|---|---|---|---|---|---|---|
+| `claude` | Claude Code | Claude Code CLI and Anthropic agents | `.claude` | `claude`, `anthropic` | — | `.claude/skills`, `.claude/agents`, `.claude/CLAUDE.md` | `.claude/CLAUDE.md` |
+| `copilot` | GitHub Copilot | GitHub Copilot AI assistant | `.github/copilot-instructions.md` | `copilot` | — | `.github/copilot-instructions.md` | `.github/copilot-instructions.md` |
+| `cursor` | Cursor | Cursor AI-native code editor | `.cursor` | — | `cursor` | `.cursor/rules/failsafe.mdc` | `.cursor/rules/failsafe.mdc` |
+| `codex` | OpenAI Codex | OpenAI Codex CLI agent | `codex.md`, `AGENTS.md` | `codex` | — | `codex.md` | `codex.md` |
+| `windsurf` | Windsurf | Windsurf AI code editor | `.windsurfrules`, `.windsurf` | — | `windsurf` | `.windsurfrules` | `.windsurfrules` |
+| `gemini` | Gemini CLI | Google Gemini CLI agent | `.gemini`, `GEMINI.md` | `gemini` | — | `GEMINI.md`, `.gemini/settings.json` | `GEMINI.md` |
 
 No `sourceDir` or `targetDir` — built-in agents use `AgentConfigInjector` for governance injection, not directory-copy sync.
 

@@ -9,23 +9,6 @@ suite("SystemRegistry Test Suite", () => {
 
   suiteSetup(() => {
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "failsafe-registry-test-"));
-    const stagingDir = path.join(tempDir, "FailSafe", "_STAGING_OLD");
-    fs.mkdirSync(stagingDir, { recursive: true });
-
-    // Mock an Antigravity manifest
-    const agentDir = path.join(stagingDir, "Antigravity");
-    fs.mkdirSync(agentDir);
-    fs.writeFileSync(
-      path.join(agentDir, "manifest.json"),
-      JSON.stringify({
-        id: "antigravity",
-        name: "Antigravity / Gemini",
-        description: "Antigravity Orbit-based architecture",
-        sourceDir: "qorelogic/Antigravity/.qorelogic",
-        targetDir: ".qorelogic",
-        detection: { alwaysInstalled: true },
-      }),
-    );
   });
 
   suiteTeardown(function () {
@@ -37,52 +20,53 @@ suite("SystemRegistry Test Suite", () => {
     }
   });
 
-  test("should load manifests from FailSafe/_STAGING_OLD", async () => {
+  test("should return all 6 built-in agent systems", async () => {
     const registry = new SystemRegistry(tempDir);
     const systems = await registry.getSystems();
+    assert.strictEqual(systems.length, 6, "Should return exactly 6 built-in agents");
 
-    assert.strictEqual(
-      systems.length,
-      1,
-      "Should load exactly 1 system manifest",
-    );
-    const manifest = systems[0].getManifest();
-    assert.strictEqual(manifest.id, "antigravity");
-    assert.strictEqual(manifest.name, "Antigravity / Gemini");
+    const agentIds = systems.map((s) => s.getManifest().id);
+    assert.ok(agentIds.includes("claude"));
+    assert.ok(agentIds.includes("copilot"));
+    assert.ok(agentIds.includes("cursor"));
+    assert.ok(agentIds.includes("codex"));
+    assert.ok(agentIds.includes("windsurf"));
+    assert.ok(agentIds.includes("gemini"));
   });
 
-  test("should resolve path relative to workspace root", () => {
+  test("detect() returns true when folder detection marker exists", async () => {
+    const claudeDir = path.join(tempDir, ".claude");
+    fs.mkdirSync(claudeDir, { recursive: true });
+
     const registry = new SystemRegistry(tempDir);
-    const resolved = registry.resolvePath("test/path");
-    assert.strictEqual(resolved, path.join(tempDir, "test/path"));
-  });
+    const claude = await registry.findById("claude");
+    assert.ok(claude, "claude system should exist");
 
-  test("should handle missing base directory gracefully", async () => {
-    const registry = new SystemRegistry(
-      path.join(tempDir, "non-existent-root"),
-    );
-    const systems = await registry.getSystems();
-    assert.strictEqual(systems.length, 0);
-  });
-
-  test("detect() returns correct detection for known system", async () => {
-    const registry = new SystemRegistry(tempDir);
-    const systems = await registry.getSystems();
-    assert.strictEqual(systems.length, 1);
-    const result = await registry.detect(systems[0]);
+    const result = await registry.detect(claude);
     assert.strictEqual(result.detected, true);
+
+    fs.rmSync(claudeDir, { recursive: true, force: true });
   });
 
-  test("getSystems() returns all registered systems with manifest fields", async () => {
+  test("hasGovernance() returns true when governance paths exist", async () => {
+    const skillsDir = path.join(tempDir, ".claude", "skills");
+    fs.mkdirSync(skillsDir, { recursive: true });
+
     const registry = new SystemRegistry(tempDir);
-    const systems = await registry.getSystems();
-    assert.strictEqual(systems.length, 1);
-    const manifest = systems[0].getManifest();
-    assert.strictEqual(manifest.id, "antigravity");
-    assert.strictEqual(manifest.name, "Antigravity / Gemini");
-    assert.strictEqual(manifest.description, "Antigravity Orbit-based architecture");
-    assert.strictEqual(manifest.sourceDir, "qorelogic/Antigravity/.qorelogic");
-    assert.strictEqual(manifest.targetDir, ".qorelogic");
+    const claude = await registry.findById("claude");
+    assert.ok(claude);
+
+    const result = registry.hasGovernance(claude);
+    assert.strictEqual(result, true);
+
+    fs.rmSync(path.join(tempDir, ".claude"), { recursive: true, force: true });
+  });
+
+  test("findById() returns correct system", async () => {
+    const registry = new SystemRegistry(tempDir);
+    const gemini = await registry.findById("gemini");
+    assert.ok(gemini);
+    assert.strictEqual(gemini.getManifest().name, "Gemini CLI");
   });
 
   test("findById() returns undefined for unknown IDs", async () => {
@@ -91,26 +75,18 @@ suite("SystemRegistry Test Suite", () => {
     assert.strictEqual(result, undefined);
   });
 
-  test("hasGovernance() returns true when governance path exists", async () => {
-    const govDir = path.join(tempDir, ".qorelogic");
-    fs.mkdirSync(govDir, { recursive: true });
-
+  test("resolvePath() returns correct absolute path", () => {
     const registry = new SystemRegistry(tempDir);
-    const systems = await registry.getSystems();
-    const manifest = systems[0].getManifest();
-    // Patch manifest to include governancePaths for this test
-    (manifest as { governancePaths?: string[] }).governancePaths = [".qorelogic"];
-
-    const result = registry.hasGovernance(systems[0]);
-    assert.strictEqual(result, true);
-
-    fs.rmSync(govDir, { recursive: true, force: true });
+    const resolved = registry.resolvePath("test/path");
+    assert.strictEqual(resolved, path.join(tempDir, "test/path"));
   });
 
   test("renderTemplate() replaces template variables", async () => {
     const registry = new SystemRegistry(tempDir);
-    const systems = await registry.getSystems();
-    const result = registry.renderTemplate("{{SYSTEM_NAME}} rules", systems[0]);
-    assert.strictEqual(result, "Antigravity / Gemini rules");
+    const claude = await registry.findById("claude");
+    assert.ok(claude);
+
+    const result = registry.renderTemplate("{{SYSTEM_NAME}} ({{SYSTEM_ID}})", claude);
+    assert.strictEqual(result, "Claude Code (claude)");
   });
 });

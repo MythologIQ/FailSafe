@@ -303,10 +303,15 @@ class WebPanelClient {
     if (!alert) {
       this.elements.sentinelAlert.classList.add('hidden');
       this.elements.sentinelAlert.textContent = '';
+      this.elements.sentinelAlert.onclick = null;
       return;
     }
     this.elements.sentinelAlert.classList.remove('hidden');
     this.elements.sentinelAlert.textContent = String(alert.summary || 'Sentinel raised a risk signal.');
+    this.elements.sentinelAlert.title = 'Click to view details in Command Center';
+    this.elements.sentinelAlert.onclick = () => {
+      window.location.href = '/command-center.html#governance';
+    };
   }
 
   renderWorkspaceHealth(plan, blockers, risks, verdicts) {

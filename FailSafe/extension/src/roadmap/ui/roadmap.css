@@ -419,6 +419,11 @@ body {
   color: #ffd0d0;
   padding: 7px 8px;
   font-size: 0.72rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.sentinel-alert:hover {
+  background: rgba(198, 74, 74, 0.35);
 }
 .hidden { display: none; }
 

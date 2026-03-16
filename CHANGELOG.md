@@ -17,6 +17,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - 3 XSS/path-traversal/re-entrancy fixes in replay panel and run recorder.
 
+## [4.9.2] - 2026-03-13
+
+### Added
+
+- META_LEDGER file watcher for auto-refresh of governance state in Monitor (B140).
+- Shared hook sentinel utility for unified hook toggle management (B107).
+- Release pipeline verification test coverage (B108/B137/B138/B139).
+
+### Fixed
+
+- GovernancePhaseTracker recognizes SUBSTANTIATED verdict correctly (B140).
+- Hook toggle convergence between Console and VS Code settings (B107).
+
+## [4.9.0] - 2026-03-13
+
+### Added
+
+- Agent Run Replay: execution trace capture and step-by-step replay panel for agent session debugging (B146).
+- Governance Decision Contracts: typed decision pipeline with risk categorization and sentinel event adapter (B147).
+- Marketplace README repositioned as "AI Coding Safety" category.
+
+### Security
+
+- 3 XSS/path-traversal/re-entrancy fixes in replay panel and run recorder.
+
 ## [4.8.0] - 2026-03-13
 
 ### Added

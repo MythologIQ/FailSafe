@@ -20,6 +20,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Path traversal fix: workspace folder validation in `handleViewFile`.
 - Re-entrancy guard: `AgentRunRecorder` ignores its own `agentRun.*` events.
 
+## [4.9.2] - 2026-03-13
+
+### Added
+
+- META_LEDGER file watcher: Monitor and Command Center now auto-refresh governance state when ledger changes on disk (B140).
+- Shared hook sentinel utility: unified `.claude/hooks/disabled` file management for hook toggle across Console and VS Code settings (B107).
+- Release pipeline verification tests: COMPONENT_HELP/PROCESS_GUIDE version markers, duplicate B-item detection, branch policy, CI gate ordering (B108/B137/B138/B139).
+
+### Fixed
+
+- GovernancePhaseTracker now recognizes SUBSTANTIATED verdict — Monitor no longer shows stale phase after session seal (B140).
+- Recently Completed section in Monitor displays plan name when available instead of raw entry number (B140).
+- Hook toggle in Console and VS Code settings now converge on sentinel file as single source of truth (B107).
+
+## [4.9.0] - 2026-03-13
+
+### Added
+
+- Agent Run Replay: full execution trace capture with step-by-step replay panel for post-mortem debugging of agent sessions (B146).
+- Governance Decision Contracts: typed decision pipeline with risk categorization, mitigation suggestions, and adapter from raw sentinel events (B147).
+- New command: `FailSafe: Show Run Replay` for accessing recorded agent sessions.
+- New types: `GovernanceDecision`, `AgentRun`, `RunStep` with full TypeScript contracts in `shared/types/`.
+
+### Security
+
+- XSS fix: switched onclick handlers from `escapeHtml` to `escapeJsString` for JS string contexts.
+- Path traversal fix: workspace folder validation in `handleViewFile`.
+- Re-entrancy guard: `AgentRunRecorder` ignores its own `agentRun.*` events.
+
 ## [4.8.0] - 2026-03-13
 
 ### Added

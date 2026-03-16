@@ -5,20 +5,7 @@ All notable changes to FailSafe will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [4.9.2] - 2026-03-13
-
-### Added
-
-- META_LEDGER file watcher for auto-refresh of governance state in Monitor (B140).
-- Shared hook sentinel utility for unified hook toggle management (B107).
-- Release pipeline verification test coverage (B108/B137/B138/B139).
-
-### Fixed
-
-- GovernancePhaseTracker recognizes SUBSTANTIATED verdict correctly (B140).
-- Hook toggle convergence between Console and VS Code settings (B107).
-
-## [4.9.0] - 2026-03-13
+## [4.9.5] - 2026-03-16
 
 ### Added
 

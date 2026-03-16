@@ -4,24 +4,9 @@ Prevent runaway AI edits, hallucinated dependencies, and destructive refactors b
 
 FailSafe runs locally inside VS Code and Cursor. It monitors what AI agents do, applies deterministic policy checks at the editor boundary, and gives you full visibility into every decision — before code ships.
 
-**Current Release**: v4.9.2 (2026-03-13)
+**Current Release**: v4.9.5
 
 ![FailSafe Banner](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/extension/FailSafe%20Banner.png)
-
-## What's New in v4.9.2
-
-Infrastructure hardening — live governance state tracking, unified hook toggle, and release pipeline verification.
-
-### Added
-
-- **META_LEDGER File Watcher** — Monitor and Command Center auto-refresh when governance state changes on disk (B140).
-- **Shared Hook Sentinel** — Unified `.claude/hooks/disabled` management for consistent hook toggle across Console and VS Code settings (B107).
-- **Release Pipeline Tests** — Version marker detection, duplicate B-item scanning, branch policy, and CI gate ordering verification (B108/B137-B139).
-
-### Fixed
-
-- GovernancePhaseTracker recognizes SUBSTANTIATED verdict — no more stale phase display after session seal (B140).
-- Hook toggle convergence between Console and VS Code settings via sentinel file (B107).
 
 ## What's New in v4.9.0
 

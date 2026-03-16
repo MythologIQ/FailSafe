@@ -5,21 +5,7 @@ All notable changes to the MythologIQ FailSafe extension will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [4.9.2] - 2026-03-13
-
-### Added
-
-- META_LEDGER file watcher: Monitor and Command Center now auto-refresh governance state when ledger changes on disk (B140).
-- Shared hook sentinel utility: unified `.claude/hooks/disabled` file management for hook toggle across Console and VS Code settings (B107).
-- Release pipeline verification tests: COMPONENT_HELP/PROCESS_GUIDE version markers, duplicate B-item detection, branch policy, CI gate ordering (B108/B137/B138/B139).
-
-### Fixed
-
-- GovernancePhaseTracker now recognizes SUBSTANTIATED verdict — Monitor no longer shows stale phase after session seal (B140).
-- Recently Completed section in Monitor displays plan name when available instead of raw entry number (B140).
-- Hook toggle in Console and VS Code settings now converge on sentinel file as single source of truth (B107).
-
-## [4.9.0] - 2026-03-13
+## [4.9.5] - 2026-03-16
 
 ### Added
 

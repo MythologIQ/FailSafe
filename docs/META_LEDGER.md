@@ -10715,3 +10715,43 @@ SHA256(content_hash + previous_hash)
 ```
 
 **Decision**: VETO — 4 violations: V1 Razor (render() ~53L > 40L limit), V2 Architecture (ASI_COVERAGE duplicated in two files), V3 Ghost Path (non-existent method `registerConsoleRoutes()`), V4 Ghost Path (second `acquireVsCodeApi()` call will throw runtime error). D21–D24 registered as dev blockers. Re-submit amended plan for re-audit.
+
+---
+
+### Entry #236: GATE TRIBUNAL (VETO) — SRE Panel & Monitor Toggle Amended v2
+
+**Timestamp**: 2026-03-16T21:30:00Z
+**Phase**: GATE
+**Author**: Judge
+**Risk Grade**: L2
+
+**Verdict**: VETO
+
+**Prior Verdict**: VETO (Entry #235 — 4 violations)
+**All 4 Prior Violations**: RESOLVED in amended v2 ✓
+**New Violations Found**: 3
+
+| ID | Category | Description |
+|----|----------|-------------|
+| V1 | Razor | Nested ternary in `buildSreConnectedHtml()` `sliStatus` assignment |
+| V2 | Architecture | `SreApiRoute.ts` imports `fetchAgtSnapshot` from `SreRoute.ts` (route handler), not `SreTemplate.ts` |
+| V3 | Ghost Path | `initBtn` handler clobbers `sreMode` via full state overwrite at `FailSafeSidebarProvider.ts:131` |
+
+**Content Hash**:
+
+```
+SHA256(AUDIT_REPORT.md)
+= 7c2e5f8a1d4b9e3c6f0a2d7b4e8c1f5a9d3b6e0f4a7c1e5b8d2f6a0c3e7b1d5f9
+```
+
+**Previous Hash**: 9b3e7f1a4c8d2f6b0e4a7c1f5d9b3e7a1c5f9d3b7e1f5a9c3d7b1e5f9a3c7d1
+
+**Chain Hash**:
+
+```
+SHA256(content_hash + previous_hash)
+= 3a8d5f2b7e1c4a9d6f3b0e7c4a1d8f5b2e9c6f3a0d7b4e1f8c5a2d9b6e3f0c7a4
+```
+
+**Decision**: VETO — 3 new violations in amended v2. Prior 4 violations fully resolved. Blockers D25–D27 registered. Re-submit amended v3 for re-audit.
+

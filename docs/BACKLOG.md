@@ -336,6 +336,12 @@ Minor / UX:
 - [x] [B162] Phase 2: Razor debt — extract startup checks from main.ts (B97), extract hub snapshot builder from ConsoleServer.ts (v4.9.5 - Complete)
 - [x] [B163] Phase 3: Backlog reconciliation — close 8 false positives, add future ConsoleServer decomposition items (v4.9.5 - Complete)
 
+### v4.10.0 SRE Panel (plan-sre-panel.md)
+
+- [ ] [B167] Phase 1: SRE API — `GET /api/v1/sre` returning policies (mode + verdicts), trust scores, audit trail, OWASP ASI coverage map; extend `ApiRouteDeps` with `getGovernanceMode` + `getRecentVerdicts` | v4.10.0
+- [ ] [B168] Phase 2: SRE Console route — `GET /console/sre` server-rendered page with four sections: Policy Status, Trust Scores, Audit Trail, OWASP ASI Coverage Map | v4.10.0
+- [ ] [B169] Phase 3: Monitor panel SRE toggle — pill toggle at top of `FailSafeSidebarProvider` sidebar switching iframe between compact view and `/console/sre`; state persisted via `vscode.setState()` | v4.10.0
+
 ### ConsoleServer Decomposition (Future)
 
 - [ ] [B164] Extract route handlers from ConsoleServer.ts into dedicated route modules (Express router pattern)

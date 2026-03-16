@@ -55,7 +55,8 @@ export class TransparencyPanel implements vscode.WebviewViewProvider {
     if (this.events.length > this.maxEvents) {
       this.events.pop();
     }
-    this.logger.log(event);
+    // Removed: this.logger.log(event) — ConsoleServer is the single writer
+    // to avoid dual-write race condition on transparency.jsonl
     this.refresh();
   }
 

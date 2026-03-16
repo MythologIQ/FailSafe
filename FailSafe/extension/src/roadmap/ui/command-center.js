@@ -9,26 +9,27 @@ import { SkillsRenderer } from './modules/skills.js';
 import { GovernanceRenderer } from './modules/governance.js';
 import { BrainstormRenderer } from './modules/brainstorm.js';
 import { SettingsRenderer } from './modules/settings.js';
-import { TabGroup } from './modules/tab-group.js';
-import { updateTickers, updateBootstrapBanner } from './modules/tickers.js';
+import { TimelineRenderer } from './modules/timeline.js';
+import { GenomeRenderer } from './modules/genome.js';
+import { ReplayRenderer } from './modules/replay.js';
+import { setWorkspaceRegistryClient, loadWorkspaceRegistry, initWorkspaceSelector } from './modules/workspace-registry.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   const client = new ConnectionClient();
   const store = new StateStore();
 
   const renderers = {
-    overview:   new OverviewRenderer('overview', {}),
-    agents:     new OperationsRenderer('agents', { client }),
-    governance: new TabGroup('governance', [
-      { key: 'audit',      label: 'Audit Log',  renderer: new TransparencyRenderer('governance') },
-      { key: 'risks',      label: 'Risks',      renderer: new RisksRenderer('governance', { client }) },
-      { key: 'compliance', label: 'Compliance',  renderer: new GovernanceRenderer('governance', { client }) },
-    ]),
-    workspace: new TabGroup('workspace', [
-      { key: 'skills',     label: 'Skills',     renderer: new SkillsRenderer('workspace', { client }) },
-      { key: 'brainstorm', label: 'Mindmap',    renderer: new BrainstormRenderer('workspace', { store, client }) },
-    ]),
-    settings:   new SettingsRenderer('settings', { store }),
+    overview:     new OverviewRenderer('overview', {}),
+    operations:   new OperationsRenderer('operations', { client }),
+    transparency: new TransparencyRenderer('transparency', {}),
+    risks:        new RisksRenderer('risks', { client }),
+    skills:       new SkillsRenderer('skills', { client }),
+    governance:   new GovernanceRenderer('governance', { client }),
+    brainstorm:   new BrainstormRenderer('brainstorm', { store, client }),
+    settings:     new SettingsRenderer('settings', { store }),
+    timeline:     new TimelineRenderer('timeline'),
+    genome:       new GenomeRenderer('genome'),
+    replay:       new ReplayRenderer('replay'),
   };
 
   // Connection status indicator + disconnection banner
@@ -62,10 +63,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Route events to relevant renderers
   client.on('event', (evt) => {
+    renderers.transparency.onEvent(evt);
     renderers.overview.onEvent?.(evt);
-    renderers.agents.onEvent?.(evt);
+    renderers.operations.onEvent?.(evt);
     renderers.governance.onEvent?.(evt);
-    renderers.workspace.onEvent?.(evt);
+    renderers.risks.onEvent?.(evt);
+    renderers.timeline.onEvent?.(evt);
+    renderers.genome.onEvent?.(evt);
+    renderers.replay.onEvent?.(evt);
+    if (evt.type?.startsWith('brainstorm.'))
+      renderers.brainstorm.onEvent(evt);
   });
 
   client.on('verdict', (v) => {
@@ -92,7 +99,6 @@ document.addEventListener('DOMContentLoaded', () => {
         contextHub.classList.add('hidden');
       } else {
         contextHub.classList.remove('hidden');
-        // Re-render panel content if shown
         contextHub.innerHTML = renderer.renderRightPanel();
         if (renderer.bindToolbar) renderer.bindToolbar();
       }
@@ -100,8 +106,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (panelToggle) {
       panelToggle.classList.toggle('collapsed', panelUserCollapsed);
-      panelToggle.innerHTML = panelUserCollapsed 
-        ? '<span class="btn-icon">◂</span> Show Sidebar' 
+      panelToggle.innerHTML = panelUserCollapsed
+        ? '<span class="btn-icon">◂</span> Show Sidebar'
         : '<span class="btn-icon">▸</span> Hide Sidebar';
       panelToggle.style.display = hasContext ? 'flex' : 'none';
     }
@@ -118,23 +124,20 @@ document.addEventListener('DOMContentLoaded', () => {
     tab.addEventListener('click', () => {
       tabs.forEach(t => t.classList.remove('active'));
       panels.forEach(p => p.classList.remove('active'));
-      
+
       tab.classList.add('active');
       const targetId = tab.dataset.target;
       const target = document.getElementById(targetId);
       if (target) target.classList.add('active');
 
-      // Brainstorm is a full-viewport canvas — no scrolling allowed
       const contentArea = document.querySelector('.content-area');
-      if (contentArea) contentArea.style.overflowY = targetId === 'workspace' ? 'hidden' : 'auto';
-      
-      // Update Right Panel (Intelligence/Action)
+      if (contentArea) contentArea.style.overflowY = targetId === 'brainstorm' ? 'hidden' : 'auto';
+
       updateUIForPanelState();
-      
-      // Initial render for tab activation
+
       const renderer = renderers[targetId];
       if (renderer) renderer.render?.(client.lastHubData || {});
-      
+
       store.setActiveTab(targetId);
     });
   });
@@ -159,61 +162,62 @@ document.addEventListener('DOMContentLoaded', () => {
   const saved = store.getTheme();
   if (saved) store.setTheme(saved);
 
-  // Wire workspace isolation client reference
-  if (window.__setWorkspaceRegistryClient) {
-    window.__setWorkspaceRegistryClient(client);
-  }
+  // Wire workspace isolation
+  setWorkspaceRegistryClient(client);
+  initWorkspaceSelector();
 
   client.start();
 });
 
-// --- Workspace Isolation: Registry loading and switching --- //
-
-let workspaceRegistryClient = null;
-
-function setWorkspaceRegistryClient(client) {
-  workspaceRegistryClient = client;
+function updateTickers(data) {
+  const proto = document.getElementById('ticker-protocol');
+  const sent = document.getElementById('ticker-sentinel');
+  const lat = document.getElementById('ticker-latency');
+  if (proto) proto.innerHTML = `PROTOCOL <span>${data.sentinelStatus?.mode || 'Unknown'}</span>`;
+  if (sent) {
+    const live = data.sentinelStatus?.running;
+    const c = live ? 'var(--accent-green)' : 'var(--accent-red)';
+    sent.innerHTML = `SENTINEL <span style="color:${c}">${live ? 'Active' : 'Halted'}</span>`;
+  }
+  if (lat) {
+    const latVal = data.qoreRuntime?.latencyMs;
+    const latLabel = latVal != null ? `${Math.round(latVal)}ms` : 'N/A';
+    const latColor = latVal != null ? '' : 'color:var(--text-muted)';
+    lat.innerHTML = `API <span style="font-family:var(--font-mono);${latColor}">${latLabel}</span>`;
+  }
+  const ws = document.querySelector('#ticker-workspace span');
+  const wsContainer = document.getElementById('ticker-workspace');
+  const workspaceName = data.workspaceName || data.bootstrapState?.workspaceName;
+  const workspacePath = data.workspacePath || '';
+  if (ws && workspaceName) ws.textContent = workspaceName;
+  if (wsContainer && workspacePath) wsContainer.title = workspacePath;
 }
 
-async function loadWorkspaceRegistry() {
-  const select = document.getElementById('workspace-select');
-  if (!select) return;
-
-  try {
-    const res = await fetch('/api/v1/workspaces');
-    if (!res.ok) return;
-    const { workspaces, current } = await res.json();
-
-    select.innerHTML = '';
-    for (const ws of workspaces) {
-      const opt = document.createElement('option');
-      opt.value = ws.port;
-      opt.textContent = ws.workspaceName;
-      opt.title = ws.workspacePath;
-      if (ws.workspacePath === current) opt.selected = true;
-      if (ws.status === 'disconnected') {
-        opt.textContent += ' (disconnected)';
-        opt.disabled = true;
-      }
-      select.appendChild(opt);
-    }
-  } catch {
-    // Registry unavailable
+function updateBootstrapBanner(data) {
+  const banner = document.getElementById('bootstrap-banner');
+  if (!banner) return;
+  const bs = data.bootstrapState;
+  if (!bs || (bs.skillsInstalled && bs.governanceInitialized)) {
+    banner.style.display = 'none';
+    return;
   }
+  banner.style.display = 'flex';
+  banner.style.cssText += 'flex-direction:column;gap:8px;padding:12px 16px;' +
+    'background:rgba(245,158,11,0.08);border:1px solid var(--accent-gold);border-radius:6px;margin:8px 16px 0';
+  let html = '<div style="font-size:0.85rem;font-weight:600;color:var(--accent-gold)">Get Started</div>';
+  if (!bs.skillsInstalled) {
+    html += '<div style="display:flex;align-items:center;gap:8px">' +
+      '<span style="color:var(--text-muted);font-size:0.78rem">Governance skills not installed.</span>' +
+      '<button onclick="fetch(\'/api/actions/scaffold-skills\',{method:\'POST\'}).then(()=>location.reload())"' +
+      ' class="cc-btn cc-btn--primary" style="font-size:0.75rem;padding:4px 10px">Install Skills</button>' +
+      '</div>';
+  }
+  if (!bs.governanceInitialized) {
+    html += '<div style="display:flex;align-items:center;gap:8px">' +
+      '<span style="color:var(--text-muted);font-size:0.78rem">Run <code style="padding:1px 5px;background:var(--bg-dark);border-radius:3px">/ql-bootstrap</code> in Claude Code to initialize.</span>' +
+      '<button onclick="navigator.clipboard.writeText(\'/ql-bootstrap\')"' +
+      ' class="cc-btn" style="font-size:0.75rem;padding:4px 10px">Copy</button>' +
+      '</div>';
+  }
+  banner.innerHTML = html;
 }
-
-// Wire workspace selector change handler
-document.addEventListener('DOMContentLoaded', () => {
-  const select = document.getElementById('workspace-select');
-  if (select) {
-    select.addEventListener('change', (e) => {
-      const port = parseInt(e.target.value, 10);
-      if (workspaceRegistryClient && port) {
-        workspaceRegistryClient.switchServer(port);
-      }
-    });
-  }
-});
-
-// Export for connection wiring
-window.__setWorkspaceRegistryClient = setWorkspaceRegistryClient;

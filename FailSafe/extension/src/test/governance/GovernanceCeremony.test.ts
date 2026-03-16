@@ -15,8 +15,8 @@ function makeSystem(id: string, name: string): QoreLogicSystem {
       id,
       name,
       description: `${name} governance`,
-      sourceDir: `qorelogic/${id}`,
-      targetDir: `.${id}`,
+      sourceDir: undefined,
+      targetDir: null,
     }),
   };
 }

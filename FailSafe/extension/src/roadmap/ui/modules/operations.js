@@ -15,7 +15,7 @@ export class OperationsRenderer {
       this.roadmap = await this.client.fetchRoadmap();
     }
     const run = hubData.runState || {};
-    const checks = Object.values(hubData.checkpoints || {});
+    const checks = Object.values(hubData.recentCheckpoints || {});
     const sentinel = hubData.sentinelStatus || {};
 
     this.container.innerHTML = `
@@ -138,7 +138,7 @@ export class OperationsRenderer {
       });
     });
     this.container.querySelector('.cc-rollback-btn')?.addEventListener('click', async (e) => {
-      const checkpoints = this.hubData?.checkpoints;
+      const checkpoints = this.hubData?.recentCheckpoints;
       const latest = Array.isArray(checkpoints) ? checkpoints[0] : null;
       const id = latest?.id || prompt('Enter checkpoint ID to rollback to:');
       if (!id) return;

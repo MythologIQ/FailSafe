@@ -18,6 +18,7 @@ const AGENT_CONFIG_MAP: Record<string, InjectionConfig> = {
   cursor: { configPath: '.cursor/rules/failsafe.mdc', format: 'mdc' },
   codex: { configPath: 'codex.md', format: 'markdown' },
   windsurf: { configPath: '.windsurfrules', format: 'markdown' },
+  gemini: { configPath: 'GEMINI.md', format: 'markdown' },
 };
 
 export class AgentConfigInjector {

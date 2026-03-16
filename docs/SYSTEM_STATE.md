@@ -1,69 +1,131 @@
 # SYSTEM STATE
 
 **Last Updated:** 2026-03-14
-**Version:** v4.9.3 CC Consolidation, Audit Log Fix, Skills Propagation SUBSTANTIATED
+**Version:** v4.9.3 Command Center Production Readiness SUBSTANTIATED
 
-## CC Consolidation, Audit Log Fix, Skills Propagation v4.9.3 (B158-B160) — Implementation State
+## Command Center Production Readiness (v4.9.3) — B154-B157
 
 ### Ledger Trail
 
 | Entry | Phase | Verdict |
 |-------|-------|---------|
-| #224 | GATE | VETO (L2, 4 violations: hallucinated renderers, wrong tab count) |
-| #225 | GATE | PASS (L2, all 4 violations remediated in plan v2) |
-| #226 | IMPLEMENT | 2 new files, 9 modified, 3 phases |
-| #227 | SUBSTANTIATE | Session sealed |
+| #233 | GATE | VETO (9 violations: path traversal, wrong method names, Razor) |
+| #234 | GATE (RE-AUDIT) | PASS (L2, all 9 remediated, 4 binding notes S1-S3/G1) |
+| #235 | IMPLEMENT | 19 files (5 new, 12 modified, 2 governance) |
+| #236 | SUBSTANTIATE | Session sealed |
 
 ### New Files
 
 | File | Lines | Purpose |
 |------|-------|---------|
-| `src/roadmap/ui/modules/tab-group.js` | 54 | Sub-view pill switcher for tab consolidation (B159) |
-| `src/roadmap/ui/modules/tickers.js` | 51 | Extracted ticker utilities from command-center.js (B159) |
+| `src/roadmap/routes/AgentApiRoute.ts` | 68 | Extracted route module: 6 agent API endpoints with UUID validation |
+| `src/roadmap/ui/modules/timeline.js` | 109 | TimelineRenderer with category/severity filters |
+| `src/roadmap/ui/modules/genome.js` | 91 | GenomeRenderer with failure pattern cards and unresolved table |
+| `src/roadmap/ui/modules/replay.js` | 188 | ReplayRenderer with run list, step timeline, GovernanceDecision cards |
+| `src/roadmap/ui/modules/workspace-registry.js` | 47 | Extracted workspace registry functions (binding note G1) |
 
 ### Modified Files
 
-| File | Change |
-|------|--------|
-| `transparency.js` | +fetchHistory() loads historical events via /api/transparency on render (B158) |
-| `connection.js` | Fixed event type: `data.payload?.type \|\| data.type` instead of `data.type` (B158) |
-| `command-center.js` | 8→5 tabs, TabGroup composition, simplified event routing, 273→218 lines (B158/B159) |
-| `command-center.html` | 8 tab buttons/panels → 5 (B159) |
-| `command-center.css` | Added .cc-pill styles for TabGroup sub-view switcher (B159) |
-| `ModelAdapterConfigs.ts` | Added windsurf + kilocode adapter configs, widened modelId union (B160) |
-| `ModelAdapter.ts` | Extended flat-file condition for windsurf/kilocode (B160) |
-| `SkillRegistry.ts` | Wired adaptSkillsForModel into autoIngest propagation loop (B160) |
-| `BACKLOG.md` | Marked B158-B160 complete |
+| File | Lines | Change |
+|------|-------|--------|
+| `src/roadmap/ConsoleServer.ts` | 1440 | +3 setters, +9 apiDeps delegates, +3 hub fields, transparency routing, run lifecycle events |
+| `src/roadmap/routes/types.ts` | +10 | Extended ApiRouteDeps with 9 sentinel service accessors |
+| `src/extension/main.ts` | +5 | Wire 3 services to ConsoleServer |
+| `src/sentinel/AgentHealthIndicator.ts` | -1 | Make buildMetrics() public |
+| `src/sentinel/AgentRunRecorder.ts` | +4 | UUID validation in loadRun() (S3) |
+| `src/genesis/panels/TransparencyPanel.ts` | -1 | Remove dual-write (single writer: ConsoleServer) |
+| `src/shared/types/events.ts` | +1 | Add transparency.prompt event type |
+| `src/roadmap/ui/command-center.html` | +15 | Add Timeline, Genome, Replay tabs and panels |
+| `src/roadmap/ui/command-center.js` | 223 | Import new renderers, extract workspace-registry, wire events |
+| `src/roadmap/ui/modules/overview.js` | 198 | Fix checkpoints→recentCheckpoints, add Agent Health card |
+| `src/roadmap/ui/modules/operations.js` | 180 | Fix checkpoints→recentCheckpoints |
+| `src/roadmap/ui/roadmap.js` | 632 | Remove dead code (-176 lines: Qore runtime, transparency, risks) |
 
-### Features Delivered
+### Binding Notes Addressed
 
-1. **B158 Audit Log Fix** — 3 bugs resolved:
-   - TransparencyRenderer fetches historical events via REST on render
-   - WebSocket event wrapper passes actual event type from payload
-   - Verdict events routed through Governance TabGroup to TransparencyRenderer
-
-2. **B159 Tab Consolidation 8→5** — UI reorganization:
-   - TabGroup component: pill-based sub-view switching, delegates render/onEvent to children
-   - Governance tab: Audit Log + Risks + Compliance sub-views
-   - Workspace tab: Skills + Mindmap sub-views
-   - Ticker extraction brings command-center.js under 250-line Razor (273→218)
-
-3. **B160 Skills Propagation** — Dead code activation:
-   - adaptSkillsForModel() wired into autoIngest() propagation loop
-   - Windsurf (.windsurf/rules/) and Kilocode (.kilocode/workflows/) adapter configs added
-   - Propagation skips config spaces whose parent directory doesn't exist
+| ID | Category | Resolution |
+|----|----------|------------|
+| S1 | Security | `event.payload` access with `as Record<string, unknown>` pattern |
+| S2 | Security | Explicit field allowlisting for L3 transparency events |
+| S3 | Security | UUID validation in `AgentRunRecorder.loadRun()` |
+| G1 | Ghost UI | `workspace-registry.js` loaded via ES module import |
 
 ### Section 4 Razor Status
 
-| File | Lines | Status |
+| File | Lines | Limit | Status |
+|------|-------|-------|--------|
+| AgentApiRoute.ts | 68 | 250 | PASS |
+| timeline.js | 109 | 250 | PASS |
+| genome.js | 91 | 250 | PASS |
+| replay.js | 188 | 250 | PASS |
+| workspace-registry.js | 47 | 250 | PASS |
+| command-center.js | 223 | 250 | PASS |
+| overview.js | 198 | 250 | PASS |
+| operations.js | 180 | 250 | PASS |
+| ConsoleServer.ts | 1440 | 250 | WARN (pre-existing debt, +76L) |
+
+### Console.log Artifacts
+
+None in new/modified files.
+
+### Blockers
+
+- No open security blockers
+- B154-B157 marked complete in BACKLOG.md
+- D16-D20 (audit violations) marked complete
+
+---
+
+## Fix Governance Propagation Pipeline (v4.9.3) — Implementation State
+
+### Ledger Trail
+
+| Entry | Phase | Verdict |
+|-------|-------|---------|
+| #227 | GATE | VETO (missing description field) |
+| #228 | GATE (RE-AUDIT) | PASS (L2, 7 audit passes, V1 remediated) |
+| #229 | IMPLEMENT | 12 files (2 new, 8 modified, 1 deleted, 1 README edit) |
+| #230 | SUBSTANTIATE | Session sealed |
+
+### New Files
+
+| File | Lines | Purpose |
+|------|-------|---------|
+| `src/qorelogic/AgentDefinitions.ts` | 78 | 6 built-in agent manifests (claude, copilot, cursor, codex, windsurf, gemini) |
+| `src/test/qorelogic/AgentDefinitions.test.ts` | 54 | 6 tests for agent definitions |
+
+### Modified Files
+
+| File | Lines | Change |
 |------|-------|--------|
-| tab-group.js | 54 | PASS |
-| tickers.js | 51 | PASS |
-| transparency.js | 239 | PASS |
-| command-center.js | 218 | PASS (was 273) |
-| ModelAdapterConfigs.ts | 110 | PASS |
-| ModelAdapter.ts | 149 | PASS |
-| SkillRegistry.ts | 228 | PASS |
+| `src/qorelogic/types/QoreLogicSystem.ts` | 530 | `sourceDir` made optional (`sourceDir?: string`) |
+| `src/qorelogic/SystemRegistry.ts` | 193 | `loadManifests()` replaced with `loadBuiltInSystems()`, imports `BUILT_IN_AGENTS` |
+| `src/qorelogic/AgentConfigInjector.ts` | 108 | `gemini` added to `AGENT_CONFIG_MAP` |
+| `src/qorelogic/FrameworkSync.ts` | 228 | `sourceDir` guard added in `syncSystem()` |
+| `src/test/qorelogic/SystemRegistry.test.ts` | 92 | Rewritten for built-in agents (7 tests) |
+| `src/test/qorelogic/AgentConfigInjector.test.ts` | 92 | `sourceDir: undefined` in mocks |
+| `src/test/governance/GovernanceCeremony.test.ts` | 260 | `sourceDir: undefined`, `targetDir: null` in mocks |
+| `src/test/roadmap/AgentCoverageRoute.test.ts` | 116 | `sourceDir: undefined` in mocks |
+
+### Deleted
+
+| Path | Reason |
+|------|--------|
+| `FailSafe/_STAGING_OLD/` | Dead code; agent definitions moved in-code |
+
+### Section 4 Razor Status
+
+| File | Lines | Limit | Status |
+|------|-------|-------|--------|
+| AgentDefinitions.ts | 78 | 250 | PASS |
+| SystemRegistry.ts | 193 | 250 | PASS |
+| FrameworkSync.ts | 228 | 250 | PASS |
+| AgentConfigInjector.ts | 108 | 250 | PASS |
+| GovernanceCeremony.test.ts | 260 | 250 | WARN (pre-existing, +2L only) |
+
+### Test Results
+
+- 616 tests passing, 0 failures
 
 ---
 

@@ -217,8 +217,7 @@ test('US: Command Center branding and skills tabs default behavior', async ({ pa
     await expect(page).toHaveTitle(/FAILSAFE Console/);
     await expect(page.locator('.app-name')).toHaveText('FAILSAFE');
 
-    await page.locator('.tab-btn[data-target="workspace"]').click();
-    await page.locator('.cc-pill[data-key="skills"]').click();
+    await page.locator('.tab-btn[data-target="skills"]').click();
     await expect(page.locator('.cc-skill-tab[data-tab="Recommended"]')).toHaveClass(/active/);
     await expect(page.locator('.cc-intent-input')).toBeVisible();
 
@@ -265,10 +264,10 @@ test('US: operations view shows roadmap phases and active context', async ({ pag
 
   await withUiServer(async (baseUrl) => {
     await page.goto(`${baseUrl}/command-center.html`);
-    await page.locator('.tab-btn[data-target="agents"]').click();
-    await expect(page.locator('#agents')).toHaveClass(/active/);
-    await expect(page.locator('#agents')).toContainText('Phases');
-    await expect(page.locator('#agents')).toContainText('Implement');
+    await page.locator('.tab-btn[data-target="operations"]').click();
+    await expect(page.locator('#operations')).toHaveClass(/active/);
+    await expect(page.locator('#operations')).toContainText('Phases');
+    await expect(page.locator('#operations')).toContainText('Implement');
   }, { hub });
 });
 
@@ -276,7 +275,7 @@ test('US: operations actions post to API endpoints', async ({ page }) => {
   const called: string[] = [];
   await withUiServer(async (baseUrl) => {
     await page.goto(`${baseUrl}/command-center.html`);
-    await page.locator('.tab-btn[data-target="agents"]').click();
+    await page.locator('.tab-btn[data-target="operations"]').click();
 
     await Promise.all([
       page.waitForResponse(r => r.url().includes('/api/actions/resume-monitoring')),

@@ -97,7 +97,7 @@ export class AgentHealthIndicator implements vscode.Disposable {
     this.cachedAgentData = { avgTrust, quarantinedCount };
   }
 
-  private buildMetrics(): HealthMetrics {
+  public buildMetrics(): HealthMetrics {
     const risk = this.riskManager.getSummary();
     const status = this.sentinelDaemon.getStatus();
     const metrics: HealthMetrics = {

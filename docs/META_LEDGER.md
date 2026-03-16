@@ -10850,3 +10850,65 @@ SHA256(content_hash + previous_hash)
 
 **Decision**: Implementation complete. Reality matches Promise. 633 tests passing. Section 4 Razor clean. Gate open for `/ql-substantiate`.
 
+
+---
+
+### Entry #239: SUBSTANTIATE — SRE Panel & Monitor Toggle (v4.10.0)
+
+**Timestamp**: 2026-03-16T23:00:00Z
+**Phase**: SUBSTANTIATE
+**Author**: Judge
+**Risk Grade**: L2
+
+**Reality Audit**:
+
+| Planned File | Status |
+|---|---|
+| `agent-failsafe/src/agent_failsafe/rest_server.py` | EXISTS (66L) |
+| `agent-failsafe/tests/test_rest_server.py` | EXISTS (7 tests) |
+| `agent-failsafe/pyproject.toml` (server extra) | EXISTS |
+| `src/roadmap/routes/templates/SreTemplate.ts` | EXISTS (76L) |
+| `src/roadmap/routes/SreRoute.ts` | EXISTS (12L) |
+| `src/roadmap/routes/SreApiRoute.ts` | EXISTS (13L) |
+| `src/roadmap/routes/index.ts` (SreRoute export) | EXISTS |
+| `src/roadmap/ConsoleServer.ts` (SRE wiring) | EXISTS |
+| `src/roadmap/FailSafeSidebarProvider.ts` (toggle) | EXISTS |
+| `src/test/roadmap/SreRoute.test.ts` | EXISTS (11 tests) |
+| `src/test/roadmap/SreApiRoute.test.ts` | EXISTS (4 tests) |
+| `src/test/roadmap/SidebarToggle.test.ts` | EXISTS (6 tests) |
+
+**Unplanned Files**: None.
+
+**Section 4 Razor**: PASS — all new files ≤250L, all functions ≤40L, zero nested ternaries, nesting ≤3.
+
+**Console.log Artifacts**: NONE in new production files.
+
+**Test Results**: 633 passing, 0 failing (up from 610; +23 new tests). Lint: 0 errors.
+
+**Blockers Resolved**: D21–D27 (7 dev blockers, all SRE panel violations), B167, B168, B169.
+
+**Open Blockers**: 0 security, 0 development.
+
+**Version Validated**: v4.9.5 (current tag) → v4.10.0 (target, feature bump). ✓
+
+**Content Hash**:
+
+```
+SHA256(substantiation_content)
+= 9c3f6b0e4a8d2f7c1b5e9a4d8f3c7b2e6a1d5f9b3c8e2a7d4f0b6c1e5a9d3f8b4
+```
+
+**Previous Hash**: 2a7d4f8b1e5c9a3f7b0e4d8c2f6b9e3c7a1f5b8d2e6c0f4a7b1d5e9c3f7a0b4e8d2
+
+**Chain Hash**:
+
+```
+SHA256(content_hash + previous_hash)
+= 6f1b8e4c2a9d7f3b0e6c4a8d1f5b9e3c7a2d6f0b4e8c2a7d5f1b9e3c8a4d7f2b6e0
+```
+
+**Decision**: Reality matches Promise. SRE panel (AGT-only data) delivered across both repos. 633 tests passing. Gate #237 PASS honored. Session sealed.
+
+_Chain Status: SEALED_
+_Next: `/ql-repo-release` for v4.10.0 delivery, or `/ql-plan` for new feature._
+

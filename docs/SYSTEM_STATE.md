@@ -1,7 +1,81 @@
 # SYSTEM STATE
 
 **Last Updated:** 2026-03-16
-**Version:** v4.9.5 Pre-v5.0 Quality Sweep SUBSTANTIATED
+**Version:** v4.10.0 SRE Panel & Monitor Toggle SUBSTANTIATED
+
+---
+
+## SRE Panel & Monitor Toggle (v4.10.0 / agent-failsafe v0.5.0) — B167-B169
+
+### Ledger Trail
+
+| Entry | Phase | Verdict |
+|-------|-------|---------|
+| #235 | GATE | VETO (L2 — 4 violations: Razor, dup const, ghost method, double acquireVsCodeApi) |
+| #236 | GATE | VETO (L2 — 3 violations: nested ternary, cross-route import, state clobber) |
+| #237 | GATE | PASS (L2 — zero violations, all prior resolved) |
+| #238 | IMPLEMENT | 8 new files, 5 modified, 633 tests passing |
+| #239 | SUBSTANTIATE | Session sealed |
+
+### New Files (FailSafe extension)
+
+| File | Lines | Purpose |
+|------|-------|---------|
+| `src/roadmap/routes/templates/SreTemplate.ts` | 76 | Types + `fetchAgtSnapshot` + `buildSreHtml` pipeline |
+| `src/roadmap/routes/SreRoute.ts` | 12 | `SreRoute.render()` — deps-injected, 3-line body |
+| `src/roadmap/routes/SreApiRoute.ts` | 13 | `setupSreApiRoutes()` — transparent proxy with `rejectIfRemote` |
+| `src/test/roadmap/SreRoute.test.ts` | ~80 | 11 unit tests for template + fetchAgtSnapshot |
+| `src/test/roadmap/SreApiRoute.test.ts` | ~60 | 4 unit tests for API route |
+| `src/test/roadmap/SidebarToggle.test.ts` | ~50 | 6 unit tests for sidebar toggle HTML/JS |
+
+### New Files (agent-failsafe)
+
+| File | Lines | Purpose |
+|------|-------|---------|
+| `src/agent_failsafe/rest_server.py` | 66 | `create_sre_app()` factory + `GET /sre/snapshot` + `_ASI_COVERAGE` |
+| `tests/test_rest_server.py` | ~90 | 7 unit tests for REST bridge |
+
+### Modified Files
+
+| File | Change |
+|------|--------|
+| `src/roadmap/routes/index.ts` | Exported `SreRoute` |
+| `src/roadmap/ConsoleServer.ts` | Wired `GET /console/sre` + `GET /api/v1/sre`; imported `SreRoute`, `setupSreApiRoutes`, `fetchAgtSnapshot` |
+| `src/roadmap/FailSafeSidebarProvider.ts` | Toggle CSS, `#btn-monitor`/`#btn-sre` pill, `id="main-frame"`, `switchView()` JS, state spread on both writers |
+| `agent-failsafe/pyproject.toml` | Added `server = ["fastapi>=0.100.0", "uvicorn>=0.20.0"]` optional extra |
+
+### Features Delivered
+
+1. **agent-failsafe REST bridge (Phase 1)**: `create_sre_app(policy_provider, sli)` factory exposes `GET /sre/snapshot` returning policies, trust scores (v1: []), SLI dict, and OWASP ASI draft coverage (ASI-01–ASI-06). Lazy FastAPI import — `server` extra only. Runnable: `python -m agent_failsafe.rest_server`.
+
+2. **SRE HTML console route (Phase 2)**: `GET /console/sre` renders AGT adapter snapshot — Active Policies table, Compliance SLI gauge, OWASP ASI Coverage table. Disconnected state shows install instructions. All string fields `escapeHtml()`-protected. `SreTemplate.ts` is the single owner of all SRE types and template logic.
+
+3. **SRE API proxy (Phase 3)**: `GET /api/v1/sre` is a transparent JSON proxy to `http://127.0.0.1:9377/sre/snapshot` with `rejectIfRemote` guard. No new `ApiRouteDeps` fields required.
+
+4. **Monitor SRE toggle (Phase 4)**: `#btn-monitor`/`#btn-sre` pill toggle in `FailSafeSidebarProvider` sidebar switches `#main-frame` iframe between compact Monitor and `/console/sre`. State persisted via `vscode.setState()` — spread-safe on all writers including existing `initBtn` handler.
+
+### AGT Isolation Design
+
+All SRE panel data flows exclusively from `agent-failsafe` REST bridge — no FailSafe internal verdicts, health metrics, or transparency events. Panel is extractable as a standalone VS Code AGT extension component.
+
+### Section 4 Razor Status
+
+| File | Lines | Status |
+|------|-------|--------|
+| `SreTemplate.ts` | 76 | PASS |
+| `SreRoute.ts` | 12 | PASS |
+| `SreApiRoute.ts` | 13 | PASS |
+| `FailSafeSidebarProvider.ts` | 180 | PASS |
+| `rest_server.py` | 66 | PASS |
+
+### Test Results
+
+- **Before**: 610 unit tests passing
+- **After**: 633 unit tests passing (+23)
+- **New suites**: SreTemplate (11), SreApiRoute (4), SidebarToggle (6), test_rest_server.py (7 Python)
+- **Regressions**: 0
+
+---
 
 ## Pre-v5.0 Quality Sweep v4.9.5 (B113-B128, B95-B99, B161-B163) — Implementation State
 

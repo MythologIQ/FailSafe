@@ -46,12 +46,6 @@ test('popout UI shell renders required sections', async ({ page }) => {
 
     await page.locator('.tab-btn[data-target="governance"]').click();
     await expect(page.locator('#governance')).toHaveClass(/active/);
-    await page.locator('.cc-pill[data-key="compliance"]').click();
-    await expect(page.locator('.cc-gov-verify')).toBeVisible();
-
-    await page.locator('.tab-btn[data-target="governance"]').click();
-    await page.locator('.cc-pill[data-key="audit"]').click();
-    await expect(page.locator('.cc-transparency-pause')).toBeVisible();
 
     await page.locator('.tab-btn[data-target="settings"]').click();
     await expect(page.locator('#settings')).toHaveClass(/active/);

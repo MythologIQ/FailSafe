@@ -4,11 +4,11 @@ Prevent runaway AI edits, hallucinated dependencies, and destructive refactors b
 
 FailSafe runs locally inside VS Code and Cursor. It monitors what AI agents do, applies deterministic policy checks at the editor boundary, and gives you full visibility into every decision — before code ships.
 
-**Current Release**: v5.0.0 (2026-03-16)
+**Current Release**: v4.9.6 (2026-03-16)
 
 ![FailSafe Banner](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/extension/FailSafe%20Banner.png)
 
-## What's New in v5.0.0
+## What's New in v4.9.6
 
 SRE panel powered by the `agent-failsafe` adapter — active policies, trust scores, OWASP ASI coverage, and SLI compliance indicator directly in VS Code.
 

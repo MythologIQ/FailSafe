@@ -10,9 +10,9 @@
 
 <!-- Format: - [ ] [D#] Description | Version -->
 
-- [ ] [D25] V1: Razor — nested ternary in `buildSreConnectedHtml()` `sliStatus` assignment; replace with `if/else if/else` (from re-audit 2026-03-16)
-- [ ] [D26] V2: Architecture — `SreApiRoute.ts` imports `fetchAgtSnapshot` from `SreRoute.ts` (route handler); must import from `./templates/SreTemplate` directly (from re-audit 2026-03-16)
-- [ ] [D27] V3: Ghost Path — `FailSafeSidebarProvider.ts:131` `vscode.setState({ initDone: true })` clobbers `sreMode`; must spread state (from re-audit 2026-03-16)
+- [x] [D25] V1: Razor — nested ternary in `buildSreConnectedHtml()` `sliStatus` assignment; replace with `if/else if/else` (from re-audit 2026-03-16) — RESOLVED v4.10.0
+- [x] [D26] V2: Architecture — `SreApiRoute.ts` imports `fetchAgtSnapshot` from `SreRoute.ts` (route handler); must import from `./templates/SreTemplate` directly (from re-audit 2026-03-16) — RESOLVED v4.10.0
+- [x] [D27] V3: Ghost Path — `FailSafeSidebarProvider.ts:131` `vscode.setState({ initDone: true })` clobbers `sreMode`; must spread state (from re-audit 2026-03-16) — RESOLVED v4.10.0
 
 - [x] [D21] V1: Razor — `SreRoute.render()` ~53 lines exceeds 40-line limit; extract `buildSreHtml(model: SreViewModel)` template function (from audit 2026-03-16) — RESOLVED in amended v2
 - [x] [D22] V2: Architecture — `ASI_COVERAGE` const duplicated in `SreApiRoute.ts` + `SreRoute.ts`; extract to `src/roadmap/services/SreAsiCoverage.ts` (from audit 2026-03-16) — RESOLVED: migrated to Python adapter
@@ -347,9 +347,9 @@ Minor / UX:
 
 ### v4.10.0 SRE Panel (plan-sre-panel.md)
 
-- [ ] [B167] Phase 1: SRE API — `GET /api/v1/sre` returning policies (mode + verdicts), trust scores, audit trail, OWASP ASI coverage map; extend `ApiRouteDeps` with `getGovernanceMode` + `getRecentVerdicts` | v4.10.0
-- [ ] [B168] Phase 2: SRE Console route — `GET /console/sre` server-rendered page with four sections: Policy Status, Trust Scores, Audit Trail, OWASP ASI Coverage Map | v4.10.0
-- [ ] [B169] Phase 3: Monitor panel SRE toggle — pill toggle at top of `FailSafeSidebarProvider` sidebar switching iframe between compact view and `/console/sre`; state persisted via `vscode.setState()` | v4.10.0
+- [x] [B167] Phase 1: SRE API — `GET /api/v1/sre` transparent proxy to agent-failsafe REST bridge (v4.10.0 - Complete)
+- [x] [B168] Phase 2: SRE Console route — `GET /console/sre` server-rendered AGT adapter data; `SreTemplate.ts` + `SreRoute.ts` (v4.10.0 - Complete)
+- [x] [B169] Phase 3: Monitor panel SRE toggle — pill toggle switching iframe between Monitor and SRE; state spread-preserved (v4.10.0 - Complete)
 
 ### ConsoleServer Decomposition (Future)
 

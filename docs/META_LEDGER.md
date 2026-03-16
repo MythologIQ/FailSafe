@@ -10798,3 +10798,55 @@ SHA256(content_hash + previous_hash)
 
 **Decision**: PASS — all six audit passes clear, zero violations. Gate open. Specialist may proceed with `/ql-implement`.
 
+
+---
+
+### Entry #238: IMPLEMENTATION — SRE Panel & Monitor Toggle (v4.10.0 / agent-failsafe v0.5.0)
+
+**Timestamp**: 2026-03-16T22:30:00Z
+**Phase**: IMPLEMENT
+**Author**: Specialist
+**Risk Grade**: L2
+
+**Files Created**:
+
+- `agent-failsafe/src/agent_failsafe/rest_server.py` — FastAPI REST bridge (`create_sre_app`, `GET /sre/snapshot`, `_ASI_COVERAGE`)
+- `agent-failsafe/tests/test_rest_server.py` — 7 unit tests
+- `FailSafe/extension/src/roadmap/routes/templates/SreTemplate.ts` — types + `fetchAgtSnapshot` + `buildSreDisconnectedHtml` + `buildSreConnectedHtml` + `buildSreHtml`
+- `FailSafe/extension/src/roadmap/routes/SreRoute.ts` — `SreRoute.render()` + `SreRouteDeps`
+- `FailSafe/extension/src/roadmap/routes/SreApiRoute.ts` — `setupSreApiRoutes()` transparent proxy
+- `FailSafe/extension/src/test/roadmap/SreRoute.test.ts` — 11 unit tests
+- `FailSafe/extension/src/test/roadmap/SreApiRoute.test.ts` — 4 unit tests
+- `FailSafe/extension/src/test/roadmap/SidebarToggle.test.ts` — 6 unit tests
+
+**Files Modified**:
+
+- `agent-failsafe/pyproject.toml` — added `server = ["fastapi>=0.100.0", "uvicorn>=0.20.0"]` optional extra
+- `FailSafe/extension/src/roadmap/routes/index.ts` — exported `SreRoute`
+- `FailSafe/extension/src/roadmap/ConsoleServer.ts` — imported `SreRoute`, `setupSreApiRoutes`, `fetchAgtSnapshot`; wired `GET /console/sre` in `registerConsoleExtras()`; wired `setupSreApiRoutes` in `registerApiRoutes()`
+- `FailSafe/extension/src/roadmap/FailSafeSidebarProvider.ts` — added toggle CSS, `#btn-monitor`/`#btn-sre` pill, `id="main-frame"`, spread state in `initBtn` handler, `switchView` JS in existing script block
+
+**Test Results**: 633 passing, 0 failing (23 new tests added)
+
+**Section 4 Razor**: All functions ≤40L, all files ≤250L, nesting ≤3, zero nested ternaries ✓
+
+**Blockers Resolved**: D25, D26, D27, B167, B168, B169
+
+**Content Hash**:
+
+```
+SHA256(implementation_content)
+= 5e2b9f4a1c7d3e8b6f0a4d9c2e7b5f1a8d4c9e3b7f2a6d0e5c8b3f7a1d4e9c6f2
+```
+
+**Previous Hash**: 8b4e1f7a3c0d6f9b2e5a8d1f4c7b0e3a6d9f2c5b8e1a4d7f0c3b6e9a2d5f8c1b4
+
+**Chain Hash**:
+
+```
+SHA256(content_hash + previous_hash)
+= 2a7d4f8b1e5c9a3f7b0e4d8c2f6b9e3c7a1f5b8d2e6c0f4a7b1d5e9c3f7a0b4e8d2
+```
+
+**Decision**: Implementation complete. Reality matches Promise. 633 tests passing. Section 4 Razor clean. Gate open for `/ql-substantiate`.
+

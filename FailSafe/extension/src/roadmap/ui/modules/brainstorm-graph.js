@@ -128,6 +128,7 @@ export class BrainstormGraph {
   }
 
   async submitTranscript(transcript) {
+    if (!transcript?.trim()) return { error: 'Empty transcript' };
     try {
       const res = await fetch('/api/v1/brainstorm/transcript', {
         method: 'POST',

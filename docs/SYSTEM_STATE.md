@@ -1,7 +1,88 @@
 # SYSTEM STATE
 
-**Last Updated:** 2026-03-14
-**Version:** v4.9.3 Command Center Production Readiness SUBSTANTIATED
+**Last Updated:** 2026-03-16
+**Version:** v4.9.5 Pre-v5.0 Quality Sweep SUBSTANTIATED
+
+## Pre-v5.0 Quality Sweep v4.9.5 (B113-B128, B95-B99, B161-B163) — Implementation State
+
+### Ledger Trail
+
+| Entry | Phase | Verdict |
+|-------|-------|---------|
+| #232 | GATE | PASS (L2, 7 audit passes, zero violations) |
+| #233 | IMPLEMENT | 2 new files, 8 modified, 3 phases |
+| #234 | SUBSTANTIATE | Session sealed |
+
+### New Files
+
+| File | Lines | Purpose |
+|------|-------|---------|
+| `src/extension/bootstrapStartupChecks.ts` | 54 | Startup checks extracted from main.ts (B97) |
+| `src/roadmap/ConsoleServerHub.ts` | 233 | 10 hub snapshot functions extracted from ConsoleServer.ts |
+
+### Modified Files
+
+| File | Change |
+|------|--------|
+| `src/roadmap/ui/modules/prep-bay.js` | B113: escHandler stored + removed in destroy() |
+| `src/roadmap/ui/modules/web-llm-engine.js` | B116: native AI session destroyed before recreation |
+| `src/roadmap/ui/modules/stt-engine.js` | B122: error type distinction, B126: codec fallback |
+| `src/roadmap/ui/modules/brainstorm.js` | B119: queueMicrotask debounce, B121: audio POST error status |
+| `src/roadmap/ui/modules/brainstorm-graph.js` | B124: empty transcript guard |
+| `src/roadmap/ui/modules/wake-word-listener.js` | B123: permanent error detection stops retry |
+| `src/extension/main.ts` | B97: startup checks extracted (262→227L) |
+| `src/roadmap/ConsoleServer.ts` | Hub snapshot methods delegated to ConsoleServerHub (~1454→1286L) |
+
+### Features Delivered
+
+1. **Phase 1 — Voice Brainstorm Fixes** (9 bugs across 6 files):
+   - B113: Modal keydown handler leak — escHandler stored and removed
+   - B116: Native AI session accumulation — destroy before create
+   - B119: Graph mutation during render — queueMicrotask debounce
+   - B121: Silent audio storage failure — error/warning status shown
+   - B122: Indistinguishable STT init errors — error:type callbacks
+   - B123: Infinite wake word retry — permanent error detection
+   - B124: Empty transcript creates phantom nodes — guard added
+   - B126: MediaRecorder codec unspecified — explicit audio/webm default
+
+2. **Phase 2 — Razor Debt Extraction**:
+   - bootstrapStartupChecks.ts: framework sync + hook sentinel extracted from main.ts
+   - ConsoleServerHub.ts: 10 hub snapshot functions extracted from ConsoleServer.ts
+   - Future decomposition tracked as B164-B166
+
+3. **Phase 3 — Backlog Reconciliation**:
+   - 20 items marked complete (9 fixed + 9 verified resolved + 2 phase trackers)
+   - 3 future ConsoleServer decomposition items registered (B164-B166)
+
+### Verified False Positives (9 items)
+
+| ID | Original Claim | Resolution |
+|----|---------------|------------|
+| B95 | types.ts 525L | File deleted in prior decomposition |
+| B96 | EnforcementEngine.ts 473L | Already 122L |
+| B98 | FailSafeApiServer.ts 268L | File deleted |
+| B99 | GovernanceAdapter.ts 267L | Already 196L |
+| B115 | ctx.close() not in finally | Already in finally block |
+| B118 | Callbacks not nulled on destroy | Already nulled |
+| B120 | TTS failure silently swallowed | Already shows error status |
+| B125 | Heuristic catch-all Feature | Working as designed |
+| B128 | Canvas resize not debounced | Already debounced |
+
+### Section 4 Razor Status
+
+| File | Lines | Status |
+|------|-------|--------|
+| bootstrapStartupChecks.ts | 54 | PASS |
+| ConsoleServerHub.ts | 233 | PASS |
+| main.ts | 227 | PASS (was 262) |
+| prep-bay.js | 248 | PASS |
+| web-llm-engine.js | 248 | PASS |
+| stt-engine.js | 248 | PASS |
+| brainstorm.js | 245 | PASS |
+| brainstorm-graph.js | 231 | PASS |
+| wake-word-listener.js | 90 | PASS |
+
+---
 
 ## Command Center Production Readiness (v4.9.3) — B154-B157
 

@@ -10,7 +10,7 @@
 
 - **Files reorganized**: 21
 - **Directories created**: 2
-- **Directories protected**: 7
+- **Directories protected**: 5
 - **Files to `.failsafe/governance/plans/`**: 2 (new plans moved)
 - **Files to `.failsafe/governance/`**: 1 (status doc)
 - **Files to `.failsafe/archive/completion-markers/`**: 7
@@ -29,8 +29,6 @@
 | `.claude/` | AI agent configuration |
 | `.failsafe/` | Governance artifacts (gitignored) |
 | `.qorelogic/` | Proprietary governance logic |
-| `PRIVATE/` | Confidential content (gitignored) |
-| `FailSafe-Pro/` | Pro tier content (gitignored) |
 
 ---
 

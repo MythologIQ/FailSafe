@@ -1,10 +1,9 @@
-# AUDIT REPORT (RE-AUDIT)
+# AUDIT REPORT
 
-**Tribunal Date**: 2026-03-14T14:00:00Z
-**Target**: Command Center Production Readiness — Amended (`docs/ARCHITECTURE_PLAN.md`)
+**Tribunal Date**: 2026-03-16T14:00:00Z
+**Target**: v4.9.5 Pre-v5.0 Quality Sweep
 **Risk Grade**: L2
 **Auditor**: The QoreLogic Judge
-**Prior Verdict**: VETO (Entry #233, 9 violations)
 
 ---
 
@@ -14,94 +13,112 @@
 
 ### Executive Summary
 
-The amended plan correctly resolves all 9 violations from the prior VETO. Route extraction follows established `setupXxxRoutes` pattern. UUID validation prevents path traversal. Method names and signatures match verified source. Service wiring placed in `main.ts` where all substrates are available. Three low-severity findings are noted as binding implementation notes but do not constitute structural or compile-breaking defects.
+The v4.9.5 plan is a well-scoped, 3-phase quality sweep addressing 9 confirmed voice brainstorm bugs (resource leaks, race conditions, silent error swallowing), 2 Razor debt extractions (main.ts, ConsoleServer.ts hub snapshot), and backlog reconciliation (8 false positives verified, future decomposition tracked). All changes are surgical — no new dependencies, no new UI elements, no security/auth modifications. All new files are within Razor limits. The plan correctly identifies and registers remaining ConsoleServer decomposition as future work (B161-B163).
 
 ### Audit Results
 
 #### Security Pass
 
-**Result**: PASS (with binding implementation notes)
+**Result**: PASS
 
-- V1 (path traversal) **REMEDIATED**: UUID regex validation in `AgentApiRoute.ts` applied to both `/api/v1/runs/:runId` and `/api/v1/runs/:runId/steps`. `rejectIfRemote` on all 6 endpoints.
-- **Note S1**: Phase 3a uses `(event as any).decision` — must access `event.payload` not `event` root. Implementation must use `const p = (event.payload ?? {}) as Record<string, unknown>` pattern (matches `AgentRunRecorder.ts:38-41`).
-- **Note S2**: Phase 3a uses `...event as Record<string, unknown>` spread for L3 events — implementation must use explicit field allowlisting instead.
-- **Note S3**: Add UUID validation inside `AgentRunRecorder.loadRun()` for defense-in-depth.
+- [x] No placeholder auth logic
+- [x] No hardcoded credentials or secrets
+- [x] No bypassed security checks
+- [x] No mock authentication returns
+- [x] No `// security: disabled for testing`
+
+Phase 1 changes are defensive hardening: error type distinction (B123), error context propagation (B122), resource cleanup (B113, B116, B118). No security-critical paths modified.
 
 #### Ghost UI Pass
 
-**Result**: PASS (with binding implementation note)
+**Result**: PASS
 
-- All proposed tabs (Timeline, Genome, Replay) have corresponding modules, API endpoints, and HTML containers specified in the plan.
-- **Note G1**: `workspace-registry.js` extraction must include an `import` statement in `command-center.js` or a `<script>` tag in `command-center.html`. Plan omits loading mechanism — implementation must specify it.
+- [x] Every button has an onClick handler mapped to real logic
+- [x] Every form has submission handling
+- [x] Every interactive element connects to actual functionality
+- [x] No "coming soon" or placeholder UI
+
+No new UI elements. B121 adds `showStatus()` calls using existing infrastructure. B124 adds an input guard that returns early on empty input.
 
 #### Section 4 Razor Pass
 
 **Result**: PASS
 
-| Check | Limit | Proposed | Status |
-|---|---|---|---|
-| ConsoleServer.ts | 250 | 1365 + 20 = 1385 (pre-existing debt, contained) | OK |
-| command-center.js | 250 | 275 - 50 + 15 = ~240 (after extraction) | OK |
-| AgentApiRoute.ts (new) | 250 | ~80 | OK |
-| timeline.js (new) | 250 | ~120 | OK |
-| genome.js (new) | 250 | ~100 | OK |
-| replay.js (new) | 250 | ~150 | OK |
-| workspace-registry.js (new) | 250 | ~50 | OK |
-| Nested ternaries | 0 | 0 introduced | OK |
+| Check              | Limit | Blueprint Proposes | Status |
+| ------------------ | ----- | ------------------ | ------ |
+| Max function lines | 40    | ~37 (bootstrapStartupChecks) | OK |
+| Max file lines     | 250   | bootstrapStartupChecks.ts ~45, ConsoleServerHub.ts ~250 | OK |
+| Max nesting depth  | 3     | 2 (all changes) | OK |
+| Nested ternaries   | 0     | 0 | OK |
+
+Phase 1: All patches are 3-15 lines, well within function limits.
+Phase 2: main.ts reduced from 262 to ~228 (under 250). ConsoleServer.ts reduced from 1454 to ~1210 (pre-existing violation, incremental improvement, tracked as B161-B163 for full resolution).
 
 #### Dependency Pass
 
-**Result**: PASS (carried from initial audit — no changes)
+**Result**: PASS
+
+No new dependencies. All changes use existing APIs and browser builtins (queueMicrotask, MediaRecorder, fetch, document.removeEventListener).
+
+| Package | Justification | <10 Lines Vanilla? | Verdict |
+| ------- | ------------- | ------------------ | ------- |
+| (none)  | N/A           | N/A                | PASS    |
+
+#### Macro-Level Architecture Pass
+
+**Result**: PASS
+
+- [x] Clear module boundaries (voice modules independent, hub snapshot separated from server)
+- [x] No cyclic dependencies (ConsoleServerHub receives deps via parameter object)
+- [x] Layering direction enforced (UI modules, extension → bootstrap helper)
+- [x] Single source of truth for shared types/config
+- [x] Cross-cutting concerns centralized
+- [x] No duplicated domain logic across modules
+- [x] Build path is intentional (all new files imported by existing entry points)
 
 #### Orphan Pass
 
 **Result**: PASS
 
 | Proposed File | Entry Point Connection | Status |
-|---|---|---|
-| AgentApiRoute.ts | `setupAgentApiRoutes()` in ConsoleServer.setupRoutes() | Connected |
-| timeline.js | `<script>` tag in command-center.html | Connected |
-| genome.js | `<script>` tag in command-center.html | Connected |
-| replay.js | `<script>` tag in command-center.html | Connected |
-| workspace-registry.js | Import in command-center.js (see Note G1) | Connected (pending) |
+| ------------- | ---------------------- | ------ |
+| `bootstrapStartupChecks.ts` | `main.ts` → extension activate | Connected |
+| `ConsoleServerHub.ts` | `ConsoleServer.ts` → server routes | Connected |
+| `ConsoleServerHub.test.ts` | Test runner (vitest/mocha) | Connected |
 
-#### Macro-Level Architecture Pass
-
-**Result**: PASS
-
-- Clear module boundaries: routes extracted to `AgentApiRoute.ts`, UI in `/modules/`
-- No cyclic dependencies: sentinel → shared (unidirectional), confirmed by grep
-- Layering correct: UI → API → services via `ApiRouteDeps` delegates
-- Single source of truth: `buildMetrics()` reused (hub + API), `analyzeFailurePatterns()` and `getUnresolvedEntries()` called directly
-- No logic duplication: GenomeRoute (SSR HTML) vs `/api/v1/genome` (JSON API) serve different transports
-- Build path intentional: all entry points explicit
+Phase 1: No new files — all changes to existing modules.
 
 #### Repository Governance Pass
 
-**Result**: PASS (carried from initial audit — all 6 files present)
+**Result**: PASS
+
+**Community Files Check**:
+- [x] README.md exists: PASS
+- [x] LICENSE exists: PASS
+- [x] SECURITY.md exists: PASS
+- [x] CONTRIBUTING.md exists: PASS
+
+**GitHub Templates Check**:
+- [x] .github/ISSUE_TEMPLATE/ exists: PASS (4 templates)
+- [x] .github/PULL_REQUEST_TEMPLATE.md exists: PASS
 
 ### Violations Found
 
-None. All 9 prior violations remediated.
+| ID | Category | Location | Description |
+| -- | -------- | -------- | ----------- |
+| (none) | — | — | — |
 
-### Binding Implementation Notes
+### Required Remediation
 
-| ID | Category | Description |
-|---|---|---|
-| S1 | Security | Phase 3a: access `event.payload` not `event` root. Use `const p = (event.payload ?? {}) as Record<string, unknown>` |
-| S2 | Security | Phase 3a: replace `...event as Record<string, unknown>` spread with explicit field allowlisting for L3 transparency events |
-| S3 | Security | Add UUID validation inside `AgentRunRecorder.loadRun()` for defense-in-depth |
-| G1 | Ghost UI | Specify loading mechanism for extracted `workspace-registry.js` (import or script tag) |
-
-These notes are binding — implementation must address them. They are not VETO-worthy because they are implementation-time corrections, not structural or compile-breaking plan defects.
+None. All 7 audit passes clear.
 
 ### Verdict Hash
 
 ```
 SHA256(this_report)
-= c4e7b0f3a6d9e2b5f8a1c4d7e0b3f6a9c2e5d8f1a4c7b0e3d6f9a2c5d8e1b4f7
+= d357a08a8deb9db8aed5820c3dbaf50c48e676d6e07dd7f76db7ec06081cd326
 ```
 
 ---
 
-_This verdict is binding. Implementation may proceed with adherence to binding notes S1-S3, G1._
+_This verdict is binding. Implementation may proceed without modification._

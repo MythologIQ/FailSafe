@@ -2,7 +2,7 @@
 
 # FailSafe
 
-**AI Governance & Safety for AI-Assisted Development**
+**Agent Debugger & Stability Monitor for AI-Assisted Development**
 
 _Local-first safety for AI coding assistants._
 
@@ -66,7 +66,7 @@ Create or edit `.failsafe/config/policies/risk_grading.json` to tune risk classi
 
 ## What Is FailSafe?
 
-FailSafe is an open-source VS Code extension and governance framework for AI-assisted development. It adds intent-gated saves, Sentinel audits, and a ledgered audit trail so risky changes are surfaced and controlled.
+FailSafe is an open-source VS Code extension and stability monitoring framework for AI-assisted development. It adds intent-gated saves, Sentinel audits, and a ledgered audit trail so risky changes are surfaced and controlled.
 
 FailSafe separates system awareness from system control.
 
@@ -147,16 +147,11 @@ FailSafe uses a **Physical Isolation** model to separate workspace governance fr
 
 ```
 /FailSafe/ (container)
-+-- extension/                # VSCode Extension TypeScript Project
-+-- Antigravity/              # Gemini + Claude workflows (source)
-+-- VSCode/                   # Copilot + Claude prompts (source)
-+-- PROD-Extension/           # Production builds (includes Claude)
-¦   +-- Antigravity/          # ? OpenVSX (Gemini + Claude)
-¦   +-- VSCode/               # ? VS Code Marketplace (Copilot + Claude)
++-- extension/                # VS Code Extension TypeScript Project
 +-- build/                    # Build & validation tooling
 ```
 
-**Note:** Claude Code is no longer a separate build. Claude-specific skills, commands, and file structures are folded into both Antigravity and VSCode extensions.
+**Note:** A single extension publishes to both VS Code Marketplace and Open VSX via GitHub Actions. Claude Code skills are located at `.claude/skills/ql-*/SKILL.md`.
 
 ---
 
@@ -279,9 +274,9 @@ Or: https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe
 The Antigravity extension includes:
 
 - **Gemini/Antigravity workflows** (`.agent/workflows/`)
-- **Claude Code commands** (`.claude/commands/`)
+- **Claude Code skills** (`.claude/skills/ql-*/SKILL.md`)
 - **QoreLogic personas** (Governor, Judge, Specialist)
-- **Governance configuration** and skills
+- **Stability monitoring configuration** and skills
 
 ---
 
@@ -298,9 +293,9 @@ Or: https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-fa
 The VSCode extension includes:
 
 - **Copilot prompt files** (`.github/prompts/`)
-- **Claude Code commands** (`.claude/commands/`)
+- **Claude Code skills** (`.claude/skills/ql-*/SKILL.md`)
 - **Agent personas** (`.github/copilot-instructions/`)
-- **Governance configuration** and skills
+- **Stability monitoring configuration** and skills
 
 ### The SHIELD Workflow (Claude Code)
 
@@ -326,53 +321,16 @@ npm run compile
 
 ---
 
-## What's New in v4.3.2 "Performance & Polish"
+## What's New in v4.9.0
 
-> _Operational smoothness, safer UI update paths, and activation resilience._
-
-### Release Focus
-
-`v4.3.2` improves runtime responsiveness and operator clarity. Integrity verification is now explicit in UI flows, startup behavior is more robust under local port contention, and help content has been rewritten to match the current Console model.
+> _Agent debugging, execution replay, and cross-agent skill portability._
 
 ### Highlights
 
-New in `v4.3.2`:
-
-- **Checkpoint Integrity Flow** - Full chain verification moved out of heartbeat-critical paths and surfaced as explicit verify actions.
-- **Robust Local Startup** - API and Console startup resolve available local ports when preferred ports are occupied.
-- **Message-Driven Panels** - Transparency and Economics panels update incrementally after initial render.
-- **Bundled Help Rewrite** - Packaged component and process guides now align with the unified Console UX.
-
-Retained from `v4.3.1`:
-
-- **SQL Injection Protection** - Schema table checks are validated against a whitelist.
-- **XSS Prevention** - Dynamic values are escaped before rendering in hardening targets.
-- **Branding Path Correction** - README asset path aligned to active extension assets.
-- **Bundled Operator Docs** - Packaged component and process guides now align with the unified Console UX.
-
-- **Governance Ceremony** — Opt-in/opt-out injection across all detected AI agents.
-- **First-Run Onboarding** — Guided setup for multi-agent governance on first activation.
-- **Agent Coverage Dashboard** — Console view of detected agents, injection status, and compliance.
-- **Undo Last Attempt** — Checkpoint-based rollback with integrity verification.
-- **Discovery Phase Governance** — DRAFT → CONCEIVED status gate with ledger graduation markers.
-- **Intent Schema v2** — Agent identity binding, plan references, and auto-migration from v1.
-- **Verdict Replay Batch** — Bulk re-execution of past governance decisions with timing-safe comparison.
-
-Voice brainstorm status:
-
-- **Implemented** - Voice + manual brainstorm flows (mic capture, transcript extraction, confidence rendering, and TTS feedback) in Console.
-- **Runtime Prerequisite** - Vendor runtime files are required under `FailSafe/extension/src/roadmap/ui/vendor/` (see `VENDOR.md` docs).
-
-### Also Included
-
-Retained from recent sealed releases and still part of the shipped surface:
-
-- **Multi-Agent Governance Fabric** - Runtime detection and governance injection for Claude CLI, Copilot, Codex CLI, and Agent Teams.
-
-- **Break-Glass Protocol** — Time-limited emergency governance overrides with auto-revert.
-- **Artifact Hash on Write** — SHA-256 content hash recorded in ledger at save-time.
-- **Verdict Replay** — Deterministic re-execution of individual past governance decisions.
-- **Mode-Change Audit Trail** — All governance mode changes recorded to SOA ledger.
+- **Agent Run Replay and Execution Timeline** - Step-by-step replay of AI agent execution traces with a filterable event timeline and severity indicators for rapid root-cause analysis.
+- **Risk and Stability Indicators** - Composite health score displayed in the status bar, combining risk grade distribution, Sentinel verdicts, and trust dynamics into a single signal.
+- **Shadow Genome and DiffGuard Panels** - Failure pattern analysis (Shadow Genome) and AI diff risk analysis (DiffGuard) surfaced as dedicated debugging panels in the Command Center.
+- **Cross-Agent Skill Propagation** - Skills defined once propagate across Claude Code, Codex CLI, GitHub Copilot, Gemini, Cursor, and Windsurf via standardized adapters.
 
 > **We'd love your review!** If FailSafe is useful to you, please leave a review on the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=MythologIQ.mythologiq-failsafe) or [Open VSX](https://open-vsx.org/extension/MythologIQ/mythologiq-failsafe). Your feedback helps other developers discover FailSafe and directly shapes its roadmap. Bug reports and feature requests welcome on [GitHub Issues](https://github.com/MythologIQ/FailSafe/issues).
 
@@ -399,7 +357,7 @@ FailSafe is provided "as is" without warranties of any kind, express or implied.
 
 **By using FailSafe, you agree to the following:**
 
-1. **Use at Your Own Risk**: FailSafe is designed to assist with AI governance and safety, but it cannot guarantee complete protection against all risks. You remain responsible for reviewing and validating all AI-generated code and decisions.
+1. **Use at Your Own Risk**: FailSafe is designed to assist with debugging and stability monitoring for AI-assisted development, but it cannot guarantee complete protection against all risks. You remain responsible for reviewing and validating all AI-generated code and decisions.
 
 2. **No Warranty**: MythologIQ provides no warranties, express or implied, including but not limited to warranties of merchantability, fitness for a particular purpose, or non-infringement.
 
@@ -435,9 +393,9 @@ MIT - See [LICENSE](LICENSE)
 
 <div align="center">
 
-**Open source governance for autonomous AI agents.**
+**Open source stability monitoring for AI coding agents.**
 
-[GitHub](https://github.com/MythologIQ/FailSafe) | [Docs](FAILSAFE_SPECIFICATION.md)
+[GitHub](https://github.com/MythologIQ/FailSafe) | [Docs](docs/FAILSAFE_SPECIFICATION.md)
 
 </div>
 
@@ -470,14 +428,14 @@ FailSafe tracks more than Git state. It records governance checkpoints as signed
 
 | Claim                                                                                       | Status      | Source                                                                                                                                                           |
 | ------------------------------------------------------------------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Checkpoints persist in `failsafe_checkpoints` with typed governance fields.                 | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts:1533-1556`                                                                                                      |
-| Checkpoint records include hash-chain material (`payload_hash`, `entry_hash`, `prev_hash`). | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts:1689-1695`                                                                                                      |
-| Each checkpoint captures current Git head/hash context.                                     | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts:1647`                                                                                                           |
-| Checkpoint history and chain validity are exposed over API.                                 | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts:331`                                                                                                            |
-| Hub snapshot includes `checkpointSummary` and `recentCheckpoints`.                          | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts:742-743`                                                                                                        |
-| Sentinel local RAG persists observation payload + metadata + retrieval text.                | implemented | `FailSafe/extension/src/sentinel/SentinelRagStore.ts:60-81`                                                                                                      |
-| Sentinel RAG can fall back to JSONL when SQLite is unavailable.                             | implemented | `FailSafe/extension/src/sentinel/SentinelRagStore.ts:85-91`                                                                                                      |
-| RAG writes are controlled by `failsafe.sentinel.ragEnabled` (default `true`).               | implemented | `FailSafe/extension/src/sentinel/SentinelDaemon.ts:339-341`                                                                                                      |
+| Checkpoints persist in `failsafe_checkpoints` with typed governance fields.                 | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts`                                                                                                      |
+| Checkpoint records include hash-chain material (`payload_hash`, `entry_hash`, `prev_hash`). | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts`                                                                                                      |
+| Each checkpoint captures current Git head/hash context.                                     | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts`                                                                                                      |
+| Checkpoint history and chain validity are exposed over API.                                 | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts`                                                                                                      |
+| Hub snapshot includes `checkpointSummary` and `recentCheckpoints`.                          | implemented | `FailSafe/extension/src/roadmap/RoadmapServer.ts`                                                                                                      |
+| Sentinel local RAG persists observation payload + metadata + retrieval text.                | implemented | `FailSafe/extension/src/sentinel/SentinelRagStore.ts`                                                                                                      |
+| Sentinel RAG can fall back to JSONL when SQLite is unavailable.                             | implemented | `FailSafe/extension/src/sentinel/SentinelRagStore.ts`                                                                                                      |
+| RAG writes are controlled by `failsafe.sentinel.ragEnabled` (default `true`).               | implemented | `FailSafe/extension/src/sentinel/SentinelDaemon.ts`                                                                                                      |
 | Checkpoint and Sentinel RAG tables are independent (no foreign-key link).                   | **false**   | Confirmed: `failsafe_checkpoints` (ledger DB) and `sentinel_observations` (RAG DB) are in separate databases with no shared keys. `evidenceRefs` is always `[]`. |
 
 <!-- CHECKPOINT-DEEP-DIVE:END -->

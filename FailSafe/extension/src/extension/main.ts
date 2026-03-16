@@ -16,7 +16,6 @@ import { GenesisManager } from "../genesis/GenesisManager";
 import { QoreLogicManager } from "../qorelogic/QoreLogicManager";
 import { SentinelDaemon } from "../sentinel/SentinelDaemon";
 import { EventBus } from "../shared/EventBus";
-import { syncHookSentinel } from "../shared/hookSentinel";
 import { GovernanceStatusBar } from "../governance/GovernanceStatusBar";
 import { LedgerManager } from "../qorelogic/ledger/LedgerManager";
 import { ShadowGenomeManager } from "../qorelogic/shadow/ShadowGenomeManager";
@@ -37,6 +36,7 @@ import { bootstrapIdeActivity } from "./bootstrapIdeActivity";
 import { registerAdvancedCommands } from "./bootstrapAdvancedCommands";
 import { registerCommands, setServerPort } from "./commands";
 import { createVscodeFeatureGate } from "../core/adapters/vscode";
+import { bootstrapStartupChecks } from "./bootstrapStartupChecks";
 
 let genesisManager: GenesisManager;
 let qorelogicManager: QoreLogicManager;
@@ -197,43 +197,8 @@ export async function activate(
       eventBus,
     );
 
-    // 10. Startup Checks
-    setTimeout(async () => {
-      const { FrameworkSync } = await import("../qorelogic/FrameworkSync");
-      const frameworkSync = new FrameworkSync(
-        core.workspaceRoot,
-        qore.systemRegistry,
-      );
-      const systems = await frameworkSync.detectSystems();
-      const ungoverned = systems.filter(
-        (s) => s.isInstalled && !s.hasGovernance,
-      );
-      if (ungoverned.length > 0) {
-        const choice = await vscode.window.showInformationMessage(
-          `FailSafe detected ${ungoverned.length} ungoverned AI system(s).`,
-          "View Details",
-          "Ignore",
-        );
-        if (choice === "View Details")
-          vscode.commands.executeCommand("failsafe.syncFramework");
-      }
-    }, 3000);
-
-    // B107: Sync VS Code sentinel.enabled setting with hook sentinel file
-    const workspaceFolders = vscode.workspace.workspaceFolders;
-    if (workspaceFolders?.[0]) {
-      const wsRoot = workspaceFolders[0].uri.fsPath;
-      context.subscriptions.push(
-        vscode.workspace.onDidChangeConfiguration((e) => {
-          if (e.affectsConfiguration("failsafe.sentinel.enabled")) {
-            const enabled = vscode.workspace
-              .getConfiguration("failsafe")
-              .get<boolean>("sentinel.enabled", true);
-            syncHookSentinel(wsRoot, enabled);
-          }
-        }),
-      );
-    }
+    // 10. Startup Checks (extracted to bootstrapStartupChecks.ts — B97)
+    bootstrapStartupChecks(context, core, qore);
 
     eventBus.emit("failsafe.ready", {
       timestamp: new Date().toISOString(),

@@ -29,7 +29,7 @@ export class SttEngine {
   async init() {
     this._loadSettings();
     if (!(await checkMicAvailable())) {
-      this.onModelProgress?.('error');
+      this.onModelProgress?.('error:mic_unavailable');
       return;
     }
     await this._loadWhisperModel();
@@ -57,10 +57,10 @@ export class SttEngine {
       this._whisperReady = true;
       this.modelReady = true;
       this.onModelProgress?.('ready');
-    } catch {
+    } catch (err) {
       this._whisperReady = false;
       this._whisperPipeline = null;
-      this.onModelProgress?.('error');
+      this.onModelProgress?.(`error:${err?.message || 'model_load_failed'}`);
     }
   }
 
@@ -177,14 +177,12 @@ export class SttEngine {
   }
 
   _createRecorder() {
-    let mimeType;
+    let mimeType = 'audio/webm';
     if (MediaRecorder.isTypeSupported?.('audio/webm;codecs=opus')) {
       mimeType = 'audio/webm;codecs=opus';
-    } else if (MediaRecorder.isTypeSupported?.('audio/webm')) {
-      mimeType = 'audio/webm';
     }
     try {
-      this._recorder = new MediaRecorder(this._stream, mimeType ? { mimeType } : undefined);
+      this._recorder = new MediaRecorder(this._stream, { mimeType });
     } catch {
       this._releaseStream();
       this._setState('idle');

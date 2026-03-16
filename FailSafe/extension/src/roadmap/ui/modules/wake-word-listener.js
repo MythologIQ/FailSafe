@@ -57,7 +57,12 @@ export class WakeWordListener {
       }
     });
 
-    this._recognition.addEventListener('error', () => {
+    this._recognition.addEventListener('error', (ev) => {
+      const permanent = ['not-allowed', 'service-not-available', 'language-not-supported'];
+      if (permanent.includes(ev.error)) {
+        this._onError?.('permanent', `Wake word unavailable: ${ev.error}`);
+        return;
+      }
       this._retries += 1;
       if (this._retries > 5) {
         this._onError?.('error', 'Wake word stopped after 5 failures');

@@ -68,13 +68,22 @@ import {
   readRegistry,
 } from "./services/ServerRegistry";
 import {
-  buildGovernanceState,
   type GovernanceState,
 } from "./services/GovernancePhaseTracker";
 import {
-  auditWorkspace,
   type ComplianceReport,
 } from "./services/RepoGovernanceService";
+import {
+  buildGovernancePhase,
+  buildMetricIntegrity,
+  buildUnattributedFileActivity,
+  buildRepoCompliance,
+  buildTrustSummary,
+  buildNodeStatus,
+  inferActivePhaseTitle,
+  buildRiskSummary,
+  buildRecentCompletions,
+} from "./ConsoleServerHub";
 import { MarketplaceCatalog } from "./services/MarketplaceCatalog";
 import { MarketplaceInstaller } from "./services/MarketplaceInstaller";
 import { SecurityScanner } from "./services/SecurityScanner";
@@ -956,16 +965,21 @@ export class ConsoleServer {
     }
     const l3Queue = this.qorelogicManager.getL3Queue();
     const agents = await this.qorelogicManager.getTrustEngine().getAllAgents();
-    const trustSummary = this.buildTrustSummary(agents);
+    const trust = buildTrustSummary(agents);
     const qoreRuntime = await this.fetchQoreRuntimeSnapshot();
     const checkpointSummary = this.getCheckpointSummary();
-    const governancePhase = this.buildGovernancePhase();
+    const governancePhase = buildGovernancePhase(this.getWorkspaceRoot());
+    const hubDeps = { chainValidAt: this.chainValidAt, unattributedFileChanges: this.unattributedFileChanges };
+    const activePhaseTitle = inferActivePhaseTitle(
+      activePlan as unknown as Record<string, unknown>,
+      (limit) => this.getRecentCheckpoints(limit),
+    );
     const runState = this.ideTracker
-      ? this.ideTracker.getRunState(this.inferActivePhaseTitle(activePlan))
+      ? this.ideTracker.getRunState(activePhaseTitle)
       : { currentPhase: "Plan", activeTasks: [], activeDebugSessions: [] };
-    const nodeStatus = this.buildNodeStatus(
+    const nodeStatusArr = buildNodeStatus(
       sentinelStatus as unknown as { running?: boolean; filesWatched?: number; queueDepth?: number; [k: string]: unknown },
-      l3Queue, trustSummary, qoreRuntime,
+      l3Queue, trust, qoreRuntime,
     );
     return {
       version: EXTENSION_VERSION,
@@ -975,18 +989,16 @@ export class ConsoleServer {
       sentinelStatus,
       recentVerdicts: this.getRecentVerdicts(10),
       l3Queue,
-      trustSummary,
-      nodeStatus,
+      trustSummary: trust,
+      nodeStatus: nodeStatusArr,
       checkpointSummary,
       recentCheckpoints: this.getRecentCheckpoints(12),
       qoreRuntime,
       runState,
-      riskSummary: this.buildRiskSummary(),
-      recentCompletions: this.buildRecentCompletions(),
-      unattributedFileActivity: this.buildUnattributedFileActivity(),
-      metricIntegrity: this.buildMetricIntegrity(
-        governancePhase, checkpointSummary, sentinelStatus, runState,
-      ),
+      riskSummary: buildRiskSummary((limit) => this.getRecentVerdicts(limit)),
+      recentCompletions: buildRecentCompletions((limit) => this.getRecentCheckpoints(limit)),
+      unattributedFileActivity: buildUnattributedFileActivity(this.unattributedFileChanges),
+      metricIntegrity: buildMetricIntegrity(governancePhase, checkpointSummary, sentinelStatus, runState, hubDeps),
       bootstrapState: {
         skillsInstalled: fs.existsSync(
           path.join(this.getWorkspaceRoot(), ".claude", "skills", "ql-bootstrap", "SKILL.md"),
@@ -996,158 +1008,16 @@ export class ConsoleServer {
         ),
         workspaceName: path.basename(this.getWorkspaceRoot()),
       },
-      // Workspace isolation: identity for multi-workspace support
       workspaceName: path.basename(this.getWorkspaceRoot()),
       workspacePath: this.getWorkspaceRoot(),
       serverPort: this.actualPort,
-      // S.H.I.E.L.D. governance phase tracking
       governancePhase,
-      // Repository governance compliance
-      repoCompliance: this.buildRepoCompliance(),
-      // Chain integrity and risk register for Command Center
+      repoCompliance: buildRepoCompliance(this.getWorkspaceRoot()),
       chainValid: this.cachedChainValid ?? null,
       risks: this.getRiskRegister(),
       agentHealth: this.agentHealthIndicator?.buildMetrics() || null,
       generatedAt: new Date().toISOString(),
     };
-  }
-
-  private buildMetricIntegrity(
-    governancePhase: GovernanceState,
-    checkpointSummary: Record<string, unknown>,
-    sentinelStatus: { eventsProcessed?: number },
-    runState: { activeTasks?: unknown[]; activeDebugSessions?: unknown[] },
-  ): MetricIntegrityRow[] {
-    const chainVerified = checkpointSummary.chainValidAt || this.chainValidAt;
-    const ideSignals =
-      (runState.activeTasks?.length || 0) + (runState.activeDebugSessions?.length || 0);
-    const unattributed = this.buildUnattributedFileActivity();
-    const attributionBasis = unattributed.count > 0
-      ? `observed ${unattributed.count} recent file changes without a governed actor`
-      : "only authoritative for instrumented governance events";
-    return [
-      { id: "seal", label: "Seal State", status: "authoritative", basis: `META_LEDGER -> ${governancePhase.current}` },
-      { id: "chain", label: "Chain Validity", status: chainVerified ? "authoritative" : "unknown", basis: chainVerified ? "checkpoint verification" : "not yet verified this session" },
-      { id: "sentinel", label: "Sentinel Event Count", status: "authoritative", basis: `local daemon/checkpoints -> ${sentinelStatus.eventsProcessed || 0}` },
-      { id: "ide", label: "IDE Activity", status: ideSignals > 0 ? "inferred" : "unknown", basis: ideSignals > 0 ? "task/debug lifecycle events" : "no active IDE telemetry" },
-      { id: "file-actor", label: "File-to-Agent Attribution", status: unattributed.count > 0 ? "unknown" : "inferred", basis: attributionBasis },
-    ];
-  }
-
-  private buildUnattributedFileActivity(): {
-    count: number;
-    lastAt: string | null;
-    recent: UnattributedFileChange[];
-  } {
-    return {
-      count: this.unattributedFileChanges.length,
-      lastAt: this.unattributedFileChanges.length
-        ? this.unattributedFileChanges[this.unattributedFileChanges.length - 1].timestamp
-        : null,
-      recent: [...this.unattributedFileChanges].reverse(),
-    };
-  }
-
-  private buildGovernancePhase(): GovernanceState {
-    const ledgerPath = path.join(this.getWorkspaceRoot(), "docs", "META_LEDGER.md");
-    if (!fs.existsSync(ledgerPath)) {
-      return { current: "IDLE", recentCompletions: [], nextSteps: [], activeAlerts: [] };
-    }
-    try {
-      const content = fs.readFileSync(ledgerPath, "utf-8");
-      return buildGovernanceState(content);
-    } catch {
-      return { current: "IDLE", recentCompletions: [], nextSteps: [], activeAlerts: [] };
-    }
-  }
-
-  private buildRepoCompliance(): {
-    score: number;
-    maxScore: number;
-    percentage: number;
-    grade: string;
-    errors: number;
-    warnings: number;
-    topViolations: Array<{ message: string; severity: string }>;
-  } {
-    try {
-      const report = auditWorkspace(this.getWorkspaceRoot());
-      return {
-        score: report.score,
-        maxScore: report.maxScore,
-        percentage: report.percentage,
-        grade: report.grade,
-        errors: report.summary.errors,
-        warnings: report.summary.warnings,
-        topViolations: report.violations
-          .filter((v) => v.severity !== "info")
-          .slice(0, 5)
-          .map((v) => ({ message: v.message, severity: v.severity })),
-      };
-    } catch {
-      return {
-        score: 0,
-        maxScore: 100,
-        percentage: 0,
-        grade: "F",
-        errors: 0,
-        warnings: 0,
-        topViolations: [],
-      };
-    }
-  }
-
-  private buildTrustSummary(
-    agents: Array<{ trustScore: number; isQuarantined: boolean; trustStage: string }>,
-  ): Record<string, unknown> {
-    const totalAgents = agents.length;
-    const avgTrust = totalAgents === 0
-      ? 0
-      : agents.reduce((sum, a) => sum + a.trustScore, 0) / totalAgents;
-    const quarantined = agents.filter((a) => a.isQuarantined).length;
-    const stageCounts = agents.reduce(
-      (counts, a) => {
-        counts[a.trustStage] = (counts[a.trustStage] || 0) + 1;
-        return counts;
-      },
-      { CBT: 0, KBT: 0, IBT: 0 } as Record<string, number>,
-    );
-    return { totalAgents, avgTrust, quarantined, stageCounts };
-  }
-
-  private buildNodeStatus(
-    sentinel: { running?: boolean; filesWatched?: number; queueDepth?: number; [k: string]: unknown },
-    l3Queue: unknown[],
-    trust: Record<string, unknown>,
-    qore: QoreRuntimeSnapshot,
-  ): Array<Record<string, unknown>> {
-    return [
-      {
-        id: "workspace-core", label: "Workspace Core",
-        state: sentinel.running ? "nominal" : "paused",
-        signal: `${sentinel.filesWatched || 0} files watched`,
-      },
-      {
-        id: "verification-queue", label: "Verification Queue",
-        state: l3Queue.length || (sentinel.queueDepth as number) > 0
-          ? "reviewing" : "nominal",
-        signal: `${l3Queue.length || 0} pending approvals`,
-      },
-      {
-        id: "trust-engine", label: "Trust Engine",
-        state: (trust.quarantined as number) > 0 ? "degraded" : "nominal",
-        signal: `${Math.round((trust.avgTrust as number) * 100)}% avg trust`,
-      },
-      {
-        id: "qore-runtime", label: "Qore Runtime",
-        state: !qore.enabled ? "paused" : qore.connected ? "nominal" : "degraded",
-        signal: !qore.enabled
-          ? "integration disabled"
-          : qore.connected
-            ? `connected (${qore.policyVersion || "unknown policy"})`
-            : `unreachable (${qore.baseUrl})`,
-      },
-    ];
   }
 
   // ------------------------------------------------------------------
@@ -1360,45 +1230,6 @@ export class ConsoleServer {
       this.checkpointDb, this.checkpointMemory,
       this.cachedChainValid, this.chainValidAt,
     );
-  }
-
-  // ------------------------------------------------------------------
-  //  Hub snapshot helpers
-  // ------------------------------------------------------------------
-
-  private inferActivePhaseTitle(
-    activePlan: ReturnType<PlanManager["getActivePlan"]>,
-  ): string | undefined {
-    if (!activePlan) {
-      const recent = this.getRecentCheckpoints(1);
-      return recent.length > 0 ? recent[0].phase : undefined;
-    }
-    const p = activePlan as unknown as Record<string, unknown>;
-    if (p.currentPhaseId) return String(p.currentPhaseId);
-    const phases = p.phases as Array<{ status: string; title: string }> | undefined;
-    return phases?.find((ph) => ph.status === "active")?.title;
-  }
-
-  private buildRiskSummary(): Record<string, number> {
-    const verdicts = this.getRecentVerdicts(50);
-    const high = verdicts.filter(
-      v => ["BLOCK", "ESCALATE", "QUARANTINE"].includes(String(v.decision)),
-    ).length;
-    const medium = verdicts.filter(v => String(v.decision) === "WARN").length;
-    const low = verdicts.filter(v => String(v.decision) === "PASS").length;
-    return { high, medium, low };
-  }
-
-  private buildRecentCompletions(): Array<Record<string, unknown>> {
-    const completionTypes = new Set([
-      "milestone.completed",
-      "phase.completed",
-      "substantiate.sealed",
-    ]);
-    return this.getRecentCheckpoints(20)
-      .filter((c) => completionTypes.has(c.checkpointType))
-      .slice(0, 5)
-      .map((c) => ({ type: c.checkpointType, phase: c.phase, at: c.timestamp }));
   }
 
   // ------------------------------------------------------------------

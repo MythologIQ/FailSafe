@@ -200,13 +200,15 @@ JSON Output:`;
     }
 
     async _extractWithNativeAi(transcript) {
-        if (!this.nativeModel) {
-            const factory = this._nativeLmFactory || globalThis.ai?.languageModel;
-            if (!factory) throw new Error('No native AI factory available');
-            this.nativeModel = await factory.create({
-                systemPrompt: "You are a MindMap Extractor. Return ONLY valid JSON with 'nodes' and 'edges'. Types: Feature, Architecture, Risk, Question, Database, Integration."
-            });
+        if (this.nativeModel) {
+            await this.nativeModel.destroy?.();
+            this.nativeModel = null;
         }
+        const factory = this._nativeLmFactory || globalThis.ai?.languageModel;
+        if (!factory) throw new Error('No native AI factory available');
+        this.nativeModel = await factory.create({
+            systemPrompt: "You are a MindMap Extractor. Return ONLY valid JSON with 'nodes' and 'edges'. Types: Feature, Architecture, Risk, Question, Database, Integration."
+        });
 
         const prompt = `Extract nodes and edges from this architectural brainstorm transcript: "${transcript}"`;
         const response = await this.nativeModel.prompt(prompt);

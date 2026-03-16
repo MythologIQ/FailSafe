@@ -139,6 +139,7 @@ export class PrepBayController {
     recordBtn.addEventListener('click', () => this.voice.toggle());
 
     const escHandler = (e) => { if (e.key === 'Escape') close(); };
+    this._modalEscHandler = escHandler;
     document.addEventListener('keydown', escHandler);
 
     const close = () => {
@@ -213,6 +214,10 @@ export class PrepBayController {
       }
     };
     this._restoreAnalyser = () => { this.voice.onAnalyser = origOnAnalyser; };
+  }
+
+  destroy() {
+    if (this._modalEscHandler) { document.removeEventListener('keydown', this._modalEscHandler); this._modalEscHandler = null; }
   }
 
   _drawModalVisualizer(canvas, analyser) {

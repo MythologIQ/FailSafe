@@ -89,7 +89,8 @@ export class BrainstormRenderer {
     this.voice.stt.onTranscript = (t, f) => this.prepBay.onTranscript(t, f);
     this.voice.stt.onAudioCaptured = (blob) => {
       fetch('/api/v1/brainstorm/audio', { method: 'POST', headers: { 'Content-Type': 'audio/webm' }, body: blob })
-        .catch(() => this.showStatus('Audio capture not saved', 'var(--accent-gold)'));
+        .then(res => { if (!res.ok) this.showStatus('Audio save failed', 'var(--accent-red)'); })
+        .catch(err => { console.warn('[brainstorm] audio POST failed:', err.message); this.showStatus('Audio capture not saved', 'var(--accent-gold)'); });
     };
     this.keyboard.onPttStart = () => this.voice.startPtt();
     this.keyboard.onPttStop = () => this.voice.stopPtt();
@@ -105,8 +106,7 @@ export class BrainstormRenderer {
     const ctx = cvs.getContext('2d');
     const buf = new Uint8Array(analyser.frequencyBinCount);
     const rect = cvs.getBoundingClientRect();
-    cvs.width = rect.width || 200;
-    cvs.height = rect.height || 24;
+    cvs.width = rect.width || 200; cvs.height = rect.height || 24;
     const draw = () => {
       if (!this.voice.voiceActive) { ctx.clearRect(0, 0, cvs.width, cvs.height); return; }
       requestAnimationFrame(draw);
@@ -119,8 +119,7 @@ export class BrainstormRenderer {
         i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
       }
       ctx.lineTo(cvs.width, cvs.height / 2); ctx.stroke();
-    };
-    draw();
+    }; draw();
   }
 
   initCanvas() {
@@ -133,7 +132,14 @@ export class BrainstormRenderer {
       if (el) el.style.display = this.graph.nodes.length ? 'none' : 'block';
     };
     const origSetNodes = canvas.setNodes.bind(canvas);
-    canvas.setNodes = (nodes) => { origSetNodes(nodes); this._updateEmptyState(); };
+    let emptyStateScheduled = false;
+    canvas.setNodes = (nodes) => {
+      origSetNodes(nodes);
+      if (!emptyStateScheduled) {
+        emptyStateScheduled = true;
+        queueMicrotask(() => { emptyStateScheduled = false; this._updateEmptyState(); });
+      }
+    };
     canvas.setNodes(this.graph.nodes);
     canvas.setEdges(this.graph.edges, this.graph.nodes);
     canvas.onNodeMove((id, x, y) => {
@@ -180,17 +186,12 @@ export class BrainstormRenderer {
       });
     });
 
-    this._getAll('.cc-bs-view').forEach(btn => {
-      btn.addEventListener('click', () => {
-        canvas.setViewMode(btn.getAttribute('data-view'));
-        this._getAll('.cc-bs-view').forEach(b => { b.classList.remove('active'); b.style.borderColor = ''; });
-        btn.classList.add('active');
-        btn.style.borderColor = 'var(--accent-cyan)';
-      });
-    });
-
+    this._getAll('.cc-bs-view').forEach(btn => btn.addEventListener('click', () => {
+      canvas.setViewMode(btn.getAttribute('data-view'));
+      this._getAll('.cc-bs-view').forEach(b => { b.classList.remove('active'); b.style.borderColor = ''; });
+      btn.classList.add('active'); btn.style.borderColor = 'var(--accent-cyan)';
+    }));
     this._bindWakeToggle();
-
     if (!this._wakeHandler) {
       this._wakeHandler = (e) => {
         this.voice.stt.setWakeWordEnabled(e.detail.enabled);
@@ -201,7 +202,6 @@ export class BrainstormRenderer {
       };
       window.addEventListener('failsafe:wake-word-changed', this._wakeHandler);
     }
-
     this.prepBay.bindEvents();
     this._getEl('.cc-bs-voice')?.addEventListener('click', () => this.voice.toggle());
     this.llmStatus.render(this.client);
@@ -216,8 +216,7 @@ export class BrainstormRenderer {
   _bindWakeToggle() {
     const toggle = this._getEl('.cc-bs-wake-toggle');
     if (!toggle) return;
-    const val = this.store?.get('wake-word-enabled');
-    toggle.checked = val === 'true' || val === true;
+    toggle.checked = this.store?.get('wake-word-enabled') === 'true' || this.store?.get('wake-word-enabled') === true;
     toggle.addEventListener('change', (e) => {
       const on = e.target.checked;
       this.voice.stt.setWakeWordEnabled(on);
@@ -226,7 +225,6 @@ export class BrainstormRenderer {
       window.dispatchEvent(new CustomEvent('failsafe:wake-word-changed', { detail: { enabled: on } }));
     });
   }
-
   showStatus(text, color) {
     const el = this._getEl('.cc-bs-chat-status');
     if (!el) return;
@@ -241,11 +239,8 @@ export class BrainstormRenderer {
     if (this._audioDeviceHandler) window.removeEventListener('failsafe:audio-device-changed', this._audioDeviceHandler);
     if (this._wakeHandler) window.removeEventListener('failsafe:wake-word-changed', this._wakeHandler);
     if (this._undoKeyHandler) document.removeEventListener('keydown', this._undoKeyHandler);
-    this._wakeHandler = null;
-    this.keyboard.unbind();
-    this.voice.destroy();
-    this.webLlm.destroy();
-    this.graph.canvas?.destroy();
-    if (this.container) this.container.innerHTML = '';
+    this._wakeHandler = null; this.keyboard.unbind();
+    this.prepBay.destroy(); this.voice.destroy(); this.webLlm.destroy();
+    this.graph.canvas?.destroy(); if (this.container) this.container.innerHTML = '';
   }
 }

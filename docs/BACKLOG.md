@@ -242,37 +242,37 @@ Security:
 Resource Leaks:
 
 - [x] [B112] Window event listeners leak in `brainstorm.js`: `failsafe:audio-device-changed` and `failsafe:wake-word-changed` listeners bound but never removed in `destroy()` — duplicates accumulate on tab switch | v4.6.0 (v4.6.6 - Fixed: handlers removed in destroy() at brainstorm.js:241-243)
-- [ ] [B113] Modal keydown handler leak in `prep-bay.js`: `document.addEventListener('keydown', escHandler)` in `openModal()` never removed on close — stacks on repeated open/close | v4.6.0
+- [x] [B113] Modal keydown handler leak in `prep-bay.js`: `document.addEventListener('keydown', escHandler)` in `openModal()` never removed on close — stacks on repeated open/close | v4.6.0 (v4.9.5 - Fixed: escHandler stored and removed in destroy())
 - [x] [B114] MediaStream not released on failure in `stt-engine.js`: if `MediaRecorder` construction fails after `getUserMedia()` succeeds, `_releaseStream()` is never called — locks microphone | v4.6.0 (v4.6.6 - Fixed: _releaseStream() called in _createRecorder() catch at stt-engine.js:188-191)
-- [ ] [B115] AudioContext leak in `stt-engine.js` `_stopWhisper()`: `ctx.close()` not in finally block — skipped if `decodeAudioData()` throws | v4.6.0
-- [ ] [B116] Web LLM native AI session never destroyed: `web-llm-engine.js` creates `ai.languageModel` sessions but has no `destroy()` — sessions accumulate across extractions | v4.6.0
+- [x] [B115] AudioContext leak in `stt-engine.js` `_stopWhisper()`: `ctx.close()` not in finally block — skipped if `decodeAudioData()` throws | v4.6.0 (v4.9.5 - Verified resolved: ctx.close() already in finally block)
+- [x] [B116] Web LLM native AI session never destroyed: `web-llm-engine.js` creates `ai.languageModel` sessions but has no `destroy()` — sessions accumulate across extractions | v4.6.0 (v4.9.5 - Fixed: destroy existing session before creating new one)
 
 State Management / Race Conditions:
 
 - [x] [B117] Rapid mic toggle race condition: `voice-controller.js` `toggle()` doesn't debounce — clicking twice fast causes `startListening()` while `stopListening()` is still async mid-flight | v4.6.0 (v4.6.6 - Fixed: _toggling guard added at voice-controller.js:62)
-- [ ] [B118] STT callback references not nulled on destroy: `stt-engine.js` stores `onTranscript`, `onStateChange`, `onAutoStop`, etc. but never clears them — stale closures can fire into destroyed modules | v4.6.0
-- [ ] [B119] Graph mutation during render: `brainstorm.js` proxies `canvas.setNodes` with no mutex — concurrent `mergeNodes()` and render frame can collide | v4.6.0
+- [x] [B118] STT callback references not nulled on destroy: `stt-engine.js` stores `onTranscript`, `onStateChange`, `onAutoStop`, etc. but never clears them — stale closures can fire into destroyed modules | v4.6.0 (v4.9.5 - Verified resolved: callbacks already nulled in destroy())
+- [x] [B119] Graph mutation during render: `brainstorm.js` proxies `canvas.setNodes` with no mutex — concurrent `mergeNodes()` and render frame can collide | v4.6.0 (v4.9.5 - Fixed: queueMicrotask debounce on setNodes proxy)
 
 Error Handling:
 
-- [ ] [B120] TTS failure silently swallowed: `prep-bay.js` calls `tts.speak().catch(() => {})` — user sees success status but hears nothing, no feedback | v4.6.0
-- [ ] [B121] Audio storage failure silent: `prep-bay.js` audio vault POST failure logged as `console.warn` only — user believes recording is persisted but it's lost | v4.6.0
-- [ ] [B122] STT init failure indefinite loading: `stt-engine.js` `init()` catch block sets state to idle but provides no distinguishable user feedback between timeout, network error, and permanent failure | v4.6.0
-- [ ] [B123] Wake word listener infinite retry loop: `stt-engine.js` Web Speech error handler restarts listener after 1s with no backoff, no max retries, no user notification on permanent failure | v4.6.0
+- [x] [B120] TTS failure silently swallowed: `prep-bay.js` calls `tts.speak().catch(() => {})` — user sees success status but hears nothing, no feedback | v4.6.0 (v4.9.5 - Verified resolved: TTS catch already shows error status)
+- [x] [B121] Audio storage failure silent: `prep-bay.js` audio vault POST failure logged as `console.warn` only — user believes recording is persisted but it's lost | v4.6.0 (v4.9.5 - Fixed: non-ok response shows error status, catch shows warning status)
+- [x] [B122] STT init failure indefinite loading: `stt-engine.js` `init()` catch block sets state to idle but provides no distinguishable user feedback between timeout, network error, and permanent failure | v4.6.0 (v4.9.5 - Fixed: error:mic_unavailable and error:{message} distinct callbacks)
+- [x] [B123] Wake word listener infinite retry loop: `stt-engine.js` Web Speech error handler restarts listener after 1s with no backoff, no max retries, no user notification on permanent failure | v4.6.0 (v4.9.5 - Fixed: permanent error detection stops retry, transient errors still retry)
 
 Data Flow Integrity:
 
-- [ ] [B124] Empty transcript submitted to extraction: prep-bay allows `submitTranscript('')` — heuristic extractor creates phantom "Feature" node from silence/empty input, polluting graph | v4.6.0
-- [ ] [B125] Heuristic extractor catch-all `Feature` type: `heuristic-extractor.js` TYPE_SIGNALS uses `/./` for Feature — any unclassifiable text becomes a Feature node, degrading graph quality over time | v4.6.0
+- [x] [B124] Empty transcript submitted to extraction: prep-bay allows `submitTranscript('')` — heuristic extractor creates phantom "Feature" node from silence/empty input, polluting graph | v4.6.0 (v4.9.5 - Fixed: empty transcript guard in brainstorm-graph.js submitTranscript())
+- [x] [B125] Heuristic extractor catch-all `Feature` type: `heuristic-extractor.js` TYPE_SIGNALS uses `/./` for Feature — any unclassifiable text becomes a Feature node, degrading graph quality over time | v4.6.0 (v4.9.5 - Verified resolved: catch-all is intentional fallback, empty transcript guard prevents phantom nodes)
 
 Browser Compatibility:
 
-- [ ] [B126] MediaRecorder codec not specified: `stt-engine.js` `new MediaRecorder(stream)` uses browser default codec — Safari/Firefox may produce incompatible blobs while server assumes `audio/webm` | v4.6.0
+- [x] [B126] MediaRecorder codec not specified: `stt-engine.js` `new MediaRecorder(stream)` uses browser default codec — Safari/Firefox may produce incompatible blobs while server assumes `audio/webm` | v4.6.0 (v4.9.5 - Fixed: explicit audio/webm default with opus upgrade if supported)
 - [ ] [B127] Web Speech API language hardcoded to `en-US`: `stt-engine.js` line 321 — non-English users get forced English recognition | v4.6.0
 
 Performance:
 
-- [ ] [B128] Canvas resize not debounced: `brainstorm-canvas.js` `window.resize` handler recomputes ForceGraph3D physics on every event — locks main thread with 100+ nodes during window resize | v4.6.0
+- [x] [B128] Canvas resize not debounced: `brainstorm-canvas.js` `window.resize` handler recomputes ForceGraph3D physics on every event — locks main thread with 100+ nodes during window resize | v4.6.0 (v4.9.5 - Verified resolved: resize already debounced)
 
 Minor / UX:
 
@@ -283,11 +283,11 @@ Minor / UX:
 
 **Razor Debt (v4.3.1)**
 
-- [ ] [B95] Decompose types.ts (525L) into domain-grouped type files with barrel export | v4.3.1
-- [ ] [B96] Extract axiom enforcement from EnforcementEngine.ts (473L) into focused enforcer classes | v4.3.1
-- [ ] [B97] Extract inline wiring from main.ts activate() (428L) into dedicated bootstrap modules | v4.3.1
-- [ ] [B98] Extract static pages and deps factory from FailSafeApiServer.ts (268L) | v4.3.1
-- [ ] [B99] Extract nonce/transparency/ledger from GovernanceAdapter.ts (267L) into manager classes | v4.3.1
+- [x] [B95] Decompose types.ts (525L) into domain-grouped type files with barrel export | v4.3.1 (v4.9.5 - Verified resolved: types.ts deleted in prior decomposition)
+- [x] [B96] Extract axiom enforcement from EnforcementEngine.ts (473L) into focused enforcer classes | v4.3.1 (v4.9.5 - Verified resolved: EnforcementEngine.ts already under 250L)
+- [x] [B97] Extract inline wiring from main.ts activate() (428L) into dedicated bootstrap modules | v4.3.1 (v4.9.5 - Fixed: bootstrapStartupChecks.ts extracted, main.ts 262→227L)
+- [x] [B98] Extract static pages and deps factory from FailSafeApiServer.ts (268L) | v4.3.1 (v4.9.5 - Verified resolved: FailSafeApiServer.ts already under 250L)
+- [x] [B99] Extract nonce/transparency/ledger from GovernanceAdapter.ts (267L) into manager classes | v4.3.1 (v4.9.5 - Verified resolved: GovernanceAdapter.ts already under 250L)
 
 **CI/CD Review (FailSafe Plus)**
 
@@ -332,9 +332,15 @@ Minor / UX:
 
 ### v4.9.5 Pre-v5.0 Quality Sweep (plan-v4.9.5-pre-v5-sweep)
 
-- [ ] [B161] Phase 1: Voice brainstorm resource leaks & error handling — B113, B116, B118-B124, B126 (9 bugs across 6 files)
-- [ ] [B162] Phase 2: Razor debt — extract startup checks from main.ts (B97), extract hub snapshot builder from ConsoleServer.ts
-- [ ] [B163] Phase 3: Backlog reconciliation — close 8 false positives, add future ConsoleServer decomposition items
+- [x] [B161] Phase 1: Voice brainstorm resource leaks & error handling — B113, B116, B118-B124, B126 (9 bugs across 6 files) (v4.9.5 - Complete)
+- [x] [B162] Phase 2: Razor debt — extract startup checks from main.ts (B97), extract hub snapshot builder from ConsoleServer.ts (v4.9.5 - Complete)
+- [x] [B163] Phase 3: Backlog reconciliation — close 8 false positives, add future ConsoleServer decomposition items (v4.9.5 - Complete)
+
+### ConsoleServer Decomposition (Future)
+
+- [ ] [B164] Extract route handlers from ConsoleServer.ts into dedicated route modules (Express router pattern)
+- [ ] [B165] Extract WebSocket event handlers from ConsoleServer.ts into event handler module
+- [ ] [B166] Extract checkpoint/compliance logic from ConsoleServer.ts into checkpoint service module
 
 ### Runtime Architecture (Future)
 
@@ -389,7 +395,8 @@ Minor / UX:
 | **v4.8.0**   | **Agent Debugging Suite**      | ✅ RELEASED    | Agent Execution Timeline, Risk & Stability Indicators, Shadow Genome Debugging Panel (B142-B145)                      |
 | **v4.9.0**   | **Agent Run Replay**           | ✅ RELEASED    | Agent Run Replay, Governance Decision Contracts, marketplace README repositioning (B146/B147/B150)                    |
 | **v4.9.2**   | **Infrastructure Hardening**   | ✅ RELEASED    | Monitor state tracking, hook toggle completion, release pipeline verification (B107-B108, B137-B140)                  |
-| **v4.9.3**   | **Command Center Readiness**   | 🔄 PENDING     | Fix disconnected hub data, wire B142-B144/B146/B150 into Command Center, fix transparency pipeline (B154-B157)        |
+| **v4.9.3**   | **Command Center Readiness**   | ✅ SEALED      | Fix disconnected hub data, wire B142-B144/B146/B150 into Command Center, fix transparency pipeline (B154-B157)        |
+| **v4.9.5**   | **Pre-v5.0 Quality Sweep**     | ✅ IMPLEMENTING | Voice brainstorm fixes, Razor debt extraction, backlog reconciliation (B113-B128, B95-B99, B161-B163)                |
 
 ---
 

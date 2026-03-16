@@ -5,6 +5,19 @@ All notable changes to the MythologIQ FailSafe extension will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.9.6] - 2026-03-16
+
+### Added
+
+- SRE panel: active policies and enforcement status, agent trust scores, OWASP ASI coverage map, and SLI compliance indicator — powered exclusively by the `agent-failsafe` REST bridge adapter (B167).
+- SRE toggle button in the Monitor sidebar — switches between Monitor view and SRE panel view without reloading the sidebar (B168).
+- `/api/v1/sre` proxy endpoint in ConsoleServer — relays AGT adapter snapshot data to the SRE panel with local-only access guard (B169).
+- `agent-failsafe` REST bridge: `/sre/snapshot` FastAPI endpoint exposing policies, trust scores, SLI, and OWASP ASI coverage (Python `server` optional extra).
+
+### Architecture
+
+- SRE panel data is fully isolated to AGT adapter output — no FailSafe-internal data surfaces in the panel, enabling direct extraction as a standalone AGT VS Code component.
+
 ## [4.9.5] - 2026-03-16
 
 ### Added

@@ -330,6 +330,12 @@ Minor / UX:
 - [x] [B156] Phase 3: Fix transparency pipeline — route sentinel verdicts, L3 events, governance decisions into audit stream, fix dual-write race condition (single writer: ConsoleServer), add `transparency.prompt` event type (v4.9.3 - Complete)
 - [x] [B157] Phase 4: Wire B146/B150 into Command Center — expose AgentRunRecorder via API endpoints (`/api/v1/runs`, `/api/v1/runs/:id`, `/api/v1/runs/:id/steps`), create Replay tab module with step timeline and GovernanceDecision cards, broadcast run lifecycle events (v4.9.3 - Complete)
 
+### v4.9.5 Pre-v5.0 Quality Sweep (plan-v4.9.5-pre-v5-sweep)
+
+- [ ] [B161] Phase 1: Voice brainstorm resource leaks & error handling — B113, B116, B118-B124, B126 (9 bugs across 6 files)
+- [ ] [B162] Phase 2: Razor debt — extract startup checks from main.ts (B97), extract hub snapshot builder from ConsoleServer.ts
+- [ ] [B163] Phase 3: Backlog reconciliation — close 8 false positives, add future ConsoleServer decomposition items
+
 ### Runtime Architecture (Future)
 
 - [ ] [B151] Universal Governance Interceptor: Drop-in interceptor interface for agent framework integration (LangChain, AutoGen, CrewAI, MCP)

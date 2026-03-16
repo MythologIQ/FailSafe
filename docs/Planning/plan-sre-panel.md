@@ -1,4 +1,4 @@
-# Plan: SRE Panel & Monitor Toggle (Amended v2 — AGT Data Only)
+# Plan: SRE Panel & Monitor Toggle (Amended v3 — AGT Data Only)
 
 **Current Version (FailSafe)**: v4.9.5
 **Target Version (FailSafe)**: v4.10.0
@@ -7,7 +7,7 @@
 **Change Type**: feature
 **Risk Grade**: L2
 **Source**: [AGT #39 comment](https://github.com/microsoft/agent-governance-toolkit/issues/39#issuecomment-4068927183)
-**Prior Verdict**: VETO (Entry #235, 4 violations — all addressed below)
+**Prior Verdicts**: VETO (Entry #235, 4 violations) → VETO (Entry #236, 3 violations) — all addressed below
 
 ## Open Questions
 
@@ -28,14 +28,24 @@ agent-failsafe REST server (port 9377)
 
 This isolation means the panel can be extracted directly as a VS Code extension component for AGT contribution.
 
-## Violations Addressed (from VETO Entry #235)
+## Violations Addressed
+
+### From VETO Entry #235 (v2 resolved all 4)
 
 | ID | Fix |
 |----|-----|
-| V1 Razor | `render()` is ≤5L; HTML template extracted to `buildSreConnectedHtml()` (~24L) + `buildSreDisconnectedHtml()` (~12L) in `SreTemplate.ts` |
-| V2 Architecture | ASI coverage is now defined in `agent-failsafe/rest_server.py` (Python source of truth) and returned by the adapter; `SreAsiCoverage.ts` not needed |
+| V1 Razor | `render()` is ≤5L; HTML template extracted to `buildSreConnectedHtml()` + `buildSreDisconnectedHtml()` in `SreTemplate.ts` |
+| V2 Architecture | ASI coverage defined in `agent-failsafe/rest_server.py` (Python source of truth); no TypeScript constant |
 | V3 Ghost Path | Wiring target is `registerConsoleExtras()` (verified at line 662 of ConsoleServer.ts) |
-| V4 Ghost Path | Toggle logic merged into the existing `<script nonce>` block; no second `acquireVsCodeApi()` call |
+| V4 Ghost Path | Toggle logic merged into existing `<script nonce>` block; no second `acquireVsCodeApi()` call |
+
+### From VETO Entry #236 (v3 resolves all 3)
+
+| ID | Fix |
+|----|-----|
+| V1 Razor | Nested ternary in `sliStatus` replaced with `if/else if/else` block |
+| V2 Architecture | `SreApiRoute.ts` imports `fetchAgtSnapshot` directly from `./templates/SreTemplate`; re-export removed from `SreRoute.ts` |
+| V3 Ghost Path | `initBtn` handler updated to spread state: `vscode.setState({ ...vscode.getState(), initDone: true })` |
 
 ---
 
@@ -142,7 +152,7 @@ if __name__ == "__main__":
 ### Affected Files
 
 - `src/roadmap/routes/templates/SreTemplate.ts` — new: types + `fetchAgtSnapshot()` + template functions
-- `src/roadmap/routes/SreRoute.ts` — new: `SreRouteDeps` + `SreRoute.render()` (≤5 lines)
+- `src/roadmap/routes/SreRoute.ts` — new: `SreRouteDeps` + `SreRoute.render()` (≤5 lines); no re-export of `fetchAgtSnapshot`
 - `src/roadmap/routes/index.ts` — export `SreRoute`
 - `src/roadmap/ConsoleServer.ts` — register `GET /console/sre` in `registerConsoleExtras()`
 - `src/test/roadmap/SreRoute.test.ts` — new unit tests
@@ -194,8 +204,13 @@ function buildSreConnectedHtml(s: AgtSreSnapshot): string {
     `<td class="${c.covered ? "on" : "off"}">${c.covered ? "✓" : "–"}</td>` +
     `<td>${escapeHtml(c.feature)}</td></tr>`
   ).join("");
-  const sliValue = s.sli.currentValue !== null ? `${(s.sli.currentValue * 100).toFixed(1)}%` : "—";
-  const sliStatus = s.sli.meetingTarget === true ? "✓ Meeting target" : s.sli.meetingTarget === false ? "⚠ Below target" : "No data";
+  const sliValue = s.sli.currentValue !== null
+    ? `${(s.sli.currentValue * 100).toFixed(1)}%`
+    : "—";
+  let sliStatus: string;
+  if (s.sli.meetingTarget === true) { sliStatus = "✓ Meeting target"; }
+  else if (s.sli.meetingTarget === false) { sliStatus = "⚠ Below target"; }
+  else { sliStatus = "No data"; }
   return `<!DOCTYPE html><html lang="en"><head><title>SRE — AGT</title>
 <style>body{font-family:"Segoe UI Variable Text",sans-serif;padding:20px;background:#f9fcff;color:#16233a;}
 h2{font-size:13px;font-weight:700;margin:18px 0 8px;}
@@ -232,8 +247,6 @@ export const SreRoute = {
     res.send(buildSreHtml(await deps.getSnapshot()));
   },
 };
-
-export { fetchAgtSnapshot };
 ```
 
 **`src/roadmap/routes/index.ts`** — add:
@@ -249,7 +262,8 @@ this.app.get("/console/sre", async (req: Request, res: Response) => {
   });
 });
 ```
-Add to existing import: `import { ..., SreRoute, fetchAgtSnapshot } from "./routes";`
+Add to existing import: `import { ..., SreRoute } from "./routes";`
+Add separate import: `import { fetchAgtSnapshot } from "./routes/templates/SreTemplate";`
 
 ### Unit Tests
 
@@ -262,6 +276,9 @@ Add to existing import: `import { ..., SreRoute, fetchAgtSnapshot } from "./rout
   - enforced policy row has class `on`; inactive has class `off`
   - `ASI-03` row contains `✓`; `ASI-06` row present with class `on`
   - `fetchAgtSnapshot` returns `{ connected: false }` when fetch throws
+  - `buildSreHtml` with `meetingTarget: true` produces "✓ Meeting target"
+  - `buildSreHtml` with `meetingTarget: false` produces "⚠ Below target"
+  - `buildSreHtml` with `meetingTarget: null` produces "No data"
 
 ---
 
@@ -281,7 +298,7 @@ Add to existing import: `import { ..., SreRoute, fetchAgtSnapshot } from "./rout
 ```ts
 import type { Application, Request, Response } from "express";
 import type { ApiRouteDeps } from "./types";
-import { fetchAgtSnapshot } from "./SreRoute";
+import { fetchAgtSnapshot } from "./templates/SreTemplate";
 
 export function setupSreApiRoutes(
   app: Application,
@@ -315,12 +332,12 @@ Add import: `import { setupSreApiRoutes } from "./routes/SreApiRoute";`
 
 ### Affected Files
 
-- `src/roadmap/FailSafeSidebarProvider.ts` — toggle pill + merge logic into existing `<script>` block
+- `src/roadmap/FailSafeSidebarProvider.ts` — toggle pill + merge logic into existing `<script>` block + fix `initBtn` state write
 - `src/test/ui/compact-ui.spec.ts` — Playwright test for toggle presence
 
 ### Changes
 
-**`src/roadmap/FailSafeSidebarProvider.ts`** — three edits to `getHtml()`:
+**`src/roadmap/FailSafeSidebarProvider.ts`** — four edits to `getHtml()`:
 
 **Edit 1** — add to existing `<style>` block:
 ```css
@@ -340,7 +357,17 @@ Add import: `import { setupSreApiRoutes } from "./routes/SreApiRoute";`
 </div>
 ```
 
-**Edit 3** — append to the **existing** `<script nonce="${nonce}">` block, after the `window.addEventListener('message', ...)` handler. No new `<script>` tag. No new `acquireVsCodeApi()` call. `vscode` and `state` already declared above:
+**Edit 3** — update existing `initBtn` handler at line 131. Change:
+```ts
+vscode.setState({ initDone: true });
+```
+to:
+```ts
+vscode.setState({ ...vscode.getState(), initDone: true });
+```
+This preserves `sreMode` (and any future state keys) when Initialize/Organize is clicked.
+
+**Edit 4** — append to the **existing** `<script nonce="${nonce}">` block, after the `window.addEventListener('message', ...)` handler. No new `<script>` tag. No new `acquireVsCodeApi()` call. `vscode` and `state` already declared above:
 ```js
 const sreUrl = '${this.baseUrl}/console/sre';
 const compactUrl = '${compactUrl}';

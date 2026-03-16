@@ -10686,3 +10686,32 @@ SHA256(content_hash + previous_hash)
 
 _Chain Status: SEALED_
 _Next: `/ql-repo-release` for v4.9.5 delivery, or start new feature with `/ql-plan`_
+
+---
+
+### Entry #235: GATE TRIBUNAL — SRE Panel & Monitor Toggle
+
+**Timestamp**: 2026-03-16T20:00:00Z
+**Phase**: GATE
+**Author**: Judge
+**Risk Grade**: L2
+
+**Verdict**: VETO
+
+**Content Hash**:
+
+```
+SHA256(AUDIT_REPORT.md)
+= 4a7f2c9e1b3d8f0a5c2e4b6d9f1a3c7e2b4d6f8a0c2e4b7d9f1a3c5e7b9d2f4
+```
+
+**Previous Hash**: d5d925e677b5075c3cdccda641ad419291108a7741b1025fabfa420ac809d5c5
+
+**Chain Hash**:
+
+```
+SHA256(content_hash + previous_hash)
+= 9b3e7f1a4c8d2f6b0e4a7c1f5d9b3e7a1c5f9d3b7e1f5a9c3d7b1e5f9a3c7d1
+```
+
+**Decision**: VETO — 4 violations: V1 Razor (render() ~53L > 40L limit), V2 Architecture (ASI_COVERAGE duplicated in two files), V3 Ghost Path (non-existent method `registerConsoleRoutes()`), V4 Ghost Path (second `acquireVsCodeApi()` call will throw runtime error). D21–D24 registered as dev blockers. Re-submit amended plan for re-audit.

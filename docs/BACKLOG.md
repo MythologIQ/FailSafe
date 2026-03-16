@@ -10,6 +10,11 @@
 
 <!-- Format: - [ ] [D#] Description | Version -->
 
+- [ ] [D21] V1: Razor — `SreRoute.render()` ~53 lines exceeds 40-line limit; extract `buildSreHtml(model: SreViewModel)` template function (from audit 2026-03-16)
+- [ ] [D22] V2: Architecture — `ASI_COVERAGE` const duplicated in `SreApiRoute.ts` + `SreRoute.ts`; extract to `src/roadmap/services/SreAsiCoverage.ts` (from audit 2026-03-16)
+- [ ] [D23] V3: Ghost Path — plan Phase 2 references non-existent `registerConsoleRoutes()`; correct target is `registerConsoleExtras()` (from audit 2026-03-16)
+- [ ] [D24] V4: Ghost Path — plan Phase 3 toggle adds second `acquireVsCodeApi()` call in new `<script>` block; will throw runtime error; merge into existing script block (from audit 2026-03-16)
+
 - [x] [D16] V1: Security — path traversal in AgentRunRecorder.loadRun() via unsanitized runId (addressed in amended plan: UUID validation in AgentApiRoute.ts)
 - [x] [D17] V2/V9: Razor — ConsoleServer.ts at 1365 lines, plan adds 65 inline routes bypassing extraction pattern (addressed: routes extracted to AgentApiRoute.ts, +20 lines only)
 - [x] [D18] V4-V6: Architecture — wrong method names/signatures (addressed: use analyzeFailurePatterns(), public buildMetrics(), getEntries(filter?))

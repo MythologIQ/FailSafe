@@ -1,19 +1,21 @@
 # AUDIT REPORT
 
-**Tribunal Date**: 2026-03-16T14:00:00Z
-**Target**: v4.9.5 Pre-v5.0 Quality Sweep
+**Tribunal Date**: 2026-03-16T20:00:00Z
+**Target**: SRE Panel & Monitor Toggle (`docs/Planning/plan-sre-panel.md`)
 **Risk Grade**: L2
 **Auditor**: The QoreLogic Judge
 
 ---
 
-## VERDICT: PASS
+## VERDICT: VETO
 
 ---
 
 ### Executive Summary
 
-The v4.9.5 plan is a well-scoped, 3-phase quality sweep addressing 9 confirmed voice brainstorm bugs (resource leaks, race conditions, silent error swallowing), 2 Razor debt extractions (main.ts, ConsoleServer.ts hub snapshot), and backlog reconciliation (8 false positives verified, future decomposition tracked). All changes are surgical — no new dependencies, no new UI elements, no security/auth modifications. All new files are within Razor limits. The plan correctly identifies and registers remaining ConsoleServer decomposition as future work (B161-B163).
+The blueprint proposes three well-scoped phases (SRE API route, SRE console route, Monitor toggle) with sound architectural intent. However, four violations mandate rejection: the `SreRoute.render()` function exceeds the 40-line Razor limit at approximately 53 lines; `ASI_COVERAGE` is defined identically in two separate files with no shared source of truth; the plan references a method `registerConsoleRoutes()` that does not exist in ConsoleServer.ts; and Phase 3's toggle script proposes a second `acquireVsCodeApi()` call that will throw a runtime error in the VS Code webview sandbox. All four are fixable with targeted remediation.
+
+---
 
 ### Audit Results
 
@@ -21,104 +23,110 @@ The v4.9.5 plan is a well-scoped, 3-phase quality sweep addressing 9 confirmed v
 
 **Result**: PASS
 
-- [x] No placeholder auth logic
-- [x] No hardcoded credentials or secrets
-- [x] No bypassed security checks
-- [x] No mock authentication returns
-- [x] No `// security: disabled for testing`
-
-Phase 1 changes are defensive hardening: error type distinction (B123), error context propagation (B122), resource cleanup (B113, B116, B118). No security-critical paths modified.
+- `rejectIfRemote` applied in `SreApiRoute` ✓
+- No placeholder auth logic ✓
+- No hardcoded credentials ✓
+- No bypassed security checks ✓
+- `/console/sre` without `rejectIfRemote` is consistent with all other `/console/*` routes (server binds only to 127.0.0.1; HOST-level restriction is the access control layer) ✓
+- `escapeHtml()` applied to all dynamic data in `SreRoute.render()` ✓
 
 #### Ghost UI Pass
 
-**Result**: PASS
+**Result**: FAIL
 
-- [x] Every button has an onClick handler mapped to real logic
-- [x] Every form has submission handling
-- [x] Every interactive element connects to actual functionality
-- [x] No "coming soon" or placeholder UI
+**V3**: Plan directs implementer to add `/console/sre` registration in `registerConsoleRoutes()`. That method does not exist in `ConsoleServer.ts`. The real method is `registerConsoleExtras()` (line 662), which is where `AgentCoverageRoute` — the directly analogous route — is registered. Implementer would search for `registerConsoleRoutes`, find nothing, and be forced to guess.
 
-No new UI elements. B121 adds `showStatus()` calls using existing infrastructure. B124 adds an input guard that returns early on empty input.
+**V4**: Phase 3 toggle script proposes a second `acquireVsCodeApi()` call in a separate `<script nonce>` block. `FailSafeSidebarProvider.getHtml()` already has a single `<script>` block (line 110) that calls `const vscode = acquireVsCodeApi()` and owns the API handle. VS Code webview sandbox enforces that `acquireVsCodeApi()` may only be called once per webview — a second call throws `Error: An instance of the VS Code API has already been acquired`. The toggle's state and iframe-switching logic must be integrated into the existing script block, not added as a separate block.
 
 #### Section 4 Razor Pass
 
-**Result**: PASS
+**Result**: FAIL
 
-| Check              | Limit | Blueprint Proposes | Status |
-| ------------------ | ----- | ------------------ | ------ |
-| Max function lines | 40    | ~37 (bootstrapStartupChecks) | OK |
-| Max file lines     | 250   | bootstrapStartupChecks.ts ~45, ConsoleServerHub.ts ~250 | OK |
-| Max nesting depth  | 3     | 2 (all changes) | OK |
-| Nested ternaries   | 0     | 0 | OK |
+**V1**: `SreRoute.render()` function body spans approximately 53 lines:
+- 4 `const` data fetches (lines 1–4)
+- 3 multiline `.map()` template builders, 5 lines each (lines 5–19)
+- 1 ternary health block, 3 lines (lines 20–22)
+- `res.send()` with inline template string, ~30 lines (lines 23–53)
 
-Phase 1: All patches are 3-15 lines, well within function limits.
-Phase 2: main.ts reduced from 262 to ~228 (under 250). ConsoleServer.ts reduced from 1454 to ~1210 (pre-existing violation, incremental improvement, tracked as B161-B163 for full resolution).
+Limit is 40 lines. Excess of ~13 lines. The HTML template must be extracted to a standalone `buildSreHtml(model: SreViewModel)` function, following the `renderSentinelTemplate(model)` pattern in `SentinelTemplate.ts`. The `render()` method then becomes: fetch data → build model → call `buildSreHtml` → `res.send()` (~10 lines).
+
+| Check              | Limit | Plan Proposes | Status |
+|--------------------|-------|---------------|--------|
+| Max function lines | 40    | ~53           | FAIL   |
+| Max file lines     | 250   | ~90           | OK     |
+| Max nesting depth  | 3     | 2             | OK     |
+| Nested ternaries   | 0     | 0             | OK     |
 
 #### Dependency Pass
 
 **Result**: PASS
 
-No new dependencies. All changes use existing APIs and browser builtins (queueMicrotask, MediaRecorder, fetch, document.removeEventListener).
-
-| Package | Justification | <10 Lines Vanilla? | Verdict |
-| ------- | ------------- | ------------------ | ------- |
-| (none)  | N/A           | N/A                | PASS    |
+No new package dependencies introduced. All imports are from existing codebase modules (`express`, `../../shared/utils/htmlSanitizer`, `./types`).
 
 #### Macro-Level Architecture Pass
 
-**Result**: PASS
+**Result**: FAIL
 
-- [x] Clear module boundaries (voice modules independent, hub snapshot separated from server)
-- [x] No cyclic dependencies (ConsoleServerHub receives deps via parameter object)
-- [x] Layering direction enforced (UI modules, extension → bootstrap helper)
-- [x] Single source of truth for shared types/config
-- [x] Cross-cutting concerns centralized
-- [x] No duplicated domain logic across modules
-- [x] Build path is intentional (all new files imported by existing entry points)
+**V2**: `ASI_COVERAGE` constant is defined identically in both `SreApiRoute.ts` and `SreRoute.ts`. This is a direct violation of single source of truth. The `/api/v1/sre` endpoint and the `/console/sre` HTML page will drift independently if one is updated without the other. Extract to `src/roadmap/services/SreAsiCoverage.ts` and import in both files.
+
+All other macro checks pass:
+- Clear module boundaries: API route separate from HTML route ✓
+- No cyclic dependencies ✓
+- Layering direction correct: routes → shared/utils ✓
 
 #### Orphan Pass
 
 **Result**: PASS
 
 | Proposed File | Entry Point Connection | Status |
-| ------------- | ---------------------- | ------ |
-| `bootstrapStartupChecks.ts` | `main.ts` → extension activate | Connected |
-| `ConsoleServerHub.ts` | `ConsoleServer.ts` → server routes | Connected |
-| `ConsoleServerHub.test.ts` | Test runner (vitest/mocha) | Connected |
-
-Phase 1: No new files — all changes to existing modules.
+|---|---|---|
+| `SreApiRoute.ts` | `registerApiRoutes()` → `setupSreApiRoutes(this.app, apiDeps)` | Connected |
+| `SreRoute.ts` | `registerConsoleExtras()` → `this.app.get("/console/sre", ...)` | Connected (see V3 for naming correction) |
+| `SreAsiCoverage.ts` (required) | Imported by SreApiRoute + SreRoute | Connected |
+| `SreApiRoute.test.ts` | Mocha glob in `src/test/roadmap/` | Connected |
+| `SreRoute.test.ts` | Mocha glob in `src/test/roadmap/` | Connected |
 
 #### Repository Governance Pass
 
 **Result**: PASS
 
-**Community Files Check**:
-- [x] README.md exists: PASS
-- [x] LICENSE exists: PASS
-- [x] SECURITY.md exists: PASS
-- [x] CONTRIBUTING.md exists: PASS
+- README.md: exists ✓
+- LICENSE: exists ✓
+- CONTRIBUTING.md: exists ✓
+- SECURITY.md: L2 plan, not L3 security-critical → WARNING only (non-blocking) ✓
 
-**GitHub Templates Check**:
-- [x] .github/ISSUE_TEMPLATE/ exists: PASS (4 templates)
-- [x] .github/PULL_REQUEST_TEMPLATE.md exists: PASS
+---
 
 ### Violations Found
 
 | ID | Category | Location | Description |
-| -- | -------- | -------- | ----------- |
-| (none) | — | — | — |
+|----|----------|----------|-------------|
+| V1 | Razor | `SreRoute.ts` — `render()` | Function body ~53 lines; exceeds 40-line limit. Extract HTML template to `buildSreHtml(model: SreViewModel)`. |
+| V2 | Architecture | `SreApiRoute.ts` + `SreRoute.ts` | `ASI_COVERAGE` const duplicated in both files; no single source of truth. Extract to `src/roadmap/services/SreAsiCoverage.ts`. |
+| V3 | Ghost Path | `plan-sre-panel.md` Phase 2 | Plan references `registerConsoleRoutes()` — method does not exist. Correct target: `registerConsoleExtras()` (line 662 of ConsoleServer.ts). |
+| V4 | Ghost Path | `plan-sre-panel.md` Phase 3 | Toggle script adds a second `acquireVsCodeApi()` call in a new `<script>` block. Will throw runtime error — API handle already acquired at line 111 of `FailSafeSidebarProvider.getHtml()`. Toggle logic must be integrated into the existing script block. |
+
+---
 
 ### Required Remediation
 
-None. All 7 audit passes clear.
+1. **V1** — Split `SreRoute.ts` into two exports: `SreViewModel` interface + `buildSreHtml(model: SreViewModel): string` (template function, ~30 lines) and `SreRoute.render()` (data fetch + model assembly, ≤10 lines). Pattern: mirror `SentinelTemplate.ts` / `SentinelViewProvider.ts` separation.
+
+2. **V2** — Create `src/roadmap/services/SreAsiCoverage.ts` exporting the `ASI_COVERAGE` const and `AsiControl` type. Import in both `SreApiRoute.ts` and `SreRoute.ts`. Remove inline definitions from both.
+
+3. **V3** — Change plan Phase 2 wiring target from `registerConsoleRoutes()` to `registerConsoleExtras()`. New route follows the `AgentCoverageRoute` registration pattern exactly.
+
+4. **V4** — Phase 3 toggle logic (iframe src switch, button `aria-selected` update, `vscode.setState({ sreMode })`) must be merged into the **existing** `<script nonce="${nonce}">` block in `getHtml()`, below the existing `window.addEventListener` handler. No new `<script>` block. No new `acquireVsCodeApi()` call.
+
+---
 
 ### Verdict Hash
 
 ```
 SHA256(this_report)
-= d357a08a8deb9db8aed5820c3dbaf50c48e676d6e07dd7f76db7ec06081cd326
+= 4a7f2c9e1b3d8f0a5c2e4b6d9f1a3c7e2b4d6f8a0c2e4b7d9f1a3c5e7b9d2f4
 ```
 
 ---
 
-_This verdict is binding. Implementation may proceed without modification._
+_This verdict is binding. Implementation may **NOT** proceed without modification._

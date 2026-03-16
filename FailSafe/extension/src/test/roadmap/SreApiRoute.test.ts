@@ -3,9 +3,9 @@ import { strict as assert } from 'assert';
 import { setupSreApiRoutes } from '../../roadmap/routes/SreApiRoute';
 
 function makeApp() {
-  const routes: Array<{ path: string; handler: Function }> = [];
+  const routes: Array<{ path: string; handler: ((...args: unknown[]) => unknown) }> = [];
   return {
-    get(path: string, handler: Function) { routes.push({ path, handler }); },
+    get(path: string, handler: ((...args: unknown[]) => unknown)) { routes.push({ path, handler }); },
     routes,
   };
 }

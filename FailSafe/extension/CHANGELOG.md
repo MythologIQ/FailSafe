@@ -5,6 +5,21 @@ All notable changes to the MythologIQ FailSafe extension will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.9.5] - 2026-03-16
+
+### Added
+
+- Agent Run Replay: full execution trace capture with step-by-step replay panel for post-mortem debugging of agent sessions (B146).
+- Governance Decision Contracts: typed decision pipeline with risk categorization, mitigation suggestions, and adapter from raw sentinel events (B147).
+- New command: `FailSafe: Show Run Replay` for accessing recorded agent sessions.
+- New types: `GovernanceDecision`, `AgentRun`, `RunStep` with full TypeScript contracts in `shared/types/`.
+
+### Security
+
+- XSS fix: switched onclick handlers from `escapeHtml` to `escapeJsString` for JS string contexts.
+- Path traversal fix: workspace folder validation in `handleViewFile`.
+- Re-entrancy guard: `AgentRunRecorder` ignores its own `agentRun.*` events.
+
 ## [4.9.2] - 2026-03-13
 
 ### Added

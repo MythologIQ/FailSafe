@@ -10,6 +10,12 @@
 
 <!-- Format: - [ ] [D#] Description | Version -->
 
+- [x] [D16] V1: HALLUCINATION — Plan Phase 2 references TimelineRenderer, ReplayRenderer, GenomeRenderer that do not exist (from audit 2026-03-14) — Remediated in plan v2
+- [x] [D17] V2: GHOST_PATH — Agents TabGroup imports 3 non-existent renderers (from audit 2026-03-14) — Remediated: Agents uses OperationsRenderer directly
+- [x] [D18] V3: FACTUAL_ERROR — Plan says "11 → 5" tabs but codebase has 8 tabs (from audit 2026-03-14) — Corrected to 8 → 5
+- [x] [D19] V4: AFFECTED_FILES_GAP — ConsoleServer.ts listed in Phase 3 but no code changes provided (from audit 2026-03-14) — Removed from affected files
+- [x] [D20] V1: RAZOR — governance.js at 277 lines exceeds 250-line limit (from Codex post-hoc audit 2026-03-14). Extract integrity/unattributed rendering to separate module. (Remediated — governance.js 202 lines, integrity.js 84 lines)
+
 - [x] [D6] V1: Razor - CortexStreamProvider.ts exceeds 250 lines (from audit 2026-02-05T22:29:02Z) (v2.0.1 - Complete)
 - [x] [D7] V2: Razor - DojoViewProvider.ts exceeds 250 lines (from audit 2026-02-05T22:29:02Z) (v2.0.1 - Complete)
 - [x] [D8] V3: Razor - DashboardPanel.ts exceeds 250 lines (from audit 2026-02-05T22:29:02Z) (v2.0.1 - Complete)
@@ -316,6 +322,12 @@ Minor / UX:
 
 - [ ] [B148] Agent Run Replay: Interactive re-execution from any replay step with modified parameters
 - [ ] [B149] Agent Run Replay: Behavioral telemetry pipeline — feed replay data into Shadow Genome for cumulative agent behavioral intelligence
+
+### v4.9.3 CC Consolidation, Audit Fix, Skills Propagation (plan-cc-consolidation-audit-skills)
+
+- [x] [B158] Phase 1: Fix audit log blank — fetch history on load, fix event type loss in WS wrapper, route verdicts to audit stream (v4.10.0 - Complete)
+- [x] [B159] Phase 2: Tab consolidation 8→5 — create TabGroup component, consolidate tabs (Overview, Agents, Governance, Workspace, Settings) (v4.10.0 - Complete)
+- [x] [B160] Phase 3: Wire skills propagation — connect adaptSkillsForModel to autoIngest, add windsurf/kilocode adapter configs (v4.10.0 - Complete)
 
 ### Runtime Architecture (Future)
 

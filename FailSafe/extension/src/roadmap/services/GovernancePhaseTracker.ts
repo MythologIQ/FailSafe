@@ -1,11 +1,17 @@
 /**
- * GovernancePhaseTracker — S.H.I.E.L.D. lifecycle phase detection
+ * GovernancePhaseTracker - S.H.I.E.L.D. lifecycle phase detection
  *
  * Parses META_LEDGER.md to determine current governance phase,
  * recent completions, and context-aware next steps for the Monitor.
  */
 
-export type ShieldPhase = "IDLE" | "PLAN" | "GATE" | "IMPLEMENT" | "SUBSTANTIATE";
+export type ShieldPhase =
+  | "IDLE"
+  | "PLAN"
+  | "GATE"
+  | "IMPLEMENT"
+  | "SUBSTANTIATE"
+  | "SEALED";
 
 export interface LedgerEntry {
   entry: number;
@@ -36,7 +42,7 @@ const TIMESTAMP_PATTERN = /\*\*(?:Timestamp|Date)\*\*:?\s*(.+?)(?:\n|$)/i;
 const PLAN_PATTERN = /\*\*Plan\*\*:?\s*`?([^`\n]+)`?/i;
 
 export function parseMetaLedger(content: string): LedgerEntry[] {
-  const entries: LedgerEntry[] = [];
+  const entryMap = new Map<number, LedgerEntry>();
   const blocks = content.split(/(?=### Entry #\d+)/);
 
   for (const block of blocks) {
@@ -49,22 +55,20 @@ export function parseMetaLedger(content: string): LedgerEntry[] {
     const timestampMatch = block.match(TIMESTAMP_PATTERN);
     const planMatch = block.match(PLAN_PATTERN);
 
-    if (phaseMatch) {
-      const rawPhase = phaseMatch[1].toUpperCase();
-      const phase = normalizePhase(rawPhase);
+    if (!phaseMatch) continue;
 
-      entries.push({
-        entry: entryNum,
-        phase,
-        verdict: verdictMatch?.[1]?.trim(),
-        timestamp: timestampMatch?.[1]?.trim() || "",
-        plan: planMatch?.[1]?.trim(),
-      });
-    }
+    const rawPhase = phaseMatch[1].toUpperCase();
+    const phase = normalizePhase(rawPhase);
+    entryMap.set(entryNum, {
+      entry: entryNum,
+      phase,
+      verdict: verdictMatch?.[1]?.trim(),
+      timestamp: timestampMatch?.[1]?.trim() || "",
+      plan: planMatch?.[1]?.trim(),
+    });
   }
 
-  // Sort by entry number descending (most recent first)
-  return entries.sort((a, b) => b.entry - a.entry);
+  return Array.from(entryMap.values()).sort((a, b) => b.entry - a.entry);
 }
 
 export function normalizePhase(raw: string): ShieldPhase {
@@ -75,22 +79,24 @@ export function normalizePhase(raw: string): ShieldPhase {
   return "IDLE";
 }
 
+function isTerminalSeal(entry: LedgerEntry): boolean {
+  const verdict = entry.verdict?.toUpperCase() || "";
+  return (
+    entry.phase === "SUBSTANTIATE" &&
+    (verdict.includes("SEAL") || verdict.includes("SUBSTANTIATED") || verdict.includes("PASS"))
+  );
+}
+
 export function getCurrentPhase(entries: LedgerEntry[]): ShieldPhase {
   if (entries.length === 0) return "IDLE";
 
   const latest = entries[0];
-
-  // If last entry was a sealed session, we're idle
-  if (latest.phase === "SUBSTANTIATE" && (latest.verdict?.includes("SEAL") || latest.verdict?.includes("SUBSTANTIATED"))) {
-    return "IDLE";
+  if (isTerminalSeal(latest)) {
+    return "SEALED";
   }
-
-  // If last entry was a VETO, we're still in GATE phase (need re-audit)
   if (latest.phase === "GATE" && latest.verdict?.includes("VETO")) {
     return "GATE";
   }
-
-  // Otherwise return the latest phase
   return latest.phase;
 }
 
@@ -118,7 +124,10 @@ export function getNextSteps(phase: ShieldPhase, lastEntry?: LedgerEntry): strin
       steps.push("Verify tests pass before sealing");
       break;
     case "SUBSTANTIATE":
-      steps.push("Session complete — run /ql-status to verify");
+      steps.push("Complete /ql-substantiate to verify Reality matches Promise");
+      break;
+    case "SEALED":
+      steps.push("Session sealed - run /ql-repo-release or start the next plan");
       break;
   }
 
@@ -130,8 +139,6 @@ export function getActiveAlerts(entries: LedgerEntry[]): Alert[] {
   if (entries.length === 0) return alerts;
 
   const latest = entries[0];
-
-  // Check for VETO verdict
   if (latest.verdict?.includes("VETO")) {
     alerts.push({
       id: `veto-${latest.entry}`,
@@ -141,8 +148,6 @@ export function getActiveAlerts(entries: LedgerEntry[]): Alert[] {
       details: latest.verdict,
     });
   }
-
-  // Check for BLOCK verdict
   if (latest.verdict?.includes("BLOCK")) {
     alerts.push({
       id: `block-${latest.entry}`,
@@ -151,8 +156,6 @@ export function getActiveAlerts(entries: LedgerEntry[]): Alert[] {
       entry: latest.entry,
     });
   }
-
-  // Check for FAIL verdict
   if (latest.verdict?.includes("FAIL")) {
     alerts.push({
       id: `fail-${latest.entry}`,

@@ -346,6 +346,15 @@ export class SentinelDaemon {
             confidence: verdict.confidence,
             timestamp: new Date().toISOString()
         });
+        this.eventBus.emit('sentinel.activityObserved', {
+            eventId: event.id,
+            timestamp: event.timestamp,
+            source: event.source,
+            type: event.type,
+            artifactPath: typeof event.payload?.path === 'string' ? event.payload.path : undefined,
+            decision: verdict.decision,
+            agentDid: verdict.agentDid,
+        });
 
         // 3. Route (Act on Verdict)
         await this.router.route(verdict, event);

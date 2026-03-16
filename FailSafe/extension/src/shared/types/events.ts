@@ -8,6 +8,7 @@ export type FailSafeEventType =
   | "failsafe.ready"
   | "evaluation.metrics"
   | "sentinel.confidence"
+  | "sentinel.activityObserved"
   | "sentinel.verdict"
   | "sentinel.alert"
   | "sentinel.healthUpdate"

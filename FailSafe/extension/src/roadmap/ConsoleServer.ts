@@ -117,6 +117,21 @@ type QoreRuntimeSnapshot = {
   error?: string;
 };
 
+type MetricIntegrityRow = {
+  id: string;
+  label: string;
+  status: string;
+  basis: string;
+};
+
+type UnattributedFileChange = {
+  eventId: string;
+  timestamp: string;
+  type: string;
+  artifactPath?: string;
+  decision?: string;
+};
+
 export class ConsoleServer {
   private app: express.Application;
   private server: HttpServer | null = null;
@@ -154,6 +169,7 @@ export class ConsoleServer {
   private adapterService: AdapterService;
   private ledgerWatcher: fs.FSWatcher | null = null;
   private ledgerDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  private unattributedFileChanges: UnattributedFileChange[] = [];
   private checkpointTypeRegistry = new Set<string>([
     "snapshot.created",
     "phase.entered",
@@ -638,6 +654,12 @@ export class ConsoleServer {
       this.broadcast({ type: "verdict", payload: event.payload });
       this.broadcast({ type: "hub.refresh" });
     });
+    this.eventBus.on(
+      "sentinel.activityObserved" as never,
+      (event: { payload: unknown }) => {
+        this.recordObservedFileMutation(event.payload);
+      },
+    );
     // Subscribe to transparency events and log to file + broadcast
     this.eventBus.on("transparency.prompt" as never, (event: unknown) => {
       this.logTransparencyEvent(event as Record<string, unknown>);
@@ -817,6 +839,32 @@ export class ConsoleServer {
     }
   }
 
+  private recordObservedFileMutation(payload: unknown): void {
+    if (!payload || typeof payload !== "object") return;
+    const activity = payload as {
+      eventId?: string;
+      timestamp?: string;
+      source?: string;
+      type?: string;
+      artifactPath?: string;
+      decision?: string;
+      agentDid?: string;
+    };
+    const fileEventTypes = new Set(["FILE_CREATED", "FILE_MODIFIED", "FILE_DELETED"]);
+    if (activity.source !== "file_watcher") return;
+    if (!fileEventTypes.has(String(activity.type || ""))) return;
+
+    this.unattributedFileChanges.push({
+      eventId: String(activity.eventId || crypto.randomUUID()),
+      timestamp: String(activity.timestamp || new Date().toISOString()),
+      type: String(activity.type || "FILE_MODIFIED"),
+      artifactPath: activity.artifactPath,
+      decision: activity.decision,
+    });
+    this.unattributedFileChanges = this.unattributedFileChanges.slice(-10);
+    this.broadcast({ type: "hub.refresh" });
+  }
+
   // ------------------------------------------------------------------
   //  Hub snapshot
   // ------------------------------------------------------------------
@@ -838,6 +886,11 @@ export class ConsoleServer {
     const agents = await this.qorelogicManager.getTrustEngine().getAllAgents();
     const trustSummary = this.buildTrustSummary(agents);
     const qoreRuntime = await this.fetchQoreRuntimeSnapshot();
+    const checkpointSummary = this.getCheckpointSummary();
+    const governancePhase = this.buildGovernancePhase();
+    const runState = this.ideTracker
+      ? this.ideTracker.getRunState(this.inferActivePhaseTitle(activePlan))
+      : { currentPhase: "Plan", activeTasks: [], activeDebugSessions: [] };
     const nodeStatus = this.buildNodeStatus(
       sentinelStatus as unknown as { running?: boolean; filesWatched?: number; queueDepth?: number; [k: string]: unknown },
       l3Queue, trustSummary, qoreRuntime,
@@ -852,16 +905,17 @@ export class ConsoleServer {
       l3Queue,
       trustSummary,
       nodeStatus,
-      checkpointSummary: this.getCheckpointSummary(),
+      checkpointSummary,
+      chainValid: checkpointSummary.chainValid,
       recentCheckpoints: this.getRecentCheckpoints(12),
       qoreRuntime,
-      runState: this.ideTracker
-        ? this.ideTracker.getRunState(
-            this.inferActivePhaseTitle(activePlan),
-          )
-        : { currentPhase: "Plan", activeTasks: [], activeDebugSessions: [] },
+      runState,
       riskSummary: this.buildRiskSummary(),
       recentCompletions: this.buildRecentCompletions(),
+      unattributedFileActivity: this.buildUnattributedFileActivity(),
+      metricIntegrity: this.buildMetricIntegrity(
+        governancePhase, checkpointSummary, sentinelStatus, runState,
+      ),
       bootstrapState: {
         skillsInstalled: fs.existsSync(
           path.join(this.getWorkspaceRoot(), ".claude", "skills", "ql-bootstrap", "SKILL.md"),
@@ -876,10 +930,46 @@ export class ConsoleServer {
       workspacePath: this.getWorkspaceRoot(),
       serverPort: this.actualPort,
       // S.H.I.E.L.D. governance phase tracking
-      governancePhase: this.buildGovernancePhase(),
+      governancePhase,
       // Repository governance compliance
       repoCompliance: this.buildRepoCompliance(),
       generatedAt: new Date().toISOString(),
+    };
+  }
+
+  private buildMetricIntegrity(
+    governancePhase: GovernanceState,
+    checkpointSummary: Record<string, unknown>,
+    sentinelStatus: { eventsProcessed?: number },
+    runState: { activeTasks?: unknown[]; activeDebugSessions?: unknown[] },
+  ): MetricIntegrityRow[] {
+    const chainVerified = checkpointSummary.chainValidAt || this.chainValidAt;
+    const ideSignals =
+      (runState.activeTasks?.length || 0) + (runState.activeDebugSessions?.length || 0);
+    const unattributed = this.buildUnattributedFileActivity();
+    const attributionBasis = unattributed.count > 0
+      ? `observed ${unattributed.count} recent file changes without a governed actor`
+      : "only authoritative for instrumented governance events";
+    return [
+      { id: "seal", label: "Seal State", status: "authoritative", basis: `META_LEDGER -> ${governancePhase.current}` },
+      { id: "chain", label: "Chain Validity", status: chainVerified ? "authoritative" : "unknown", basis: chainVerified ? "checkpoint verification" : "not yet verified this session" },
+      { id: "sentinel", label: "Sentinel Event Count", status: "authoritative", basis: `local daemon/checkpoints -> ${sentinelStatus.eventsProcessed || 0}` },
+      { id: "ide", label: "IDE Activity", status: ideSignals > 0 ? "inferred" : "unknown", basis: ideSignals > 0 ? "task/debug lifecycle events" : "no active IDE telemetry" },
+      { id: "file-actor", label: "File-to-Agent Attribution", status: unattributed.count > 0 ? "unknown" : "inferred", basis: attributionBasis },
+    ];
+  }
+
+  private buildUnattributedFileActivity(): {
+    count: number;
+    lastAt: string | null;
+    recent: UnattributedFileChange[];
+  } {
+    return {
+      count: this.unattributedFileChanges.length,
+      lastAt: this.unattributedFileChanges.length
+        ? this.unattributedFileChanges[this.unattributedFileChanges.length - 1].timestamp
+        : null,
+      recent: [...this.unattributedFileChanges].reverse(),
     };
   }
 

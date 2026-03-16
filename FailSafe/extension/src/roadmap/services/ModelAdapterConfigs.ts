@@ -4,7 +4,7 @@
  */
 
 export interface AdapterConfig {
-  modelId: "claude" | "gemini" | "copilot" | "codex" | "cursor";
+  modelId: "claude" | "gemini" | "copilot" | "codex" | "cursor" | "windsurf" | "kilocode";
   outputDir: string;
   format: "markdown" | "yaml" | "json";
   conventions: {
@@ -74,6 +74,30 @@ export const BUILTIN_ADAPTER_CONFIGS: Record<string, AdapterConfig> = {
   cursor: {
     modelId: "cursor",
     outputDir: ".cursor/rules/",
+    format: "markdown",
+    conventions: {
+      fileNaming: "kebab",
+      metadataFormat: "yaml-frontmatter",
+      maxPromptLength: 8000,
+      supportsSubagents: false,
+      supportsHooks: false,
+    },
+  },
+  windsurf: {
+    modelId: "windsurf",
+    outputDir: ".windsurf/rules/",
+    format: "markdown",
+    conventions: {
+      fileNaming: "kebab",
+      metadataFormat: "yaml-frontmatter",
+      maxPromptLength: 8000,
+      supportsSubagents: false,
+      supportsHooks: false,
+    },
+  },
+  kilocode: {
+    modelId: "kilocode",
+    outputDir: ".kilocode/workflows/",
     format: "markdown",
     conventions: {
       fileNaming: "kebab",

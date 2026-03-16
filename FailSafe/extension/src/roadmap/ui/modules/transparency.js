@@ -46,6 +46,21 @@ export class TransparencyRenderer {
     this.renderEmptyState();
     this.bindPause();
     this.bindDateFilters();
+    this.fetchHistory();
+  }
+
+  async fetchHistory() {
+    try {
+      const res = await fetch('/api/transparency');
+      if (!res.ok) return;
+      const data = await res.json();
+      const events = data.events || [];
+      events.reverse().forEach(e => this.onEvent({
+        type: e.type || 'transparency',
+        payload: e,
+        time: e.timestamp,
+      }));
+    } catch { /* non-fatal */ }
   }
 
   renderFilterBar() {

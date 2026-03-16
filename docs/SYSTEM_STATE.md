@@ -1,7 +1,71 @@
 # SYSTEM STATE
 
-**Last Updated:** 2026-03-13
-**Version:** v4.9.2 Infrastructure Hardening SUBSTANTIATED
+**Last Updated:** 2026-03-14
+**Version:** v4.9.3 CC Consolidation, Audit Log Fix, Skills Propagation SUBSTANTIATED
+
+## CC Consolidation, Audit Log Fix, Skills Propagation v4.9.3 (B158-B160) — Implementation State
+
+### Ledger Trail
+
+| Entry | Phase | Verdict |
+|-------|-------|---------|
+| #224 | GATE | VETO (L2, 4 violations: hallucinated renderers, wrong tab count) |
+| #225 | GATE | PASS (L2, all 4 violations remediated in plan v2) |
+| #226 | IMPLEMENT | 2 new files, 9 modified, 3 phases |
+| #227 | SUBSTANTIATE | Session sealed |
+
+### New Files
+
+| File | Lines | Purpose |
+|------|-------|---------|
+| `src/roadmap/ui/modules/tab-group.js` | 54 | Sub-view pill switcher for tab consolidation (B159) |
+| `src/roadmap/ui/modules/tickers.js` | 51 | Extracted ticker utilities from command-center.js (B159) |
+
+### Modified Files
+
+| File | Change |
+|------|--------|
+| `transparency.js` | +fetchHistory() loads historical events via /api/transparency on render (B158) |
+| `connection.js` | Fixed event type: `data.payload?.type \|\| data.type` instead of `data.type` (B158) |
+| `command-center.js` | 8→5 tabs, TabGroup composition, simplified event routing, 273→218 lines (B158/B159) |
+| `command-center.html` | 8 tab buttons/panels → 5 (B159) |
+| `command-center.css` | Added .cc-pill styles for TabGroup sub-view switcher (B159) |
+| `ModelAdapterConfigs.ts` | Added windsurf + kilocode adapter configs, widened modelId union (B160) |
+| `ModelAdapter.ts` | Extended flat-file condition for windsurf/kilocode (B160) |
+| `SkillRegistry.ts` | Wired adaptSkillsForModel into autoIngest propagation loop (B160) |
+| `BACKLOG.md` | Marked B158-B160 complete |
+
+### Features Delivered
+
+1. **B158 Audit Log Fix** — 3 bugs resolved:
+   - TransparencyRenderer fetches historical events via REST on render
+   - WebSocket event wrapper passes actual event type from payload
+   - Verdict events routed through Governance TabGroup to TransparencyRenderer
+
+2. **B159 Tab Consolidation 8→5** — UI reorganization:
+   - TabGroup component: pill-based sub-view switching, delegates render/onEvent to children
+   - Governance tab: Audit Log + Risks + Compliance sub-views
+   - Workspace tab: Skills + Mindmap sub-views
+   - Ticker extraction brings command-center.js under 250-line Razor (273→218)
+
+3. **B160 Skills Propagation** — Dead code activation:
+   - adaptSkillsForModel() wired into autoIngest() propagation loop
+   - Windsurf (.windsurf/rules/) and Kilocode (.kilocode/workflows/) adapter configs added
+   - Propagation skips config spaces whose parent directory doesn't exist
+
+### Section 4 Razor Status
+
+| File | Lines | Status |
+|------|-------|--------|
+| tab-group.js | 54 | PASS |
+| tickers.js | 51 | PASS |
+| transparency.js | 239 | PASS |
+| command-center.js | 218 | PASS (was 273) |
+| ModelAdapterConfigs.ts | 110 | PASS |
+| ModelAdapter.ts | 149 | PASS |
+| SkillRegistry.ts | 228 | PASS |
+
+---
 
 ## Infrastructure Hardening v4.9.2 (B107/B108/B137-B140) — Implementation State
 

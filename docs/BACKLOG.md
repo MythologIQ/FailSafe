@@ -412,7 +412,7 @@ Minor / UX:
 | **v4.9.2**   | **Infrastructure Hardening**   | ✅ RELEASED    | Monitor state tracking, hook toggle completion, release pipeline verification (B107-B108, B137-B140)                  |
 | **v4.9.3**   | **Command Center Readiness**   | ✅ SEALED      | Fix disconnected hub data, wire B142-B144/B146/B150 into Command Center, fix transparency pipeline (B154-B157)        |
 | **v4.9.5**   | **Pre-v5.0 Quality Sweep**     | ✅ RELEASED    | Voice brainstorm fixes, Razor debt extraction, backlog reconciliation (B113-B128, B95-B99, B161-B163)                |
-| **v4.10.0**  | **SRE Panel**                  | ✅ RELEASED    | SRE panel via AGT adapter, OWASP ASI coverage, SLI compliance indicator, Monitor sidebar toggle (B167-B169)          |
+| **v5.0.0**   | **SRE Panel**                  | ✅ RELEASED    | SRE panel via AGT adapter, OWASP ASI coverage, SLI compliance indicator, Monitor sidebar toggle (B167-B169)          |
 
 ---
 

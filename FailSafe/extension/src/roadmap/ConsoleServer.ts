@@ -978,7 +978,6 @@ export class ConsoleServer {
       trustSummary,
       nodeStatus,
       checkpointSummary,
-      chainValid: checkpointSummary.chainValid,
       recentCheckpoints: this.getRecentCheckpoints(12),
       qoreRuntime,
       runState,

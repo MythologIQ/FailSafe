@@ -5,6 +5,20 @@ All notable changes to the MythologIQ FailSafe extension will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.9.7] - 2026-03-17
+
+### Added
+
+- Governance mode configuration: `observe`, `assist`, `enforce` modes in `FailSafeConfig` and `ConfigManager` (B181).
+- External agent detection: `handleFileEdit()` in `AgentRunRecorder` auto-starts implicit runs on rapid file edits (B182).
+- Shadow Genome analysis: `analyzeAllPatterns()` returns patterns regardless of remediation status, with `/api/v1/genome` show-all toggle (B183).
+- Timeline click-to-expand: click any timeline entry to reveal full payload JSON (B184).
+
+### Fixed
+
+- Ghost path V1: `getGenomeAllPatterns` now declared in `ApiRouteDeps` interface.
+- Ghost path V2: `getGenomeAllPatterns` delegate wired in `ConsoleServer.ts`.
+
 ## [4.9.6] - 2026-03-16
 
 ### Added

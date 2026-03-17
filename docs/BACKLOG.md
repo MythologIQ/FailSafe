@@ -17,6 +17,7 @@
 - [x] [D28] V1: Razor — `buildSreConnectedHtml()` is 81 lines (limit 40); extract section builders (from audit 2026-03-17) — RESOLVED v4.9.7
 - [x] [D29] V2: Razor — nested ternary on `SreTemplate.ts:89,111`; extract `thresholdColor()` helper (from audit 2026-03-17) — RESOLVED v4.9.7
 - [x] [D30] V1: Razor — SreTemplate.ts will reach ~280 lines after SRE panel expansion; extract types to SreTypes.ts (from audit 2026-03-17) — deferred to v4.9.8 Phase 1 (type extraction planned, file at 167L after C1 refactor)
+- [ ] [D34] V1: Ghost Path — `planId` field referenced in error budget fix does not exist in CheckpointRecord; use phase+timestamp correlation (from audit 2026-03-17)
 
 - [x] [D25] V1: Razor — nested ternary in `buildSreConnectedHtml()` `sliStatus` assignment; replace with `if/else if/else` (from re-audit 2026-03-16) — RESOLVED v4.10.0
 - [x] [D26] V2: Architecture — `SreApiRoute.ts` imports `fetchAgtSnapshot` from `SreRoute.ts` (route handler); must import from `./templates/SreTemplate` directly (from re-audit 2026-03-16) — RESOLVED v4.10.0

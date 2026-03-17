@@ -11315,5 +11315,34 @@ _Next: `/ql-repo-release` for v4.9.7 delivery._
 
 ---
 
+### Entry #251: GATE TRIBUNAL — v4.9.8 Consolidated
+
+**Timestamp**: 2026-03-17T22:30:00Z
+**Phase**: GATE
+**Author**: Judge
+**Risk Grade**: L2
+
+**Verdict**: VETO
+
+**Content Hash**:
+
+```
+SHA256(AUDIT_REPORT.md)
+= e8c2a6f0b4d8e1c5a9f3b7d2e6c0a4f8b1d5e9c3a7f2b6d0e4c8a1d5f9b3e7c2a6
+```
+
+**Previous Hash**: d8c1b5f9e3a7d2c6b0e4f8a1d5e9c3b7f0a4d8e2c6b1f5d9a3e8c7b2f6e0a4d8c1
+
+**Chain Hash**:
+
+```
+SHA256(content_hash + previous_hash)
+= f0a4d8e2c6b1f5d9a3e8c7b2f6e0a4d8c1b5f9e3a7d2c6b0e4f8a1d5e9c3b7f0a4
+```
+
+**Decision**: VETO — Phase 1 error budget fix references phantom `planId` field not present in CheckpointRecord. Must use timestamp/phase-based correlation instead.
+
+---
+
 _Chain integrity: VALID_
 

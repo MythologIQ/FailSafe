@@ -369,6 +369,14 @@ Minor / UX:
 - [x] [B176] Tail-read optimization — read last 4KB of META_LEDGER instead of full 434KB on every hub snapshot (v4.9.7 - Complete)
 - [x] [B177] File watcher debounce — increase META_LEDGER watcher from 500ms to 1500ms to avoid read-during-write race (v4.9.7 - Complete)
 
+### v4.9.7 Diagnostic Fixes (plan-v497-diagnostic-fixes.md)
+
+- [ ] [B181] Phase 1: Governance mode config gap — add mode to FailSafeConfig, read from VS Code settings | v4.9.7
+- [ ] [B182] Phase 2: Agent run capture for external agents — file-based session detection, implicit run creation | v4.9.7
+- [ ] [B183] Phase 3: Genome view data visibility — show all patterns with status filter toggle | v4.9.7
+- [ ] [B184] Phase 4: Timeline entry expansion — click-to-expand detail sections | v4.9.7
+- [ ] [B185] Phase 5: Clickable blocked message navigation — direct audit log linking with highlighting | v4.9.7
+
 ### v4.9.8 SRE Panel Expansion (plan-sre-panel-expansion.md)
 
 - [ ] [B178] Phase 1: Snapshot v2 schema + adapter port config — expand AgtSreSnapshot type with optional v2 fields (fleet, auditEvents, slis, trust dimensions) | v4.9.8

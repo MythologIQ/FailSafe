@@ -368,6 +368,12 @@ Minor / UX:
 - [ ] [B176] Tail-read optimization — read last 4KB of META_LEDGER instead of full 434KB on every hub snapshot | v4.9.7
 - [ ] [B177] File watcher debounce — increase META_LEDGER watcher from 500ms to 1500ms to avoid read-during-write race | v4.9.7
 
+### v4.9.8 SRE Panel Expansion (plan-sre-panel-expansion.md)
+
+- [ ] [B178] Phase 1: Snapshot v2 schema + adapter port config — expand AgtSreSnapshot type with optional v2 fields (fleet, auditEvents, slis, trust dimensions) | v4.9.8
+- [ ] [B179] Phase 2: Activity Feed — audit event feed with ALLOW/DENY badges, governance decision rendering | v4.9.8
+- [ ] [B180] Phase 3: SLO Dashboard — multi-SLI grid with error budgets + per-agent fleet health cards | v4.9.8
+
 ### ConsoleServer Decomposition (Future)
 
 - [ ] [B164] Extract route handlers from ConsoleServer.ts into dedicated route modules (Express router pattern)

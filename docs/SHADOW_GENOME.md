@@ -1830,3 +1830,27 @@ When adding a new key to `vscode.getState()` / `vscode.setState()`, audit ALL ex
 
 Update `initBtn` handler at line 131: `vscode.setState({ initDone: true })` → `vscode.setState({ ...vscode.getState(), initDone: true })`.
 
+---
+
+## Failure Entry #17
+
+**Date**: 2026-03-17T21:00:00Z
+**Verdict ID**: VETO (Entry #251)
+**Failure Mode**: GHOST_PATH
+
+### What Failed
+
+v4.9.8 plan Phase 2 (sentinel-monitor extraction) references methods by incorrect names.
+
+### Why It Failed
+
+Plan author used approximate/remembered method names instead of verifying against source. `renderSentinelStatus()` was written instead of `renderSentinel()`. `showMetricHelp()` was written instead of `showMetricExplanation()` + `getMetricExplanations()`. Line ranges were also inaccurate (520-545 vs actual 509-610).
+
+### Pattern to Avoid
+
+When writing extraction plans that reference specific methods by name, always verify method names and line numbers against the actual source file. Do not rely on memory or approximate names. Use `grep` or search to confirm before committing to the plan.
+
+### Remediation Required
+
+Amend plan Phase 2 extraction list with correct method names: `renderSentinel()`, `showMetricExplanation()`, `getMetricExplanations()`. Update line references accordingly.
+

@@ -403,7 +403,8 @@ export class ConsoleServer {
 
     setupTransparencyRiskRoutes(this.app, apiDeps);
     setupAgentApiRoutes(this.app, apiDeps);
-    setupSreApiRoutes(this.app, { rejectIfRemote: (req, res) => this.rejectIfRemote(req, res) });
+    const adapterUrl = this.adapterService?.getConfig()?.adapterBaseUrl;
+    setupSreApiRoutes(this.app, { rejectIfRemote: (req, res) => this.rejectIfRemote(req, res) }, adapterUrl);
     setupBrainstormRoutes(this.app, apiDeps);
     setupCheckpointRoutes(this.app, apiDeps);
     setupActionsRoutes(this.app, apiDeps);
@@ -671,7 +672,7 @@ export class ConsoleServer {
     });
     this.app.get("/console/sre", async (req: Request, res: Response) => {
       await SreRoute.render(req, res, {
-        getSnapshot: () => fetchAgtSnapshot("http://127.0.0.1:9377"),
+        getSnapshot: () => fetchAgtSnapshot(this.adapterService?.getConfig()?.adapterBaseUrl || "http://127.0.0.1:9377"),
       });
     });
     if (!this.permissionManager) return;

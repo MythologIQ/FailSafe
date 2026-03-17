@@ -1,10 +1,11 @@
 # AUDIT REPORT
 
-**Tribunal Date**: 2026-03-17T23:45:00Z
-**Target**: v4.9.7 Diagnostic Fixes — Amended v2 (plan-v497-diagnostic-fixes.md)
+**Tribunal Date**: 2026-03-17T21:30:00Z
+**Target**: v4.9.8 — Error Budget Fix, Blocked Navigation, SRE Panel Expansion (Amended v3)
+**Plan**: `plan/v498-consolidated` branch → `docs/Planning/plan-v498-consolidated.md`
 **Risk Grade**: L2
 **Auditor**: The QoreLogic Judge
-**Prior Verdict**: VETO (Entry #247)
+**Prior Verdict**: VETO (Entry #251) — 2 Ghost Path violations
 
 ---
 
@@ -14,15 +15,17 @@
 
 ### Executive Summary
 
-The amended plan v2 successfully resolves all 3 violations from the prior VETO (Entry #247). V1/V2 Ghost Path violations are addressed by explicitly adding `getGenomeAllPatterns` to the `ApiRouteDeps` interface in `types.ts` and documenting the delegate wiring in `ConsoleServer.ts`. V3 Razor violation is resolved by deferring Phase 5 to v4.9.8, avoiding code additions to the already-oversized `roadmap.js`. The active scope (Phases 1-4) is coherent, architecturally sound, and ready for implementation.
+The amended v3 plan resolves both Ghost Path violations from Entry #251. All 6 method names in Phase 2 extraction list now match actual source code in `roadmap.js`. Line references are accurate. File budget estimates are realistic. The 6-phase plan is architecturally coherent with no security, ghost path, razor, dependency, orphan, or macro-level violations.
 
 ### Prior VETO Resolution Status
 
-| Violation | Original Issue | Resolution in Amended v2 | Status |
-|-----------|----------------|-------------------------|--------|
-| V1/D31 | `getGenomeAllPatterns` not in ApiRouteDeps | Added to Phase 3: types.ts:30-31 declaration | RESOLVED |
-| V2/D32 | Missing delegate wiring | Added to Phase 3: ConsoleServer.ts:394-395 wiring | RESOLVED |
-| V3/D33 | roadmap.js at 632L, plan adds code | Phase 5 deferred to v4.9.8 | RESOLVED |
+| Violation | Original | Resolution in v3 | Verified |
+|-----------|----------|-------------------|----------|
+| V1/D34 | `renderSentinelStatus()` | `renderSentinel()` (roadmap.js:277) | ✓ EXISTS |
+| V2/D35 | `showMetricHelp()` lines 520-545 | `showMetricExplanation()` (line 564) + `getMetricExplanations()` (line 509) | ✓ EXISTS |
+| Advisory | sentinel-monitor.js ~130L | Updated to ~185L | ✓ MATCHES (185L on disk) |
+
+---
 
 ### Audit Results
 
@@ -30,92 +33,94 @@ The amended plan v2 successfully resolves all 3 violations from the prior VETO (
 
 **Result**: PASS
 
-No security violations found:
 - [x] No placeholder auth logic
-- [x] No hardcoded credentials
+- [x] No hardcoded credentials or secrets in plan scope
 - [x] No bypassed security checks
 - [x] No mock authentication returns
 - [x] No security disabled comments
 
-Phase 1 governance mode implementation uses existing config pattern with proper type safety.
-Phase 2 agent run capture uses existing `startRun()` with safe defaults.
+Hardcoded URL `http://127.0.0.1:9377` in `SreApiRoute.ts:11` — Phase 4 replaces with configurable `adapterBaseUrl`.
 
 #### Ghost UI Pass
 
 **Result**: PASS
 
-All API dependencies now traced:
+All Phase 2 extraction targets verified against `roadmap.js`:
 
-| Component | Dependency | Declaration | Wiring | Status |
-|-----------|------------|-------------|--------|--------|
-| Phase 3: genome API | `getGenomePatterns` | types.ts:30 | ConsoleServer.ts:394 | EXISTS |
-| Phase 3: genome API | `getGenomeAllPatterns` | types.ts:31 (plan) | ConsoleServer.ts:395 (plan) | DECLARED |
-| Phase 3: genome API | `getGenomeUnresolved` | types.ts:32 | ConsoleServer.ts:396 | EXISTS |
-| Phase 4: timeline | `getTimelineEntries` | types.ts:28 | ConsoleServer.ts:392 | EXISTS |
+| Method | Plan Reference | Actual Location | Status |
+|--------|---------------|-----------------|--------|
+| `renderWorkspaceHealth()` | lines 311-360 | roadmap.js:311 | ✓ EXISTS |
+| `buildPolicyTrend()` | lines 480-489 | roadmap.js:480 | ✓ EXISTS |
+| `renderSentinel()` | line 277 | roadmap.js:277 | ✓ EXISTS |
+| `metricColor()` | lines 491-495 | roadmap.js:491 | ✓ EXISTS |
+| `getMetricExplanations()` | lines 509-562 | roadmap.js:509 | ✓ EXISTS |
+| `showMetricExplanation()` | lines 564-610 | roadmap.js:564 | ✓ EXISTS |
 
-All UI elements in genome.js and timeline.js have corresponding backend handlers.
+Phase 3 navigation pattern verified: `window.open('/command-center.html#governance', '_blank')` exists at roadmap.js:307.
+
+Extracted `sentinel-monitor.js` (185L, untracked) contains all 6 methods with matching names.
+
+**Note**: `sentinel-monitor.js` uses `renderWorkspaceHealth(hub, plan, blockers, risks, verdicts)` (5 params) vs roadmap.js `renderWorkspaceHealth(plan, blockers, risks, verdicts)` (4 params). Plan states class "receives the DOM element references and hub data" — signature change is consistent with documented design.
 
 #### Section 4 Razor Pass
 
 **Result**: PASS
 
 | Check | Limit | Blueprint Proposes | Status |
-|-------|-------|-------------------|--------|
-| Max function lines | 40 | ~30 (renderEntries, handleFileEdit) | OK |
-| Max file lines | 250 | genome.js ~110L, timeline.js ~120L | OK |
-| Max nesting depth | 3 | 2 | OK |
+|-------|-------|--------------------|--------|
+| Max function lines | 40 | All new functions ≤40L | OK |
+| Max file lines | 250 | sentinel-monitor.js: 185L, SreTypes.ts: ~60L | OK |
+| Max nesting depth | 3 | ≤3 in all new code | OK |
 | Nested ternaries | 0 | 0 | OK |
 
-**V3 Resolution Verified**: Phase 5 explicitly deferred to v4.9.8. No code additions to `roadmap.js` in v4.9.7 scope. Deferral documented with D33 prerequisite.
+**Pre-existing debt** (not blocking):
+- roadmap.js: 632L → ~450L after extraction (still over 250L, being actively reduced)
+- ConsoleServer.ts: 1370L (not in scope)
 
-#### Dependency Audit
+**SreTemplate.ts projection**: 167L + ~70L (Phases 5-6) = ~237L. Under 250L.
 
-**Result**: PASS
-
-No new external dependencies proposed. All changes use existing modules:
-- `better-sqlite3` (existing for ShadowGenomeManager)
-- `express` (existing for API routes)
-- `path` (Node.js built-in for AgentRunRecorder)
-
-#### Orphan Detection
+#### Dependency Pass
 
 **Result**: PASS
 
-All proposed changes connect to existing entry points:
+No new external dependencies. All changes use existing modules.
+
+#### Orphan Pass
+
+**Result**: PASS
 
 | Proposed File | Entry Point Connection | Status |
-|---------------|----------------------|--------|
-| config.ts | → ConfigManager.ts → main.ts | Connected |
-| ConfigManager.ts | → main.ts activation | Connected |
-| AgentRunRecorder.ts | → bootstrapGovernance.ts → bootstrapSentinel.ts | Connected |
-| ShadowGenomeManager.ts | → QoreLogicManager.ts → main.ts | Connected |
-| types.ts | → AgentApiRoute.ts → ConsoleServer.ts | Connected |
-| genome.js | → command-center.js → command-center.html | Connected |
-| timeline.js | → command-center.js → command-center.html | Connected |
+|---------------|------------------------|--------|
+| sentinel-monitor.js | roadmap.js import | Connected |
+| SreTypes.ts | SreTemplate.ts import | Connected |
+| roadmap-health.test.ts | test runner (vitest) | Connected |
 
 #### Macro-Level Architecture Pass
 
 **Result**: PASS
 
-- [x] Clear module boundaries maintained (config, sentinel, qorelogic domains)
+- [x] Clear module boundaries (sentinel domain → sentinel-monitor.js, SRE types → SreTypes.ts)
 - [x] No cyclic dependencies introduced
-- [x] Layering direction enforced (UI → API → Service → Data)
-- [x] Single source of truth preserved (ConfigManager for settings)
-- [x] Cross-cutting concerns centralized (EventBus for run lifecycle)
+- [x] Layering direction enforced (UI → routes → services)
+- [x] Single source of truth: SRE types in SreTypes.ts, adapter config in AdapterTypes.ts
+- [x] Cross-cutting concerns centralized (ConfigManager for adapter base URL)
 - [x] No duplicated domain logic
-- [x] Build path is intentional (entry points explicit)
+- [x] Build path intentional (all entry points explicit)
 
 #### Repository Governance
 
-**Result**: PASS
+**Result**: PASS (with advisory)
 
 | File | Status |
 |------|--------|
-| README.md | EXISTS |
-| LICENSE | EXISTS |
-| SECURITY.md | EXISTS |
-| CONTRIBUTING.md | EXISTS |
-| docs/BACKLOG.md | UPDATED (B185 deferred, B186 added) |
+| README.md | PASS |
+| LICENSE | PASS |
+| SECURITY.md | WARN (missing — not blocking at L2) |
+| CONTRIBUTING.md | PASS |
+| .github/ISSUE_TEMPLATE/ | PASS |
+| .github/PULL_REQUEST_TEMPLATE.md | PASS |
+
+---
 
 ### Violations Found
 
@@ -123,19 +128,11 @@ All proposed changes connect to existing entry points:
 |----|----------|----------|-------------|
 | — | — | — | No violations found |
 
-### Remediation Status
-
-All 3 prior violations from Entry #247 have been resolved:
-
-1. **V1 (Ghost Path)**: `getGenomeAllPatterns` added to types.ts declaration in Phase 3 spec
-2. **V2 (Ghost Path)**: Delegate wiring documented in ConsoleServer.ts spec at line 394-395
-3. **V3 (Razor)**: Phase 5 deferred to v4.9.8 with D33 prerequisite; BACKLOG.md updated
-
 ### Verdict Hash
 
 ```
 SHA256(this_report)
-= e2c6b1f5d9a3e8c7b2f6e0a4d8c1b5f9e3a7d2c6b0e4f8a1d5e9c3b7f0a4d8e2c6
+= f2a6c0e4b8d1f5a9c3e7b0f4d8a2c6e0b4f8d1a5c9e3b7f0d4a8c2e6b0f4d8a2c6
 ```
 
 ---

@@ -1,19 +1,7 @@
 import { escapeHtml } from "../../../shared/utils/htmlSanitizer";
+import type { AgtSreSnapshot, AsiControl, SreViewModel } from "./SreTypes";
 
-export type AsiControl = { label: string; covered: boolean; feature: string };
-export type AgtSreSnapshot = {
-  policies: Array<{ name: string; type: string; enforced: boolean }>;
-  trustScores: Array<{ agentId: string; stage: string; meshScore: number }>;
-  sli: {
-    name: string;
-    target: number;
-    currentValue: number | null;
-    meetingTarget: boolean | null;
-    totalDecisions: number;
-  };
-  asiCoverage: Record<string, AsiControl>;
-};
-export type SreViewModel = { connected: boolean; snapshot: AgtSreSnapshot | null };
+export type { AsiControl, AgtSreSnapshot, SreViewModel } from "./SreTypes";
 
 export async function fetchAgtSnapshot(baseUrl: string): Promise<SreViewModel> {
   try {
@@ -149,15 +137,78 @@ function buildAsiHtml(coverage: Record<string, AsiControl>): string {
   </div>`;
 }
 
+function buildAuditFeedHtml(events: AgtSreSnapshot["auditEvents"]): string {
+  if (!events || events.length === 0) return "";
+  const actionColor: Record<string, string> = { ALLOW: "on", DENY: "off", AUDIT: "warn" };
+  const rows = events.slice(0, 20).map(e => {
+    const badge = actionColor[e.action] || "warn";
+    const reason = e.reason && e.reason.length > 80 ? e.reason.slice(0, 77) + "..." : (e.reason || "");
+    return `<div class="sre-row">
+      <span class="sre-label">${escapeHtml(e.agentId)} <span style="color:#6b82b0">${escapeHtml(e.type)}</span></span>
+      <span class="sre-badge ${badge}">${escapeHtml(e.action)}</span>
+    </div>${reason ? `<div style="font-size:10px;color:#6b82b0;padding:0 0 2px">${escapeHtml(reason)}</div>` : ""}`;
+  }).join("");
+  return `<div class="sre-section">
+    <div class="sre-header">Activity Feed</div>
+    <div class="sre-card" style="max-height:200px;overflow-y:auto">${rows}</div>
+  </div>`;
+}
+
+function buildSliDashboardHtml(slis: AgtSreSnapshot["slis"]): string {
+  if (!slis || slis.length === 0) return "";
+  const items = slis.map(s => {
+    const pct = s.currentValue !== null ? (s.currentValue * 100).toFixed(1) : null;
+    const color = thresholdColor(Number(pct ?? 0));
+    const budgetPct = s.errorBudgetRemaining != null ? Math.round(s.errorBudgetRemaining * 100) : null;
+    const budgetColor = budgetPct != null && budgetPct < 10 ? "#f06868" : "#3dd68c";
+    return `<div style="flex:1;min-width:120px">
+      <div style="font-size:10px;color:#a0b8e8;margin-bottom:2px">${escapeHtml(s.name)}</div>
+      <div class="sre-value" style="color:${color}">${pct !== null ? pct + "%" : "&mdash;"}</div>
+      <div class="sre-meter"><div class="sre-meter-fill" style="width:${pct ?? 0}%;background:${color}"></div></div>
+      ${budgetPct !== null ? `<div style="font-size:9px;color:${budgetColor};margin-top:2px">Budget: ${budgetPct}%</div>` : ""}
+    </div>`;
+  }).join("");
+  return `<div class="sre-section">
+    <div class="sre-header">SLO Dashboard</div>
+    <div class="sre-card" style="display:flex;flex-wrap:wrap;gap:12px">${items}</div>
+  </div>`;
+}
+
+function buildFleetHtml(fleet: AgtSreSnapshot["fleet"]): string {
+  if (!fleet || fleet.length === 0) return "";
+  const statusColor: Record<string, string> = { active: "#3dd68c", idle: "#6b82b0", error: "#f06868" };
+  const circuitColor: Record<string, string> = { closed: "#3dd68c", open: "#f06868", "half-open": "#f0b840" };
+  const cards = fleet.map(a => {
+    const sc = statusColor[a.status] || "#6b82b0";
+    const cc = circuitColor[a.circuitState] || "#6b82b0";
+    return `<div style="flex:1;min-width:140px;padding:6px;border:1px solid rgba(95,150,255,0.15);border-radius:4px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:11px;font-weight:600">${escapeHtml(a.agentId)}</span>
+        <span style="width:6px;height:6px;border-radius:50%;background:${sc};display:inline-block" title="${a.status}"></span>
+      </div>
+      <div style="font-size:10px;color:#a0b8e8;margin-top:3px">
+        <span class="sre-badge" style="background:${cc}20;color:${cc}">${escapeHtml(a.circuitState)}</span>
+        ${a.taskCount} tasks &middot; ${Math.round(a.successRate * 100)}%
+      </div>
+    </div>`;
+  }).join("");
+  return `<div class="sre-section">
+    <div class="sre-header">Fleet Health</div>
+    <div class="sre-card" style="display:flex;flex-wrap:wrap;gap:8px">${cards}</div>
+  </div>`;
+}
+
 function buildSreConnectedHtml(s: AgtSreSnapshot): string {
   return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SRE Tracker</title><style>${SRE_STYLES}</style></head><body>
 <div class="sre-panel">
-  ${buildSliHtml(s.sli)}
+  ${s.slis?.length ? buildSliDashboardHtml(s.slis) : buildSliHtml(s.sli)}
   ${buildPoliciesHtml(s.policies)}
   ${buildTrustHtml(s.trustScores)}
   ${buildAsiHtml(s.asiCoverage)}
+  ${s.auditEvents?.length ? buildAuditFeedHtml(s.auditEvents) : ""}
+  ${s.fleet?.length ? buildFleetHtml(s.fleet) : ""}
 </div></body></html>`;
 }
 

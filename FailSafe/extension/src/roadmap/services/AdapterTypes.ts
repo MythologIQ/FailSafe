@@ -46,6 +46,7 @@ export interface AdapterInstallProgress {
 }
 
 export interface AdapterConfig {
+  adapterBaseUrl?: string; // default: "http://127.0.0.1:9377"
   mcpServerCommand: string[];
   failOpen: boolean;
   hmacKey?: string; // Base64 encoded

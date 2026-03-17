@@ -49,6 +49,7 @@ export interface FailSafeConfig {
     maxComplexity: number;
   };
   governance?: {
+    mode?: "observe" | "assist" | "enforce";
     overseerId: string;
   };
 }

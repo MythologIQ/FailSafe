@@ -28,6 +28,7 @@ export interface ApiRouteDeps {
   getTimelineEntries: (filter?: any) => any[];
   getHealthMetrics: () => any | null;
   getGenomePatterns: () => Promise<any[]>;
+  getGenomeAllPatterns: () => Promise<any[]>; // B183: All patterns regardless of status
   getGenomeUnresolved: (limit: number) => Promise<any[]>;
   getActiveRuns: () => any[];
   getCompletedRuns: () => any[];

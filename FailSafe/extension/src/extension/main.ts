@@ -185,6 +185,13 @@ export async function activate(
     consoleServer.setAgentHealthIndicator(agentHealthIndicator);
     consoleServer.setAgentRunRecorder(sentinel.agentRunRecorder);
 
+    // 8.7. Wire file edit detection for external agent capture (B182)
+    context.subscriptions.push(
+      vscode.workspace.onWillSaveTextDocument((event) => {
+        sentinel.agentRunRecorder.handleFileEdit(event.document.uri.fsPath, "vscode-user");
+      }),
+    );
+
     // 9. Commands
     registerCommands(
       context,

@@ -10,9 +10,9 @@
 
 <!-- Format: - [ ] [D#] Description | Version -->
 
-- [ ] [D31] V1: Ghost Path — `deps.getGenomeAllPatterns()` called in plan but not declared in `ApiRouteDeps` interface (types.ts) (from audit 2026-03-17)
-- [ ] [D32] V2: Ghost Path — Missing delegate wiring for `getGenomeAllPatterns` in `ConsoleServer.ts.buildApiRouteDeps()` (from audit 2026-03-17)
-- [ ] [D33] V3: Razor — `roadmap.js` at 632 lines (2.5x over 250L limit); plan adds code without decomposition (from audit 2026-03-17)
+- [x] [D31] V1: Ghost Path — `deps.getGenomeAllPatterns()` called in plan but not declared in `ApiRouteDeps` interface (types.ts) (from audit 2026-03-17) — RESOLVED v4.9.7
+- [x] [D32] V2: Ghost Path — Missing delegate wiring for `getGenomeAllPatterns` in `ConsoleServer.ts.buildApiRouteDeps()` (from audit 2026-03-17) — RESOLVED v4.9.7
+- [x] [D33] V3: Razor — `roadmap.js` at 632 lines (2.5x over 250L limit); plan adds code without decomposition (from audit 2026-03-17) — DEFERRED Phase 5 to v4.9.8
 
 - [x] [D28] V1: Razor — `buildSreConnectedHtml()` is 81 lines (limit 40); extract section builders (from audit 2026-03-17) — RESOLVED v4.9.7
 - [x] [D29] V2: Razor — nested ternary on `SreTemplate.ts:89,111`; extract `thresholdColor()` helper (from audit 2026-03-17) — RESOLVED v4.9.7
@@ -375,11 +375,16 @@ Minor / UX:
 
 ### v4.9.7 Diagnostic Fixes (plan-v497-diagnostic-fixes.md)
 
-- [ ] [B181] Phase 1: Governance mode config gap — add mode to FailSafeConfig, read from VS Code settings | v4.9.7
-- [ ] [B182] Phase 2: Agent run capture for external agents — file-based session detection, implicit run creation | v4.9.7
-- [ ] [B183] Phase 3: Genome view data visibility — show all patterns with status filter toggle | v4.9.7
-- [ ] [B184] Phase 4: Timeline entry expansion — click-to-expand detail sections | v4.9.7
-- [ ] [B185] Phase 5: Clickable blocked message navigation — direct audit log linking with highlighting | v4.9.7
+- [x] [B181] Phase 1: Governance mode config gap — add mode to FailSafeConfig, read from VS Code settings (v4.9.7 - Complete)
+- [x] [B182] Phase 2: Agent run capture for external agents — file-based session detection, implicit run creation (v4.9.7 - Complete)
+- [x] [B183] Phase 3: Genome view data visibility — show all patterns with status filter toggle (v4.9.7 - Complete)
+- [x] [B184] Phase 4: Timeline entry expansion — click-to-expand detail sections (v4.9.7 - Complete)
+- [x] [B185] ~~Phase 5: Clickable blocked message navigation~~ — DEFERRED to v4.9.8 (D33 prerequisite) | v4.9.7
+
+### v4.9.8 Blocked Navigation + Razor (plan-v498-blocked-navigation.md)
+
+- [ ] [B186] Phase 0: Extract sentinel rendering from roadmap.js into sentinel-monitor.js (D33 resolution) | v4.9.8
+- [ ] [B185] Phase 1: Clickable blocked message navigation — direct audit log linking with highlighting | v4.9.8
 
 ### v4.9.8 SRE Panel Expansion (plan-sre-panel-expansion.md)
 
@@ -449,6 +454,7 @@ Minor / UX:
 | **v4.9.3**   | **Command Center Readiness**   | ✅ SEALED      | Fix disconnected hub data, wire B142-B144/B146/B150 into Command Center, fix transparency pipeline (B154-B157)        |
 | **v4.9.5**   | **Pre-v5.0 Quality Sweep**     | ✅ RELEASED    | Voice brainstorm fixes, Razor debt extraction, backlog reconciliation (B113-B128, B95-B99, B161-B163)                |
 | **v4.9.6**   | **SRE Panel**                  | ✅ RELEASED    | SRE panel via AGT adapter, OWASP ASI coverage, SLI compliance indicator, Monitor sidebar toggle (B167-B169)          |
+| **v4.9.7**   | **Diagnostic Fixes**           | 🔄 ACTIVE      | Governance mode config, external agent capture, genome visibility, timeline expansion (B181-B184)                    |
 
 ---
 

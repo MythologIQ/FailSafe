@@ -392,6 +392,7 @@ export class ConsoleServer {
       getTimelineEntries: (filter) => this.agentTimelineService?.getEntries(filter) || [],
       getHealthMetrics: () => this.agentHealthIndicator?.buildMetrics() || null,
       getGenomePatterns: () => this.qorelogicManager.getShadowGenomeManager().analyzeFailurePatterns(),
+      getGenomeAllPatterns: () => this.qorelogicManager.getShadowGenomeManager().analyzeAllPatterns(), // B183
       getGenomeUnresolved: (limit) => this.qorelogicManager.getShadowGenomeManager().getUnresolvedEntries(limit),
       getActiveRuns: () => this.agentRunRecorder?.getActiveRuns() || [],
       getCompletedRuns: () => this.agentRunRecorder?.getCompletedRuns() || [],

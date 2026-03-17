@@ -29,8 +29,9 @@ export function setupAgentApiRoutes(
   app.get("/api/v1/genome", async (req: Request, res: Response) => {
     if (deps.rejectIfRemote(req, res)) return;
     const patterns = await deps.getGenomePatterns();
+    const allPatterns = await deps.getGenomeAllPatterns(); // B183
     const unresolved = await deps.getGenomeUnresolved(50);
-    res.json({ patterns, unresolved });
+    res.json({ patterns, allPatterns, unresolved });
   });
 
   app.get("/api/v1/runs", (req: Request, res: Response) => {

@@ -1,9 +1,18 @@
-# Plan: v4.9.7 Diagnostic Fixes
+# Plan: v4.9.7 Diagnostic Fixes — Amended v2
 
 **Current Version**: v4.9.6
 **Target Version**: v4.9.7
 **Change Type**: hotfix
 **Risk Grade**: L2
+**Prior Verdict**: VETO (Entry #247) → **Amended v2**
+
+## Amendments from VETO
+
+| Violation | Resolution |
+|-----------|------------|
+| V1/D31: Ghost Path — `getGenomeAllPatterns` not in ApiRouteDeps | Added to Phase 3 Affected Files: types.ts declaration |
+| V2/D32: Ghost Path — Missing delegate wiring | Added to Phase 3: ConsoleServer.ts wiring |
+| V3/D33: Razor — roadmap.js at 632L | Phase 5 deferred to v4.9.8; roadmap.js decomposition required first |
 
 ## Open Questions
 
@@ -115,6 +124,8 @@ if (core.agentRunRecorder) {
 ### Affected Files
 
 - `FailSafe/extension/src/qorelogic/shadow/ShadowGenomeManager.ts` — add method for all patterns
+- `FailSafe/extension/src/roadmap/routes/types.ts` — add `getGenomeAllPatterns` to ApiRouteDeps interface **(V1 fix)**
+- `FailSafe/extension/src/roadmap/ConsoleServer.ts` — wire delegate for `getGenomeAllPatterns` **(V2 fix)**
 - `FailSafe/extension/src/roadmap/routes/AgentApiRoute.ts` — expose both filtered and all patterns
 - `FailSafe/extension/src/roadmap/ui/modules/genome.js` — show all patterns with status filter
 
@@ -147,6 +158,22 @@ async analyzeAllPatterns(): Promise<FailurePattern[]> {
 }
 ```
 
+**types.ts:30-31** — Add to ApiRouteDeps interface **(V1 fix)**:
+
+```typescript
+getGenomePatterns: () => Promise<any[]>;
+getGenomeAllPatterns: () => Promise<any[]>;  // NEW
+getGenomeUnresolved: (limit: number) => Promise<any[]>;
+```
+
+**ConsoleServer.ts:394-395** — Wire delegate in `buildApiRouteDeps()` **(V2 fix)**:
+
+```typescript
+getGenomePatterns: () => this.qorelogicManager.getShadowGenomeManager().analyzeFailurePatterns(),
+getGenomeAllPatterns: () => this.qorelogicManager.getShadowGenomeManager().analyzeAllPatterns(),  // NEW
+getGenomeUnresolved: (limit) => this.qorelogicManager.getShadowGenomeManager().getUnresolvedEntries(limit),
+```
+
 **AgentApiRoute.ts:29-34** — Return both pattern sets:
 
 ```typescript
@@ -159,24 +186,28 @@ app.get("/api/v1/genome", async (req: Request, res: Response) => {
 });
 ```
 
-**genome.js:35-61** — Add toggle for showing all vs unresolved:
+**genome.js** — Add toggle for showing all vs unresolved:
 
-```typescript
-// Add property
+```javascript
+// Add property in constructor
+this.allPatterns = [];
 this.showAll = false;
 
-// Add toggle button in render
+// In fetchGenome(), capture allPatterns
+this.allPatterns = data.allPatterns || [];
+
+// Add toggle button in render()
 <button class="cc-btn cc-genome-toggle" style="margin-bottom:12px">
   ${this.showAll ? 'Show Unresolved Only' : 'Show All Patterns'}
 </button>
 
-// Bind toggle
+// Bind toggle after render
 this.container.querySelector('.cc-genome-toggle')?.addEventListener('click', () => {
   this.showAll = !this.showAll;
   this.render();
 });
 
-// Use appropriate pattern set
+// In renderPatternCards(), use appropriate set
 const displayPatterns = this.showAll ? this.allPatterns : this.patterns;
 ```
 
@@ -199,7 +230,7 @@ const displayPatterns = this.showAll ? this.allPatterns : this.patterns;
 
 **timeline.js:71-86** — Add expandable detail like transparency.js:
 
-```typescript
+```javascript
 renderEntries() {
   if (!this.entries.length) {
     // ... empty state unchanged
@@ -230,7 +261,7 @@ renderEntries() {
 
 **timeline.js:89-102** — Add entry click binding:
 
-```typescript
+```javascript
 bindFilters() {
   // ... existing filter bindings
 
@@ -253,136 +284,54 @@ bindFilters() {
 
 ---
 
-## Phase 5: Clickable Blocked Message Navigation (P2)
+## Phase 5: DEFERRED to v4.9.8
 
-**Root Cause**: Sentinel alert in Monitor shows blocked verdicts but clicking only opens generic Command Center — no direct navigation to specific audit entries.
+**Original Scope**: Clickable blocked message navigation from Monitor to Audit log with highlighting.
 
-### Affected Files
+**Reason for Deferral**: `roadmap.js` is at 632 lines (2.5x over 250L Razor limit). Adding navigation code without decomposition would worsen technical debt. Phase 5 requires prior extraction of sentinel rendering into a dedicated module.
 
-- `FailSafe/extension/src/roadmap/ui/roadmap.js` — pass verdict IDs to audit navigation
-- `FailSafe/extension/src/roadmap/ui/modules/transparency.js` — support URL hash-based entry highlighting
-- `FailSafe/extension/src/roadmap/ui/command-center.js` — parse hash params on load
-
-### Changes
-
-**roadmap.js:295-309** — Pass verdict context to navigation:
-
-```typescript
-renderSentinel(status, verdicts) {
-  // ... existing code until onclick
-
-  // Collect blocked verdict IDs for navigation
-  const blockedVerdicts = verdicts.filter(v =>
-    ['BLOCK', 'ESCALATE', 'QUARANTINE'].includes(String(v.decision || ''))
-  );
-  const verdictIds = blockedVerdicts.map(v => v.id || v.timestamp).join(',');
-
-  this.elements.sentinelAlert.onclick = () => {
-    window.open(`/command-center.html#governance:audit?highlight=${encodeURIComponent(verdictIds)}`, '_blank');
-  };
-}
-```
-
-**transparency.js** — Add highlight support:
-
-```typescript
-// Add property
-this.highlightIds = [];
-
-// In render(), after DOM setup:
-this.parseHighlightParams();
-this.highlightEntries();
-
-parseHighlightParams() {
-  const hash = window.location.hash;
-  const match = hash.match(/highlight=([^&]+)/);
-  if (match) {
-    this.highlightIds = decodeURIComponent(match[1]).split(',');
-  }
-}
-
-highlightEntries() {
-  if (!this.highlightIds.length) return;
-  this.container.querySelectorAll('.cc-card').forEach(card => {
-    const entryTime = card.querySelector('[data-entry-time]')?.dataset.entryTime;
-    if (entryTime && this.highlightIds.includes(entryTime)) {
-      card.style.border = '2px solid var(--accent-red)';
-      card.style.animation = 'pulse 1s ease-in-out 3';
-      // Auto-expand the highlighted entry
-      const detail = card.querySelector('.cc-payload-detail');
-      if (detail) detail.style.display = 'block';
-    }
-  });
-  // Scroll to first highlighted
-  const first = this.container.querySelector('[style*="border: 2px solid var(--accent-red)"]');
-  if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
-}
-```
-
-**transparency.js:127-145** — Add data attribute for entry identification:
-
-```typescript
-appendCard(entry) {
-  // ... existing card creation
-  card.innerHTML = `
-    <div style="..." data-entry-time="${this.esc(entry.time)}">
-      <!-- ... rest of card content -->
-    </div>
-  `;
-}
-```
-
-**command-center.js** — Parse hash on load for tab navigation:
-
-```typescript
-// In init or DOMContentLoaded:
-const hash = window.location.hash;
-if (hash.startsWith('#governance:audit')) {
-  // Click governance tab
-  document.querySelector('.tab-btn[data-target="governance"]')?.click();
-  setTimeout(() => {
-    // Click audit subtab
-    document.querySelector('.sub-tab-btn[data-subtab="audit"]')?.click();
-  }, 100);
-}
-```
-
-### Unit Tests
-
-- `roadmap.test.js` — verify blocked verdict IDs included in navigation URL
-- `transparency.test.js` — verify highlight param parses and applies styles
-- `transparency.test.js` — verify highlighted entries auto-expand and scroll into view
-
----
-
-## Backlog Items
-
-Add to `docs/BACKLOG.md`:
-
-```markdown
-### v4.9.7 Diagnostic Fixes
-
-- [ ] [B181] Phase 1: Fix governance mode config gap — add mode to FailSafeConfig, read from VS Code settings | v4.9.7
-- [ ] [B182] Phase 2: Agent run capture for external agents — file-based session detection, implicit run creation | v4.9.7
-- [ ] [B183] Phase 3: Genome view data visibility — show all patterns with status filter toggle | v4.9.7
-- [ ] [B184] Phase 4: Timeline entry expansion — click-to-expand detail sections | v4.9.7
-- [ ] [B185] Phase 5: Clickable blocked message navigation — direct audit log linking with highlighting | v4.9.7
-```
+**Deferred Work**:
+- B185: Clickable blocked message navigation → moved to v4.9.8
+- D33: roadmap.js Razor remediation → prerequisite for B185
 
 ---
 
 ## Summary
 
-| Phase | Priority | Files Changed | Complexity |
-|-------|----------|---------------|------------|
-| 1. Governance Mode | P0 | 2 | Low |
-| 2. Agent Run Capture | P1 | 2 | Medium |
-| 3. Genome View | P2 | 3 | Medium |
-| 4. Timeline Expand | P2 | 1 | Low |
-| 5. Blocked Navigation | P2 | 3 | Medium |
+| Phase | Priority | Files Changed | Complexity | Status |
+|-------|----------|---------------|------------|--------|
+| 1. Governance Mode | P0 | 2 | Low | Active |
+| 2. Agent Run Capture | P1 | 2 | Medium | Active |
+| 3. Genome View | P2 | 5 | Medium | Active (V1/V2 fixed) |
+| 4. Timeline Expand | P2 | 1 | Low | Active |
+| 5. Blocked Navigation | P2 | 3 | Medium | **DEFERRED** |
 
-**Total**: 11 file changes, 5 unit test files
+**Active Scope**: 10 file changes, 4 unit test files
+**Deferred**: B185, D33
+
+---
+
+## Backlog Updates
+
+Move B185 to v4.9.8 section and add roadmap.js decomposition as prerequisite:
+
+```markdown
+### v4.9.7 Diagnostic Fixes (plan-v497-diagnostic-fixes.md)
+
+- [ ] [B181] Phase 1: Governance mode config gap — add mode to FailSafeConfig, read from VS Code settings | v4.9.7
+- [ ] [B182] Phase 2: Agent run capture for external agents — file-based session detection, implicit run creation | v4.9.7
+- [ ] [B183] Phase 3: Genome view data visibility — show all patterns with status filter toggle | v4.9.7
+- [ ] [B184] Phase 4: Timeline entry expansion — click-to-expand detail sections | v4.9.7
+- [x] [B185] ~~Phase 5: Clickable blocked message navigation~~ — DEFERRED to v4.9.8 (D33 prerequisite)
+
+### v4.9.8 Blocked Navigation + Razor (plan-v498-blocked-navigation.md)
+
+- [ ] [B186] Phase 0: Extract sentinel rendering from roadmap.js into sentinel-monitor.js (D33 resolution) | v4.9.8
+- [ ] [B185] Phase 1: Clickable blocked message navigation — direct audit log linking with highlighting | v4.9.8
+```
 
 ---
 
 _Plan follows Simple Made Easy principles — each phase is independent and can be implemented/tested in isolation._
+
+_Amended v2 resolves VETO violations V1, V2, V3 per Entry #247._

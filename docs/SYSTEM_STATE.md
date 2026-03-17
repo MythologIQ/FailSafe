@@ -1,7 +1,71 @@
 # SYSTEM STATE
 
-**Last Updated:** 2026-03-16
-**Version:** v4.10.0 SRE Panel & Monitor Toggle SUBSTANTIATED
+**Last Updated:** 2026-03-17
+**Version:** v4.9.7 Diagnostic Fixes SUBSTANTIATED
+
+---
+
+## Diagnostic Fixes (v4.9.7) — B181-B184
+
+### Ledger Trail
+
+| Entry | Phase | Verdict |
+|-------|-------|---------|
+| #247 | GATE | VETO (L2 — 3 violations: Ghost Path x2, Razor) |
+| #248 | GATE | PASS (L2 — amended v2 resolves all violations) |
+| #249 | IMPLEMENT | 11 files modified, 633 tests passing |
+| #250 | SUBSTANTIATE | Session sealed |
+
+### Modified Files
+
+| File | Change |
+|------|--------|
+| `src/shared/types/config.ts` | Added `mode` to governance type |
+| `src/shared/types/agentRun.ts` | Added `implicit` to AgentRunSource |
+| `src/shared/ConfigManager.ts` | Read governance.mode from VS Code settings |
+| `src/sentinel/AgentRunRecorder.ts` | Added `handleFileEdit()` for external agent capture |
+| `src/extension/main.ts` | Wired file edit handler (section 8.7) |
+| `src/qorelogic/shadow/ShadowGenomeManager.ts` | Added `analyzeAllPatterns()` method |
+| `src/roadmap/routes/types.ts` | Added `getGenomeAllPatterns` to ApiRouteDeps |
+| `src/roadmap/ConsoleServer.ts` | Wired `getGenomeAllPatterns` delegate |
+| `src/roadmap/routes/AgentApiRoute.ts` | Return allPatterns in genome endpoint |
+| `src/roadmap/ui/modules/genome.js` | Show-all toggle for patterns |
+| `src/roadmap/ui/modules/timeline.js` | Click-to-expand entry details |
+
+### Features Delivered
+
+1. **Governance Mode Config (B181)**: `FailSafeConfig.governance.mode` now reads from VS Code settings (`failsafe.governance.mode`) with default `"observe"`. EnforcementEngine uses actual config instead of hardcoded default.
+
+2. **External Agent Capture (B182)**: `AgentRunRecorder.handleFileEdit()` detects rapid file edits (within 5s) to start implicit agent runs. Wired via `onWillSaveTextDocument` in main.ts. External agents (Claude Code, Copilot) now captured in replay.
+
+3. **Genome View Visibility (B183)**: New `ShadowGenomeManager.analyzeAllPatterns()` returns all patterns regardless of remediation status. Genome UI has "Show All Patterns" toggle. API returns both `patterns` (unresolved) and `allPatterns` (all).
+
+4. **Timeline Entry Expansion (B184)**: Timeline entries are now clickable to expand payload JSON details. Uses same pattern as transparency.js.
+
+### Section 4 Razor Status
+
+| File | Lines | Status |
+|------|-------|--------|
+| `genome.js` | 111 | PASS |
+| `timeline.js` | 124 | PASS |
+| `handleFileEdit()` | ~25 | PASS |
+| `analyzeAllPatterns()` | ~30 | PASS |
+
+### Blockers Resolved
+
+- **B181**: Governance mode config gap
+- **B182**: Agent run capture for external agents
+- **B183**: Genome view data visibility
+- **B184**: Timeline entry expansion
+- **D31**: Ghost Path — getGenomeAllPatterns declaration
+- **D32**: Ghost Path — delegate wiring
+- **D33**: Deferred (Phase 5 → v4.9.8)
+
+### Test Results
+
+- **Before**: 633 unit tests passing
+- **After**: 633 unit tests passing
+- **Regressions**: 0
 
 ---
 

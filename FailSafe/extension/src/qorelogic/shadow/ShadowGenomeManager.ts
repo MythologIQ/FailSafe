@@ -441,6 +441,40 @@ export class ShadowGenomeManager {
     }
 
     /**
+     * Analyze all failure patterns regardless of status (B183).
+     * Returns patterns grouped by failure_mode AND remediation_status.
+     */
+    async analyzeAllPatterns(): Promise<(FailurePattern & { remediationStatus: RemediationStatus })[]> {
+        if (!this.db) { return []; }
+
+        const rows = this.db.prepare(`
+            SELECT
+                failure_mode,
+                remediation_status,
+                COUNT(*) as count,
+                GROUP_CONCAT(DISTINCT agent_did) as agent_dids,
+                GROUP_CONCAT(causal_vector, '|||') as causes
+            FROM shadow_genome
+            GROUP BY failure_mode, remediation_status
+            ORDER BY count DESC
+        `).all() as Array<{
+            failure_mode: FailureMode;
+            remediation_status: RemediationStatus;
+            count: number;
+            agent_dids: string | null;
+            causes: string | null;
+        }>;
+
+        return rows.map(row => ({
+            failureMode: row.failure_mode,
+            count: row.count,
+            agentDids: row.agent_dids ? row.agent_dids.split(',') : [],
+            recentCauses: row.causes ? row.causes.split('|||').slice(0, 3) : [],
+            remediationStatus: row.remediation_status,
+        }));
+    }
+
+    /**
      * Get negative constraints for an agent (for learning injection)
      */
     async getNegativeConstraintsForAgent(agentDid: string): Promise<string[]> {

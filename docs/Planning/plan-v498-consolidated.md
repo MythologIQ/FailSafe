@@ -1,9 +1,10 @@
-# Plan: v4.9.8 — Error Budget Fix, Blocked Navigation, SRE Panel Expansion
+# Plan: v4.9.8 — Error Budget Fix, Blocked Navigation, SRE Panel Expansion (Amended v2)
 
 **Current Version**: v4.9.7
 **Target Version**: v4.9.8
 **Change Type**: feature
 **Risk Grade**: L2
+**Prior Verdicts**: VETO (Entry #251, V1: phantom planId) → this amendment
 
 ## Open Questions
 
@@ -21,31 +22,36 @@ The error budget formula counts ALL recent verdicts including resolved VETOs. A 
 
 ### Changes
 
-In `renderWorkspaceHealth()` at line 322, the verdict filters count raw decisions. Add resolution filtering: exclude any BLOCK/ESCALATE/QUARANTINE verdict that has a subsequent PASS verdict for the same `planId` or `checkpointType`.
+In `renderWorkspaceHealth()` at line 322, the verdict filters count raw decisions. Add resolution filtering using the `phase` and `timestamp` fields (which exist on `CheckpointRecord`): exclude any severe verdict that has a subsequent PASS verdict in the same `phase`.
 
 ```javascript
 // Before: counts ALL severe/warn verdicts
 const severeHits = verdicts.filter(v => ['BLOCK','ESCALATE','QUARANTINE'].includes(String(v.decision || ''))).length;
 const warnHits = verdicts.filter(v => String(v.decision || '') === 'WARN').length;
 
-// After: exclude resolved verdicts (VETO followed by PASS on same plan)
-const resolvedPlanIds = new Set(
-  verdicts.filter(v => String(v.decision || '') === 'PASS' && v.planId)
-    .map(v => v.planId)
+// After: exclude resolved verdicts (severe followed by PASS in same phase)
+const sorted = [...verdicts].sort((a, b) =>
+  new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime()
 );
-const unresolvedVerdicts = verdicts.filter(v => !resolvedPlanIds.has(v.planId));
+const resolvedPhases = new Set();
+for (const v of sorted) {
+  if (String(v.decision || '') === 'PASS' && v.phase) resolvedPhases.add(v.phase);
+}
+const unresolvedVerdicts = sorted.filter(v => !resolvedPhases.has(v.phase));
 const severeHits = unresolvedVerdicts.filter(v => ['BLOCK','ESCALATE','QUARANTINE'].includes(String(v.decision || ''))).length;
 const warnHits = unresolvedVerdicts.filter(v => String(v.decision || '') === 'WARN').length;
 ```
+
+This works because the SHIELD lifecycle ensures a PASS verdict supersedes any prior BLOCK/VETO in the same phase. Sorting newest-first and collecting PASS phases means any severe verdict in a phase that later PASSed is excluded.
 
 Also update the help text in the `errorbudget` tooltip (~line 533) to clarify that resolved verdicts are excluded.
 
 ### Unit Tests
 
 - `src/test/roadmap/roadmap-health.test.ts` (new) — test error budget calculation:
-  - `resolved VETO does not burn error budget` — BLOCK + subsequent PASS on same planId → severeHits = 0
-  - `unresolved VETO burns error budget` — BLOCK without PASS → severeHits = 1
-  - `mixed resolved and unresolved` — 3 BLOCKs, 2 PASSed → severeHits = 1
+  - `resolved VETO does not burn error budget` — BLOCK + subsequent PASS in same phase → severeHits = 0
+  - `unresolved VETO burns error budget` — BLOCK without PASS in same phase → severeHits = 1
+  - `mixed resolved and unresolved` — 3 BLOCKs across 2 phases, 1 phase PASSed → severeHits = 1
 
 ---
 

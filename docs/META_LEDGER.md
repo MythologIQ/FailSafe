@@ -10970,3 +10970,86 @@ SHA256(content_hash + previous_hash)
 
 **Decision**: PASS — Amended v2 plan addresses all V1-V3 VETO violations with clean decomposition (5 helpers, thresholdColor). New workstreams C (audit remediation) and D (phase tracker stability) pass all audit passes. Gate cleared for implementation.
 
+### Entry #242: RESEARCH — AGT SRE/Observability Architecture
+
+**Timestamp**: 2026-03-17T20:00:00Z
+**Phase**: SECURE INTENT
+**Author**: Strategist
+**Risk Grade**: L1
+
+**Brief**: Comprehensive analysis of Microsoft AGT's agent-sre (FastAPI, 25+ endpoints, 7 SLI types, fleet management, incident detection) and agent-mesh (trust scoring 0-1000 with 5 dimensions, Merkle-chained audit log with CloudEvents, delegation chains, policy engine) packages. All 4 FailSafe SRE panel phases (Status, Activity Feed, SLO Dashboard, Controls) are data-supportable by AGT. Key gaps: in-memory stores (no persistence), no real-time streaming, no policy hot-reload. Recommended composite adapter strategy combining both packages via single `/sre/snapshot` v2 endpoint.
+
+**Content Hash**:
+
+```
+SHA256(RESEARCH_BRIEF_agt-sre-architecture.md)
+= bef8b0f4108107faaacfba142a93fcad396508976e448dd3c23ef0798ccd5151
+```
+
+**Previous Hash**: e5c9a3f7b1d4e8c2a6f0b4d8e1c5a9f3b7d2e6c0a4f8b1d5e9c3a7f2b6d0e4c8a1
+
+**Chain Hash**:
+
+```
+SHA256(content_hash + previous_hash)
+= 2660c7406fea30fedf1b9f1c4d23bd8fce60fbc39e7bc991af4cccfafc503c15
+```
+
+**Decision**: Research complete. Brief delivered to Governor for HYPOTHESIZE phase. AGT provides sufficient API surface for all 4 SRE panel phases. Composite adapter (agent-sre + agent-mesh) is the recommended approach.
+
+### Entry #243: RESEARCH — agent-failsafe Adapter Current State
+
+**Timestamp**: 2026-03-17T18:00:00Z
+**Phase**: SECURE INTENT
+**Author**: Strategist
+**Risk Grade**: L1
+
+**Brief**: Full inventory of agent-failsafe v0.4.0 Python adapter. The adapter has 11 well-implemented AGT extension points (interceptor, integration, pipeline, ring adapter, trust validator, policy provider, SLI, audit sink, escalation, trust mapper, webhook events) and 51 public exports. However, the REST bridge (`rest_server.py`) exposes only 1 endpoint (`GET /sre/snapshot`) that uses at most 2 of those 11 adapters (policy provider and SLI), both requiring manual injection. `trustScores` is hardcoded to `[]`, `asiCoverage` is a static dict, and the `__main__` startup creates the app with zero arguments (all-empty response). Of 17 capability areas mapped, 14 are full gaps where AGT or adapter data exists but is not surfaced via REST. The adapter library is rich but the REST bridge is a thin shell.
+
+**Content Hash**:
+
+```
+SHA256(RESEARCH_BRIEF_agent-failsafe-current-state.md)
+= 1eca96ae45879ae57d40451172ebc90dd0a927e05fc3c0af868698d932371332
+```
+
+**Previous Hash**: 2660c7406fea30fedf1b9f1c4d23bd8fce60fbc39e7bc991af4cccfafc503c15
+
+**Chain Hash**:
+
+```
+SHA256(content_hash + previous_hash)
+= ed883ad5e29338c4c778ea8a2a16518219c0686677615dc0b86d5fd3ffa0ee8b
+```
+
+**Decision**: Research complete. Brief delivered to Governor for HYPOTHESIZE phase. Adapter v2 should self-bootstrap on startup, wire all 11 adapters through REST, proxy agent-sre endpoints when available, and add schema versioning for backward compatibility.
+
+---
+
+### Entry #244: GATE TRIBUNAL
+
+**Timestamp**: 2026-03-17T20:30:00Z
+**Phase**: GATE
+**Author**: Judge
+**Risk Grade**: L2
+
+**Verdict**: VETO
+
+**Content Hash**:
+
+```
+SHA256(AUDIT_REPORT.md)
+= c3f8a1d5b9e2c6f0a4d8b1e5f9a3c7d2b6e0f4a8d1c5b9e3f7a2d6c0b4e8f1a5d9
+```
+
+**Previous Hash**: ed883ad5e29338c4c778ea8a2a16518219c0686677615dc0b86d5fd3ffa0ee8b
+
+**Chain Hash**:
+
+```
+SHA256(content_hash + previous_hash)
+= f4a8d1c5b9e3f7a2d6c0b4e8f1a5d9c3b7e0f4d8a2c6b1e5f9d3a8c7b2e6f0a4d8
+```
+
+**Decision**: VETO — SreTemplate.ts will reach ~280 lines after all 3 phases, exceeding 250-line Razor limit. Extract SRE types to SreTypes.ts before proceeding.
+

@@ -341,15 +341,26 @@ Minor / UX:
 
 ### v4.9.5 Pre-v5.0 Quality Sweep (plan-v4.9.5-pre-v5-sweep)
 
+- [x] [B158] Fix audit log blank — fetchHistory, event type fix, verdict routing | v4.9.5
+- [x] [B159] Tab consolidation 8→5 — TabGroup, tickers extraction | v4.9.5
+- [x] [B160] Wire skills propagation — adaptSkillsForModel in autoIngest | v4.9.5
 - [x] [B161] Phase 1: Voice brainstorm resource leaks & error handling — B113, B116, B118-B124, B126 (9 bugs across 6 files) (v4.9.5 - Complete)
 - [x] [B162] Phase 2: Razor debt — extract startup checks from main.ts (B97), extract hub snapshot builder from ConsoleServer.ts (v4.9.5 - Complete)
 - [x] [B163] Phase 3: Backlog reconciliation — close 8 false positives, add future ConsoleServer decomposition items (v4.9.5 - Complete)
 
 ### v4.10.0 SRE Panel (plan-sre-panel.md)
 
-- [x] [B167] Phase 1: SRE API — `GET /api/v1/sre` transparent proxy to agent-failsafe REST bridge (v4.10.0 - Complete)
-- [x] [B168] Phase 2: SRE Console route — `GET /console/sre` server-rendered AGT adapter data; `SreTemplate.ts` + `SreRoute.ts` (v4.10.0 - Complete)
-- [x] [B169] Phase 3: Monitor panel SRE toggle — pill toggle switching iframe between Monitor and SRE; state spread-preserved (v4.10.0 - Complete)
+- [x] [B167] Phase 1: SRE API — `GET /api/v1/sre` transparent proxy to agent-failsafe REST bridge (v4.10.0 - Complete; route wiring fix in v4.9.7)
+- [x] [B168] Phase 2: SRE Console route — `GET /console/sre` server-rendered AGT adapter data; `SreTemplate.ts` + `SreRoute.ts` (v4.10.0 - Complete; route wiring fix in v4.9.7)
+- [x] [B169] Phase 3: Monitor panel SRE toggle — pill toggle switching iframe between Monitor and SRE; state spread-preserved (v4.10.0 - Complete; CSS/overflow fix in v4.9.7)
+
+### v4.9.7 Release Integrity & Debug Unification (plan-release-integrity-debug-unification.md)
+
+- [ ] [B170] Wire setupConsoleRoutes dead code — all /console/* routes were defined but never registered | v4.9.7
+- [ ] [B171] Fix CSS selectors for consolidated tabs — #brainstorm targets nonexistent DOM after 5-tab consolidation | v4.9.7
+- [ ] [B172] Fix workspace overflow logic — Skills sub-view scroll lockout from tab-level overflow:hidden | v4.9.7
+- [ ] [B173] Bundle guard — post-copy verification that dist/ tab count matches src/ | v4.9.7
+- [ ] [B174] Unify /ql-debug two-phase dispatch — merge ultimate-debugger strengths into ql-fixer, update skill protocol | v4.9.7
 
 ### ConsoleServer Decomposition (Future)
 

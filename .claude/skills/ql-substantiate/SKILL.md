@@ -166,8 +166,17 @@ PAUSE
 Report: "Skill [name] missing required section: [section]. Fix before sealing."
 ```
 
-<!-- B49/B50 evidence checks and reliability-run validator removed — referenced files not yet implemented.
-     Re-add when tools/reliability/ scripts are created. -->
+### Step 4.6: Skill Admission Evidence Check (B49)
+
+> Deferred — `validate-skill-admission.ps1` not yet implemented. This step is a no-op until `tools/reliability/` scripts are created.
+
+### Step 4.7: Gate-to-Skill Matrix Evidence Check (B50)
+
+> Deferred — `validate-gate-skill-matrix.ps1` not yet implemented. This step is a no-op until `tools/reliability/` scripts are created.
+
+### Step 4.8: Reliability Integrity Gate
+
+> Deferred — `validate-reliability-run.ps1` not yet implemented. This step is a no-op until `tools/reliability/` scripts are created.
 
 ### Step 5: Section 4 Razor Final Check
 

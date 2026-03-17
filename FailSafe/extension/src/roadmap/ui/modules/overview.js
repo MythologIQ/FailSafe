@@ -44,14 +44,14 @@ export class OverviewRenderer {
           </div>
         </div>
 
-        <div class="card" style="background: var(--bg-panel); border: 1px solid var(--border-rim); border-radius: 12px; padding: 16px;">
+        <div class="card clickable-card" data-nav="governance:audit" style="background: var(--bg-panel); border: 1px solid var(--border-rim); border-radius: 12px; padding: 16px; cursor: pointer; transition: border-color 0.15s, transform 0.1s;" title="View Audit Log">
           <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Active Threats</div>
           <div style="font-size: 1.8rem; font-weight: 700; color: ${hubData?.riskSummary?.high > 0 ? 'var(--accent-red)' : 'var(--accent-green)'}; font-family: var(--font-display); margin-top: 8px;">
             ${hubData?.riskSummary?.high || 0}
           </div>
         </div>
 
-        <div class="card" style="background: var(--bg-panel); border: 1px solid var(--border-rim); border-radius: 12px; padding: 16px;">
+        <div class="card clickable-card" data-nav="governance:compliance" style="background: var(--bg-panel); border: 1px solid var(--border-rim); border-radius: 12px; padding: 16px; cursor: pointer; transition: border-color 0.15s, transform 0.1s;" title="View Chain Integrity">
           <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">L3 Chain</div>
           <div style="font-size: 1.8rem; font-weight: 700; color: ${chainColor}; font-family: var(--font-display); margin-top: 8px;">
             ${chainLabel}
@@ -88,6 +88,37 @@ export class OverviewRenderer {
     `;
 
     this.container.innerHTML = html;
+    this.bindClickableCards();
+  }
+
+  bindClickableCards() {
+    const cards = this.container.querySelectorAll('.clickable-card[data-nav]');
+    cards.forEach(card => {
+      card.addEventListener('click', () => {
+        const nav = card.dataset.nav;
+        if (!nav) return;
+        const [tab, subTab] = nav.split(':');
+        // Click the main tab
+        const tabBtn = document.querySelector(`.tab-btn[data-target="${tab}"]`);
+        if (tabBtn) tabBtn.click();
+        // If subtab specified, click it after a brief delay for tab to render
+        if (subTab) {
+          setTimeout(() => {
+            const subTabBtn = document.querySelector(`#${tab} .sub-tab-btn[data-subtab="${subTab}"]`);
+            if (subTabBtn) subTabBtn.click();
+          }, 50);
+        }
+      });
+      // Hover effects
+      card.addEventListener('mouseenter', () => {
+        card.style.borderColor = 'var(--primary)';
+        card.style.transform = 'translateY(-1px)';
+      });
+      card.addEventListener('mouseleave', () => {
+        card.style.borderColor = '';
+        card.style.transform = '';
+      });
+    });
   }
 
   renderOperationalStream(checkpoints) {
@@ -161,10 +192,10 @@ export class OverviewRenderer {
     if (critical.length === 0) return '';
     const latest = critical[critical.length - 1];
     return `
-      <div style="background:rgba(255,60,60,0.12);border:1px solid var(--accent-red);
-        border-radius:10px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
+      <div class="clickable-card" data-nav="governance:audit" style="background:rgba(255,60,60,0.12);border:1px solid var(--accent-red);
+        border-radius:10px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:background 0.15s,transform 0.1s" title="View in Audit Log">
         <span style="font-size:1.2rem">!</span>
-        <div>
+        <div style="flex:1">
           <div style="font-weight:700;color:var(--accent-red);font-size:0.9rem">
             ${esc(latest.decision)}: ${critical.length} critical verdict(s)
           </div>
@@ -172,6 +203,7 @@ export class OverviewRenderer {
             Latest: ${esc(latest.riskGrade)} risk at ${esc(new Date(latest.timestamp).toLocaleTimeString())}
           </div>
         </div>
+        <span style="font-size:0.75rem;color:var(--text-muted);opacity:0.7">View →</span>
       </div>`;
   }
 

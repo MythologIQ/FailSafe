@@ -393,6 +393,11 @@ Minor / UX:
 - [x] [B179] Phase 5: Activity Feed — audit event feed with ALLOW/DENY badges (v4.9.8 - Complete)
 - [x] [B180] Phase 6: SLO Dashboard — multi-SLI grid with error budgets + per-agent fleet health cards (v4.9.8 - Complete)
 
+### v4.9.9 Right Panel Fix (plan-v499-right-panel-fix.md)
+
+- [ ] [B188] Fix brainstorm right panel missing — TabGroup does not proxy renderRightPanel/bindToolbar from active sub-view; pill switching doesn't update right panel | v4.9.9
+- [ ] [B189] Fix Install Skills path — bundledPath points to nonexistent `skills/` instead of `dist/extension/skills/`; same bug in WorkspaceMigration.ts | v4.9.9
+
 ### ConsoleServer Decomposition (Future)
 
 - [ ] [B164] Extract route handlers from ConsoleServer.ts into dedicated route modules (Express router pattern)

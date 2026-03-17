@@ -393,6 +393,11 @@ Minor / UX:
 - [x] [B179] Phase 5: Activity Feed — audit event feed with ALLOW/DENY badges (v4.9.8 - Complete)
 - [x] [B180] Phase 6: SLO Dashboard — multi-SLI grid with error budgets + per-agent fleet health cards (v4.9.8 - Complete)
 
+### v4.9.9 Right Panel Fix (plan-v499-right-panel-fix.md)
+
+- [x] [B188] Fix brainstorm right panel missing — TabGroup does not proxy renderRightPanel/bindToolbar from active sub-view; pill switching doesn't update right panel (v4.9.9 - Complete)
+- [x] [B189] Fix Install Skills path — bundledPath points to nonexistent `skills/` instead of `dist/extension/skills/`; same bug in WorkspaceMigration.ts (v4.9.9 - Complete)
+
 ### ConsoleServer Decomposition (Future)
 
 - [ ] [B164] Extract route handlers from ConsoleServer.ts into dedicated route modules (Express router pattern)
@@ -456,7 +461,8 @@ Minor / UX:
 | **v4.9.5**   | **Pre-v5.0 Quality Sweep**     | ✅ RELEASED    | Voice brainstorm fixes, Razor debt extraction, backlog reconciliation (B113-B128, B95-B99, B161-B163)                |
 | **v4.9.6**   | **SRE Panel**                  | ✅ RELEASED    | SRE panel via AGT adapter, OWASP ASI coverage, SLI compliance indicator, Monitor sidebar toggle (B167-B169)          |
 | **v4.9.7**   | **Diagnostic Fixes**           | ✅ RELEASED    | Governance mode config, external agent capture, genome visibility, timeline expansion (B181-B184)                    |
-| **v4.9.8**   | **SRE Expansion**              | 🔄 ACTIVE      | Error budget fix, sentinel extraction, clickable nav, SRE type extraction, activity feed, SLO dashboard (B178-B180, B185-B187) |
+| **v4.9.8**   | **SRE Expansion**              | ✅ RELEASED    | Error budget fix, sentinel extraction, clickable nav, SRE type extraction, activity feed, SLO dashboard (B178-B180, B185-B187) |
+| **v4.9.9**   | **UI Bugfixes**                | 🔄 ACTIVE      | Install Skills path fix, brainstorm right panel proxy, TabGroup sub-view panels (B188-B189)                                    |
 
 ---
 

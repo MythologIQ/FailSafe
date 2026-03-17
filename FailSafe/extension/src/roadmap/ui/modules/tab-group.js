@@ -28,12 +28,24 @@ export class TabGroup {
     this.renderActive(hubData);
   }
 
+  renderRightPanel() {
+    const sv = this.subViews.find(s => s.key === this.activeKey);
+    if (!sv?.renderer.renderRightPanel) return null;
+    return sv.renderer.renderRightPanel();
+  }
+
+  bindToolbar() {
+    const sv = this.subViews.find(s => s.key === this.activeKey);
+    sv?.renderer.bindToolbar?.();
+  }
+
   switchTo(key, hubData) {
     this.activeKey = key;
     this.container.querySelector('.cc-subview-bar')?.querySelectorAll('.cc-pill').forEach(p => {
       p.classList.toggle('active', p.dataset.key === key);
     });
     this.renderActive(hubData);
+    this.onSubViewSwitch?.();
   }
 
   renderActive(hubData) {

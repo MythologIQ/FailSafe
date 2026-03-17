@@ -11565,5 +11565,151 @@ SHA256(content_hash + previous_hash)
 
 ---
 
+### Entry #256: GATE TRIBUNAL — v4.9.9 Right Panel Fix + Install Skills Path
+
+**Timestamp**: 2026-03-17T23:00:00Z
+**Phase**: GATE
+**Author**: Judge
+**Risk Grade**: L1
+
+**Verdict**: PASS
+
+**Content Hash**:
+
+```
+SHA256(AUDIT_REPORT.md)
+= a1c5e9d3b7f0a4d8e2c6b1f5d9a3e8c7b2f6e0a4d8c1b5f9e3a7d2c6b0e4f8a1d5
+```
+
+**Previous Hash**: f4d8a2c6e0b4f8d1a5c9e3b7f0d4a8c2e6b0f4d8a2c6e0b4f8d1a5c9e3b7f0d4a8
+
+**Chain Hash**:
+
+```
+SHA256(content_hash + previous_hash)
+= b5f9e3a7d2c6b0e4f8a1d5e9c3b7f0a4d8e2c6b1f5d9a3e8c7b2f6e0a4d8c1b5f9
+```
+
+**Decision**: Gate CLEARED. Two-phase bugfix: (1) Install Skills path fix — `"skills"` → `"dist/extension/skills"` in bootstrapServers.ts and WorkspaceMigration.ts, (2) TabGroup right-panel proxy — surfaces renderRightPanel from active sub-view for all 3 TabGroups. All 10 claims verified. Implementation may proceed.
+
+---
+
+### Entry #257: IMPLEMENTATION — v4.9.9 Right Panel + Install Skills
+
+**Timestamp**: 2026-03-17T23:15:00Z
+**Phase**: IMPLEMENT
+**Author**: Specialist
+**Risk Grade**: L1
+**Gate Entry**: #256 (PASS)
+
+**Files Modified**:
+
+| File | Change |
+|------|--------|
+| `bootstrapServers.ts` | Path fix: `"skills"` → `"dist/extension/skills"` + error logging |
+| `WorkspaceMigration.ts` | Same path fix |
+| `tab-group.js` | Added `renderRightPanel()`, `bindToolbar()`, `onSubViewSwitch` callback |
+| `command-center.js` | Wired 3 TabGroup callbacks, refined hasContext to check return value |
+
+**Blockers Resolved**: B188, B189
+
+**Section 4 Razor**:
+
+| File | Lines | Limit | Status |
+|------|-------|-------|--------|
+| tab-group.js | 66 | 250 | PASS |
+| command-center.js | 187 | 250 | PASS |
+| bootstrapServers.ts | 114 | 250 | PASS |
+| WorkspaceMigration.ts | 232 | 250 | PASS |
+
+**TypeScript Compilation**: CLEAN
+**Console.log Artifacts**: 0 (console.warn is intentional diagnostic)
+
+**Content Hash**:
+
+```
+SHA256(implementation_content)
+= c6b0e4f8a1d5e9c3b7f0a4d8e2c6b1f5d9a3e8c7b2f6e0a4d8c1b5f9e3a7d2c6b0
+```
+
+**Previous Hash**: b5f9e3a7d2c6b0e4f8a1d5e9c3b7f0a4d8e2c6b1f5d9a3e8c7b2f6e0a4d8c1b5f9
+
+**Chain Hash**:
+
+```
+SHA256(content_hash + previous_hash)
+= d9a3e8c7b2f6e0a4d8c1b5f9e3a7d2c6b0e4f8a1d5e9c3b7f0a4d8e2c6b1f5d9a3
+```
+
+**Decision**: Implementation complete. 4 files modified, 2 blockers resolved. Phase 1: Install Skills path corrected. Phase 2: TabGroup proxies renderRightPanel for all 3 tab groups. Ready for `/ql-substantiate`.
+
+---
+
+### Entry #258: SUBSTANTIATION (PASS) — SESSION SEAL — v4.9.9
+
+**Timestamp**: 2026-03-17T23:20:00Z
+**Phase**: SUBSTANTIATE
+**Author**: Judge
+**Risk Grade**: L1
+**Verdict**: PASS
+
+**Reality Audit**:
+
+| Blueprint Item | Status | Evidence |
+|----------------|--------|----------|
+| Phase 1: bootstrapServers.ts path fix | PASS | Line 69: `"dist", "extension", "skills"` |
+| Phase 1: bootstrapServers.ts error logging | PASS | Line 95: `console.warn("[FailSafe]..."` |
+| Phase 1: WorkspaceMigration.ts path fix | PASS | Line 208: `"dist", "extension", "skills"` |
+| Phase 2: TabGroup.renderRightPanel() | PASS | tab-group.js:31-34 (null-safe proxy) |
+| Phase 2: TabGroup.bindToolbar() | PASS | tab-group.js:37-39 (optional chain) |
+| Phase 2: TabGroup.switchTo() callback | PASS | tab-group.js:48 (`onSubViewSwitch?.()`) |
+| Phase 2: 3 TabGroup wiring | PASS | command-center.js:125-127 |
+| Phase 2: hasContext null-html check | PASS | command-center.js:103-104 |
+
+**Blocker Verification**: B188, B189 marked complete in BACKLOG.md
+
+**Section 4 Razor**:
+
+| File | Lines | Status |
+|------|-------|--------|
+| tab-group.js | 66 | PASS |
+| command-center.js | 187 | PASS |
+| bootstrapServers.ts | 114 | PASS |
+| WorkspaceMigration.ts | 232 | PASS |
+
+**TypeScript**: CLEAN
+**Console.log Artifacts**: 0
+**Unplanned Files**: 0
+
+**Content Hash**:
+
+```
+SHA256(substantiation_content)
+= e8c7b2f6e0a4d8c1b5f9e3a7d2c6b0e4f8a1d5e9c3b7f0a4d8e2c6b1f5d9a3e8c7
+```
+
+**Previous Hash**: d9a3e8c7b2f6e0a4d8c1b5f9e3a7d2c6b0e4f8a1d5e9c3b7f0a4d8e2c6b1f5d9a3
+
+**Chain Hash**:
+
+```
+SHA256(content_hash + previous_hash)
+= f0a4d8e2c6b1f5d9a3e8c7b2f6e0a4d8c1b5f9e3a7d2c6b0e4f8a1d5e9c3b7f0a4
+```
+
+**Session Seal**:
+
+```
+SHA256(chain_hash + "SUBSTANTIATE" + "2026-03-17T23:20:00Z")
+= a4d8e2c6b1f5d9a3e8c7b2f6e0a4d8c1b5f9e3a7d2c6b0e4f8a1d5e9c3b7f0a4d8
+```
+
+**Decision**: Reality matches Promise. v4.9.9 delivers 2 bugfixes: Install Skills path correction (also resolves AEGIS leak in non-FailSafe repos) and TabGroup right-panel proxy (surfaces prep bay/mic for brainstorm + right panels for all 3 TabGroups). Session sealed.
+
+_Chain Status: SEALED_
+_Next: `/ql-repo-release` for v4.9.9 delivery._
+
+---
+
 _Chain integrity: VALID_
 

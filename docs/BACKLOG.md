@@ -381,16 +381,14 @@ Minor / UX:
 - [x] [B184] Phase 4: Timeline entry expansion — click-to-expand detail sections (v4.9.7 - Complete)
 - [x] [B185] ~~Phase 5: Clickable blocked message navigation~~ — DEFERRED to v4.9.8 (D33 prerequisite) | v4.9.7
 
-### v4.9.8 Blocked Navigation + Razor (plan-v498-blocked-navigation.md)
+### v4.9.8 Consolidated (plan-v498-consolidated.md)
 
-- [ ] [B186] Phase 0: Extract sentinel rendering from roadmap.js into sentinel-monitor.js (D33 resolution) | v4.9.8
-- [ ] [B185] Phase 1: Clickable blocked message navigation — direct audit log linking with highlighting | v4.9.8
-
-### v4.9.8 SRE Panel Expansion (plan-sre-panel-expansion.md)
-
-- [ ] [B178] Phase 1: Snapshot v2 schema + adapter port config — expand AgtSreSnapshot type with optional v2 fields (fleet, auditEvents, slis, trust dimensions) | v4.9.8
-- [ ] [B179] Phase 2: Activity Feed — audit event feed with ALLOW/DENY badges, governance decision rendering | v4.9.8
-- [ ] [B180] Phase 3: SLO Dashboard — multi-SLI grid with error budgets + per-agent fleet health cards | v4.9.8
+- [ ] [B187] Phase 1: Error budget — exclude resolved verdicts from burn calculation | v4.9.8
+- [ ] [B186] Phase 2: Extract sentinel rendering from roadmap.js into sentinel-monitor.js (D33 resolution) | v4.9.8
+- [ ] [B185] Phase 3: Clickable blocked message navigation — direct audit log linking with highlighting | v4.9.8
+- [ ] [B178] Phase 4: SRE type extraction + v2 schema + adapter port config | v4.9.8
+- [ ] [B179] Phase 5: Activity Feed — audit event feed with ALLOW/DENY badges | v4.9.8
+- [ ] [B180] Phase 6: SLO Dashboard — multi-SLI grid with error budgets + per-agent fleet health cards | v4.9.8
 
 ### ConsoleServer Decomposition (Future)
 

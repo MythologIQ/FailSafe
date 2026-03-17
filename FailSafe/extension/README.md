@@ -4,15 +4,28 @@ Prevent runaway AI edits, hallucinated dependencies, and destructive refactors b
 
 FailSafe runs locally inside VS Code and Cursor. It monitors what AI agents do, applies deterministic policy checks at the editor boundary, and gives you full visibility into every decision — before code ships.
 
-**Current Release**: v4.9.6 (2026-03-16)
+**Current Release**: v4.9.7 (2026-03-17)
 
 ![FailSafe Banner](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/extension/FailSafe%20Banner.png)
 
-## What's New in v4.9.6
+## What's New in v4.9.7
+
+Governance mode configuration, external agent detection, genome pattern analysis improvements, and timeline UX enhancements.
+
+### Added
+
+- Governance mode configuration: `observe`, `assist`, `enforce` modes in settings (B181)
+- External agent detection via rapid file edit capture (B182)
+- Shadow Genome show-all toggle for pattern analysis (B183)
+- Timeline click-to-expand for full payload inspection (B184)
+
+---
+
+## v4.9.6
 
 SRE panel powered by the `agent-failsafe` adapter — active policies, trust scores, OWASP ASI coverage, and SLI compliance indicator directly in VS Code.
 
-### Added
+###
 
 - SRE panel in the Monitor sidebar: view active governance policies, enforcement status, OWASP ASI coverage map, and SLI compliance indicator.
 - SRE toggle button — switch between Monitor and SRE views without reloading the sidebar.

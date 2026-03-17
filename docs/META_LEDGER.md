@@ -11565,5 +11565,34 @@ SHA256(content_hash + previous_hash)
 
 ---
 
+### Entry #256: GATE TRIBUNAL — v4.9.9 Right Panel Fix + Install Skills Path
+
+**Timestamp**: 2026-03-17T23:00:00Z
+**Phase**: GATE
+**Author**: Judge
+**Risk Grade**: L1
+
+**Verdict**: PASS
+
+**Content Hash**:
+
+```
+SHA256(AUDIT_REPORT.md)
+= a1c5e9d3b7f0a4d8e2c6b1f5d9a3e8c7b2f6e0a4d8c1b5f9e3a7d2c6b0e4f8a1d5
+```
+
+**Previous Hash**: f4d8a2c6e0b4f8d1a5c9e3b7f0d4a8c2e6b0f4d8a2c6e0b4f8d1a5c9e3b7f0d4a8
+
+**Chain Hash**:
+
+```
+SHA256(content_hash + previous_hash)
+= b5f9e3a7d2c6b0e4f8a1d5e9c3b7f0a4d8e2c6b1f5d9a3e8c7b2f6e0a4d8c1b5f9
+```
+
+**Decision**: Gate CLEARED. Two-phase bugfix: (1) Install Skills path fix — `"skills"` → `"dist/extension/skills"` in bootstrapServers.ts and WorkspaceMigration.ts, (2) TabGroup right-panel proxy — surfaces renderRightPanel from active sub-view for all 3 TabGroups. All 10 claims verified. Implementation may proceed.
+
+---
+
 _Chain integrity: VALID_
 

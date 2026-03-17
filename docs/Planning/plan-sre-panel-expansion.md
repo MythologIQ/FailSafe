@@ -1,9 +1,10 @@
-# Plan: SRE Panel Expansion — Adapter v2 + Fleet Observability
+# Plan: SRE Panel Expansion — Adapter v2 + Fleet Observability (Amended v2)
 
 **Current Version**: v4.9.6
 **Target Version**: v4.9.8
 **Change Type**: feature
 **Risk Grade**: L2
+**Prior Verdicts**: VETO (Entry #244, V1: file size Razor) → this amendment
 
 ## Open Questions
 
@@ -23,20 +24,39 @@ The extension defines the TypeScript types it expects. The adapter conforms. Thi
 
 ---
 
-## Phase 1: Snapshot v2 Schema + Adapter Port Config
+## Phase 1: Type Extraction + Snapshot v2 Schema + Adapter Port Config
 
-Expand the TypeScript types to consume a richer adapter response. Add schema version detection so the panel can render v1 or v2 data.
+Extract SRE types to a dedicated file (Razor remediation for D28-D30), expand to v2 schema, and wire adapter port config.
 
 ### Affected Files
 
-- `FailSafe/extension/src/roadmap/routes/templates/SreTemplate.ts` — expand `AgtSreSnapshot` type, add v2 fields
+- `FailSafe/extension/src/roadmap/routes/templates/SreTypes.ts` — **NEW**: all SRE type definitions (~60 lines)
+- `FailSafe/extension/src/roadmap/routes/templates/SreTemplate.ts` — remove type definitions, import from `SreTypes.ts`
 - `FailSafe/extension/src/roadmap/services/AdapterTypes.ts` — add `adapterBaseUrl` to `AdapterConfig`
 - `FailSafe/extension/src/roadmap/routes/SreApiRoute.ts` — read base URL from config
 - `FailSafe/extension/src/roadmap/ConsoleServer.ts` — pass config to SRE route
+- `FailSafe/extension/src/test/roadmap/SreRoute.test.ts` — update imports
 
 ### Changes
 
-**1. Expand `AgtSreSnapshot` to v2 schema** in `SreTemplate.ts`:
+**0. Extract types to `SreTypes.ts`** (resolves D28-D30, VETO V1):
+
+Create `FailSafe/extension/src/roadmap/routes/templates/SreTypes.ts` containing all type definitions. `SreTemplate.ts` imports from it. This keeps the template file at ~100 lines (rendering only) even after Phases 2-3 add section builders.
+
+```typescript
+// SreTypes.ts — SRE panel type definitions
+export type AsiControl = { label: string; covered: boolean; feature: string };
+// ... all existing types + v2 types below
+```
+
+`SreTemplate.ts` becomes:
+```typescript
+import { escapeHtml } from "../../../shared/utils/htmlSanitizer";
+import type { AgtSreSnapshot, SreViewModel, ... } from "./SreTypes";
+// ... rendering functions only
+```
+
+**1. Define v2 schema types** in `SreTypes.ts`:
 
 ```typescript
 export type TrustDimension = {
@@ -215,10 +235,12 @@ ${s.fleet?.length ? buildFleetHtml(s.fleet) : ''}
 
 ## Summary
 
-| Phase | Scope | Backlog |
-|-------|-------|---------|
-| 1 | Snapshot v2 schema + adapter port config | B178 |
-| 2 | Activity Feed — audit events + governance decisions | B179 |
-| 3 | SLO Dashboard — multi-SLI + fleet health | B180 |
+| Phase | Scope | Backlog | File Budget |
+|-------|-------|---------|-------------|
+| 1 | Type extraction + v2 schema + adapter port config | B178, D30 | SreTypes.ts: ~60L, SreTemplate.ts: ~100L |
+| 2 | Activity Feed — audit events + governance decisions | B179 | SreTemplate.ts: ~120L |
+| 3 | SLO Dashboard — multi-SLI + fleet health | B180 | SreTemplate.ts: ~170L |
+
+All phases keep `SreTemplate.ts` under 250 lines. Types live in `SreTypes.ts` (~60 lines, stable after Phase 1).
 
 Phase 4 (Controls — trust override, chaos, circuit breakers) is deferred to a separate plan after Phases 1-3 are validated, as it introduces write operations to the adapter (POST endpoints) which require additional security audit.

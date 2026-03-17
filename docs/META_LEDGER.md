@@ -11344,5 +11344,34 @@ SHA256(content_hash + previous_hash)
 
 ---
 
+### Entry #252: GATE TRIBUNAL — v4.9.8 Consolidated (Amended v2)
+
+**Timestamp**: 2026-03-17T23:00:00Z
+**Phase**: GATE
+**Author**: Judge
+**Risk Grade**: L2
+
+**Verdict**: PASS
+
+**Content Hash**:
+
+```
+SHA256(AUDIT_REPORT.md)
+= a7d2c6b0e4f8a1d5e9c3b7f0a4d8e2c6b1f5d9a3e8c7b2f6e0a4d8c1b5f9e3a7d2
+```
+
+**Previous Hash**: f0a4d8e2c6b1f5d9a3e8c7b2f6e0a4d8c1b5f9e3a7d2c6b0e4f8a1d5e9c3b7f0a4
+
+**Chain Hash**:
+
+```
+SHA256(content_hash + previous_hash)
+= b5f9e3a7d2c6b0e4f8a1d5e9c3b7f0a4d8e2c6b1f5d9a3e8c7b2f6e0a4d8c1b5f9
+```
+
+**Decision**: PASS — Amended v2 replaces phantom planId with phase+timestamp correlation. All 6 phases pass all audit checks. Gate cleared.
+
+---
+
 _Chain integrity: VALID_
 

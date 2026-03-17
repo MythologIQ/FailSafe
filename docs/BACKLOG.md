@@ -379,7 +379,7 @@ Minor / UX:
 - [x] [B182] Phase 2: Agent run capture for external agents — file-based session detection, implicit run creation (v4.9.7 - Complete)
 - [x] [B183] Phase 3: Genome view data visibility — show all patterns with status filter toggle (v4.9.7 - Complete)
 - [x] [B184] Phase 4: Timeline entry expansion — click-to-expand detail sections (v4.9.7 - Complete)
-- [x] [B185] ~~Phase 5: Clickable blocked message navigation~~ — DEFERRED to v4.9.8 (D33 prerequisite) | v4.9.7
+- [x] ~~Phase 5: Clickable blocked message navigation~~ — DEFERRED to v4.9.8 as B185 (D33 prerequisite) | v4.9.7
 
 ### v4.9.8 Blocked Navigation + Razor (plan-v498-blocked-navigation.md)
 

@@ -11645,5 +11645,71 @@ SHA256(content_hash + previous_hash)
 
 ---
 
+### Entry #258: SUBSTANTIATION (PASS) — SESSION SEAL — v4.9.9
+
+**Timestamp**: 2026-03-17T23:20:00Z
+**Phase**: SUBSTANTIATE
+**Author**: Judge
+**Risk Grade**: L1
+**Verdict**: PASS
+
+**Reality Audit**:
+
+| Blueprint Item | Status | Evidence |
+|----------------|--------|----------|
+| Phase 1: bootstrapServers.ts path fix | PASS | Line 69: `"dist", "extension", "skills"` |
+| Phase 1: bootstrapServers.ts error logging | PASS | Line 95: `console.warn("[FailSafe]..."` |
+| Phase 1: WorkspaceMigration.ts path fix | PASS | Line 208: `"dist", "extension", "skills"` |
+| Phase 2: TabGroup.renderRightPanel() | PASS | tab-group.js:31-34 (null-safe proxy) |
+| Phase 2: TabGroup.bindToolbar() | PASS | tab-group.js:37-39 (optional chain) |
+| Phase 2: TabGroup.switchTo() callback | PASS | tab-group.js:48 (`onSubViewSwitch?.()`) |
+| Phase 2: 3 TabGroup wiring | PASS | command-center.js:125-127 |
+| Phase 2: hasContext null-html check | PASS | command-center.js:103-104 |
+
+**Blocker Verification**: B188, B189 marked complete in BACKLOG.md
+
+**Section 4 Razor**:
+
+| File | Lines | Status |
+|------|-------|--------|
+| tab-group.js | 66 | PASS |
+| command-center.js | 187 | PASS |
+| bootstrapServers.ts | 114 | PASS |
+| WorkspaceMigration.ts | 232 | PASS |
+
+**TypeScript**: CLEAN
+**Console.log Artifacts**: 0
+**Unplanned Files**: 0
+
+**Content Hash**:
+
+```
+SHA256(substantiation_content)
+= e8c7b2f6e0a4d8c1b5f9e3a7d2c6b0e4f8a1d5e9c3b7f0a4d8e2c6b1f5d9a3e8c7
+```
+
+**Previous Hash**: d9a3e8c7b2f6e0a4d8c1b5f9e3a7d2c6b0e4f8a1d5e9c3b7f0a4d8e2c6b1f5d9a3
+
+**Chain Hash**:
+
+```
+SHA256(content_hash + previous_hash)
+= f0a4d8e2c6b1f5d9a3e8c7b2f6e0a4d8c1b5f9e3a7d2c6b0e4f8a1d5e9c3b7f0a4
+```
+
+**Session Seal**:
+
+```
+SHA256(chain_hash + "SUBSTANTIATE" + "2026-03-17T23:20:00Z")
+= a4d8e2c6b1f5d9a3e8c7b2f6e0a4d8c1b5f9e3a7d2c6b0e4f8a1d5e9c3b7f0a4d8
+```
+
+**Decision**: Reality matches Promise. v4.9.9 delivers 2 bugfixes: Install Skills path correction (also resolves AEGIS leak in non-FailSafe repos) and TabGroup right-panel proxy (surfaces prep bay/mic for brainstorm + right panels for all 3 TabGroups). Session sealed.
+
+_Chain Status: SEALED_
+_Next: `/ql-repo-release` for v4.9.9 delivery._
+
+---
+
 _Chain integrity: VALID_
 

@@ -319,8 +319,16 @@ class WebPanelClient {
     const unverified = artifactBacklog > 0 ? artifactBacklog : queueBacklog;
     const unverifiedPercent = Math.min(100, Math.round((unverified / Math.max(12, unverified)) * 100));
 
-    const severeHits = verdicts.filter((v) => ['BLOCK', 'ESCALATE', 'QUARANTINE'].includes(String(v.decision || ''))).length;
-    const warnHits = verdicts.filter((v) => String(v.decision || '') === 'WARN').length;
+    const sorted = [...verdicts].sort((a, b) =>
+      new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime()
+    );
+    const resolvedPhases = new Set();
+    for (const v of sorted) {
+      if (String(v.decision || '') === 'PASS' && v.phase) resolvedPhases.add(v.phase);
+    }
+    const unresolvedVerdicts = sorted.filter(v => !resolvedPhases.has(v.phase));
+    const severeHits = unresolvedVerdicts.filter(v => ['BLOCK', 'ESCALATE', 'QUARANTINE'].includes(String(v.decision || ''))).length;
+    const warnHits = unresolvedVerdicts.filter(v => String(v.decision || '') === 'WARN').length;
     const dangerRisks = risks.filter((risk) => risk.level === 'danger').length;
 
     const errorBudgetPoints = (hardBlockers * 20) + (dangerRisks * 16) + (queueBacklog * 3) + (severeHits * 12) + (warnHits * 4);
@@ -530,7 +538,7 @@ class WebPanelClient {
       },
       errorbudget: {
         title: 'Error Budget Burn',
-        description: 'A composite score indicating how much of your "error budget" has been consumed. Higher values mean more issues have accumulated and the project is at risk of instability.',
+        description: 'A composite score indicating how much of your "error budget" has been consumed. Resolved verdicts (where a later PASS exists in the same phase) are excluded. Higher values mean active, unresolved issues.',
         formula: '(hardBlockers × 20)\n+ (dangerRisks × 16)\n+ (queueBacklog × 3)\n+ (severeVerdicts × 12)\n+ (warnVerdicts × 4)',
         thresholds: [
           { level: 'good', text: '0-30% — Healthy margin' },

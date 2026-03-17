@@ -1,19 +1,7 @@
 import { escapeHtml } from "../../../shared/utils/htmlSanitizer";
+import type { AgtSreSnapshot, AsiControl, SreViewModel } from "./SreTypes";
 
-export type AsiControl = { label: string; covered: boolean; feature: string };
-export type AgtSreSnapshot = {
-  policies: Array<{ name: string; type: string; enforced: boolean }>;
-  trustScores: Array<{ agentId: string; stage: string; meshScore: number }>;
-  sli: {
-    name: string;
-    target: number;
-    currentValue: number | null;
-    meetingTarget: boolean | null;
-    totalDecisions: number;
-  };
-  asiCoverage: Record<string, AsiControl>;
-};
-export type SreViewModel = { connected: boolean; snapshot: AgtSreSnapshot | null };
+export type { AsiControl, AgtSreSnapshot, SreViewModel } from "./SreTypes";
 
 export async function fetchAgtSnapshot(baseUrl: string): Promise<SreViewModel> {
   try {

@@ -10,6 +10,9 @@
 
 <!-- Format: - [ ] [D#] Description | Version -->
 
+- [ ] [D28] V1: Razor — `buildSreConnectedHtml()` is 81 lines (limit 40); extract section builders (from audit 2026-03-17)
+- [ ] [D29] V2: Razor — nested ternary on `SreTemplate.ts:89,111`; extract `thresholdColor()` helper (from audit 2026-03-17)
+
 - [x] [D25] V1: Razor — nested ternary in `buildSreConnectedHtml()` `sliStatus` assignment; replace with `if/else if/else` (from re-audit 2026-03-16) — RESOLVED v4.10.0
 - [x] [D26] V2: Architecture — `SreApiRoute.ts` imports `fetchAgtSnapshot` from `SreRoute.ts` (route handler); must import from `./templates/SreTemplate` directly (from re-audit 2026-03-16) — RESOLVED v4.10.0
 - [x] [D27] V3: Ghost Path — `FailSafeSidebarProvider.ts:131` `vscode.setState({ initDone: true })` clobbers `sreMode`; must spread state (from re-audit 2026-03-16) — RESOLVED v4.10.0
@@ -361,6 +364,9 @@ Minor / UX:
 - [ ] [B172] Fix workspace overflow logic — Skills sub-view scroll lockout from tab-level overflow:hidden | v4.9.7
 - [ ] [B173] Bundle guard — post-copy verification that dist/ tab count matches src/ | v4.9.7
 - [ ] [B174] Unify /ql-debug two-phase dispatch — merge ultimate-debugger strengths into ql-fixer, update skill protocol | v4.9.7
+- [ ] [B175] Phase tracker cache — serve last known governance state on META_LEDGER read failure instead of IDLE | v4.9.7
+- [ ] [B176] Tail-read optimization — read last 4KB of META_LEDGER instead of full 434KB on every hub snapshot | v4.9.7
+- [ ] [B177] File watcher debounce — increase META_LEDGER watcher from 500ms to 1500ms to avoid read-during-write race | v4.9.7
 
 ### ConsoleServer Decomposition (Future)
 

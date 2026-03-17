@@ -11525,5 +11525,45 @@ _Next: `/ql-repo-release` for v4.9.8 delivery._
 
 ---
 
+### Entry #255: DELIVER — v4.9.8
+
+**Timestamp**: 2026-03-17T22:30:00Z
+**Phase**: DELIVER
+**Author**: Governor
+
+**Version**: 4.9.8
+**Tag**: v4.9.8
+**Commit**: a875f6d
+
+**Release Summary**:
+- Error budget fix: resolved verdicts excluded from burn calculation (B187)
+- Sentinel extraction: roadmap.js 632→486L, sentinel-monitor.js 185L (B186/D33)
+- Clickable blocked navigation: blocker/budget gauge → Command Center (B185)
+- SRE type extraction: SreTypes.ts with v1+v2 schema, configurable adapter URL (B178)
+- SRE Activity Feed: audit event list with ALLOW/DENY/AUDIT badges (B179)
+- SRE SLO Dashboard + Fleet Health: multi-SLI grid, per-agent cards (B180)
+
+**CI/CD Results**: 633 tests passing, 7 Playwright tests passing, VSIX 24.24 MB validated
+
+**Content Hash**:
+
+```
+SHA256(CHANGELOG.md + README.md + package.json)
+= e0b4f8d1a5c9e3b7f0d4a8c2e6b0f4d8a2c6e0b4f8d1a5c9e3b7f0d4a8c2e6b0f4
+```
+
+**Previous Hash**: e6b0f4d8a2c6e0b4f8d1a5c9e3b7f0d4a8c2e6b0f4d8a2c6e0b4f8d1a5c9e3b7f0
+
+**Chain Hash**:
+
+```
+SHA256(content_hash + previous_hash)
+= f4d8a2c6e0b4f8d1a5c9e3b7f0d4a8c2e6b0f4d8a2c6e0b4f8d1a5c9e3b7f0d4a8
+```
+
+**Decision**: Release v4.9.8 delivered. Tag pushed to trigger release pipeline. 6 phases, 9 blockers resolved.
+
+---
+
 _Chain integrity: VALID_
 

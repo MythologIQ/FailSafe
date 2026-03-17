@@ -32,17 +32,14 @@ test('popout UI shell renders required sections', async ({ page }) => {
     await page.goto(`http://127.0.0.1:${address.port}/command-center.html`);
 
     await expect(page.locator('.tab-btn[data-target="overview"]')).toBeVisible();
-    await expect(page.locator('.tab-btn[data-target="skills"]')).toBeVisible();
+    await expect(page.locator('.tab-btn[data-target="agents"]')).toBeVisible();
     await expect(page.locator('.tab-btn[data-target="governance"]')).toBeVisible();
-    await expect(page.locator('.tab-btn[data-target="operations"]')).toBeVisible();
+    await expect(page.locator('.tab-btn[data-target="workspace"]')).toBeVisible();
     await expect(page.locator('.tab-btn[data-target="settings"]')).toBeVisible();
     await expect(page.locator('#theme-select')).toBeHidden();
 
-    await page.locator('.tab-btn[data-target="skills"]').click();
-    await expect(page.locator('#skills')).toHaveClass(/active/);
-    await expect(page.locator('.cc-intent-input')).toBeVisible();
-    await expect(page.locator('.cc-skill-tab[data-tab="Recommended"]')).toBeVisible();
-    await expect(page.locator('.cc-skill-grid')).toBeVisible();
+    await page.locator('.tab-btn[data-target="workspace"]').click();
+    await expect(page.locator('#workspace')).toHaveClass(/active/);
 
     await page.locator('.tab-btn[data-target="governance"]').click();
     await expect(page.locator('#governance')).toHaveClass(/active/);

@@ -5,6 +5,21 @@ All notable changes to FailSafe will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.9.7] - 2026-03-17
+
+### Added
+
+- Release integrity: wire dead console routes, fix 5-tab CSS consolidation, bundle tab-count guard (B170-B173).
+- Debug unification: two-phase `/ql-debug` combining root-cause identification with residual sweep (B174).
+- Phase tracker stability: cache last known governance state, tail-read META_LEDGER optimization, debounce increase (B175-B177).
+- Diagnostic fixes: governance mode config, external agent capture, genome visibility, timeline expansion (B181-B184).
+
+### Fixed
+
+- SreTemplate Razor: extract section builders and `thresholdColor()` helper (D28-D29).
+- Ghost path: `getGenomeAllPatterns` wired in ApiRouteDeps and ConsoleServer (D31-D32).
+- Playwright UI tests updated for 5-tab consolidated layout.
+
 ## [4.9.6] - 2026-03-16
 
 ### Added

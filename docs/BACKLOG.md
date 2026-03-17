@@ -387,11 +387,11 @@ Minor / UX:
 ### v4.9.8 Consolidated (plan-v498-consolidated.md)
 
 - [x] [B187] Phase 1: Error budget — exclude resolved verdicts from burn calculation (v4.9.8 - Complete)
-- [ ] [B186] Phase 2: Extract sentinel rendering from roadmap.js into sentinel-monitor.js (D33 resolution) | v4.9.8
-- [ ] [B185] Phase 3: Clickable blocked message navigation — direct audit log linking with highlighting | v4.9.8
+- [x] [B186] Phase 2: Extract sentinel rendering from roadmap.js into sentinel-monitor.js (D33 resolution) (v4.9.8 - Complete)
+- [x] [B185] Phase 3: Clickable blocked message navigation — direct audit log linking with highlighting (v4.9.8 - Complete)
 - [x] [B178] Phase 4: SRE type extraction + v2 schema + adapter port config (v4.9.8 - Complete)
-- [ ] [B179] Phase 5: Activity Feed — audit event feed with ALLOW/DENY badges | v4.9.8
-- [ ] [B180] Phase 6: SLO Dashboard — multi-SLI grid with error budgets + per-agent fleet health cards | v4.9.8
+- [x] [B179] Phase 5: Activity Feed — audit event feed with ALLOW/DENY badges (v4.9.8 - Complete)
+- [x] [B180] Phase 6: SLO Dashboard — multi-SLI grid with error budgets + per-agent fleet health cards (v4.9.8 - Complete)
 
 ### ConsoleServer Decomposition (Future)
 

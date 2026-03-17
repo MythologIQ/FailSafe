@@ -82,7 +82,7 @@ export class FailSafeSidebarProvider implements vscode.WebviewViewProvider {
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${this.view?.webview.cspSource ?? ""} data: https:; style-src 'unsafe-inline'; script-src 'nonce-${nonce}'; frame-src ${this.baseUrl}; connect-src ${this.baseUrl};" />
   <style>
     html, body { margin: 0; padding: 0; height: 100%; background: #071539; color: #f3f7ff; font-family: "Segoe UI", sans-serif; }
-    .shell { display: grid; grid-template-rows: auto 1fr; height: 100%; }
+    .shell { display: grid; grid-template-rows: auto auto 1fr; height: 100%; }
     .toolbar { display: flex; gap: 6px; padding: 6px; border-bottom: 1px solid rgba(95, 150, 255, 0.35); background: #0a1f4a; align-items: center; }
     .btn { border: 1px solid #3568d8; color: #eaf1ff; background: #1f4ea8; padding: 5px 8px; border-radius: 8px; cursor: pointer; font-size: 11px; font-weight: 700; white-space: nowrap; line-height: 1.15; }
     .btn.secondary { background: #10357a; border-color: #2c5bb9; }
@@ -90,8 +90,8 @@ export class FailSafeSidebarProvider implements vscode.WebviewViewProvider {
     .btn.init:hover { background: #f0f4ff; box-shadow: 0 0 12px rgba(0,0,0,0.35); }
     .frame-wrap { position: relative; min-height: 0; }
     iframe { border: 0; width: 100%; height: 100%; display: block; background: #071539; }
-    .sre-toggle { display:flex; gap:4px; padding:6px 8px; background:#0a1f4a; border-bottom:1px solid rgba(95,150,255,0.35); }
-    .sre-toggle button { flex:1; padding:4px 0; border:1px solid #3568d8; border-radius:6px; background:#10357a; font-size:11px; font-weight:600; cursor:pointer; color:#eaf1ff; }
+    .sre-toggle { display:flex; gap:6px; padding:4px 8px; background:#0a1f4a; border-bottom:1px solid rgba(95,150,255,0.35); justify-content:flex-start; }
+    .sre-toggle button { flex:0 0 auto; width:auto; padding:3px 12px; border:1px solid #3568d8; border-radius:6px; background:#10357a; font-size:10px; font-weight:600; cursor:pointer; color:#eaf1ff; line-height:1.2; }
     .sre-toggle button[aria-selected="true"] { background:#2c74f2; border-color:#2c74f2; }
     @media (max-width: 340px) {
       .toolbar { gap: 4px; padding: 5px; }

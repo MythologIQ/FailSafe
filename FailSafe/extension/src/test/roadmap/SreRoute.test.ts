@@ -53,7 +53,7 @@ describe('SreTemplate', () => {
         policies: [{ name: 'p1', type: 'allow', enforced: true }],
       });
       const html = buildSreHtml({ connected: true, snapshot: snap });
-      assert.ok(html.includes('class="on"'), 'missing on class for enforced policy');
+      assert.ok(html.includes('sre-badge on'), 'missing on class for enforced policy');
     });
 
     it('inactive policy row has class "off"', () => {
@@ -61,13 +61,13 @@ describe('SreTemplate', () => {
         policies: [{ name: 'p1', type: 'deny', enforced: false }],
       });
       const html = buildSreHtml({ connected: true, snapshot: snap });
-      assert.ok(html.includes('class="off"'), 'missing off class for inactive policy');
+      assert.ok(html.includes('sre-badge off'), 'missing off class for inactive policy');
     });
 
     it('ASI-03 row contains covered checkmark', () => {
       const html = buildSreHtml({ connected: true, snapshot: mockSnapshot() });
       assert.ok(html.includes('ASI-03'), 'ASI-03 row missing');
-      assert.ok(html.includes('&#10003;'), 'checkmark entity missing');
+      assert.ok(html.includes('\u2713') || html.includes('&#10003;'), 'checkmark missing');
     });
 
     it('ASI-06 row is present', () => {

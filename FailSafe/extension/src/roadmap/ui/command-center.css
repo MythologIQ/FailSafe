@@ -514,9 +514,12 @@ body {
   padding: 8px 10px 12px;
 }
 
-#brainstorm.tab-panel.active {
+/* Brainstorm sub-view needs edge-to-edge canvas layout */
+.cc-subview-content:has(.cc-canvas) {
   padding: 0;
   overflow: hidden;
+  position: relative;
+  height: 100%;
 }
 
 /* ═══════════════════════════ Component Library ═══════════════════════════ */
@@ -660,11 +663,11 @@ body {
 
 /* ═══════════════════════════ Brainstorm HUD Layout ═══════════════════════════ */
 
-/* Make the brainstorm panel a relative container for absolute HUD overlays */
-#brainstorm.active { position: relative; height: 100%; display: flex; flex-direction: column; }
+/* Make the brainstorm sub-view a relative container for absolute HUD overlays */
+.cc-subview-content:has(.cc-canvas) { position: relative; height: 100%; display: flex; flex-direction: column; }
 
 /* The SVG canvas becomes the absolute background filling the space */
-#brainstorm .cc-canvas {
+.cc-subview-content .cc-canvas {
   position: absolute;
   inset: 0;
   width: 100%;

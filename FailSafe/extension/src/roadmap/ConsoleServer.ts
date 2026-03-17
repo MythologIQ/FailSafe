@@ -248,6 +248,7 @@ export class ConsoleServer {
     this.app.use(express.static(this.uiDir, { index: false, dotfiles: "allow" }));
     this.registerCoreRoutes();
     this.registerApiRoutes();
+    this.setupConsoleRoutes();
     this.registerSpaFallback();
   }
 
@@ -586,7 +587,7 @@ export class ConsoleServer {
         if (this.ledgerDebounceTimer) clearTimeout(this.ledgerDebounceTimer);
         this.ledgerDebounceTimer = setTimeout(() => {
           this.broadcast({ type: "hub.refresh" });
-        }, 500);
+        }, 1500);
       });
     } catch {
       // File watcher not supported or ledger inaccessible — degrade silently

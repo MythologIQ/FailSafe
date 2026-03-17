@@ -12,6 +12,8 @@ import { SettingsRenderer } from './modules/settings.js';
 import { TimelineRenderer } from './modules/timeline.js';
 import { GenomeRenderer } from './modules/genome.js';
 import { ReplayRenderer } from './modules/replay.js';
+import { TabGroup } from './modules/tab-group.js';
+import { updateTickers, updateBootstrapBanner } from './modules/tickers.js';
 import { setWorkspaceRegistryClient, loadWorkspaceRegistry, initWorkspaceSelector } from './modules/workspace-registry.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -19,17 +21,23 @@ document.addEventListener('DOMContentLoaded', () => {
   const store = new StateStore();
 
   const renderers = {
-    overview:     new OverviewRenderer('overview', {}),
-    operations:   new OperationsRenderer('operations', { client }),
-    transparency: new TransparencyRenderer('transparency', {}),
-    risks:        new RisksRenderer('risks', { client }),
-    skills:       new SkillsRenderer('skills', { client }),
-    governance:   new GovernanceRenderer('governance', { client }),
-    brainstorm:   new BrainstormRenderer('brainstorm', { store, client }),
-    settings:     new SettingsRenderer('settings', { store }),
-    timeline:     new TimelineRenderer('timeline'),
-    genome:       new GenomeRenderer('genome'),
-    replay:       new ReplayRenderer('replay'),
+    overview:   new OverviewRenderer('overview', {}),
+    agents:     new TabGroup('agents', [
+      { key: 'operations', label: 'Operations', renderer: new OperationsRenderer('agents', { client }) },
+      { key: 'timeline',   label: 'Timeline',   renderer: new TimelineRenderer('agents') },
+      { key: 'genome',     label: 'Genome',     renderer: new GenomeRenderer('agents') },
+      { key: 'replay',     label: 'Replay',     renderer: new ReplayRenderer('agents') },
+    ]),
+    governance: new TabGroup('governance', [
+      { key: 'audit',      label: 'Audit Log',  renderer: new TransparencyRenderer('governance') },
+      { key: 'risks',      label: 'Risks',      renderer: new RisksRenderer('governance', { client }) },
+      { key: 'compliance', label: 'Compliance',  renderer: new GovernanceRenderer('governance', { client }) },
+    ]),
+    workspace: new TabGroup('workspace', [
+      { key: 'skills',     label: 'Skills',     renderer: new SkillsRenderer('workspace', { client }) },
+      { key: 'brainstorm', label: 'Mindmap',    renderer: new BrainstormRenderer('workspace', { store, client }) },
+    ]),
+    settings:   new SettingsRenderer('settings', { store }),
   };
 
   // Connection status indicator + disconnection banner
@@ -63,16 +71,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Route events to relevant renderers
   client.on('event', (evt) => {
-    renderers.transparency.onEvent(evt);
     renderers.overview.onEvent?.(evt);
-    renderers.operations.onEvent?.(evt);
+    renderers.agents.onEvent?.(evt);
     renderers.governance.onEvent?.(evt);
-    renderers.risks.onEvent?.(evt);
-    renderers.timeline.onEvent?.(evt);
-    renderers.genome.onEvent?.(evt);
-    renderers.replay.onEvent?.(evt);
-    if (evt.type?.startsWith('brainstorm.'))
-      renderers.brainstorm.onEvent(evt);
+    renderers.workspace.onEvent?.(evt);
   });
 
   client.on('verdict', (v) => {
@@ -99,6 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
         contextHub.classList.add('hidden');
       } else {
         contextHub.classList.remove('hidden');
+        // Re-render panel content if shown
         contextHub.innerHTML = renderer.renderRightPanel();
         if (renderer.bindToolbar) renderer.bindToolbar();
       }
@@ -131,10 +134,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (target) target.classList.add('active');
 
       const contentArea = document.querySelector('.content-area');
-      if (contentArea) contentArea.style.overflowY = targetId === 'brainstorm' ? 'hidden' : 'auto';
+      if (contentArea) contentArea.style.overflowY = 'auto';
 
+      // Update Right Panel (Intelligence/Action)
       updateUIForPanelState();
 
+      // Initial render for tab activation
       const renderer = renderers[targetId];
       if (renderer) renderer.render?.(client.lastHubData || {});
 
@@ -144,12 +149,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Global listeners for LLM interactive tier list
   window.addEventListener('fs-reorder-llm', (e) => {
-    const br = renderers.brainstorm;
-    if (br?.llmStatus) { br.llmStatus.reorderLlm(e.detail.index, e.detail.dir); br.llmStatus.render(br.client); }
+    const br = renderers.workspace;
+    const bsRenderer = br?.subViews?.find(s => s.key === 'brainstorm')?.renderer;
+    if (bsRenderer?.llmStatus) { bsRenderer.llmStatus.reorderLlm(e.detail.index, e.detail.dir); bsRenderer.llmStatus.render(bsRenderer.client); }
   });
   window.addEventListener('fs-toggle-llm-help', () => {
-    const br = renderers.brainstorm;
-    if (br?.llmStatus) { br.llmStatus.toggleHelp(); br.llmStatus.render(br.client); }
+    const br = renderers.workspace;
+    const bsRenderer = br?.subViews?.find(s => s.key === 'brainstorm')?.renderer;
+    if (bsRenderer?.llmStatus) { bsRenderer.llmStatus.toggleHelp(); bsRenderer.llmStatus.render(bsRenderer.client); }
   });
 
   // Restore saved tab (URL hash takes priority)
@@ -168,56 +175,3 @@ document.addEventListener('DOMContentLoaded', () => {
 
   client.start();
 });
-
-function updateTickers(data) {
-  const proto = document.getElementById('ticker-protocol');
-  const sent = document.getElementById('ticker-sentinel');
-  const lat = document.getElementById('ticker-latency');
-  if (proto) proto.innerHTML = `PROTOCOL <span>${data.sentinelStatus?.mode || 'Unknown'}</span>`;
-  if (sent) {
-    const live = data.sentinelStatus?.running;
-    const c = live ? 'var(--accent-green)' : 'var(--accent-red)';
-    sent.innerHTML = `SENTINEL <span style="color:${c}">${live ? 'Active' : 'Halted'}</span>`;
-  }
-  if (lat) {
-    const latVal = data.qoreRuntime?.latencyMs;
-    const latLabel = latVal != null ? `${Math.round(latVal)}ms` : 'N/A';
-    const latColor = latVal != null ? '' : 'color:var(--text-muted)';
-    lat.innerHTML = `API <span style="font-family:var(--font-mono);${latColor}">${latLabel}</span>`;
-  }
-  const ws = document.querySelector('#ticker-workspace span');
-  const wsContainer = document.getElementById('ticker-workspace');
-  const workspaceName = data.workspaceName || data.bootstrapState?.workspaceName;
-  const workspacePath = data.workspacePath || '';
-  if (ws && workspaceName) ws.textContent = workspaceName;
-  if (wsContainer && workspacePath) wsContainer.title = workspacePath;
-}
-
-function updateBootstrapBanner(data) {
-  const banner = document.getElementById('bootstrap-banner');
-  if (!banner) return;
-  const bs = data.bootstrapState;
-  if (!bs || (bs.skillsInstalled && bs.governanceInitialized)) {
-    banner.style.display = 'none';
-    return;
-  }
-  banner.style.display = 'flex';
-  banner.style.cssText += 'flex-direction:column;gap:8px;padding:12px 16px;' +
-    'background:rgba(245,158,11,0.08);border:1px solid var(--accent-gold);border-radius:6px;margin:8px 16px 0';
-  let html = '<div style="font-size:0.85rem;font-weight:600;color:var(--accent-gold)">Get Started</div>';
-  if (!bs.skillsInstalled) {
-    html += '<div style="display:flex;align-items:center;gap:8px">' +
-      '<span style="color:var(--text-muted);font-size:0.78rem">Governance skills not installed.</span>' +
-      '<button onclick="fetch(\'/api/actions/scaffold-skills\',{method:\'POST\'}).then(()=>location.reload())"' +
-      ' class="cc-btn cc-btn--primary" style="font-size:0.75rem;padding:4px 10px">Install Skills</button>' +
-      '</div>';
-  }
-  if (!bs.governanceInitialized) {
-    html += '<div style="display:flex;align-items:center;gap:8px">' +
-      '<span style="color:var(--text-muted);font-size:0.78rem">Run <code style="padding:1px 5px;background:var(--bg-dark);border-radius:3px">/ql-bootstrap</code> in Claude Code to initialize.</span>' +
-      '<button onclick="navigator.clipboard.writeText(\'/ql-bootstrap\')"' +
-      ' class="cc-btn" style="font-size:0.75rem;padding:4px 10px">Copy</button>' +
-      '</div>';
-  }
-  banner.innerHTML = html;
-}

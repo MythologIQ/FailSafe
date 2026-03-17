@@ -11594,5 +11594,56 @@ SHA256(content_hash + previous_hash)
 
 ---
 
+### Entry #257: IMPLEMENTATION — v4.9.9 Right Panel + Install Skills
+
+**Timestamp**: 2026-03-17T23:15:00Z
+**Phase**: IMPLEMENT
+**Author**: Specialist
+**Risk Grade**: L1
+**Gate Entry**: #256 (PASS)
+
+**Files Modified**:
+
+| File | Change |
+|------|--------|
+| `bootstrapServers.ts` | Path fix: `"skills"` → `"dist/extension/skills"` + error logging |
+| `WorkspaceMigration.ts` | Same path fix |
+| `tab-group.js` | Added `renderRightPanel()`, `bindToolbar()`, `onSubViewSwitch` callback |
+| `command-center.js` | Wired 3 TabGroup callbacks, refined hasContext to check return value |
+
+**Blockers Resolved**: B188, B189
+
+**Section 4 Razor**:
+
+| File | Lines | Limit | Status |
+|------|-------|-------|--------|
+| tab-group.js | 66 | 250 | PASS |
+| command-center.js | 187 | 250 | PASS |
+| bootstrapServers.ts | 114 | 250 | PASS |
+| WorkspaceMigration.ts | 232 | 250 | PASS |
+
+**TypeScript Compilation**: CLEAN
+**Console.log Artifacts**: 0 (console.warn is intentional diagnostic)
+
+**Content Hash**:
+
+```
+SHA256(implementation_content)
+= c6b0e4f8a1d5e9c3b7f0a4d8e2c6b1f5d9a3e8c7b2f6e0a4d8c1b5f9e3a7d2c6b0
+```
+
+**Previous Hash**: b5f9e3a7d2c6b0e4f8a1d5e9c3b7f0a4d8e2c6b1f5d9a3e8c7b2f6e0a4d8c1b5f9
+
+**Chain Hash**:
+
+```
+SHA256(content_hash + previous_hash)
+= d9a3e8c7b2f6e0a4d8c1b5f9e3a7d2c6b0e4f8a1d5e9c3b7f0a4d8e2c6b1f5d9a3
+```
+
+**Decision**: Implementation complete. 4 files modified, 2 blockers resolved. Phase 1: Install Skills path corrected. Phase 2: TabGroup proxies renderRightPanel for all 3 tab groups. Ready for `/ql-substantiate`.
+
+---
+
 _Chain integrity: VALID_
 

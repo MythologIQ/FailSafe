@@ -395,8 +395,8 @@ Minor / UX:
 
 ### v4.9.9 Right Panel Fix (plan-v499-right-panel-fix.md)
 
-- [ ] [B188] Fix brainstorm right panel missing — TabGroup does not proxy renderRightPanel/bindToolbar from active sub-view; pill switching doesn't update right panel | v4.9.9
-- [ ] [B189] Fix Install Skills path — bundledPath points to nonexistent `skills/` instead of `dist/extension/skills/`; same bug in WorkspaceMigration.ts | v4.9.9
+- [x] [B188] Fix brainstorm right panel missing — TabGroup does not proxy renderRightPanel/bindToolbar from active sub-view; pill switching doesn't update right panel (v4.9.9 - Complete)
+- [x] [B189] Fix Install Skills path — bundledPath points to nonexistent `skills/` instead of `dist/extension/skills/`; same bug in WorkspaceMigration.ts (v4.9.9 - Complete)
 
 ### ConsoleServer Decomposition (Future)
 

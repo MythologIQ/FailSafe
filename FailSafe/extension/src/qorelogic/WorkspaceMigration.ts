@@ -205,7 +205,7 @@ export class WorkspaceMigration {
     rootPath: string,
     context: vscode.ExtensionContext,
   ): Promise<void> {
-    const bundledPath = path.join(context.extensionPath, "skills");
+    const bundledPath = path.join(context.extensionPath, "dist", "extension", "skills");
     try {
       await fs.promises.access(bundledPath);
     } catch {

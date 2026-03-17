@@ -100,21 +100,31 @@ document.addEventListener('DOMContentLoaded', () => {
       if (panelUserCollapsed || !hasContext) {
         contextHub.classList.add('hidden');
       } else {
-        contextHub.classList.remove('hidden');
-        // Re-render panel content if shown
-        contextHub.innerHTML = renderer.renderRightPanel();
-        if (renderer.bindToolbar) renderer.bindToolbar();
+        const html = renderer.renderRightPanel();
+        if (!html) {
+          contextHub.classList.add('hidden');
+        } else {
+          contextHub.classList.remove('hidden');
+          contextHub.innerHTML = html;
+          if (renderer.bindToolbar) renderer.bindToolbar();
+        }
       }
     }
 
+    const panelVisible = contextHub && !contextHub.classList.contains('hidden');
     if (panelToggle) {
       panelToggle.classList.toggle('collapsed', panelUserCollapsed);
       panelToggle.innerHTML = panelUserCollapsed
         ? '<span class="btn-icon">◂</span> Show Sidebar'
         : '<span class="btn-icon">▸</span> Hide Sidebar';
-      panelToggle.style.display = hasContext ? 'flex' : 'none';
+      panelToggle.style.display = (hasContext && (panelVisible || panelUserCollapsed)) ? 'flex' : 'none';
     }
   };
+
+  // Wire sub-view pill switches to update right panel
+  renderers.agents.onSubViewSwitch = () => updateUIForPanelState();
+  renderers.governance.onSubViewSwitch = () => updateUIForPanelState();
+  renderers.workspace.onSubViewSwitch = () => updateUIForPanelState();
 
   panelToggle?.addEventListener('click', () => {
     panelUserCollapsed = !panelUserCollapsed;

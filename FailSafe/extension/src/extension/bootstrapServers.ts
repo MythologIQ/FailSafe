@@ -66,7 +66,7 @@ export async function bootstrapServers(
 
   // Register scaffold callback for "Install Skills" button
   consoleServer.setScaffoldCallback(async () => {
-    const bundledPath = path.join(context.extensionPath, "skills");
+    const bundledPath = path.join(context.extensionPath, "dist", "extension", "skills");
     const targetDir = path.join(deps.workspaceRoot, ".claude", "skills");
     let scaffolded = 0;
     let skipped = 0;
@@ -92,8 +92,8 @@ export async function bootstrapServers(
           scaffolded++;
         }
       }
-    } catch {
-      // bundledPath doesn't exist - no skills to scaffold
+    } catch (err) {
+      console.warn("[FailSafe] No bundled skills found at", bundledPath, (err as Error).message);
     }
 
     return { scaffolded, skipped };

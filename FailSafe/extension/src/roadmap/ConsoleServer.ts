@@ -28,7 +28,7 @@ import { CheckpointRef, RevertRequest } from "../governance/revert/types";
 import {
   HomeRoute, RunDetailRoute, WorkflowsRoute, SkillsRoute,
   GenomeRoute, ReportsRoute, SettingsRoute, PreflightRoute,
-  GovernanceKPIRoute, AgentCoverageRoute,
+  GovernanceKPIRoute, AgentCoverageRoute, SreRoute,
 } from "./routes";
 import { ConfigurationProfile } from "../genesis/ConfigurationProfile";
 import type { RouteDeps } from "./routes";
@@ -91,6 +91,8 @@ import { setupMarketplaceRoutes } from "./routes/MarketplaceRoute";
 import { AdapterService } from "./services/AdapterService";
 import { setupAdapterRoutes } from "./routes/AdapterRoute";
 import { setupAgentApiRoutes } from "./routes/AgentApiRoute";
+import { setupSreApiRoutes } from "./routes/SreApiRoute";
+import { fetchAgtSnapshot } from "./routes/templates/SreTemplate";
 import type { AgentHealthIndicator } from "../sentinel/AgentHealthIndicator";
 import type { AgentTimelineService } from "../sentinel/AgentTimelineService";
 import type { AgentRunRecorder } from "../sentinel/AgentRunRecorder";
@@ -246,6 +248,7 @@ export class ConsoleServer {
     this.app.use(express.static(this.uiDir, { index: false, dotfiles: "allow" }));
     this.registerCoreRoutes();
     this.registerApiRoutes();
+    this.setupConsoleRoutes();
     this.registerSpaFallback();
   }
 
@@ -389,6 +392,7 @@ export class ConsoleServer {
       getTimelineEntries: (filter) => this.agentTimelineService?.getEntries(filter) || [],
       getHealthMetrics: () => this.agentHealthIndicator?.buildMetrics() || null,
       getGenomePatterns: () => this.qorelogicManager.getShadowGenomeManager().analyzeFailurePatterns(),
+      getGenomeAllPatterns: () => this.qorelogicManager.getShadowGenomeManager().analyzeAllPatterns(), // B183
       getGenomeUnresolved: (limit) => this.qorelogicManager.getShadowGenomeManager().getUnresolvedEntries(limit),
       getActiveRuns: () => this.agentRunRecorder?.getActiveRuns() || [],
       getCompletedRuns: () => this.agentRunRecorder?.getCompletedRuns() || [],
@@ -399,6 +403,7 @@ export class ConsoleServer {
 
     setupTransparencyRiskRoutes(this.app, apiDeps);
     setupAgentApiRoutes(this.app, apiDeps);
+    setupSreApiRoutes(this.app, { rejectIfRemote: (req, res) => this.rejectIfRemote(req, res) });
     setupBrainstormRoutes(this.app, apiDeps);
     setupCheckpointRoutes(this.app, apiDeps);
     setupActionsRoutes(this.app, apiDeps);
@@ -583,7 +588,7 @@ export class ConsoleServer {
         if (this.ledgerDebounceTimer) clearTimeout(this.ledgerDebounceTimer);
         this.ledgerDebounceTimer = setTimeout(() => {
           this.broadcast({ type: "hub.refresh" });
-        }, 500);
+        }, 1500);
       });
     } catch {
       // File watcher not supported or ledger inaccessible — degrade silently
@@ -663,6 +668,11 @@ export class ConsoleServer {
     this.app.get("/console/agents", async (req, res) => {
       if (!this.systemRegistry) { res.status(503).send("SystemRegistry not available"); return; }
       AgentCoverageRoute.render(req, res, { systemRegistry: this.systemRegistry });
+    });
+    this.app.get("/console/sre", async (req: Request, res: Response) => {
+      await SreRoute.render(req, res, {
+        getSnapshot: () => fetchAgtSnapshot("http://127.0.0.1:9377"),
+      });
     });
     if (!this.permissionManager) return;
     const pm = this.permissionManager;

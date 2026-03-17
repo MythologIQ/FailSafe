@@ -31,7 +31,7 @@ export interface RunStep {
   diff?: { additions: number; deletions: number };
 }
 
-export type AgentRunSource = "ide-task" | "terminal" | "chat" | "manual";
+export type AgentRunSource = "ide-task" | "terminal" | "chat" | "manual" | "implicit";
 
 export interface AgentRun {
   id: string;

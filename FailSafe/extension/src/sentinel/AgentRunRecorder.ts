@@ -44,6 +44,8 @@ export class AgentRunRecorder {
   private activeRuns = new Map<string, AgentRun>();
   private completedRuns: AgentRun[] = [];
   private unsubscribe: (() => void) | null = null;
+  private lastFileEditTime = 0;
+  private rapidEditThreshold = 5000; // 5 seconds
 
   constructor(
     private readonly eventBus: EventBus,
@@ -97,6 +99,35 @@ export class AgentRunRecorder {
 
   getRunSteps(runId: string): RunStep[] {
     return this.getRun(runId)?.steps ?? [];
+  }
+
+  /**
+   * Handle file edit from external agent (B182).
+   * Detects rapid edits to start implicit runs and records file edits as steps.
+   */
+  handleFileEdit(filePath: string, agentDid: string): void {
+    const now = Date.now();
+    const timeSinceLastEdit = now - this.lastFileEditTime;
+    this.lastFileEditTime = now;
+
+    // If no active run and rapid edits detected, start implicit run
+    if (this.activeRuns.size === 0 && timeSinceLastEdit < this.rapidEditThreshold) {
+      this.startRun(agentDid || "external-agent", "file-edit", "implicit");
+    }
+
+    // Record file edit as step if run is active
+    if (this.activeRuns.size > 0) {
+      const step: RunStep = {
+        seq: 0,
+        kind: "fileEdit",
+        timestamp: new Date().toISOString(),
+        title: `File edit: ${path.basename(filePath)}`,
+        artifactPath: filePath,
+      };
+      for (const run of this.activeRuns.values()) {
+        run.steps.push({ ...step, seq: run.steps.length + 1 });
+      }
+    }
   }
 
   loadRun(runId: string): AgentRun | null {

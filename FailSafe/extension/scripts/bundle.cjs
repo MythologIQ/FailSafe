@@ -136,6 +136,17 @@ async function main() {
     path.join(root, "src", "roadmap", "ui"),
     path.join(distDir, "extension", "ui"),
   );
+
+  // Post-bundle integrity check: verify UI files were copied correctly
+  const srcHtml = fs.readFileSync(path.join(root, "src", "roadmap", "ui", "command-center.html"), "utf8");
+  const distHtml = fs.readFileSync(path.join(distDir, "extension", "ui", "command-center.html"), "utf8");
+  const srcTabs = (srcHtml.match(/class="tab-btn/g) || []).length;
+  const distTabs = (distHtml.match(/class="tab-btn/g) || []).length;
+  if (srcTabs !== distTabs) {
+    console.error(`BUNDLE ERROR: tab count mismatch (src=${srcTabs}, dist=${distTabs})`);
+    process.exit(1);
+  }
+
   const webuiPages = path.join(root, "src", "webui", "pages");
   if (fs.existsSync(webuiPages)) {
     copyDir(webuiPages, path.join(distDir, "webui", "pages"));

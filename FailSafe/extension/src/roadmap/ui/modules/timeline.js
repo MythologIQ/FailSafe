@@ -1,5 +1,5 @@
-// FailSafe Command Center — Agent Timeline Renderer (B142)
-// Displays sentinel timeline entries with category/severity filters.
+// FailSafe Command Center — Agent Timeline Renderer (B142 + B184)
+// Displays sentinel timeline entries with category/severity filters and expandable details.
 
 function esc(value) {
   const d = document.createElement('div');
@@ -68,19 +68,25 @@ export class TimelineRenderer {
         </div>
       </div>`;
     }
+    // B184: Added click-to-expand functionality with detail pre element
     const rows = this.entries.slice(0, 50).map(e => {
       const sevColors = { error: 'var(--accent-red)', warning: 'var(--accent-gold)', info: 'var(--accent-cyan)' };
       const color = sevColors[e.severity] || 'var(--text-muted)';
       const time = e.timestamp ? new Date(e.timestamp).toLocaleTimeString() : '';
       return `
-        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-left:3px solid ${color};
-          background:rgba(0,0,0,0.12);border-radius:4px;margin-bottom:6px">
-          <span class="cc-badge" style="background:${color};color:#fff;font-size:0.65rem;min-width:50px;text-align:center">${esc(e.category || 'event')}</span>
-          <div style="flex:1">
-            <div style="font-size:0.83rem;color:var(--text-main)">${esc(e.summary || e.type || 'Event')}</div>
-            ${e.agentDid ? `<div style="font-size:0.7rem;color:var(--text-muted)">Agent: ${esc(e.agentDid.slice(0, 12))}...</div>` : ''}
+        <div class="cc-timeline-entry" style="display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-left:3px solid ${color};
+          background:rgba(0,0,0,0.12);border-radius:4px;margin-bottom:6px;cursor:pointer">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span class="cc-badge" style="background:${color};color:#fff;font-size:0.65rem;min-width:50px;text-align:center">${esc(e.category || 'event')}</span>
+            <div style="flex:1">
+              <div style="font-size:0.83rem;color:var(--text-main)">${esc(e.summary || e.type || 'Event')}</div>
+              ${e.agentDid ? `<div style="font-size:0.7rem;color:var(--text-muted)">Agent: ${esc(e.agentDid.slice(0, 12))}...</div>` : ''}
+            </div>
+            <span style="font-size:0.7rem;color:var(--text-muted);font-family:var(--font-mono)">${esc(time)}</span>
           </div>
-          <span style="font-size:0.7rem;color:var(--text-muted);font-family:var(--font-mono)">${esc(time)}</span>
+          <pre class="cc-timeline-detail" style="display:none;margin:0;font-size:0.7rem;
+            overflow-x:auto;color:var(--console-text);background:var(--console-bg);
+            padding:8px;border-radius:6px">${esc(JSON.stringify(e.payload || e, null, 2))}</pre>
         </div>`;
     }).join('');
     return `<div style="max-height:600px;overflow-y:auto">${rows}</div>`;
@@ -97,6 +103,15 @@ export class TimelineRenderer {
       btn.addEventListener('click', () => {
         this.activeSeverity = this.activeSeverity === btn.dataset.sev ? null : btn.dataset.sev;
         this.render();
+      });
+    });
+    // B184: Bind entry click to toggle detail expansion
+    this.container.querySelectorAll('.cc-timeline-entry').forEach(entry => {
+      entry.addEventListener('click', () => {
+        const detail = entry.querySelector('.cc-timeline-detail');
+        if (detail) {
+          detail.style.display = detail.style.display === 'none' ? 'block' : 'none';
+        }
       });
     });
   }

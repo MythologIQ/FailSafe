@@ -82,7 +82,7 @@ export class FailSafeSidebarProvider implements vscode.WebviewViewProvider {
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${this.view?.webview.cspSource ?? ""} data: https:; style-src 'unsafe-inline'; script-src 'nonce-${nonce}'; frame-src ${this.baseUrl}; connect-src ${this.baseUrl};" />
   <style>
     html, body { margin: 0; padding: 0; height: 100%; background: #071539; color: #f3f7ff; font-family: "Segoe UI", sans-serif; }
-    .shell { display: grid; grid-template-rows: auto 1fr; height: 100%; }
+    .shell { display: grid; grid-template-rows: auto auto 1fr; height: 100%; }
     .toolbar { display: flex; gap: 6px; padding: 6px; border-bottom: 1px solid rgba(95, 150, 255, 0.35); background: #0a1f4a; align-items: center; }
     .btn { border: 1px solid #3568d8; color: #eaf1ff; background: #1f4ea8; padding: 5px 8px; border-radius: 8px; cursor: pointer; font-size: 11px; font-weight: 700; white-space: nowrap; line-height: 1.15; }
     .btn.secondary { background: #10357a; border-color: #2c5bb9; }
@@ -90,6 +90,9 @@ export class FailSafeSidebarProvider implements vscode.WebviewViewProvider {
     .btn.init:hover { background: #f0f4ff; box-shadow: 0 0 12px rgba(0,0,0,0.35); }
     .frame-wrap { position: relative; min-height: 0; }
     iframe { border: 0; width: 100%; height: 100%; display: block; background: #071539; }
+    .sre-toggle { display:flex; gap:6px; padding:4px 8px; background:#0a1f4a; border-bottom:1px solid rgba(95,150,255,0.35); justify-content:flex-start; }
+    .sre-toggle button { flex:0 0 auto; width:auto; padding:3px 12px; border:1px solid #3568d8; border-radius:6px; background:#10357a; font-size:10px; font-weight:600; cursor:pointer; color:#eaf1ff; line-height:1.2; }
+    .sre-toggle button[aria-selected="true"] { background:#2c74f2; border-color:#2c74f2; }
     @media (max-width: 340px) {
       .toolbar { gap: 4px; padding: 5px; }
       .btn { font-size: 10px; padding: 4px 6px; }
@@ -103,8 +106,12 @@ export class FailSafeSidebarProvider implements vscode.WebviewViewProvider {
       <button class="btn secondary" id="reload" type="button">Reload</button>
       <button class="btn init" id="init-workspace" type="button" title="Initialize Workspace">Initialize</button>
     </div>
+    <div class="sre-toggle" role="tablist" aria-label="View mode">
+      <button id="btn-monitor" role="tab" aria-selected="true">Monitor</button>
+      <button id="btn-sre"     role="tab" aria-selected="false">SRE</button>
+    </div>
     <div class="frame-wrap">
-      <iframe title="FailSafe Monitor" src="${compactUrl}"></iframe>
+      <iframe id="main-frame" title="FailSafe Monitor" src="${compactUrl}"></iframe>
     </div>
   </div>
   <script nonce="${nonce}">
@@ -128,7 +135,7 @@ export class FailSafeSidebarProvider implements vscode.WebviewViewProvider {
         if (!isOrganize) {
             initBtn.textContent = 'Organize';
             initBtn.title = 'Organize Workspace Structure';
-            vscode.setState({ initDone: true });
+            vscode.setState({ ...vscode.getState(), initDone: true });
         }
     });
 
@@ -139,6 +146,23 @@ export class FailSafeSidebarProvider implements vscode.WebviewViewProvider {
         vscode.postMessage({ command: 'openPopout' });
       }
     });
+
+    const sreUrl = '${this.baseUrl}/console/sre';
+    const compactUrl = '${compactUrl}';
+    const mainFrame = document.getElementById('main-frame');
+    const btnMonitor = document.getElementById('btn-monitor');
+    const btnSre = document.getElementById('btn-sre');
+
+    function switchView(isSre) {
+      mainFrame.src = isSre ? sreUrl : compactUrl;
+      btnMonitor.setAttribute('aria-selected', String(!isSre));
+      btnSre.setAttribute('aria-selected', String(isSre));
+      vscode.setState({ ...vscode.getState(), sreMode: isSre });
+    }
+
+    btnMonitor.addEventListener('click', () => switchView(false));
+    btnSre.addEventListener('click', () => switchView(true));
+    if (state.sreMode) { switchView(true); }
   </script>
 </body>
 </html>`;

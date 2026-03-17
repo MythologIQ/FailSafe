@@ -10,6 +10,23 @@
 
 <!-- Format: - [ ] [D#] Description | Version -->
 
+- [x] [D31] V1: Ghost Path — `deps.getGenomeAllPatterns()` called in plan but not declared in `ApiRouteDeps` interface (types.ts) (from audit 2026-03-17) — RESOLVED v4.9.7
+- [x] [D32] V2: Ghost Path — Missing delegate wiring for `getGenomeAllPatterns` in `ConsoleServer.ts.buildApiRouteDeps()` (from audit 2026-03-17) — RESOLVED v4.9.7
+- [x] [D33] V3: Razor — `roadmap.js` at 632 lines (2.5x over 250L limit); plan adds code without decomposition (from audit 2026-03-17) — DEFERRED Phase 5 to v4.9.8
+
+- [x] [D28] V1: Razor — `buildSreConnectedHtml()` is 81 lines (limit 40); extract section builders (from audit 2026-03-17) — RESOLVED v4.9.7
+- [x] [D29] V2: Razor — nested ternary on `SreTemplate.ts:89,111`; extract `thresholdColor()` helper (from audit 2026-03-17) — RESOLVED v4.9.7
+- [x] [D30] V1: Razor — SreTemplate.ts will reach ~280 lines after SRE panel expansion; extract types to SreTypes.ts (from audit 2026-03-17) — deferred to v4.9.8 Phase 1 (type extraction planned, file at 167L after C1 refactor)
+
+- [x] [D25] V1: Razor — nested ternary in `buildSreConnectedHtml()` `sliStatus` assignment; replace with `if/else if/else` (from re-audit 2026-03-16) — RESOLVED v4.10.0
+- [x] [D26] V2: Architecture — `SreApiRoute.ts` imports `fetchAgtSnapshot` from `SreRoute.ts` (route handler); must import from `./templates/SreTemplate` directly (from re-audit 2026-03-16) — RESOLVED v4.10.0
+- [x] [D27] V3: Ghost Path — `FailSafeSidebarProvider.ts:131` `vscode.setState({ initDone: true })` clobbers `sreMode`; must spread state (from re-audit 2026-03-16) — RESOLVED v4.10.0
+
+- [x] [D21] V1: Razor — `SreRoute.render()` ~53 lines exceeds 40-line limit; extract `buildSreHtml(model: SreViewModel)` template function (from audit 2026-03-16) — RESOLVED in amended v2
+- [x] [D22] V2: Architecture — `ASI_COVERAGE` const duplicated in `SreApiRoute.ts` + `SreRoute.ts`; extract to `src/roadmap/services/SreAsiCoverage.ts` (from audit 2026-03-16) — RESOLVED: migrated to Python adapter
+- [x] [D23] V3: Ghost Path — plan Phase 2 references non-existent `registerConsoleRoutes()`; correct target is `registerConsoleExtras()` (from audit 2026-03-16) — RESOLVED in amended v2
+- [x] [D24] V4: Ghost Path — plan Phase 3 toggle adds second `acquireVsCodeApi()` call in new `<script>` block; will throw runtime error; merge into existing script block (from audit 2026-03-16) — RESOLVED in amended v2
+
 - [x] [D16] V1: Security — path traversal in AgentRunRecorder.loadRun() via unsanitized runId (addressed in amended plan: UUID validation in AgentApiRoute.ts)
 - [x] [D17] V2/V9: Razor — ConsoleServer.ts at 1365 lines, plan adds 65 inline routes bypassing extraction pattern (addressed: routes extracted to AgentApiRoute.ts, +20 lines only)
 - [x] [D18] V4-V6: Architecture — wrong method names/signatures (addressed: use analyzeFailurePatterns(), public buildMetrics(), getEntries(filter?))
@@ -332,9 +349,48 @@ Minor / UX:
 
 ### v4.9.5 Pre-v5.0 Quality Sweep (plan-v4.9.5-pre-v5-sweep)
 
+- [x] [B158] Fix audit log blank — fetchHistory, event type fix, verdict routing | v4.9.5
+- [x] [B159] Tab consolidation 8→5 — TabGroup, tickers extraction | v4.9.5
+- [x] [B160] Wire skills propagation — adaptSkillsForModel in autoIngest | v4.9.5
 - [x] [B161] Phase 1: Voice brainstorm resource leaks & error handling — B113, B116, B118-B124, B126 (9 bugs across 6 files) (v4.9.5 - Complete)
 - [x] [B162] Phase 2: Razor debt — extract startup checks from main.ts (B97), extract hub snapshot builder from ConsoleServer.ts (v4.9.5 - Complete)
 - [x] [B163] Phase 3: Backlog reconciliation — close 8 false positives, add future ConsoleServer decomposition items (v4.9.5 - Complete)
+
+### v4.10.0 SRE Panel (plan-sre-panel.md)
+
+- [x] [B167] Phase 1: SRE API — `GET /api/v1/sre` transparent proxy to agent-failsafe REST bridge (v4.10.0 - Complete; route wiring fix in v4.9.7)
+- [x] [B168] Phase 2: SRE Console route — `GET /console/sre` server-rendered AGT adapter data; `SreTemplate.ts` + `SreRoute.ts` (v4.10.0 - Complete; route wiring fix in v4.9.7)
+- [x] [B169] Phase 3: Monitor panel SRE toggle — pill toggle switching iframe between Monitor and SRE; state spread-preserved (v4.10.0 - Complete; CSS/overflow fix in v4.9.7)
+
+### v4.9.7 Release Integrity & Debug Unification (plan-release-integrity-debug-unification.md)
+
+- [x] [B170] Wire setupConsoleRoutes dead code — all /console/* routes were defined but never registered (v4.9.7 - Complete)
+- [x] [B171] Fix CSS selectors for consolidated tabs — #brainstorm targets nonexistent DOM after 5-tab consolidation (v4.9.7 - Complete)
+- [x] [B172] Fix workspace overflow logic — Skills sub-view scroll lockout from tab-level overflow:hidden (v4.9.7 - Complete)
+- [x] [B173] Bundle guard — post-copy verification that dist/ tab count matches src/ (v4.9.7 - Complete)
+- [x] [B174] Unify /ql-debug two-phase dispatch — merge ultimate-debugger strengths into ql-fixer, update skill protocol (v4.9.7 - Complete)
+- [x] [B175] Phase tracker cache — serve last known governance state on META_LEDGER read failure instead of IDLE (v4.9.7 - Complete)
+- [x] [B176] Tail-read optimization — read last 4KB of META_LEDGER instead of full 434KB on every hub snapshot (v4.9.7 - Complete)
+- [x] [B177] File watcher debounce — increase META_LEDGER watcher from 500ms to 1500ms to avoid read-during-write race (v4.9.7 - Complete)
+
+### v4.9.7 Diagnostic Fixes (plan-v497-diagnostic-fixes.md)
+
+- [x] [B181] Phase 1: Governance mode config gap — add mode to FailSafeConfig, read from VS Code settings (v4.9.7 - Complete)
+- [x] [B182] Phase 2: Agent run capture for external agents — file-based session detection, implicit run creation (v4.9.7 - Complete)
+- [x] [B183] Phase 3: Genome view data visibility — show all patterns with status filter toggle (v4.9.7 - Complete)
+- [x] [B184] Phase 4: Timeline entry expansion — click-to-expand detail sections (v4.9.7 - Complete)
+- [x] [B185] ~~Phase 5: Clickable blocked message navigation~~ — DEFERRED to v4.9.8 (D33 prerequisite) | v4.9.7
+
+### v4.9.8 Blocked Navigation + Razor (plan-v498-blocked-navigation.md)
+
+- [ ] [B186] Phase 0: Extract sentinel rendering from roadmap.js into sentinel-monitor.js (D33 resolution) | v4.9.8
+- [ ] [B185] Phase 1: Clickable blocked message navigation — direct audit log linking with highlighting | v4.9.8
+
+### v4.9.8 SRE Panel Expansion (plan-sre-panel-expansion.md)
+
+- [ ] [B178] Phase 1: Snapshot v2 schema + adapter port config — expand AgtSreSnapshot type with optional v2 fields (fleet, auditEvents, slis, trust dimensions) | v4.9.8
+- [ ] [B179] Phase 2: Activity Feed — audit event feed with ALLOW/DENY badges, governance decision rendering | v4.9.8
+- [ ] [B180] Phase 3: SLO Dashboard — multi-SLI grid with error budgets + per-agent fleet health cards | v4.9.8
 
 ### ConsoleServer Decomposition (Future)
 
@@ -396,7 +452,9 @@ Minor / UX:
 | **v4.9.0**   | **Agent Run Replay**           | ✅ RELEASED    | Agent Run Replay, Governance Decision Contracts, marketplace README repositioning (B146/B147/B150)                    |
 | **v4.9.2**   | **Infrastructure Hardening**   | ✅ RELEASED    | Monitor state tracking, hook toggle completion, release pipeline verification (B107-B108, B137-B140)                  |
 | **v4.9.3**   | **Command Center Readiness**   | ✅ SEALED      | Fix disconnected hub data, wire B142-B144/B146/B150 into Command Center, fix transparency pipeline (B154-B157)        |
-| **v4.9.5**   | **Pre-v5.0 Quality Sweep**     | ✅ IMPLEMENTING | Voice brainstorm fixes, Razor debt extraction, backlog reconciliation (B113-B128, B95-B99, B161-B163)                |
+| **v4.9.5**   | **Pre-v5.0 Quality Sweep**     | ✅ RELEASED    | Voice brainstorm fixes, Razor debt extraction, backlog reconciliation (B113-B128, B95-B99, B161-B163)                |
+| **v4.9.6**   | **SRE Panel**                  | ✅ RELEASED    | SRE panel via AGT adapter, OWASP ASI coverage, SLI compliance indicator, Monitor sidebar toggle (B167-B169)          |
+| **v4.9.7**   | **Diagnostic Fixes**           | 🔄 ACTIVE      | Governance mode config, external agent capture, genome visibility, timeline expansion (B181-B184)                    |
 
 ---
 

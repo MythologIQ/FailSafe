@@ -1781,3 +1781,52 @@ When accepting changes from ungovern agents (Codex, Copilot, etc.), always post-
 
 1. Extract integrity/unattributed rendering into a separate module (e.g., `integrity.js`)
 2. Bring `governance.js` back under 250 lines
+
+---
+
+## Failure Entry #56
+
+**Date**: 2026-03-16T21:30:00Z
+**Verdict ID**: Entry #236 - GATE TRIBUNAL - SRE Panel Amended v2
+**Failure Mode**: COMPLEXITY_VIOLATION
+
+### What Failed
+
+`buildSreConnectedHtml()` in `SreTemplate.ts` — nested ternary for `sliStatus` (`A ? B : C ? D : E`).
+
+### Why It Failed
+
+Three-way conditional (true / false / null) expressed as a ternary chain. Razor enforces zero nested ternaries — a three-outcome condition requires `if/else if/else`.
+
+### Pattern to Avoid
+
+When a variable has three possible meaningful states (true / false / null/undefined), resist expressing the discrimination as a chained ternary. Use `if/else if/else` or a lookup map.
+
+### Remediation Required
+
+Replace `const sliStatus = A ? B : C ? D : E` with explicit `if/else if/else` block.
+
+---
+
+## Failure Entry #57
+
+**Date**: 2026-03-16T21:30:00Z
+**Verdict ID**: Entry #236 - GATE TRIBUNAL - SRE Panel Amended v2
+**Failure Mode**: GHOST_PATH
+
+### What Failed
+
+`FailSafeSidebarProvider.ts:131` — `vscode.setState({ initDone: true })` full state overwrite silently destroys `sreMode` when the user clicks Initialize.
+
+### Why It Failed
+
+Two separate code paths write to `vscode.setState` without coordinating: the new `switchView()` (correctly spreads state) and the existing `initBtn` handler (blindly overwrites). The plan introduced new state keys without auditing all existing state writes.
+
+### Pattern to Avoid
+
+When adding a new key to `vscode.getState()` / `vscode.setState()`, audit ALL existing calls to `vscode.setState()` in the file and update them to spread state: `vscode.setState({ ...vscode.getState(), newKey: value })`.
+
+### Remediation Required
+
+Update `initBtn` handler at line 131: `vscode.setState({ initDone: true })` → `vscode.setState({ ...vscode.getState(), initDone: true })`.
+

@@ -180,6 +180,16 @@ export class TransparencyRenderer {
   bindDateFilters() {
     const from = this.container.querySelector('.cc-audit-from');
     const to = this.container.querySelector('.cc-audit-to');
+    // Default to today's date range
+    const today = new Date();
+    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0);
+    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59);
+    const toLocalDatetime = (d) => {
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    };
+    if (from) from.value = toLocalDatetime(startOfDay);
+    if (to) to.value = toLocalDatetime(endOfDay);
     const handler = () => this.refilter();
     from?.addEventListener('change', handler);
     to?.addEventListener('change', handler);

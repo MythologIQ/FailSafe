@@ -1,5 +1,5 @@
-// FailSafe Command Center — Shadow Genome Renderer (B144)
-// Failure pattern cards + unresolved entries table.
+// FailSafe Command Center — Shadow Genome Renderer (B144 + B183)
+// Failure pattern cards + unresolved entries table with show-all toggle.
 
 function esc(value) {
   const d = document.createElement('div');
@@ -11,15 +11,19 @@ export class GenomeRenderer {
   constructor(containerId) {
     this.container = document.getElementById(containerId);
     this.patterns = [];
+    this.allPatterns = []; // B183: all patterns regardless of status
     this.unresolved = [];
+    this.showAll = false; // B183: toggle state
   }
 
   async render() {
     if (!this.container) return;
     await this.fetchGenome();
     this.container.innerHTML = `
+      ${this.renderToggle()}
       ${this.renderPatternCards()}
       ${this.renderUnresolved()}`;
+    this.bindToggle();
   }
 
   async fetchGenome() {
@@ -28,20 +32,35 @@ export class GenomeRenderer {
       if (!res.ok) return;
       const data = await res.json();
       this.patterns = data.patterns || [];
+      this.allPatterns = data.allPatterns || []; // B183
       this.unresolved = data.unresolved || [];
     } catch { /* non-fatal */ }
   }
 
+  renderToggle() {
+    const label = this.showAll ? 'Show Unresolved Only' : 'Show All Patterns';
+    return `<button class="cc-btn cc-genome-toggle" style="margin-bottom:12px;padding:6px 12px;font-size:0.75rem">${label}</button>`;
+  }
+
+  bindToggle() {
+    this.container.querySelector('.cc-genome-toggle')?.addEventListener('click', () => {
+      this.showAll = !this.showAll;
+      this.render();
+    });
+  }
+
   renderPatternCards() {
-    if (!this.patterns.length) {
+    const displayPatterns = this.showAll ? this.allPatterns : this.patterns; // B183
+    if (!displayPatterns.length) {
+      const msg = this.showAll
+        ? 'No failure patterns recorded yet.'
+        : 'No unresolved failure patterns.';
       return `<div class="cc-card" style="min-height:120px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:16px;margin-bottom:16px">
         <div style="font-size:0.95rem;font-weight:600;color:var(--text-main);margin-bottom:6px">No failure patterns</div>
-        <div style="font-size:0.82rem;color:var(--text-muted);max-width:360px">
-          Shadow Genome tracks recurring failure modes. Patterns appear after Sentinel processes enough events.
-        </div>
+        <div style="font-size:0.82rem;color:var(--text-muted);max-width:360px">${msg}</div>
       </div>`;
     }
-    const cards = this.patterns.slice(0, 12).map(p => {
+    const cards = displayPatterns.slice(0, 12).map(p => {
       const mode = p.failureMode || 'unknown';
       const modeColors = {
         COMPLEXITY_VIOLATION: 'var(--accent-gold)',
@@ -51,10 +70,11 @@ export class GenomeRenderer {
         ORPHAN: 'var(--text-muted)',
       };
       const color = modeColors[mode] || 'var(--accent-cyan)';
+      const status = p.remediationStatus ? ` (${p.remediationStatus})` : '';
       return `<div class="cc-card" style="text-align:center;padding:14px">
         <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">${esc(mode)}</div>
         <div style="font-size:1.6rem;font-weight:700;color:${color};font-family:var(--font-display)">${p.count || 0}</div>
-        <div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px">${esc(p.component || '')}</div>
+        <div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px">${esc(p.component || '')}${esc(status)}</div>
       </div>`;
     }).join('');
     return `<div class="cc-grid-4" style="margin-bottom:16px">${cards}</div>`;

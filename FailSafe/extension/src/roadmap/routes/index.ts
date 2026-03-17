@@ -25,3 +25,4 @@ export { SettingsRoute } from './SettingsRoute';
 export { PreflightRoute } from './PreflightRoute';
 export { GovernanceKPIRoute } from './GovernanceKPIRoute';
 export { AgentCoverageRoute } from './AgentCoverageRoute';
+export { SreRoute } from './SreRoute';

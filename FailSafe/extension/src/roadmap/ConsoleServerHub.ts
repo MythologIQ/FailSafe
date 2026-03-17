@@ -50,17 +50,33 @@ export interface HubSnapshotDeps {
 }
 
 // ── Governance phase ────────────────────────────────────────────────
+const IDLE_STATE: GovernanceState = { current: "IDLE", recentCompletions: [], nextSteps: [], activeAlerts: [] };
+let lastKnownGovState: GovernanceState | null = null;
+
+function readLedgerTail(filePath: string, bytes: number = 4096): string {
+  const stat = fs.statSync(filePath);
+  if (stat.size <= bytes) return fs.readFileSync(filePath, "utf-8");
+  const fd = fs.openSync(filePath, "r");
+  try {
+    const buf = Buffer.alloc(bytes);
+    fs.readSync(fd, buf, 0, bytes, stat.size - bytes);
+    return buf.toString("utf-8");
+  } finally {
+    fs.closeSync(fd);
+  }
+}
 
 export function buildGovernancePhase(workspaceRoot: string): GovernanceState {
   const ledgerPath = path.join(workspaceRoot, "docs", "META_LEDGER.md");
-  if (!fs.existsSync(ledgerPath)) {
-    return { current: "IDLE", recentCompletions: [], nextSteps: [], activeAlerts: [] };
-  }
+  if (!fs.existsSync(ledgerPath)) return IDLE_STATE;
   try {
-    const content = fs.readFileSync(ledgerPath, "utf-8");
-    return buildGovernanceState(content);
-  } catch {
-    return { current: "IDLE", recentCompletions: [], nextSteps: [], activeAlerts: [] };
+    const content = readLedgerTail(ledgerPath);
+    const state = buildGovernanceState(content);
+    lastKnownGovState = state;
+    return state;
+  } catch (err) {
+    console.warn("[GovernancePhase] Failed to read META_LEDGER:", (err as Error).message);
+    return lastKnownGovState ?? IDLE_STATE;
   }
 }
 

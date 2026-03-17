@@ -10,6 +10,10 @@
 
 <!-- Format: - [ ] [D#] Description | Version -->
 
+- [ ] [D31] V1: Ghost Path — `deps.getGenomeAllPatterns()` called in plan but not declared in `ApiRouteDeps` interface (types.ts) (from audit 2026-03-17)
+- [ ] [D32] V2: Ghost Path — Missing delegate wiring for `getGenomeAllPatterns` in `ConsoleServer.ts.buildApiRouteDeps()` (from audit 2026-03-17)
+- [ ] [D33] V3: Razor — `roadmap.js` at 632 lines (2.5x over 250L limit); plan adds code without decomposition (from audit 2026-03-17)
+
 - [x] [D28] V1: Razor — `buildSreConnectedHtml()` is 81 lines (limit 40); extract section builders (from audit 2026-03-17) — RESOLVED v4.9.7
 - [x] [D29] V2: Razor — nested ternary on `SreTemplate.ts:89,111`; extract `thresholdColor()` helper (from audit 2026-03-17) — RESOLVED v4.9.7
 - [x] [D30] V1: Razor — SreTemplate.ts will reach ~280 lines after SRE panel expansion; extract types to SreTypes.ts (from audit 2026-03-17) — deferred to v4.9.8 Phase 1 (type extraction planned, file at 167L after C1 refactor)

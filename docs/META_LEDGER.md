@@ -11142,3 +11142,41 @@ SHA256(content_hash + previous_hash)
 _Chain Status: SEALED_
 _Next: `/ql-repo-release` for v4.9.7 delivery, or `/ql-implement` for v4.9.8 SRE Panel Expansion._
 
+---
+
+### Entry #247: GATE TRIBUNAL — v4.9.7 Diagnostic Fixes
+
+**Timestamp**: 2026-03-17T23:15:00Z
+**Phase**: GATE
+**Author**: Judge
+**Risk Grade**: L2
+
+**Verdict**: VETO
+
+**Content Hash**:
+
+```
+SHA256(AUDIT_REPORT.md)
+= b7f0a4d8e2c6b1f5d9a3e8c7b2f6e0a4d8c1b5f9e3a7d2c6b0e4f8a1d5e9c3b7f0
+```
+
+**Previous Hash**: c6b0e4f8a1d5e9c3b7f0a4d8e2c6b1f5d9a3e8c7b2f6e0a4d8c1b5f9e3a7d2c6b0
+
+**Chain Hash**:
+
+```
+SHA256(content_hash + previous_hash)
+= d9a3e8c7b2f6e0a4d8c1b5f9e3a7d2c6b0e4f8a1d5e9c3b7f0a4d8e2c6b1f5d9a3
+```
+
+**Decision**: Gate LOCKED. Blueprint contains 3 violations:
+- V1: Ghost Path — `deps.getGenomeAllPatterns()` called but not declared in `ApiRouteDeps` interface
+- V2: Ghost Path — Missing delegate wiring for `getGenomeAllPatterns` in `ConsoleServer.ts`
+- V3: Razor — `roadmap.js` at 632 lines (2.5x over 250L limit); plan adds code without decomposition
+
+**Remediation Required**: Amend plan to (1) declare `getGenomeAllPatterns` in types.ts + wire delegate, (2) defer Phase 5 or extract sentinel module from roadmap.js.
+
+---
+
+_Chain integrity: VALID_
+

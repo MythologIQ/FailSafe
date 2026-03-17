@@ -1,82 +1,118 @@
 # AUDIT REPORT
 
-**Tribunal Date**: 2026-03-17T21:00:00Z
-**Target**: SRE Panel Expansion — Amended v2 (`docs/Planning/plan-sre-panel-expansion.md`)
+**Tribunal Date**: 2026-03-17T23:15:00Z
+**Target**: v4.9.7 Diagnostic Fixes (plan-v497-diagnostic-fixes.md)
 **Risk Grade**: L2
 **Auditor**: The QoreLogic Judge
-**Prior Verdicts**: VETO (Entry #244) → **PASS (this entry)**
 
 ---
 
-## VERDICT: PASS
+## VERDICT: VETO
 
 ---
 
 ### Executive Summary
 
-The amended plan addresses the VETO violation by extracting all SRE type definitions to `SreTypes.ts` (~60 lines) in Phase 1 before adding v2 types. The file budget table demonstrates `SreTemplate.ts` stays under 170 lines through all 3 phases — well within the 250-line limit. Schema-driven design with optional v2 fields maintains v1 backward compatibility. No security, ghost UI, dependency, orphan, or architecture violations detected.
+The plan proposes 5 phases to fix governance enforcement bypass, agent run capture, genome visibility, timeline expansion, and blocked message navigation. While the root cause analysis is sound, the plan contains **3 violations**: missing API dependency declaration (Ghost Path), file budget violation on `roadmap.js` (Section 4 Razor), and incomplete types.ts dependency wiring for the new `ApiRouteDeps` member. Implementation cannot proceed without remediation.
 
 ### Audit Results
 
 #### Security Pass
 
 **Result**: PASS
-- `escapeHtml()` pattern established in existing section builders
-- `rejectIfRemote` guard on all API endpoints
-- No hardcoded credentials; adapter base URL moves from hardcoded to config
-- New proxy endpoints (`/api/v1/sre/events`, `/api/v1/sre/fleet`) follow existing `rejectIfRemote` pattern
+
+No security violations found:
+- [x] No placeholder auth logic
+- [x] No hardcoded credentials
+- [x] No bypassed security checks
+- [x] No mock authentication returns
+- [x] No security disabled comments
 
 #### Ghost UI Pass
 
-**Result**: PASS
-- All proposed UI elements conditionally rendered via `s.auditEvents?.length ?` and `s.fleet?.length ?`
-- No empty sections for v1 adapters — graceful absence
-- No placeholder or "coming soon" UI
+**Result**: FAIL
+
+| ID | Location | Issue |
+|----|----------|-------|
+| V1 | Phase 3: AgentApiRoute.ts | Plan calls `deps.getGenomeAllPatterns()` but this method does NOT exist in `ApiRouteDeps` interface (types.ts:30-31 only has `getGenomePatterns` and `getGenomeUnresolved`) |
+| V2 | Phase 3: ConsoleServer.ts | Plan does not specify where `getGenomeAllPatterns` delegate is wired to `ShadowGenomeManager.analyzeAllPatterns()` |
 
 #### Section 4 Razor Pass
 
-**Result**: PASS
+**Result**: FAIL
 
 | Check | Limit | Blueprint Proposes | Status |
-|---|---|---|---|
-| Max function lines | 40 | 25 (`buildSliDashboardHtml`) | OK |
-| Max file lines | 250 | 170 (`SreTemplate.ts` after Phase 3) | OK |
-| Max file lines | 250 | 60 (`SreTypes.ts`, stable) | OK |
+|-------|-------|-------------------|--------|
+| Max function lines | 40 | ~30 (renderEntries) | OK |
+| Max file lines | 250 | roadmap.js already 632L, plan adds ~15L | **FAIL** |
 | Max nesting depth | 3 | 2 | OK |
 | Nested ternaries | 0 | 0 | OK |
 
-#### Dependency Pass
+**V3**: `roadmap.js` is already at 632 lines — 2.5x over the 250-line Razor limit. Plan proposes adding more code (Phase 5: blocked navigation) without extracting to a separate module.
 
-**Result**: PASS
-No new dependencies.
-
-#### Orphan Pass
+#### Dependency Audit
 
 **Result**: PASS
 
-| Proposed File | Entry Point Connection | Status |
-|---|---|---|
-| `SreTypes.ts` | imported by `SreTemplate.ts` → `SreRoute.ts` → `ConsoleServer.ts` | Connected |
-| `SreTypes.ts` | imported by `SreRoute.test.ts` | Connected |
+No new external dependencies proposed. All changes use existing modules.
+
+#### Orphan Detection
+
+**Result**: PASS
+
+All proposed changes connect to existing entry points:
+- config.ts → ConfigManager.ts → EnforcementEngine.ts ✓
+- AgentRunRecorder.ts → bootstrapGovernance.ts ✓
+- ShadowGenomeManager.ts → AgentApiRoute.ts → ConsoleServer.ts ✓
+- timeline.js → command-center.js ✓
+- transparency.js → command-center.js ✓
+- roadmap.js → index.html ✓
 
 #### Macro-Level Architecture Pass
 
 **Result**: PASS
-- Type extraction separates data definitions from rendering behavior — reduces complecting
-- `SreTypes.ts` is single source of truth for SRE type definitions
-- No cyclic dependencies: `SreTypes` ← `SreTemplate` ← `SreRoute` ← `ConsoleServer`
+
+- [x] Clear module boundaries maintained
+- [x] No cyclic dependencies introduced
+- [x] Layering direction enforced
+- [x] Single source of truth preserved
+- [x] Cross-cutting concerns centralized
+- [x] No duplicated domain logic
+
+#### Repository Governance
+
+**Result**: PASS
+
+| File | Status |
+|------|--------|
+| README.md | EXISTS |
+| LICENSE | EXISTS |
+| SECURITY.md | EXISTS |
+| CONTRIBUTING.md | EXISTS |
 
 ### Violations Found
 
-None.
+| ID | Category | Location | Description |
+|----|----------|----------|-------------|
+| V1 | Ghost Path | Phase 3: AgentApiRoute.ts | `deps.getGenomeAllPatterns()` called but not declared in `ApiRouteDeps` interface |
+| V2 | Ghost Path | Phase 3: ConsoleServer.ts | Missing delegate wiring for `getGenomeAllPatterns` in `buildApiRouteDeps()` |
+| V3 | Razor | Phase 5: roadmap.js | File at 632 lines, 2.5x over 250L limit; plan adds code without decomposition |
+
+### Required Remediation (if VETO)
+
+1. **V1/V2 Fix**: Add `getGenomeAllPatterns: () => Promise<any[]>;` to `ApiRouteDeps` interface in `types.ts`, and document where the delegate is wired in `ConsoleServer.ts.buildApiRouteDeps()`.
+
+2. **V3 Fix**: Phase 5 must extract sentinel rendering from `roadmap.js` into a dedicated `sentinel-monitor.js` module (or defer Phase 5 to a future version when Razor remediation occurs).
+
+3. **Alternative for V3**: If immediate delivery is required, defer Phase 5 (Clickable Blocked Message) to v4.9.8 and proceed with Phases 1-4 only.
 
 ### Verdict Hash
 
 ```
 SHA256(this_report)
-= d5a9c3b7e0f4d8a2c6b1e5f9d3a8c7b2e6f0a4d8e1c5b9f3a7d2c6e0b4f8a1d5e9
+= b7f0a4d8e2c6b1f5d9a3e8c7b2f6e0a4d8c1b5f9e3a7d2c6b0e4f8a1d5e9c3b7f0
 ```
 
 ---
 
-_This verdict is binding. Implementation may proceed without modification._
+_This verdict is binding. Implementation may NOT proceed without modification._

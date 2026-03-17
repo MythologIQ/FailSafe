@@ -90,8 +90,17 @@ Template: `.claude/commands/references/ql-implement-patterns.md`.
 
 **Constraint**: Define exactly ONE success condition that proves Reality matches Promise.
 
-<!-- B49/B50/B51 interdiction gates removed — referenced files not yet implemented.
-     Re-add when tools/reliability/ scripts are created. -->
+### Step 5.6: Intent Lock Interdiction (B51)
+
+> Deferred — `INTENT_LOCK.json` not yet implemented. This step is a no-op until `tools/reliability/` scripts are created.
+
+### Step 5.7: Skill Admission Interdiction (B49)
+
+> Deferred — `admit-skill.ps1` not yet implemented. This step is a no-op until `tools/reliability/` scripts are created.
+
+### Step 5.8: Gate-to-Skill Matrix Interdiction (B50)
+
+> Deferred — `gate-skill-matrix.json` not yet implemented. This step is a no-op until `tools/reliability/` scripts are created.
 
 ### Step 6: Precision Build
 

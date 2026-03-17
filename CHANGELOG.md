@@ -5,6 +5,14 @@ All notable changes to FailSafe will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.9.9] - 2026-03-17
+
+### Fixed
+
+- Install Skills button works — bundled skills path corrected (B189).
+- Brainstorm Prep Bay visible in Command Center right panel (B188).
+- TabGroup sub-view right panels surfaced for all 3 tab groups.
+
 ## [4.9.8] - 2026-03-17
 
 ### Fixed

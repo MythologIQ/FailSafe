@@ -4,25 +4,19 @@ Prevent runaway AI edits, hallucinated dependencies, and destructive refactors b
 
 FailSafe runs locally inside VS Code and Cursor. It monitors what AI agents do, applies deterministic policy checks at the editor boundary, and gives you full visibility into every decision — before code ships.
 
-**Current Release**: v4.9.8 (2026-03-17)
+**Current Release**: v4.9.9 (2026-03-17)
 
 ![FailSafe Banner](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/extension/FailSafe%20Banner.png)
 
-## What's New in v4.9.8
+## What's New in v4.9.9
 
-SRE panel expansion with activity feed, SLO dashboard, and fleet health — plus error budget accuracy fix and clickable navigation from the Monitor.
+Bugfix release: Install Skills button now works, and the Brainstorm Prep Bay (microphone, voice controls) is visible again in the Command Center.
 
 ### Fixed
 
-- Error budget now excludes resolved verdicts — normal VETO→PASS governance cycles no longer inflate the burn gauge.
-
-### Added
-
-- Clickable blocker count and error budget gauge navigate directly to governance audit in the Command Center.
-- SRE Activity Feed: scrollable audit event list with ALLOW/DENY/AUDIT badges.
-- SRE SLO Dashboard: multi-SLI grid with error budget gauges.
-- SRE Fleet Health: per-agent cards with status, circuit breaker state, and success rate.
-- Configurable adapter base URL for non-default adapter deployments.
+- Install Skills button now correctly finds bundled skills and scaffolds them into the workspace.
+- Brainstorm Prep Bay, topology legend, and AI extraction tiers visible in the right panel when Mindmap sub-view is active.
+- Right panels for all TabGroup sub-views (Operations, Transparency, Skills) are now properly surfaced.
 
 ## What's New in v4.9.0
 

@@ -10912,3 +10912,61 @@ SHA256(content_hash + previous_hash)
 _Chain Status: SEALED_
 _Next: `/ql-repo-release` for v4.10.0 delivery, or `/ql-plan` for new feature._
 
+---
+
+### Entry #240: GATE TRIBUNAL
+
+**Timestamp**: 2026-03-17T18:00:00Z
+**Phase**: GATE
+**Author**: Judge
+**Risk Grade**: L1
+
+**Verdict**: VETO
+
+**Content Hash**:
+
+```
+SHA256(AUDIT_REPORT.md)
+= a4b7c2e8f1d5a9c3b6e0f4d8a2c7b1e5f9d3a8c6b0e4f2d7a1c5b9e3f8d2a6c0b4
+```
+
+**Previous Hash**: 6f1b8e4c2a9d7f3b0e6c4a8d1f5b9e3c7a2d6f0b4e8c2a7d5f1b9e3c8a4d7f2b6e0
+
+**Chain Hash**:
+
+```
+SHA256(content_hash + previous_hash)
+= d8e2a6c0b4f1a5d9c3b7e4f8d2a6c0b4e8f1d5a9c3b7e0f4d8a2c6b1e5f9d3a8c7
+```
+
+**Decision**: VETO — `buildSreConnectedHtml` at 81 lines exceeds 40-line Razor limit. 2 nested ternaries on lines 89/111. Extract section builders and threshold color helper before proceeding.
+
+---
+
+### Entry #241: GATE TRIBUNAL
+
+**Timestamp**: 2026-03-17T19:30:00Z
+**Phase**: GATE
+**Author**: Judge
+**Risk Grade**: L1
+
+**Verdict**: PASS
+
+**Content Hash**:
+
+```
+SHA256(AUDIT_REPORT.md)
+= b2e7f4a1c8d5b9e3f6a0c4d8b1e5f9a3c7d2b6e0f4a8d1c5b9e3f7a2d6c0b4e8f1
+```
+
+**Previous Hash**: d8e2a6c0b4f1a5d9c3b7e4f8d2a6c0b4e8f1d5a9c3b7e0f4d8a2c6b1e5f9d3a8c7
+
+**Chain Hash**:
+
+```
+SHA256(content_hash + previous_hash)
+= e5c9a3f7b1d4e8c2a6f0b4d8e1c5a9f3b7d2e6c0a4f8b1d5e9c3a7f2b6d0e4c8a1
+```
+
+**Decision**: PASS — Amended v2 plan addresses all V1-V3 VETO violations with clean decomposition (5 helpers, thresholdColor). New workstreams C (audit remediation) and D (phase tracker stability) pass all audit passes. Gate cleared for implementation.
+

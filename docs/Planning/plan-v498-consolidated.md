@@ -1,10 +1,18 @@
-# Plan: v4.9.8 — Error Budget Fix, Blocked Navigation, SRE Panel Expansion (Amended v2)
+# Plan: v4.9.8 — Error Budget Fix, Blocked Navigation, SRE Panel Expansion (Amended v3)
 
 **Current Version**: v4.9.7
 **Target Version**: v4.9.8
 **Change Type**: feature
 **Risk Grade**: L2
-**Prior Verdicts**: VETO (Entry #251, V1: phantom planId) → this amendment
+**Prior Verdicts**: VETO (Entry #251, V1/V2: ghost method names in Phase 2) → this amendment
+
+## Amendments from VETO (Entry #251)
+
+| Violation | Resolution |
+|-----------|------------|
+| V1/D34: `renderSentinelStatus()` doesn't exist | Corrected to `renderSentinel()` (roadmap.js:277) |
+| V2/D35: `showMetricHelp()` doesn't exist | Corrected to `showMetricExplanation()` (line 564) + `getMetricExplanations()` (line 509) |
+| Advisory: sentinel-monitor.js ~130L estimate | Updated to ~185L (verified from extracted file) |
 
 ## Open Questions
 
@@ -67,15 +75,16 @@ Also update the help text in the `errorbudget` tooltip (~line 533) to clarify th
 ### Changes
 
 Extract from `roadmap.js` into `sentinel-monitor.js`:
-- `renderWorkspaceHealth()` method (~40 lines, lines 311-348)
-- `buildPolicyTrend()` method (~15 lines)
-- `renderSentinelStatus()` method (~30 lines)
-- `metricColor()` helper (~5 lines)
-- `showMetricHelp()` and help text definitions (~40 lines, lines 520-545)
+- `renderWorkspaceHealth()` method (~50 lines, lines 311-360)
+- `buildPolicyTrend()` method (~10 lines, lines 480-489)
+- `renderSentinel()` method (~35 lines, line 277)
+- `metricColor()` helper (~5 lines, lines 491-495)
+- `getMetricExplanations()` help text definitions (~55 lines, lines 509-562)
+- `showMetricExplanation()` display logic (~45 lines, lines 564-610)
 
 The `SentinelMonitor` class receives the DOM element references and hub data, renders independently. `roadmap.js` instantiates it and delegates.
 
-Target: `roadmap.js` drops to ~500 lines, `sentinel-monitor.js` ~130 lines. Both under 250L individually is not achievable in one phase given roadmap.js's other responsibilities, but this extraction removes the largest single-domain block.
+Target: `roadmap.js` drops to ~450 lines, `sentinel-monitor.js` ~185 lines. Both under 250L individually is not achievable in one phase given roadmap.js's other responsibilities, but this extraction removes the largest single-domain block.
 
 ### Unit Tests
 
@@ -167,8 +176,8 @@ Add `buildFleetHtml(fleet: FleetAgent[])` (~25 lines). Per-agent cards with stat
 | Phase | Scope | Backlog | File Budget |
 |-------|-------|---------|-------------|
 | 1 | Error budget — exclude resolved verdicts | B187 | roadmap.js (fix in-place) |
-| 2 | Extract sentinel-monitor.js from roadmap.js | B186/D33 | sentinel-monitor.js: ~130L, roadmap.js: ~500L |
-| 3 | Clickable blocked navigation | B185 | sentinel-monitor.js: ~140L |
+| 2 | Extract sentinel-monitor.js from roadmap.js | B186/D33 | sentinel-monitor.js: ~185L, roadmap.js: ~450L |
+| 3 | Clickable blocked navigation | B185 | sentinel-monitor.js: ~195L |
 | 4 | SRE type extraction + v2 schema | B178/D30 | SreTypes.ts: ~60L, SreTemplate.ts: ~100L |
 | 5 | Activity Feed | B179 | SreTemplate.ts: ~120L |
 | 6 | SLO Dashboard + Fleet Health | B180 | SreTemplate.ts: ~170L |

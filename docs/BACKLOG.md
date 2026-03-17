@@ -13,6 +13,8 @@
 - [x] [D31] V1: Ghost Path — `deps.getGenomeAllPatterns()` called in plan but not declared in `ApiRouteDeps` interface (types.ts) (from audit 2026-03-17) — RESOLVED v4.9.7
 - [x] [D32] V2: Ghost Path — Missing delegate wiring for `getGenomeAllPatterns` in `ConsoleServer.ts.buildApiRouteDeps()` (from audit 2026-03-17) — RESOLVED v4.9.7
 - [x] [D33] V3: Razor — `roadmap.js` at 632 lines (2.5x over 250L limit); plan adds code without decomposition (from audit 2026-03-17) — DEFERRED Phase 5 to v4.9.8
+- [x] [D34] V1: Ghost Path — v4.9.8 plan Phase 2 references `renderSentinelStatus()` but method doesn't exist; actual is `renderSentinel()` (roadmap.js:277) (from audit 2026-03-17) — RESOLVED in amended v3
+- [x] [D35] V2: Ghost Path — v4.9.8 plan Phase 2 references `showMetricHelp()` at lines 520-545 but method doesn't exist; actual is `showMetricExplanation()` (line 564) + `getMetricExplanations()` (line 509) (from audit 2026-03-17) — RESOLVED in amended v3
 
 - [x] [D28] V1: Razor — `buildSreConnectedHtml()` is 81 lines (limit 40); extract section builders (from audit 2026-03-17) — RESOLVED v4.9.7
 - [x] [D29] V2: Razor — nested ternary on `SreTemplate.ts:89,111`; extract `thresholdColor()` helper (from audit 2026-03-17) — RESOLVED v4.9.7

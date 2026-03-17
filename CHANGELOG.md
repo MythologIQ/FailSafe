@@ -5,6 +5,25 @@ All notable changes to FailSafe will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.9.8] - 2026-03-17
+
+### Fixed
+
+- Error budget excludes resolved verdicts — VETO→PASS cycles no longer inflate burn gauge (B187).
+
+### Added
+
+- Clickable blocker/error budget navigation to Command Center audit log (B185).
+- SRE Activity Feed with ALLOW/DENY/AUDIT badges (B179).
+- SRE SLO Dashboard with multi-SLI grid and error budget gauges (B180).
+- SRE Fleet Health with per-agent status, circuit breaker state, and success rate (B180).
+- Configurable adapter base URL replacing hardcoded default (B178).
+
+### Architecture
+
+- Sentinel rendering extracted to `sentinel-monitor.js` (roadmap.js 632→486L) (B186/D33).
+- SRE types extracted to `SreTypes.ts` with v2 schema (B178).
+
 ## [4.9.6] - 2026-03-16
 
 ### Added

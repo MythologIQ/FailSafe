@@ -4,19 +4,25 @@ Prevent runaway AI edits, hallucinated dependencies, and destructive refactors b
 
 FailSafe runs locally inside VS Code and Cursor. It monitors what AI agents do, applies deterministic policy checks at the editor boundary, and gives you full visibility into every decision — before code ships.
 
-**Current Release**: v4.9.6 (2026-03-16)
+**Current Release**: v4.9.8 (2026-03-17)
 
 ![FailSafe Banner](https://raw.githubusercontent.com/MythologIQ/FailSafe/main/FailSafe/extension/FailSafe%20Banner.png)
 
-## What's New in v4.9.6
+## What's New in v4.9.8
 
-SRE panel powered by the `agent-failsafe` adapter — active policies, trust scores, OWASP ASI coverage, and SLI compliance indicator directly in VS Code.
+SRE panel expansion with activity feed, SLO dashboard, and fleet health — plus error budget accuracy fix and clickable navigation from the Monitor.
+
+### Fixed
+
+- Error budget now excludes resolved verdicts — normal VETO→PASS governance cycles no longer inflate the burn gauge.
 
 ### Added
 
-- SRE panel in the Monitor sidebar: view active governance policies, enforcement status, OWASP ASI coverage map, and SLI compliance indicator.
-- SRE toggle button — switch between Monitor and SRE views without reloading the sidebar.
-- AGT adapter integration: all SRE panel data flows exclusively from the `agent-failsafe` REST bridge, keeping the panel extractable as a standalone AGT component.
+- Clickable blocker count and error budget gauge navigate directly to governance audit in the Command Center.
+- SRE Activity Feed: scrollable audit event list with ALLOW/DENY/AUDIT badges.
+- SRE SLO Dashboard: multi-SLI grid with error budget gauges.
+- SRE Fleet Health: per-agent cards with status, circuit breaker state, and success rate.
+- Configurable adapter base URL for non-default adapter deployments.
 
 ## What's New in v4.9.0
 

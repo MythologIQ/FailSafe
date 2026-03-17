@@ -5,6 +5,25 @@ All notable changes to the MythologIQ FailSafe extension will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.9.8] - 2026-03-17
+
+### Fixed
+
+- Error budget now excludes resolved verdicts — a VETO→PASS cycle no longer inflates the burn gauge to 100% (B187).
+
+### Added
+
+- Clickable blocker count and error budget gauge — click to navigate directly to governance audit in the Command Center (B185).
+- SRE Activity Feed: scrollable audit event list with ALLOW/DENY/AUDIT badges, powered by the `agent-failsafe` adapter (B179).
+- SRE SLO Dashboard: multi-SLI grid with error budget gauges, replacing the single-SLI card when adapter provides detailed metrics (B180).
+- SRE Fleet Health: per-agent cards with status indicators, circuit breaker state badges, task count, and success rate (B180).
+- Configurable adapter base URL via `adapterBaseUrl` in adapter config, replacing the hardcoded default (B178).
+
+### Architecture
+
+- Extracted `SentinelMonitor` class from `roadmap.js` (632→486 lines) into `sentinel-monitor.js` (185 lines) — reduces Monitor panel complexity (B186/D33).
+- Extracted SRE type definitions to `SreTypes.ts` (60 lines) — v1 + v2 schema with optional backward-compatible fields (B178).
+
 ## [4.9.6] - 2026-03-16
 
 ### Added
